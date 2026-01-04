@@ -1,5 +1,6 @@
 package com.imyvm.community.inter.screen
 
+import com.imyvm.community.inter.screen.component.ConfirmTaskType
 import com.imyvm.community.util.Translator
 import net.minecraft.item.Items
 import net.minecraft.server.network.ServerPlayerEntity
@@ -8,6 +9,7 @@ import net.minecraft.text.Text
 class ConfirmMenu(
     syncId: Int,
     playerExecutor: ServerPlayerEntity,
+    confirmTaskType: ConfirmTaskType,
     private val cautions: List<String>,
     private val runExecutor: (ServerPlayerEntity) -> Unit,
     val runBack: (ServerPlayerEntity) -> Unit

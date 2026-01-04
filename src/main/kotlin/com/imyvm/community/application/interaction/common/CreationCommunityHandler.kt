@@ -16,6 +16,7 @@ import com.imyvm.economy.EconomyMod
 import com.imyvm.iwg.inter.api.PlayerInteractionApi
 import net.minecraft.server.network.ServerPlayerEntity
 
+
 fun onCreateCommunity(player: ServerPlayerEntity, communityType: String, name: String, shapeName: String): Int {
     if (!checkPlayerMembershipCreation(player, communityType)) return 0
 
