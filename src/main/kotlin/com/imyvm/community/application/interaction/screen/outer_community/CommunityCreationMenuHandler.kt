@@ -2,6 +2,8 @@ package com.imyvm.community.application.interaction.screen.outer_community
 
 import com.imyvm.community.application.interaction.common.onCreateCommunity
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
+import com.imyvm.community.inter.screen.ConfirmMenu
+import com.imyvm.community.inter.screen.component.ConfirmTaskType
 import com.imyvm.community.inter.screen.outer_community.CommunityCreationMenu
 import com.imyvm.community.inter.screen.outer_community.CommunityCreationRenameMenuAnvil
 import com.imyvm.iwg.domain.component.GeoShapeType
@@ -54,11 +56,32 @@ fun runConfirmCommunityCreation(
     geoShapeType: GeoShapeType,
     isManor: Boolean
 ){
-    player.closeHandledScreen()
-    onCreateCommunity(
-        player,
-        if (isManor) "manor" else "realm",
-        communityName,
-        geoShapeType.toString()
-    )
+    CommunityMenuOpener.open(player) { syncId ->
+        ConfirmMenu(
+            syncId = syncId,
+            playerExecutor = player,
+            confirmTaskType = ConfirmTaskType.CREATE_COMMUNITY,
+            cautions = listOf(
+                ""
+            ),
+            runExecutor = { onCreateCommunity(
+                player,
+                if (isManor) "manor" else "realm",
+                communityName,
+                geoShapeType.toString()
+            ) },
+            runBack = { CommunityMenuOpener.open(player) { syncId ->
+                CommunityCreationMenu(
+                    syncId = syncId,
+                    currentName = communityName,
+                    currentShape = geoShapeType,
+                    isCurrentCommunityTypeManor = isManor,
+                    playerExecutor = player,
+                ) {} }
+            },
+            communityName = communityName,
+            communityType = if (isManor) "manor" else "realm",
+            shapeName = geoShapeType.toString()
+        )
+    }
 }

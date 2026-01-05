@@ -7,8 +7,8 @@ import com.imyvm.community.domain.MemberAccount
 import com.imyvm.community.domain.PendingOperation
 import com.imyvm.community.domain.PendingOperationType
 import com.imyvm.community.domain.community.CommunityJoinPolicy
-import com.imyvm.community.domain.community.MemberRoleType
 import com.imyvm.community.domain.community.CommunityStatus
+import com.imyvm.community.domain.community.MemberRoleType
 import com.imyvm.community.infra.CommunityConfig
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.Translator
@@ -16,11 +16,15 @@ import com.imyvm.economy.EconomyMod
 import com.imyvm.iwg.inter.api.PlayerInteractionApi
 import net.minecraft.server.network.ServerPlayerEntity
 
-
-fun onCreateCommunity(player: ServerPlayerEntity, communityType: String, name: String, shapeName: String): Int {
+fun onCreateCommunity(
+    player: ServerPlayerEntity,
+    communityType: String,
+    communityName: String,
+    shapeName: String
+): Int {
     if (!checkPlayerMembershipCreation(player, communityType)) return 0
 
-    val region = PlayerInteractionApi.createAndGetRegion(player, name, shapeName)
+    val region = PlayerInteractionApi.createAndGetRegion(player, communityName, shapeName)
     if (region == null) {
         player.sendMessage(Translator.tr("community.create.region.error"))
         return 0
@@ -33,7 +37,7 @@ fun onCreateCommunity(player: ServerPlayerEntity, communityType: String, name: S
 
     val regionNumberId = region.numberID
 
-    initialApplication(player, name, communityType, regionNumberId)
+    initialApplication(player, communityName, communityType, regionNumberId)
     handleApplicationBranches(player, communityType, regionNumberId)
     return 1
 }

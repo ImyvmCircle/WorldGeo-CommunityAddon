@@ -12,7 +12,10 @@ class ConfirmMenu(
     confirmTaskType: ConfirmTaskType,
     private val cautions: List<String>,
     private val runExecutor: (ServerPlayerEntity) -> Unit,
-    val runBack: (ServerPlayerEntity) -> Unit
+    val runBack: (ServerPlayerEntity) -> Unit,
+    communityType: String? = null,
+    communityName: String? = null,
+    shapeName: String? = null
 ): AbstractMenu(
     syncId = syncId,
     menuTitle = getConfirmMenuTitle(
