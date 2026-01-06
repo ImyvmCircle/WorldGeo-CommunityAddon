@@ -1,5 +1,6 @@
 package com.imyvm.community.inter.screen
 
+import com.imyvm.community.application.interaction.screen.runConfirmDispatcher
 import com.imyvm.community.inter.screen.component.ConfirmTaskType
 import com.imyvm.community.util.Translator
 import net.minecraft.item.Items
@@ -8,14 +9,13 @@ import net.minecraft.text.Text
 
 class ConfirmMenu(
     syncId: Int,
-    playerExecutor: ServerPlayerEntity,
-    confirmTaskType: ConfirmTaskType,
+    val playerExecutor: ServerPlayerEntity,
+    val confirmTaskType: ConfirmTaskType,
     private val cautions: List<String>,
-    private val runExecutor: (ServerPlayerEntity) -> Unit,
     val runBack: (ServerPlayerEntity) -> Unit,
-    communityType: String? = null,
-    communityName: String? = null,
-    shapeName: String? = null
+    val communityType: String? = null,
+    val communityName: String? = null,
+    val shapeName: String? = null
 ): AbstractMenu(
     syncId = syncId,
     menuTitle = getConfirmMenuTitle(
@@ -30,14 +30,13 @@ class ConfirmMenu(
     }
 
     private fun addCautionTextButtons() {
-        if (cautions.size >= 5){
-            cautions.subList(0,5).forEachIndexed { index, string ->
-                addButton(
-                    slot = 1 + index * 9,
-                    name = string,
-                    item = Items.REDSTONE_TORCH
-                ) {}
-            }
+        val cautions= if (cautions.size >= 5) cautions.subList(0,5) else cautions
+        cautions.forEachIndexed { index, string ->
+            addButton(
+                slot = 1 + index * 9,
+                name = string,
+                item = Items.REDSTONE_TORCH
+            ) {}
         }
     }
 
@@ -47,7 +46,13 @@ class ConfirmMenu(
             name = Translator.tr("ui.confirm.button.confirm")?.string ?: "Confirm",
             item = Items.GREEN_WOOL
         ) {
-            runExecutor
+            runConfirmDispatcher(
+                playerExecutor = playerExecutor,
+                confirmTaskType = confirmTaskType,
+                communityType = communityType,
+                communityName = communityName,
+                shapeName = shapeName
+            )
         }
     }
 

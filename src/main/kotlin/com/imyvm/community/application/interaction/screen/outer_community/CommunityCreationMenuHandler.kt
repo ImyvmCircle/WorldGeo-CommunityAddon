@@ -1,6 +1,5 @@
 package com.imyvm.community.application.interaction.screen.outer_community
 
-import com.imyvm.community.application.interaction.common.onCreateCommunity
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.infra.CommunityConfig
 import com.imyvm.community.inter.screen.ConfirmMenu
@@ -84,14 +83,6 @@ fun runConfirmCommunityCreation(
             playerExecutor = player,
             confirmTaskType = ConfirmTaskType.CREATE_COMMUNITY,
             cautions = creationCautions,
-            runExecutor = {
-                onCreateCommunity(
-                    player,
-                    if (isManor) "manor" else "realm",
-                    communityName,
-                    geoShapeType.toString()
-                )
-            },
             runBack =
             {
                 CommunityMenuOpener.open(player) { syncId ->
