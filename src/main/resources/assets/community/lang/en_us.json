@@ -4,7 +4,6 @@
   "community.type.manor": "Manor",
   "community.type.realm": "Realm",
 
-
   "community.notfound.name": "Community with name {0} not found.",
   "community.notfound.id": "Community with id {0} not found.",
   "community.not_found.region": "Error: Corresponding region of community {0} is not found.",
@@ -64,6 +63,11 @@
   "ui.confirm.title": "Confirm: {0}",
   "ui.confirm.default": "<Error When Getting Target Operation>",
   "ui.confirm.button.confirm": "Confirm",
+
+  "ui.confirm.create.caution.creation_cost": "Creating this community request will cost ${0} as {1}.",
+  "ui.confirm.create.caution.refund": "The creation cost will be refunded only when the creation is rejected.",
+  "ui.confirm.create.caution.region": "The region you selected will be occupied by the community, but you can only modify it after administration approval.",
+  "ui.confirm.create.caution.final_check": "Please make sure all the information is correct before confirming.",
 
   "ui.create.error.name_empty": "NameEmpty",
   "ui.create.error.name_duplicated": "NameDuplicated",
