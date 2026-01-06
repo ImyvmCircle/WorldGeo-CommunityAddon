@@ -21,6 +21,7 @@ class MainMenu(
     init {
         addGeneralButtons()
         if (playerExecutor.hasPermissionLevel(2)) { addServerOperatorButton() }
+        addToggleSelectionModeButton()
         addActionBarToggleButton()
     }
 
@@ -48,8 +49,31 @@ class MainMenu(
         addButton(
             slot = 19,
             name = Translator.tr("ui.main.button.op")?.string ?: "OP",
-            item = Items.COMMAND_BLOCK
+            item = Items.ANVIL
         ) {}
+    }
+
+    private fun addToggleSelectionModeButton() {
+        val isSelectionModeEnabled = ImyvmWorldGeo.pointSelectingPlayers.contains(playerExecutor.uuid)
+        if (isSelectionModeEnabled) {
+            addButton(
+                slot = 21,
+                name = Translator.tr("ui.main.button.selection_mode.enable")?.string ?: "Selection Mode: Enabled",
+                item = Items.CHAIN_COMMAND_BLOCK
+            ) {}
+
+            addButton(
+                slot = 30,
+                name = Translator.tr("ui.main.button.selection_mode.reset")?.string ?: "Reset Selection",
+                item = Items.REPEATING_COMMAND_BLOCK
+            ) {}
+        } else {
+            addButton(
+                slot = 21,
+                name = Translator.tr("ui.main.button.selection_mode.disable")?.string ?: "Selection Mode: Disabled",
+                item = Items.COMMAND_BLOCK
+            ) {}
+        }
     }
 
     private fun addActionBarToggleButton() {
