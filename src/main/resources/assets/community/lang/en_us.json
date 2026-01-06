@@ -1,6 +1,10 @@
 {
   "pending.expired": "Your pending request {0} has expired.",
 
+  "community.type.manor": "Manor",
+  "community.type.realm": "Realm",
+
+
   "community.notfound.name": "Community with name {0} not found.",
   "community.notfound.id": "Community with id {0} not found.",
   "community.not_found.region": "Error: Corresponding region of community {0} is not found.",
