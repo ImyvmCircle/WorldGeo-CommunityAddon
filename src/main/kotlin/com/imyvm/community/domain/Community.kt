@@ -16,7 +16,7 @@ class Community(
     val regionNumberId: Int?,
     var member: HashMap<UUID, MemberAccount>,
     var joinPolicy: CommunityJoinPolicy,
-    var status: CommunityStatus
+    var status: CommunityStatus,
 ) {
     fun generateCommunityMark(): String {
         return RegionDataApi.getRegion(this.regionNumberId!!)?.name ?: "Community #${this.regionNumberId}"
