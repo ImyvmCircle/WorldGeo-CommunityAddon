@@ -57,6 +57,9 @@
   "ui.main.button.op": "OP Functions",
   "ui.main.message.no_community": "You are not in any community.",
   "ui.main.create.error.no_selection": "Not in point selection mode or no enough points selected.",
+  "ui.main.button.selection_mode.enable": "Point Selection Mode : Enabled",
+  "ui.main.button.selection_mode.disable": "Point Selection Mode : Disabled",
+  "ui.main.button.selection_mode.reset": "Reset Point Selection",
   "ui.main.button.action_bar.enable": "Action Bar : Enabled",
   "ui.main.button.action_bar.disable": "Action Bar : Disabled",
 
