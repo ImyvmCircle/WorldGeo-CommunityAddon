@@ -1,9 +1,6 @@
 package com.imyvm.community.inter.screen.outer_community
 
-import com.imyvm.community.application.interaction.screen.outer_community.runCreate
-import com.imyvm.community.application.interaction.screen.outer_community.runList
-import com.imyvm.community.application.interaction.screen.outer_community.runMyCommunity
-import com.imyvm.community.application.interaction.screen.outer_community.runToggleActionBar
+import com.imyvm.community.application.interaction.screen.outer_community.*
 import com.imyvm.community.inter.screen.AbstractMenu
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.ImyvmWorldGeo
@@ -54,25 +51,25 @@ class MainMenu(
     }
 
     private fun addToggleSelectionModeButton() {
-        val isSelectionModeEnabled = ImyvmWorldGeo.pointSelectingPlayers.contains(playerExecutor.uuid)
+        val isSelectionModeEnabled = ImyvmWorldGeo.pointSelectingPlayers.containsKey(playerExecutor.uuid)
         if (isSelectionModeEnabled) {
             addButton(
-                slot = 21,
+                slot = 22,
                 name = Translator.tr("ui.main.button.selection_mode.enable")?.string ?: "Selection Mode: Enabled",
-                item = Items.CHAIN_COMMAND_BLOCK
-            ) {}
+                item = Items.COMMAND_BLOCK
+            ) { runToggleSelectionMode(playerExecutor) }
 
             addButton(
-                slot = 30,
+                slot = 31,
                 name = Translator.tr("ui.main.button.selection_mode.reset")?.string ?: "Reset Selection",
-                item = Items.REPEATING_COMMAND_BLOCK
-            ) {}
+                item = Items.BRUSH
+            ) { runResetSelection(playerExecutor) }
         } else {
             addButton(
-                slot = 21,
+                slot = 22,
                 name = Translator.tr("ui.main.button.selection_mode.disable")?.string ?: "Selection Mode: Disabled",
-                item = Items.COMMAND_BLOCK
-            ) {}
+                item = Items.REDSTONE_BLOCK
+            ) { runToggleSelectionMode(playerExecutor) }
         }
     }
 

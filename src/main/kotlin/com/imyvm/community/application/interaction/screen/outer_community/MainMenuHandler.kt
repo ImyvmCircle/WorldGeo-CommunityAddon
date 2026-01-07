@@ -14,6 +14,7 @@ import com.imyvm.community.inter.screen.outer_community.MyCommunityListMenu
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.application.interaction.onToggleActionBar
+import com.imyvm.iwg.inter.api.PlayerInteractionApi
 import net.minecraft.server.network.ServerPlayerEntity
 
 fun runList(player: ServerPlayerEntity) {
@@ -77,6 +78,21 @@ fun runMyCommunity(player: ServerPlayerEntity) {
             }
         }
     }
+}
+
+fun runToggleSelectionMode(player: ServerPlayerEntity) {
+    val isSelectionModeEnabled = ImyvmWorldGeo.pointSelectingPlayers.containsKey(player.uuid)
+    if (isSelectionModeEnabled) {
+        PlayerInteractionApi.stopSelection(player)
+    } else {
+        PlayerInteractionApi.startSelection(player)
+    }
+    runBackOrRefreshMainMenu(player)
+}
+
+fun runResetSelection(player: ServerPlayerEntity) {
+    PlayerInteractionApi.resetSelection(player)
+    runBackOrRefreshMainMenu(player)
 }
 
 @Deprecated("Temporary function call inside before the function being added to PlayerInteractionApi",
