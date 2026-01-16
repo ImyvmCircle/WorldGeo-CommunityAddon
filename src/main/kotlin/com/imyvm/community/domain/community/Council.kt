@@ -25,7 +25,14 @@ class CouncilVote(
     val proposorUUID: UUID? = null,
     val yeaVotes: MutableList<UUID> = mutableListOf(),
     val nayVotes: MutableList<UUID> = mutableListOf(),
-)
+    var isEnacted: Boolean? = null,
+) {
+    fun finalizeVote(){
+        if (this.isEnacted == null) {
+            this.isEnacted = yeaVotes.size > nayVotes.size
+        }
+    }
+}
 
 enum class ExecutionType {
     DEFAULT,
