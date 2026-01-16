@@ -1,11 +1,18 @@
 package com.imyvm.community.domain.community
 
+import com.imyvm.community.domain.Community
 import java.util.*
 
 class Council(
     val enabled: Boolean = false,
     val vote: CouncilVote = CouncilVote(),
-)
+) {
+    fun getCouncilMembers(community: Community): List<UUID> {
+        return community.member.entries
+            .filter { it.value.isCouncilMember }
+            .map { it.key }
+    }
+}
 
 class CouncilVote(
     val executionType: ExecutionType = ExecutionType.DEFAULT,
