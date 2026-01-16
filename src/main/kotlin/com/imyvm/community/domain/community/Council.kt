@@ -7,6 +7,11 @@ class Council(
     val enabled: Boolean = false,
     val vote: CouncilVote = CouncilVote(),
 ) {
+    fun isCouncilMember(playerUuid: UUID, community: Community): Boolean {
+        val councilMembers = getCouncilMembers(community)
+        return councilMembers.contains(playerUuid)
+    }
+
     fun getCouncilMembers(community: Community): List<UUID> {
         return community.member.entries
             .filter { it.value.isCouncilMember }
