@@ -5,7 +5,7 @@ import java.util.*
 
 class Council(
     val enabled: Boolean = false,
-    val vote: CouncilVote = CouncilVote(),
+    val voteSet: Set<CouncilVote> = setOf(),
 ) {
     fun isCouncilMember(playerUuid: UUID, community: Community): Boolean {
         val councilMembers = getCouncilMembers(community)
