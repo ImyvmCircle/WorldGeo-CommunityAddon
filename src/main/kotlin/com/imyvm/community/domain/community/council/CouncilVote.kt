@@ -12,7 +12,10 @@ class CouncilVote(
     val nayVotes: MutableList<UUID> = mutableListOf(),
     var isEnacted: Boolean? = null,
 ) {
-    fun castVote(voterUUID: UUID, isYea: Boolean) {
+    fun castVote(voterUUID: UUID, isYea: Boolean, council: Council, community: Community) {
+        if (!certificateVoter(voterUUID, council, community)) {
+            return
+        }
         if (isYea) {
             if (!yeaVotes.contains(voterUUID)) yeaVotes.add(voterUUID)
             nayVotes.remove(voterUUID)
