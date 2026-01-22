@@ -27,6 +27,16 @@ class CouncilVote(
     val nayVotes: MutableList<UUID> = mutableListOf(),
     var isEnacted: Boolean? = null,
 ) {
+    fun castVote(voterUUID: UUID, isYea: Boolean) {
+        if (isYea) {
+            if (!yeaVotes.contains(voterUUID)) yeaVotes.add(voterUUID)
+            nayVotes.remove(voterUUID)
+        } else {
+            if (!nayVotes.contains(voterUUID)) nayVotes.add(voterUUID)
+            yeaVotes.remove(voterUUID)
+        }
+    }
+
     fun finalizeVote(){
         if (this.isEnacted == null) {
             this.isEnacted = yeaVotes.size > nayVotes.size
