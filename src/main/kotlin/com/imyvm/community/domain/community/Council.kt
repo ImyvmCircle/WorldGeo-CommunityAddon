@@ -42,6 +42,10 @@ class CouncilVote(
             this.isEnacted = yeaVotes.size > nayVotes.size
         }
     }
+
+    fun getVoteList(isYea: Boolean): MutableList<UUID> {
+        return if (isYea) yeaVotes else nayVotes
+    }
 }
 
 enum class ExecutionType {
