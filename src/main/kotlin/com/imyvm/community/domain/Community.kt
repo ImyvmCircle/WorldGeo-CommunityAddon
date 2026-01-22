@@ -2,6 +2,7 @@ package com.imyvm.community.domain
 
 import com.imyvm.community.domain.community.CommunityJoinPolicy
 import com.imyvm.community.domain.community.CommunityStatus
+import com.imyvm.community.domain.community.Council
 import com.imyvm.community.domain.community.MemberRoleType
 import com.imyvm.community.util.Translator
 import com.imyvm.community.util.getFormattedMillsHour
@@ -17,6 +18,7 @@ class Community(
     var member: HashMap<UUID, MemberAccount>,
     var joinPolicy: CommunityJoinPolicy,
     var status: CommunityStatus,
+    var council: Council = Council()
 ) {
     fun generateCommunityMark(): String {
         return RegionDataApi.getRegion(this.regionNumberId!!)?.name ?: "Community #${this.regionNumberId}"
