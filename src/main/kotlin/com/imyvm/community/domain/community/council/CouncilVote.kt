@@ -1,5 +1,7 @@
 package com.imyvm.community.domain.community.council
 
+import com.imyvm.community.domain.Community
+import com.imyvm.community.domain.community.Council
 import java.util.*
 
 class CouncilVote(
@@ -28,5 +30,9 @@ class CouncilVote(
 
     fun getVoteList(isYea: Boolean): MutableList<UUID> {
         return if (isYea) yeaVotes else nayVotes
+    }
+
+    private fun certificateVoter(voterUuid: UUID, council: Council, community: Community): Boolean{
+        return council.isCouncilMember(voterUuid, community)
     }
 }
