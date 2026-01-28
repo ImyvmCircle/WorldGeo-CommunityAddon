@@ -13,9 +13,8 @@ class CouncilVote(
     var isEnacted: Boolean? = null,
 ) {
     fun castVote(voterUUID: UUID, isYea: Boolean, council: Council, community: Community) {
-        if (!certificateVoter(voterUUID, council, community)) {
-            return
-        }
+        if (!certificateVoter(voterUUID, council, community)) return
+
         if (isYea) {
             if (!yeaVotes.contains(voterUUID)) yeaVotes.add(voterUUID)
             nayVotes.remove(voterUUID)
