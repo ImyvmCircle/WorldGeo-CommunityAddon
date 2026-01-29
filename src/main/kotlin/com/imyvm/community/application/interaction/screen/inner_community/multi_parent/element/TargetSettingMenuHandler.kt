@@ -2,8 +2,8 @@ package com.imyvm.community.application.interaction.screen.inner_community.multi
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.Community
-import com.imyvm.community.inter.screen.component.getLoreButton
-import com.imyvm.community.inter.screen.inner_community.multi_parent.element.TargetSettingMenu
+import com.imyvm.community.entrypoints.screen.component.getLoreButton
+import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.element.TargetSettingMenu
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.PermissionKey

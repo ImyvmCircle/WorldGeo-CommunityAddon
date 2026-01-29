@@ -2,8 +2,8 @@ package com.imyvm.community.application.interaction.screen.inner_community.opera
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.Community
-import com.imyvm.community.inter.screen.component.getLoreButton
-import com.imyvm.community.inter.screen.inner_community.operation_only.CommunityOperationTeleportPointMenu
+import com.imyvm.community.entrypoints.screen.component.getLoreButton
+import com.imyvm.community.entrypoints.screen.inner_community.operation_only.CommunityOperationTeleportPointMenu
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.inter.api.PlayerInteractionApi

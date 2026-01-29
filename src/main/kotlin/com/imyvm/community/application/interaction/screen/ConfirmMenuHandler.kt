@@ -1,7 +1,7 @@
 package com.imyvm.community.application.interaction.screen
 
 import com.imyvm.community.application.interaction.common.onCreateCommunity
-import com.imyvm.community.inter.screen.component.ConfirmTaskType
+import com.imyvm.community.entrypoints.screen.component.ConfirmTaskType
 import com.imyvm.community.util.Translator
 import net.minecraft.server.network.ServerPlayerEntity
 

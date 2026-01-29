@@ -1,6 +1,6 @@
 package com.imyvm.community.application.interaction.screen
 
-import com.imyvm.community.inter.screen.AbstractMenu
+import com.imyvm.community.entrypoints.screen.AbstractMenu
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.entity.player.PlayerInventory
 import net.minecraft.screen.NamedScreenHandlerFactory

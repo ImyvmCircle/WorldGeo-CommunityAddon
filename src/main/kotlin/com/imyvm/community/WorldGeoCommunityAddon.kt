@@ -1,10 +1,10 @@
 package com.imyvm.community
 
 import com.imyvm.community.domain.PendingOperation
-import com.imyvm.community.inter.command.register
-import com.imyvm.community.inter.event.registerExpireCheck
-import com.imyvm.community.inter.event.registerMailCheck
-import com.imyvm.community.inter.registerDataLoadAndSave
+import com.imyvm.community.entrypoints.command.register
+import com.imyvm.community.entrypoints.event.registerExpireCheck
+import com.imyvm.community.entrypoints.event.registerMailCheck
+import com.imyvm.community.entrypoints.registerDataLoadAndSave
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import org.slf4j.Logger

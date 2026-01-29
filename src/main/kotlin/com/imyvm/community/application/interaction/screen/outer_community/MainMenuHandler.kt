@@ -6,11 +6,11 @@ import com.imyvm.community.domain.Community
 import com.imyvm.community.domain.community.CommunityListFilterType
 import com.imyvm.community.domain.community.MemberRoleType
 import com.imyvm.community.infra.CommunityDatabase
-import com.imyvm.community.inter.screen.inner_community.CommunityMenu
-import com.imyvm.community.inter.screen.outer_community.CommunityCreationMenu
-import com.imyvm.community.inter.screen.outer_community.CommunityListMenu
-import com.imyvm.community.inter.screen.outer_community.MainMenu
-import com.imyvm.community.inter.screen.outer_community.MyCommunityListMenu
+import com.imyvm.community.entrypoints.screen.inner_community.CommunityMenu
+import com.imyvm.community.entrypoints.screen.outer_community.CommunityCreationMenu
+import com.imyvm.community.entrypoints.screen.outer_community.CommunityListMenu
+import com.imyvm.community.entrypoints.screen.outer_community.MainMenu
+import com.imyvm.community.entrypoints.screen.outer_community.MyCommunityListMenu
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.application.interaction.onToggleActionBar
