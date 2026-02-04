@@ -16,7 +16,7 @@ import com.imyvm.economy.EconomyMod
 import com.imyvm.iwg.inter.api.PlayerInteractionApi
 import net.minecraft.server.network.ServerPlayerEntity
 
-fun onCreateCommunity(
+fun onCreateCommunityRequest(
     player: ServerPlayerEntity,
     communityType: String,
     communityName: String,

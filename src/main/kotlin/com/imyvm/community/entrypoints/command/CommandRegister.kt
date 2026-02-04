@@ -1,7 +1,7 @@
 package com.imyvm.community.entrypoints.command
 
 import com.imyvm.community.application.interaction.command.*
-import com.imyvm.community.application.interaction.common.onCreateCommunity
+import com.imyvm.community.application.interaction.common.onCreateCommunityRequest
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.community.CommunityListFilterType
 import com.imyvm.community.entrypoints.command.helper.*
@@ -155,7 +155,7 @@ private fun runCreateCommunity(context: CommandContext<ServerCommandSource>): In
     val communityType = StringArgumentType.getString(context, "communityType").lowercase(Locale.getDefault())
     val name = StringArgumentType.getString(context, "name")
     val shapeName = StringArgumentType.getString(context, "shapeType").uppercase(Locale.getDefault())
-    return onCreateCommunity(player, communityType, name, shapeName)
+    return onCreateCommunityRequest(player, communityType, name, shapeName)
 }
 
 private fun runForceDeleteCommunity(context: CommandContext<ServerCommandSource>): Int {

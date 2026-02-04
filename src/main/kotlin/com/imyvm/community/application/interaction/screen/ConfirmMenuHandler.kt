@@ -1,6 +1,6 @@
 package com.imyvm.community.application.interaction.screen
 
-import com.imyvm.community.application.interaction.common.onCreateCommunity
+import com.imyvm.community.application.interaction.common.onCreateCommunityRequest
 import com.imyvm.community.entrypoints.screen.component.ConfirmTaskType
 import com.imyvm.community.util.Translator
 import net.minecraft.server.network.ServerPlayerEntity
@@ -28,7 +28,7 @@ private fun runCommunityCreation(
     if (communityType == null || communityName == null || shapeName == null) {
         playerExecutor.sendMessage(Translator.tr("ui.confirm.creation.error.missing_data"))
     } else {
-        onCreateCommunity(
+        onCreateCommunityRequest(
             player = playerExecutor,
             communityType = communityType,
             communityName = communityName,
