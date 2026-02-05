@@ -98,10 +98,10 @@ class CommunityConfig : HokiConfig("Community.conf") {
 
         @JvmField
         @ConfigOption
-        val APPLICATION_EXPIRE_HOURS = Option(
-            "community.application_expire_hours",
+        val REALM_REQUEST_EXPIRE_HOURS = Option(
+            "community.realm_request_expire_hours",
             48,
-            "the number of hours after which a community application expires."
+            "the number of hours after which a community request of realm type expires."
         ) { obj, path ->
             obj.getInt(path)
         }

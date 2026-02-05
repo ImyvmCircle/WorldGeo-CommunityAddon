@@ -5,8 +5,8 @@ import com.imyvm.community.application.helper.refundNotCreated
 import com.imyvm.community.domain.Community
 import com.imyvm.community.domain.PendingOperation
 import com.imyvm.community.domain.PendingOperationType
-import com.imyvm.community.domain.community.MemberRoleType
 import com.imyvm.community.domain.community.CommunityStatus
+import com.imyvm.community.domain.community.MemberRoleType
 import com.imyvm.community.infra.CommunityConfig
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.Translator
@@ -38,9 +38,9 @@ private fun handleExpiredOperation(
     }
 
     when (operation.type) {
-        PendingOperationType.CREATE_COMMUNITY_RECRUITMENT -> {
+        PendingOperationType.CREATE_COMMUNITY_REALM_REQUEST_RECRUITMENT -> {
             promoteCommunityIfEligible(regionId, community)
-            removeExpiredApplication(regionId, community, server)
+            removeExpiredRealmRequest(regionId, community, server)
         }
 
         else -> {
@@ -59,12 +59,12 @@ private fun promoteCommunityIfEligible(regionId: Int, community: Community) {
         community.member.count { community.getMemberRole(it.key) != MemberRoleType.APPLICANT } >= CommunityConfig.MIN_NUMBER_MEMBER_REALM.value &&
         community.status == CommunityStatus.PENDING_REALM
     ) {
-        addAuditingApplicationRealm(regionId, community)
+        addAuditingRequestRealm(regionId, community)
         WorldGeoCommunityAddon.logger.info("Community $regionId promoted to auditing stage.")
     }
 }
 
-private fun removeExpiredApplication(regionId: Int, community: Community, server: MinecraftServer) {
+private fun removeExpiredRealmRequest(regionId: Int, community: Community, server: MinecraftServer) {
     val ownerEntry = community.member.entries.find { community.getMemberRole(it.key) == MemberRoleType.OWNER } ?: return
     val ownerPlayer = server.playerManager?.getPlayer(ownerEntry.key) ?: return
 
@@ -89,11 +89,11 @@ private fun removePendingOperation(
         ?.sendMessage(Translator.tr("pending.expired", operationType), false)
 }
 
-private fun addAuditingApplicationRealm(regionId: Int, community: Community) {
+private fun addAuditingRequestRealm(regionId: Int, community: Community) {
     WorldGeoCommunityAddon.pendingOperations[regionId] = PendingOperation(
         expireAt = System.currentTimeMillis() + CommunityConfig.AUDITING_EXPIRE_HOURS.value * 3600 * 1000,
-        type = PendingOperationType.AUDITING_COMMUNITY_APPLICATION
+        type = PendingOperationType.AUDITING_COMMUNITY_REQUEST
     )
     community.status = CommunityStatus.PENDING_REALM
-    WorldGeoCommunityAddon.logger.info("Community application $regionId moved to auditing stage.")
+    WorldGeoCommunityAddon.logger.info("Community request $regionId moved to auditing stage.")
 }

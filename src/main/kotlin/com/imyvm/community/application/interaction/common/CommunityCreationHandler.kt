@@ -37,8 +37,8 @@ fun onCreateCommunityRequest(
 
     val regionNumberId = region.numberID
 
-    initialApplication(player, communityName, communityType, regionNumberId)
-    handleApplicationBranches(player, communityType, regionNumberId)
+    initialRequest(player, communityName, communityType, regionNumberId)
+    handleRequestBranches(player, communityType, regionNumberId)
     return 1
 }
 
@@ -60,7 +60,7 @@ private fun chargeFromApplicator(player: ServerPlayerEntity, communityType: Stri
     }
 }
 
-private fun initialApplication(player: ServerPlayerEntity, name: String, communityType: String, regionNumberId: Int) {
+private fun initialRequest(player: ServerPlayerEntity, name: String, communityType: String, regionNumberId: Int) {
     val community = Community(
         regionNumberId = regionNumberId,
         member = hashMapOf(player.uuid to MemberAccount(
@@ -79,18 +79,18 @@ private fun initialApplication(player: ServerPlayerEntity, name: String, communi
     player.sendMessage(Translator.tr("community.create.request.initial.success", name, community.regionNumberId))
 }
 
-private fun handleApplicationBranches(player: ServerPlayerEntity, communityType: String, regionNumberId: Int) {
+private fun handleRequestBranches(player: ServerPlayerEntity, communityType: String, regionNumberId: Int) {
     if (communityType.equals("manor", ignoreCase = true)) {
         player.sendMessage(Translator.tr("community.create.request.sent"))
         WorldGeoCommunityAddon.pendingOperations[regionNumberId] = PendingOperation(
             expireAt = System.currentTimeMillis() + CommunityConfig.AUDITING_EXPIRE_HOURS.value * 3600 * 1000,
-            type = PendingOperationType.AUDITING_COMMUNITY_APPLICATION
+            type = PendingOperationType.AUDITING_COMMUNITY_REQUEST
         )
     } else if (communityType.equals("realm", ignoreCase = true)) {
         player.sendMessage(Translator.tr("community.create.request.recruitment", CommunityConfig.MIN_NUMBER_MEMBER_REALM.value))
         WorldGeoCommunityAddon.pendingOperations[regionNumberId] = PendingOperation(
-            expireAt = System.currentTimeMillis() + CommunityConfig.APPLICATION_EXPIRE_HOURS.value * 3600 * 1000,
-            type = PendingOperationType.CREATE_COMMUNITY_RECRUITMENT
+            expireAt = System.currentTimeMillis() + CommunityConfig.REALM_REQUEST_EXPIRE_HOURS.value * 3600 * 1000,
+            type = PendingOperationType.CREATE_COMMUNITY_REALM_REQUEST_RECRUITMENT
         )
     }
 }
