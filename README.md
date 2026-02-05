@@ -14,7 +14,19 @@ A **community** is a player organization linked to a valid and exclusive region 
 
 Players can establish two types of communities, manors (small-scale) or realms (large-scale). Realms have higher entry requirements but offer a **substantially higher ceiling**. Unlike manors, where expenses **surge** over time, realms benefit from decreasing marginal development costs as they grow.
 
+#### Status
 
+Every community, whether a modest **Manor** or a sprawling **Realm**, exists in a specific state that dictates what players can do. 
+
+`RECRUITING` is an unique status to realms, during which a realm may gather sufficient members to enter into the next stage, or it will be revoked. At this stage, only the coomunity name, join policy and the membership be adminstrated. Member who joined the community may also leave it.
+
+`PENDING` is a status where the community request meets the automatic requirements and waits for a Server operator to audit it. The administrative power of a pending community is the same as that of a recruiting community.
+
+In `ACTIVE` status, all available adminstration power of a community is unlocked, and may be exercised freely. A council may be called by the owner to act as an agent.
+
+If a community is in `REVOKED` status, however, its owner and members is restricted from all actions, including leave it. Server operators may adopt an approach to handle it in time, whether making it an eligible community again or delete it.
+
+Technically, types and status are combined as one parameter of a community.
 
 ### Community Creation
 
