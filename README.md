@@ -67,6 +67,12 @@ Once the request is sent, it will undergo the automatic inspections certificatin
 
 Server operators possess the permission **auditing the proto-communities**. If not passes, a community is revoked. Conversly, it becomes an **active community**.
 
+### Community Administration
+
+### Membership
+
+
+
 
 ## Acknowledgements
 
