@@ -10,7 +10,7 @@ import net.minecraft.item.Items
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
 
-class CommunityOperationMenu(
+class CommunityAdministrationMenu(
     syncId: Int,
     community: Community,
     playerExecutor: ServerPlayerEntity,
@@ -30,19 +30,19 @@ class CommunityOperationMenu(
             slot = 10,
             name = Translator.tr("ui.community.operation.button.name")?.string ?: "Community Name",
             item = Items.NAME_TAG
-        ) { runOPRenameCommunity(player, community, runBack) }
+        ) { runAdmRenameCommunity(player, community, runBack) }
 
         addButton(
             slot = 11,
             name = Translator.tr("ui.community.operation.button.members")?.string ?: "Manage Members",
             item = Items.PLAYER_HEAD
-        ) { runOpManageMembers(player, community, runBack) }
+        ) { runAdmManageMembers(player, community, runBack) }
 
         addButton(
             slot = 12,
             name = Translator.tr("ui.community.operation.button.audit")?.string ?: "Community Audit",
             item = Items.REDSTONE_TORCH
-        ){ runOPAuditRequests(player, community, runBack) }
+        ){ runAdmAuditRequests(player, community, runBack) }
 
         addButton(
             slot = 13,
@@ -54,7 +54,7 @@ class CommunityOperationMenu(
             slot = 14,
             name = Translator.tr("ui.community.operation.button.advancement")?.string ?: "Advancement",
             item = Items.ITEM_FRAME
-        ) { runOPAdvancement(player, community, runBack) }
+        ) { runAdmAdvancement(player, community, runBack) }
 
         addButton(
             slot = 15,
@@ -66,19 +66,19 @@ class CommunityOperationMenu(
             slot = 19,
             name = Translator.tr("ui.community.operation.button.region.geometry")?.string ?: "Region Geometry Modification",
             item = Items.MAP
-        ){ runOPRegion(player, community, geographicFunctionType = GeographicFunctionType.GEOMETRY_MODIFICATION, runBack) }
+        ){ runAdmRegion(player, community, geographicFunctionType = GeographicFunctionType.GEOMETRY_MODIFICATION, runBack) }
 
         addButton(
             slot = 20,
             name = Translator.tr("ui.community.operation.button.region.setting")?.string ?: "Region Settings",
             item = Items.HEART_OF_THE_SEA
-        ){ runOPRegion(player, community, geographicFunctionType = GeographicFunctionType.SETTING_ADJUSTMENT, runBack) }
+        ){ runAdmRegion(player, community, geographicFunctionType = GeographicFunctionType.SETTING_ADJUSTMENT, runBack) }
 
         addButton(
             slot = 21,
             name = Translator.tr("ui.community.operation.button.teleport")?.string ?: "Teleport Point Management",
             item = Items.ENDER_PEARL
-        ) { runOPRegion(player, community, geographicFunctionType = GeographicFunctionType.TELEPORT_POINT_LOCATING, runBack)}
+        ) { runAdmRegion(player, community, geographicFunctionType = GeographicFunctionType.TELEPORT_POINT_LOCATING, runBack)}
     }
 
     private fun addChangeableButtons(player: ServerPlayerEntity, community: Community) {
@@ -91,7 +91,7 @@ class CommunityOperationMenu(
                 CommunityJoinPolicy.APPLICATION -> Items.YELLOW_WOOL
                 CommunityJoinPolicy.INVITE_ONLY -> Items.RED_WOOL
             }
-        ) { runOPChangeJoinPolicy(player, community, community.joinPolicy, runBack) }
+        ) { runAdmChangeJoinPolicy(player, community, community.joinPolicy, runBack) }
     }
 
     companion object {

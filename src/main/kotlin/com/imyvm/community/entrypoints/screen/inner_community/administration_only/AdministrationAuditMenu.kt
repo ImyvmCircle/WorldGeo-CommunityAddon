@@ -1,4 +1,4 @@
-package com.imyvm.community.entrypoints.screen.inner_community.operation_only
+package com.imyvm.community.entrypoints.screen.inner_community.administration_only
 
 import com.imyvm.community.application.interaction.screen.inner_community.operation_only.runAccept
 import com.imyvm.community.application.interaction.screen.inner_community.operation_only.runRefuse
@@ -10,7 +10,7 @@ import net.minecraft.item.Items
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
 
-class CommunityOperationAuditMenu(
+class AdministrationAuditMenu(
     syncId: Int,
     community: Community,
     private val playerExecutor: ServerPlayerEntity,
@@ -18,7 +18,7 @@ class CommunityOperationAuditMenu(
     runBack: (ServerPlayerEntity) -> Unit
 ): AbstractMenu(
     syncId,
-    menuTitle = generateCommunityOperationAuditMenuTitle(playerObject),
+    menuTitle = generateAdministrationAuditMenuTitle(playerObject),
     runBack = runBack
 ) {
     init {
@@ -35,7 +35,7 @@ class CommunityOperationAuditMenu(
         ) { runRefuse(community, playerExecutor, playerObject) }
     }
     companion object {
-        fun generateCommunityOperationAuditMenuTitle(playerObject: GameProfile): Text =
+        fun generateAdministrationAuditMenuTitle(playerObject: GameProfile): Text =
             Text.of((Translator.tr("ui.community.operation.audit.title")?.string ?: "Audit") + playerObject.name)
     }
 }

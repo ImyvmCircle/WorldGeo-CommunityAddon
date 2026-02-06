@@ -1,4 +1,4 @@
-package com.imyvm.community.entrypoints.screen.inner_community.operation_only
+package com.imyvm.community.entrypoints.screen.inner_community.administration_only
 
 import com.imyvm.community.application.interaction.screen.inner_community.operation_only.*
 import com.imyvm.community.domain.Community
@@ -10,7 +10,7 @@ import net.minecraft.item.Items
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
 
-class CommunityOperationTeleportPointMenu(
+class AdministrationTeleportPointMenu(
     syncId: Int,
     playerExecutor: ServerPlayerEntity,
     community: Community,

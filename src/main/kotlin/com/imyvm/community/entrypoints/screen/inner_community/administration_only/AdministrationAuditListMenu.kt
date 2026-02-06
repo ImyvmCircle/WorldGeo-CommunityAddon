@@ -1,4 +1,4 @@
-package com.imyvm.community.entrypoints.screen.inner_community.operation_only
+package com.imyvm.community.entrypoints.screen.inner_community.administration_only
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.Community
@@ -13,7 +13,7 @@ import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
 import java.util.*
 
-class CommunityOperationAuditListMenu(
+class AdministrationAuditListMenu(
     syncId: Int,
     private val community: Community,
     private val playerExecutor: ServerPlayerEntity,
@@ -51,7 +51,7 @@ class CommunityOperationAuditListMenu(
 
     override fun openNewPage(player: ServerPlayerEntity, newPage: Int) {
         CommunityMenuOpener.open(player) { syncId ->
-            CommunityOperationAuditListMenu(
+            AdministrationAuditListMenu(
                 syncId,
                 community = community,
                 playerExecutor = playerExecutor,
@@ -82,14 +82,14 @@ class CommunityOperationAuditListMenu(
 
     private fun runOpenAuditMemberMenu(objectProfile: GameProfile){
         CommunityMenuOpener.open(playerExecutor) { syncId ->
-            CommunityOperationAuditMenu(
+            AdministrationAuditMenu(
                 syncId,
                 community = community,
                 playerExecutor = playerExecutor,
                 playerObject = objectProfile
             ) {
                 CommunityMenuOpener.open(playerExecutor) { newSyncId ->
-                    CommunityOperationAuditListMenu(
+                    AdministrationAuditListMenu(
                         newSyncId,
                         community = community,
                         playerExecutor = playerExecutor,

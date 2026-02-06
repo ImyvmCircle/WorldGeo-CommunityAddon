@@ -7,7 +7,7 @@ import com.imyvm.community.domain.MemberAccount
 import com.imyvm.community.domain.community.MemberRoleType
 import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.element.CommunityMemberMenu
 import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.CommunityRegionScopeMenu
-import com.imyvm.community.entrypoints.screen.inner_community.operation_only.CommunityNotificationMenuAnvil
+import com.imyvm.community.entrypoints.screen.inner_community.administration_only.NotificationMenuAnvil
 import com.imyvm.community.util.Translator
 import com.imyvm.community.util.Translator.trMenu
 import com.mojang.authlib.GameProfile
@@ -58,7 +58,7 @@ fun runNotifyMember(
     playerExecutor: ServerPlayerEntity,
     playerObject: GameProfile
 ) {
-    val handler = CommunityNotificationMenuAnvil(
+    val handler = NotificationMenuAnvil(
         playerExecutor,
         initialName = Translator.tr("ui.community.operation.member.notify.to_edit")?.string ?: "(Edit your notification here)",
         playerObject = playerObject,

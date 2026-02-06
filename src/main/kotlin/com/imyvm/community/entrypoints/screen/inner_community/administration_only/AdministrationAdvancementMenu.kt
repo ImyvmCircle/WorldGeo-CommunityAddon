@@ -1,11 +1,11 @@
-package com.imyvm.community.entrypoints.screen.inner_community.operation_only
+package com.imyvm.community.entrypoints.screen.inner_community.administration_only
 
 import com.imyvm.community.domain.Community
 import com.imyvm.community.entrypoints.screen.AbstractMenu
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
 
-class CommunityOperationAdvancementMenu(
+class AdministrationAdvancementMenu(
     syncId: Int,
     community: Community,
     playerExecutor: ServerPlayerEntity,

@@ -12,7 +12,7 @@ import net.minecraft.server.network.ServerPlayerEntity
 
 fun runOpenOperationMenu(player: ServerPlayerEntity, community: Community, runBackGrandfather : ((ServerPlayerEntity) -> Unit)) {
     CommunityMenuOpener.open(player) { syncId ->
-        CommunityOperationMenu(syncId, community, player) { runBackToCommunityMenu(player, community, runBackGrandfather) }
+        CommunityAdministrationMenu(syncId, community, player) { runBackToCommunityMenu(player, community, runBackGrandfather) }
     }
 }
 
