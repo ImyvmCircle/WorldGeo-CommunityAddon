@@ -136,6 +136,23 @@
   "ui.community.operation.button.advancement": "Advancement Plan",
   "ui.community.operation.button.assets": "Manage Assets",
   "ui.community.operation.button.region.geometry": "Region Geometry Modification",
+
+  "ui.community.assets.title": "Community Assets",
+  "ui.community.assets.total": "Total Assets",
+  "ui.community.assets.donate": "Donate",
+  "ui.community.assets.donor_list": "Donor List",
+
+  "ui.community.assets.donate.title": "Donate to Community",
+  "ui.community.assets.donate.amount": "Donate",
+  "ui.community.assets.donate.success": "Successfully donated ${0} to the community.",
+  "ui.community.assets.donate.error.insufficient_funds": "You do not have enough currency to donate this amount.",
+  "ui.community.assets.donate.error.not_member": "You must be a member of the community to donate.",
+
+  "ui.community.assets.donor_list.title": "Community Donors",
+  
+  "ui.community.assets.donor_details.title": "Donor Details",
+  "ui.community.assets.turnover": "Donation Record",
+
   "ui.community.operation.button.region.setting": "Region Setting Items Modification",
   "ui.community.operation.button.join_policy": "Join Policy: ",
   "ui.community.operation.button.teleport": "Manage Teleport Point",

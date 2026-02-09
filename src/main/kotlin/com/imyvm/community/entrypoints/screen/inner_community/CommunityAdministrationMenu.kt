@@ -1,6 +1,7 @@
 package com.imyvm.community.entrypoints.screen.inner_community
 
 import com.imyvm.community.application.interaction.screen.inner_community.*
+import com.imyvm.community.application.interaction.screen.inner_community.runOpenAssetsMenu
 import com.imyvm.community.domain.Community
 import com.imyvm.community.domain.GeographicFunctionType
 import com.imyvm.community.domain.community.CommunityJoinPolicy
@@ -60,7 +61,7 @@ class CommunityAdministrationMenu(
             slot = 15,
             name = Translator.tr("ui.community.operation.button.assets")?.string ?: "Assets",
             item = Items.EMERALD_ORE
-        ) {}
+        ) { runOpenAssetsMenu(player, community, runBack) }
 
         addButton(
             slot = 19,

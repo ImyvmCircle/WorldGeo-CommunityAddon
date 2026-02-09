@@ -18,7 +18,7 @@ Players can establish two types of communities, manors (small-scale) or realms (
 
 Every community, whether a modest **Manor** or a sprawling **Realm**, exists in a specific state that dictates what players can do. 
 
-`RECRUITING` is a unique status to realms, during which a realm may gather sufficient members to enter into the next stage, or it will be revoked. At this stage, only the coomunity name, join policy and the membership be adminstrated. Member who joined the community may also leave it.
+`RECRUITING` is a unique status to realms, during which a realm may gather sufficient members to enter into the next stage, or it will be revoked. At this stage, only the community name, join policy and the membership be administrated. Member who joined the community may also leave it.
 
 `PENDING` is a status where the community request meets the automatic requirements and waits for a Server operator to audit it. The administrative power of a pending community is the same as that of a recruiting community.
 
@@ -36,7 +36,7 @@ To create a community, a player who desires to be the founder and the owner may 
 
 A **community creation request** may be initialized spontaneously by any player trying to inaugurate one, providing
 
-- that the player is not at the time of application, **a member of any other community of the same *community type***, which may be choosen when initiating the creation request;
+- that the player is not at the time of application, **a member of any other community of the same *community type***, which may be chosen when initiating the creation request;
 
 * that the player delineates a **valid region(scope) prototype**, which shall be understood as an area defined by 
     * a set of **points projected on (x,z) plane**, and these points are selected by right-click positions in the Minecraft world with a command block in hand, when the player has already entered **selection mode**, which
@@ -55,7 +55,7 @@ A **community creation request** may be initialized spontaneously by any player 
     * that a `MANOR` is charged 15000 by default; and
     * that a `REALM` is charged 30000 by default.
 
-When criteria above are achieved, a player may **initializing the creation request**, and the player
+When criteria above are achieved, a player may **initialize the creation request**, and the player
 
 - defines the `Community Name`, `Community Type` and `GeoShapeType` in this step;
 - may use the command `/community create <geoShapeType> <communityType> [communityName]`; and
@@ -63,9 +63,9 @@ When criteria above are achieved, a player may **initializing the creation reque
 
 #### Automatic Inspection and Proto-Community
 
-Once the request is sent, it will undergo the automatic inspections certificating conditions mentioned in order. Violations of these conditions may be reported by a message sending to the player. And if the request passed the inspections,  the player executing the process is charged, and a **proto-community** is created. Whether the proto-community becomes a **pending community** immediately is also decide by the community type. Whereas a realm stays in the recruiting status until it reaches the mininum requirement of realm population, which is, by default, 4 players, a manor becomes a **pending manor** directly. And a realm needs to recruit sufficient player in 48 hours(in reality) after executing the community request initialization, or it will become a revoked community, and the creation fee will be refunded, Once a realm reaches the population requirement, it also becomes a **pending realm**.
+Once the request is sent, it will undergo the automatic inspections certificating conditions mentioned in order. Violations of these conditions may be reported by a message sending to the player. And if the request passed the inspections,  the player executing the process is charged, and a **proto-community** is created. Whether the proto-community becomes a **pending community** immediately is also decide by the community type. Whereas a realm stays in the recruiting status until it reaches the minimum requirement of realm population, which is, by default, 4 players, a manor becomes a **pending manor** directly. And a realm needs to recruit sufficient player in 48 hours(in reality) after executing the community request initialization, or it will become a revoked community, and the creation fee will be refunded, Once a realm reaches the population requirement, it also becomes a **pending realm**.
 
-Server operators possess the permission **auditing the proto-communities**. If not passes, a community is revoked. Conversly, it becomes an **active community**.
+Server operators possess the permission **auditing the proto-communities**. If not passes, a community is revoked. Conversely, it becomes an **active community**.
 
 ### Community Administration
 
@@ -76,7 +76,7 @@ A community's owner and administrators possess extensive management capabilities
 - **Community Audit** - Review and process membership applications when join policy requires approval;
 - **Announcement** - Post announcements to all members;
 - **Advancement** *()* - Manage community achievements and progression systems;
-- **Assets** *()* - Administer community resources and treasury;
+- **Assets** - Administer community resources and treasury;
 - **Region Geometry** - Modify the community's geographical boundaries and shape;
 - **Region Settings** - Adjust properties and rules for the community's region;
 - **Teleport Points** - Create and manage teleportation destinations within the region; and
@@ -146,13 +146,13 @@ Members may interact with their community through the **Community Menu**, access
 - **Description** - View detailed information about the community's region;
 - **Announcement** *()* - View community announcements;
 - **Members** - Browse the complete member list;
-- **Assets** *()* - View community resources;
+- **Assets** - View and manage community resources and donations;
 - **Settings** - Adjust personal community preferences through the **Community Setting Menu**;
 - **Teleport to Community** - Instant teleportation to the community's main location;
 - **Teleportation Scope** - Select specific teleportation destinations within the community;
 - **Community Chat** *()* - Access community messaging system;
 - **Advancement** *()* - View community achievements;
-- **Donate to Community** *()* - Contribute resources to the community;
+- **Donate to Community** - Contribute currency to the community (opens the Assets menu);
 - **Community Shop** *()* - Access the community marketplace;
 - **Like Community** *()* - Rate the community;
 - **Leave Community** *()* - Exit the community; and
@@ -187,6 +187,54 @@ The council implements a formal voting mechanism through the `CouncilVote` class
   - `CHANGE_JOIN_POLICY` - Modifications to the join policy.
 
 All active votes are maintained in a `voteSet` within the council, allowing multiple concurrent proposals.
+
+### Assets System
+
+Communities maintain a treasury that tracks all member donations. Any player who is a member of a community (excluding those with `APPLICANT` or `REFUSED` status) may donate currency to support the community.
+
+#### Donation Process
+
+Members may donate through the **Community Assets Menu**, accessible via:
+
+- The **Assets** button in the Community Menu (description section); or
+- The **Donate to Community** button in the Community Menu (interaction section); or
+- The **Assets** button in the Community Administration Menu (for administrators).
+
+The donation menu presents six predefined amounts: **1.00**, **5.00**, **10.00**, **50.00**, **100.00**, and **500.00** (displayed as currency values divided by 100). When a member selects an amount:
+
+- The system verifies the member has sufficient currency;
+- The currency is deducted from the member's account;
+- A `Turnover` record is created containing:
+  - `amount` - The donation amount (integer);
+  - `timestamp` - The time of donation (long); and
+- The turnover is added to the member's `turnover` list in their member account.
+
+#### Asset Inquiry
+
+The **Community Assets Menu** displays:
+
+- **Total Assets** - The sum of all donations from all members, displayed prominently as a gold block with formatted currency value;
+- **Donate** button - Opens the donation menu for contributing currency; and
+- **Donor List** button - Opens the comprehensive donor list.
+
+#### Donor List
+
+The **Donor List Menu** presents all members who have made donations, sorted by total contribution in descending order. The list displays:
+
+- Each donor represented by their player head;
+- Total donation amount displayed beneath each donor's name; and
+- Pagination supporting 45 donors per page.
+
+Selecting a donor opens the **Donor Details Menu**, which shows:
+
+- The donor's profile with total donation amount; and
+- Up to 14 individual turnover records (most recent first), each displaying:
+  - Donation amount;
+  - Timestamp formatted as readable date and time.
+
+#### Technical Implementation
+
+Each member account maintains a `turnover` ArrayList that records all donation history. The community's total assets are calculated dynamically by summing the `getTotalDonation()` method across all members, which aggregates each member's turnover records. The `getDonorList()` method returns member UUIDs sorted by total contribution, enabling efficient display of the most generous supporters.
 
 ### Community Discovery
 

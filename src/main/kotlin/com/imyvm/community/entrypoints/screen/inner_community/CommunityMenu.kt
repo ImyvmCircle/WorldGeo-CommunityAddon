@@ -1,6 +1,7 @@
 package com.imyvm.community.entrypoints.screen.inner_community
 
 import com.imyvm.community.application.interaction.screen.inner_community.*
+import com.imyvm.community.application.interaction.screen.inner_community.runOpenAssetsMenu
 import com.imyvm.community.domain.Community
 import com.imyvm.community.domain.community.MemberRoleType
 import com.imyvm.community.entrypoints.screen.AbstractMenu
@@ -69,7 +70,7 @@ class CommunityMenu(
             slot = 21,
             name = Translator.tr("ui.community.button.description.assets")?.string ?: "Asset",
             item = Items.GOLD_INGOT
-        ) {}
+        ) { runOpenAssetsMenu(player, community, runBack) }
     }
 
     private fun addInteractionButton(){
@@ -107,7 +108,7 @@ class CommunityMenu(
             slot = 30,
             name = Translator.tr("ui.community.button.interaction.donate")?.string ?: "Donate to Community",
             item = Items.EMERALD
-        ) {}
+        ) { runOpenAssetsMenu(player, community, runBack) }
 
         addButton(
             slot = 31,

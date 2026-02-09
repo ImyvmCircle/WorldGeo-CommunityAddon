@@ -98,4 +98,15 @@ class Community(
         }
         return true
     }
+
+    fun getTotalAssets(): Int {
+        return member.values.sumOf { it.getTotalDonation() }
+    }
+
+    fun getDonorList(): List<UUID> {
+        return member.entries
+            .filter { it.value.turnover.isNotEmpty() }
+            .sortedByDescending { it.value.getTotalDonation() }
+            .map { it.key }
+    }
 }
