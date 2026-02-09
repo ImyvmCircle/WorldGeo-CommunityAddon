@@ -22,7 +22,7 @@ Every community, whether a modest **Manor** or a sprawling **Realm**, exists in 
 
 `PENDING` is a status where the community request meets the automatic requirements and waits for a Server operator to audit it. The administrative power of a pending community is the same as that of a recruiting community.
 
-In `ACTIVE` status, all available adminstration power of a community is unlocked, and may be exercised freely. A council may be called by the owner to act as an agent.
+In `ACTIVE` status, all available administration power of a community is unlocked, and may be exercised freely. A council may be called by the owner to act as an agent.
 
 If a community is in `REVOKED` status, however, its owner and members is restricted from all actions, including leave it. Server operators may adopt an approach to handle it in time, whether making it an eligible community again or delete it.
 
@@ -61,7 +61,7 @@ When criteria above are achieved, a player may **initializing the creation reque
 - may use the command `/community create <geoShapeType> <communityType> [communityName]`; and
 - may left-click the `Create Community` button in the box-interface `Community Main Menu`, set the community information in this step as mentioned, left-click `Confirm Creation` button, and then `Confirm` again.
 
-#### Automatic Inspection and Proto-Communtiy
+#### Automatic Inspection and Proto-Community
 
 Once the request is sent, it will undergo the automatic inspections certificating conditions mentioned in order. Violations of these conditions may be reported by a message sending to the player. And if the request passed the inspections,  the player executing the process is charged, and a **proto-community** is created. Whether the proto-community becomes a **pending community** immediately is also decide by the community type. Whereas a realm stays in the recruiting status until it reaches the mininum requirement of realm population, which is, by default, 4 players, a manor becomes a **pending manor** directly. And a realm needs to recruit sufficient player in 48 hours(in reality) after executing the community request initialization, or it will become a revoked community, and the creation fee will be refunded, Once a realm reaches the population requirement, it also becomes a **pending realm**.
 
