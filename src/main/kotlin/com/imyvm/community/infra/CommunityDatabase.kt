@@ -172,11 +172,11 @@ object CommunityDatabase {
             stream.writeInt(vote.executionType.ordinal)
             stream.writeLong(vote.proposeTime)
 
-            if (vote.proposorUUID == null) {
+            if (vote.proposerUUID == null) {
                 stream.writeBoolean(false)
             } else {
                 stream.writeBoolean(true)
-                stream.writeUTF(vote.proposorUUID.toString())
+                stream.writeUTF(vote.proposerUUID.toString())
             }
 
             stream.writeInt(vote.yeaVotes.size)
@@ -237,7 +237,7 @@ object CommunityDatabase {
             voteSet.add(CouncilVote(
                 executionType = executionType,
                 proposeTime = proposeTime,
-                proposorUUID = proposerUUID,
+                proposerUUID = proposerUUID,
                 yeaVotes = yeaVotes,
                 nayVotes = nayVotes,
                 isEnacted = isEnacted

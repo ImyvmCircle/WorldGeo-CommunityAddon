@@ -7,7 +7,7 @@ import java.util.*
 class CouncilVote(
     val executionType: ExecutionType = ExecutionType.DEFAULT,
     val proposeTime: Long = 0L,
-    val proposorUUID: UUID? = null,
+    val proposerUUID: UUID? = null,
     val yeaVotes: MutableList<UUID> = mutableListOf(),
     val nayVotes: MutableList<UUID> = mutableListOf(),
     var isEnacted: Boolean? = null,
