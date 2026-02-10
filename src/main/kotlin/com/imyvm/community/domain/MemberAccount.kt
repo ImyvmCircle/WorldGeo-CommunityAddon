@@ -11,12 +11,12 @@ data class MemberAccount (
     var mail: ArrayList<Text> = arrayListOf(),
     var turnover: ArrayList<Turnover> = arrayListOf()
 ) {
-    fun getTotalDonation(): Int {
+    fun getTotalDonation(): Long {
         return turnover.sumOf { it.amount }
     }
 }
 
 data class Turnover(
-    val amount: Int,
+    val amount: Long,
     val timestamp: Long
 )

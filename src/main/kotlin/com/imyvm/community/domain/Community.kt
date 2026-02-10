@@ -19,6 +19,10 @@ class Community(
     var announcements: MutableList<Announcement> = mutableListOf(),
     var administrationPermissions: AdministrationPermissions = AdministrationPermissions()
 ) {
+    fun isManor(): Boolean {
+        return status == CommunityStatus.PENDING_MANOR || status == CommunityStatus.ACTIVE_MANOR || status == CommunityStatus.REVOKED_MANOR
+    }
+
     fun generateCommunityMark(): String {
         return RegionDataApi.getRegion(this.regionNumberId!!)?.name ?: "Community #${this.regionNumberId}"
     }
@@ -74,7 +78,7 @@ class Community(
             .canExecuteAdministration(playerExecutor, this).isAllowed()
     }
 
-    fun getTotalAssets(): Int {
+    fun getTotalAssets(): Long {
         return member.values.sumOf { it.getTotalDonation() }
     }
 

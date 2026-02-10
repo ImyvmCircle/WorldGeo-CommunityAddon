@@ -138,7 +138,7 @@ class CommunityMenu(
             slot = 33,
             name = Translator.tr("ui.community.button.interaction.leave")?.string ?: "Leave Community",
             item = Items.ZOMBIE_VILLAGER_SPAWN_EGG
-        ) {}
+        ) { runShowLeaveConfirmMenu(player, community, runBack) }
 
         addButton(
             slot = 34,

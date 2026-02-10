@@ -38,7 +38,6 @@ fun checkPlayerMembershipCreation(player: ServerPlayerEntity, communityType: Str
 }
 
 fun checkPlayerMembershipJoin(player: ServerPlayerEntity, community: Community): Boolean {
-    if (player.hasPermissionLevel(2)) return true
     if (isJoinedTarget(player, community)) return false
     if (isJoinedRealmTargetingRealm(player, community)) return false
     if (isJoinedManorTargetingManor(player, community)) return false

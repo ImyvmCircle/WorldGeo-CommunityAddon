@@ -114,7 +114,7 @@ object CommunityDatabase {
 
             stream.writeInt(memberAccount.turnover.size)
             for (turnover in memberAccount.turnover) {
-                stream.writeInt(turnover.amount)
+                stream.writeLong(turnover.amount)
                 stream.writeLong(turnover.timestamp)
             }
         }
@@ -148,7 +148,7 @@ object CommunityDatabase {
             val turnoverSize = stream.readInt()
             val turnoverList = ArrayList<Turnover>(turnoverSize)
             for (k in 0 until turnoverSize) {
-                val amount = stream.readInt()
+                val amount = stream.readLong()
                 val timestamp = stream.readLong()
                 turnoverList.add(Turnover(amount, timestamp))
             }

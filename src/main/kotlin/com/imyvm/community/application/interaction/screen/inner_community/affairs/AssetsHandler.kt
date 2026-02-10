@@ -42,14 +42,14 @@ fun runOpenDonorDetailsMenu(player: ServerPlayerEntity, community: Community, do
     }
 }
 
-fun onDonateConfirm(player: ServerPlayerEntity, community: Community, amount: Int, runBackGrandfather: (ServerPlayerEntity) -> Unit) {
+fun onDonateConfirm(player: ServerPlayerEntity, community: Community, amount: Long, runBackGrandfather: (ServerPlayerEntity) -> Unit) {
     PermissionCheck.executeWithPermission(
         player,
         { PermissionCheck.canDonate(player, community) }
     ) {
         val playerAccount = EconomyMod.data.getOrCreate(player)
         
-        if (playerAccount.money < amount.toLong()) {
+        if (playerAccount.money < amount) {
             player.sendMessage(Translator.tr("ui.community.assets.donate.error.insufficient_funds"))
             player.closeHandledScreen()
             return@executeWithPermission
@@ -62,7 +62,7 @@ fun onDonateConfirm(player: ServerPlayerEntity, community: Community, amount: In
             return@executeWithPermission
         }
 
-        playerAccount.addMoney(-amount.toLong())
+        playerAccount.addMoney(-amount)
         memberAccount.turnover.add(Turnover(amount, System.currentTimeMillis()))
 
         val amountFormatted = "%.2f".format(amount / 100.0)

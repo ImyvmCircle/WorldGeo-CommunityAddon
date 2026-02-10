@@ -1,10 +1,13 @@
 package com.imyvm.community.application.interaction.screen.inner_community
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
+import com.imyvm.community.application.permission.PermissionCheck
 import com.imyvm.community.domain.Community
 import com.imyvm.community.domain.GeographicFunctionType
-import com.imyvm.community.entrypoints.screen.inner_community.*
+import com.imyvm.community.entrypoints.screen.ConfirmMenu
+import com.imyvm.community.entrypoints.screen.component.ConfirmTaskType
 import com.imyvm.community.entrypoints.screen.inner_community.CommunityAdministrationMenu
+import com.imyvm.community.entrypoints.screen.inner_community.CommunityMenu
 import com.imyvm.community.entrypoints.screen.inner_community.affairs.CommunitySettingMenu
 import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.CommunityMemberListMenu
 import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.CommunityRegionScopeMenu
@@ -79,6 +82,31 @@ fun runTeleportToScope(player: ServerPlayerEntity, community: Community, runBack
             community = community,
             geographicFunctionType = GeographicFunctionType.TELEPORT_POINT_EXECUTION,
         ) { runBackToCommunityMenu(player, community, runBackGrandfather) }
+    }
+}
+
+fun runShowLeaveConfirmMenu(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit) {
+    val permissionResult = PermissionCheck.canQuitCommunity(player, community)
+    if (!permissionResult.isAllowed()) {
+        permissionResult.sendFeedback(player)
+        return
+    }
+    
+    val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
+    val cautions = listOf(
+        com.imyvm.community.util.Translator.tr("ui.confirm.leave.caution", communityName)?.string 
+            ?: "Leave $communityName? You cannot undo this action."
+    )
+    
+    CommunityMenuOpener.open(player) { syncId ->
+        ConfirmMenu(
+            syncId = syncId,
+            playerExecutor = player,
+            confirmTaskType = ConfirmTaskType.LEAVE_COMMUNITY,
+            cautions = cautions,
+            runBack = { runBackToCommunityMenu(player, community, runBackGrandfather) },
+            targetCommunity = community
+        )
     }
 }
 

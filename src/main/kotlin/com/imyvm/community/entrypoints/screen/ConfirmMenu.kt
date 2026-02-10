@@ -1,6 +1,7 @@
 package com.imyvm.community.entrypoints.screen
 
 import com.imyvm.community.application.interaction.screen.runConfirmDispatcher
+import com.imyvm.community.domain.Community
 import com.imyvm.community.entrypoints.screen.component.ConfirmTaskType
 import com.imyvm.community.util.Translator
 import net.minecraft.item.Items
@@ -15,7 +16,8 @@ class ConfirmMenu(
     val runBack: (ServerPlayerEntity) -> Unit,
     val communityType: String? = null,
     val communityName: String? = null,
-    val shapeName: String? = null
+    val shapeName: String? = null,
+    val targetCommunity: Community? = null
 ): AbstractMenu(
     syncId = syncId,
     menuTitle = getConfirmMenuTitle(
@@ -51,7 +53,8 @@ class ConfirmMenu(
                 confirmTaskType = confirmTaskType,
                 communityType = communityType,
                 communityName = communityName,
-                shapeName = shapeName
+                shapeName = shapeName,
+                targetCommunity = targetCommunity
             )
         }
     }

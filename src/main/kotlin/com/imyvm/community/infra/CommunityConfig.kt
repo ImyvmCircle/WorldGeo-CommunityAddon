@@ -160,10 +160,10 @@ class CommunityConfig : HokiConfig("Community.conf") {
         @ConfigOption
         val COUNCIL_VOTE_CREATION_COST = Option(
             "council.vote_creation_cost",
-            200,
+            20000L,
             "the cost in community assets to create a council vote."
         ) { obj, path ->
-            obj.getInt(path)
+            obj.getLong(path)
         }
 
         @JvmField
@@ -184,6 +184,26 @@ class CommunityConfig : HokiConfig("Community.conf") {
             "the minimum percentage of council members that must vote for a vote to be valid (0.0 - 1.0)."
         ) { obj, path ->
             obj.getDouble(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val COMMUNITY_JOIN_COST_REALM = Option(
+            "economy.community_join_cost",
+            50000L,
+            "the cost in community assets to join a community."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val COMMUNITY_JOIN_COST_MANOR = Option(
+            "economy.community_join_cost_manor",
+            150000L,
+            "the cost in community assets to join a manor community."
+        ) { obj, path ->
+            obj.getLong(path)
         }
     }
 }

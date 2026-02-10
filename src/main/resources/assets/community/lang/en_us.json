@@ -36,10 +36,18 @@
   "community.join.error.notfound.name": "Community with name {0} not found.",
   "community.join.error.notfound.id": "Community with id {0} not found.",
   "community.join.error.full": "Community {0} is full for it is a manor which can contain up tp {1} members.",
+  "community.join.error.insufficient_assets": "You need {0} assets to join a community. You currently have {1} assets.",
+  "community.join.error.missing_data": "Error: Missing community data for join operation.",
   "community.join.success": "You have successfully joined the community with ID {0}.",
   "community.join.error.already_applied": "You have already applied to join the community with ID {0}.",
   "community.join.applied": "Your application to join community {0} (ID {1}) has been submitted.",
   "community.join.error.invite_only": "The community with ID {0} is invite-only. You cannot join without an invitation.",
+
+  "community.leave.success": "You have successfully left {0}.",
+  "community.leave.error.missing_data": "Error: Missing community data for leave operation.",
+
+  "ui.confirm.join.caution": "Join {0} for {1} assets?",
+  "ui.confirm.leave.caution": "Leave {0}? You cannot undo this action.",
 
   "community.list.empty": "No matching communities found.",
   "community.list.header.pending": "Pending communities waiting for auditing:\n",

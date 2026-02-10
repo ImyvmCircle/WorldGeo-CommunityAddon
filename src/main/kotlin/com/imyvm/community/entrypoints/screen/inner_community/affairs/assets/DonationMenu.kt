@@ -25,7 +25,7 @@ class DonationMenu(
     }
 
     private fun addDonationOptions() {
-        val amounts = listOf(100, 500, 1000, 5000, 10000, 50000)
+        val amounts = listOf(100L, 500L, 1000L, 5000L, 10000L, 50000L)
         val slots = listOf(10, 11, 12, 19, 20, 21)
 
         amounts.forEachIndexed { index, amount ->

@@ -2,6 +2,8 @@ package com.imyvm.community.entrypoints.command
 
 import com.imyvm.community.application.interaction.command.*
 import com.imyvm.community.application.interaction.common.onCreateCommunityRequest
+import com.imyvm.community.application.interaction.common.onJoinCommunity
+import com.imyvm.community.application.interaction.common.onLeaveCommunity
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.community.CommunityListFilterType
 import com.imyvm.community.entrypoints.command.helper.*
@@ -98,6 +100,14 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                         argument("communityIdentifier", StringArgumentType.greedyString())
                             .suggests(JOINABLE_COMMUNITY_PROVIDER)
                             .executes{ runJoin(it) }
+                    )
+            )
+            .then(
+                literal("leave")
+                    .then(
+                        argument("communityIdentifier", StringArgumentType.greedyString())
+                            .suggests(ALL_COMMUNITY_PROVIDER)
+                            .executes{ runLeave(it) }
                     )
             )
             .then(
@@ -270,7 +280,23 @@ private fun runForceActive(context: CommandContext<ServerCommandSource>): Int {
 private fun runJoin(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
     val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
-    return identifierHandler(player, communityIdentifier) { targetCommunity -> onJoinCommunity(player, targetCommunity) }
+    return identifierHandler(player, communityIdentifier) { targetCommunity ->
+        onJoinCommunity(
+            player,
+            targetCommunity
+        )
+    }
+}
+
+private fun runLeave(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    return identifierHandler(player, communityIdentifier) { targetCommunity ->
+        onLeaveCommunity(
+            player,
+            targetCommunity
+        )
+    }
 }
 
 private fun runHelpCommand(context: CommandContext<ServerCommandSource>): Int {
