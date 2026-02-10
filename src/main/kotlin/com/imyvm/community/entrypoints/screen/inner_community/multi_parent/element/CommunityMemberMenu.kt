@@ -4,6 +4,7 @@ import com.imyvm.community.application.interaction.screen.inner_community.multi_
 import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.runOpenPlayerRegionScopeChoice
 import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.runPromoteMember
 import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.runRemoveMember
+import com.imyvm.community.application.permission.PermissionCheck
 import com.imyvm.community.domain.Community
 import com.imyvm.community.domain.community.MemberRoleType
 import com.imyvm.community.entrypoints.screen.AbstractMenu
@@ -28,7 +29,9 @@ class CommunityMemberMenu(
 
     init {
         addDescriptionButtons()
-        if (community.isManageable(playerExecutor, playerObject.id)) addManageButtons()
+        if (PermissionCheck.canManageMember(playerExecutor, community, playerObject.id).isAllowed()) {
+            addManageButtons()
+        }
     }
 
     private fun addDescriptionButtons() {
@@ -42,7 +45,7 @@ class CommunityMemberMenu(
     private fun addManageButtons() {
         addButton(
             slot = 19,
-            name = Translator.tr("ui.community.operation.member.member_page.button.setting")?.string ?: "Setting",
+            name = Translator.tr("ui.community.administration.member.member_page.button.setting")?.string ?: "Setting",
             item = Items.MAP
         ) {
             runOpenPlayerRegionScopeChoice(
@@ -55,20 +58,20 @@ class CommunityMemberMenu(
 
         addButton(
             slot = 21,
-            name = Translator.tr("ui.community.operation.member.member_page.button.remove")?.string ?: "Remove Member",
+            name = Translator.tr("ui.community.administration.member.member_page.button.remove")?.string ?: "Remove Member",
             item = Items.ZOMBIE_VILLAGER_SPAWN_EGG
         ) { runRemoveMember(community, playerExecutor, playerObject) }
 
         addButton(
             slot = 23,
-            name = Translator.tr("ui.community.operation.member.member_page.button.message")?.string ?: "Send Message",
+            name = Translator.tr("ui.community.administration.member.member_page.button.message")?.string ?: "Send Message",
             item = Items.PAPER
         ) { runNotifyMember(community, playerExecutor, playerObject) }
 
         if (community.getMemberRole(playerObject.id) == MemberRoleType.OWNER) {
             addButton(
                 slot = 25,
-                name = Translator.tr("ui.community.operation.member.member_page.button.promote.admin")?.string ?: "Promote to Admin",
+                name = Translator.tr("ui.community.administration.member.member_page.button.promote.admin")?.string ?: "Promote to Admin",
                 item = Items.COMMAND_BLOCK
             ) { runPromoteMember(community, playerExecutor, playerObject) }
         }
@@ -81,7 +84,7 @@ class CommunityMemberMenu(
             return Text.of(
                 "${community.getRegion()?.name}" +
                         " - ${playerObject.name} " +
-                        Translator.tr("ui.community.operation.member.title.component")!!.string
+                        Translator.tr("ui.community.administration.member.title.component")!!.string
             )
         }
     }

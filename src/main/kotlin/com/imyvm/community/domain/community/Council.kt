@@ -5,8 +5,8 @@ import com.imyvm.community.domain.community.council.CouncilVote
 import java.util.*
 
 class Council(
-    val enabled: Boolean = false,
-    val voteSet: Set<CouncilVote> = setOf(),
+    var enabled: Boolean = false,
+    val voteSet: MutableSet<CouncilVote> = mutableSetOf(),
 ) {
     fun isCouncilMember(playerUuid: UUID, community: Community): Boolean {
         val councilMembers = getCouncilMembers(community)

@@ -69,7 +69,7 @@ Server operators possess the permission **auditing the proto-communities**. If n
 
 ### Community Administration
 
-A community's owner and administrators possess extensive management capabilities accessible through the **Community Operations** button in the community menu, which opens the **Community Administration Menu**:
+A community's owner and administrators possess extensive management capabilities accessible through the **Community Administration** button in the community menu, which opens the **Community Administration Menu**:
 
 - **Rename Community** - Modify the community's name through an anvil interface;
 - **Manage Members** - Access comprehensive member management tools;
@@ -81,6 +81,86 @@ A community's owner and administrators possess extensive management capabilities
 - **Region Settings** - Adjust properties and rules for the community's region;
 - **Teleport Points** - Create and manage teleportation destinations within the region; and
 - **Join Policy** - Toggle between `OPEN`, `APPLICATION`, or `INVITE_ONLY` policies, displayed in the menu as green, yellow, or red respectively.
+
+#### Permission System
+
+The community implements a comprehensive permission system that governs what operations members can perform based on their **role**, the **community status**, and **owner-configured permission toggles**.
+
+##### Permission Hierarchy
+
+**OWNER (Full Authority)**
+- Possesses unrestricted access to all administration functions regardless of permission settings;
+- Can transfer ownership to another member (excluding APPLICANT or REFUSED);
+- Can enable or disable the council system;
+- Can toggle specific administration permissions for administrators and council;
+- **Cannot** promote, demote, or remove themselves;
+- **Cannot** quit the community.
+
+**ADMINISTRATOR (Delegated Authority)**
+- Granted access to administration menus and operations, subject to:
+  - Community must be in `ACTIVE` status;
+  - Specific permission must be enabled by the owner (if applicable);
+- **Cannot** execute operations disabled by the owner;
+- **Cannot** change the community name;
+- **Cannot** promote, demote, or remove the owner, other administrators, or council members;
+- **Can** manage regular members (MEMBER role only);
+- **Can** quit the community.
+
+**COUNCIL (Collective Governance)**
+- Executes operations through passed votes when council is enabled;
+- Subject to the same permission toggles as administrators;
+- **Cannot** execute operations disabled by the owner;
+- **Cannot** promote, demote, or remove the owner;
+- **Cannot** remove other council members;
+- Requires simple majority (yea > nay) for vote enactment.
+
+**MEMBER (Basic Participation)**
+- May view community information and announcements;
+- May donate to the community treasury;
+- May be designated as council member for governance participation;
+- **Cannot** access administration functions unless designated as council member;
+- **Can** quit the community.
+
+**APPLICANT / REFUSED (No Access)**
+- Players with these roles cannot perform any community operations;
+- **APPLICANT** status indicates pending membership review;
+- **REFUSED** status indicates rejected application;
+- When attempting to access a community, these players see status pages explaining their situation.
+
+##### Status-Based Restrictions
+
+**Proto-Community (RECRUITING or PENDING)**
+- Only recruitment-related operations permitted:
+  - Change join policy (OWNER or ADMIN);
+  - Audit new member applications (OWNER or ADMIN);
+  - Quit the community (all members except OWNER);
+- All other administration functions restricted until community becomes ACTIVE.
+
+**Active Community (ACTIVE_MANOR or ACTIVE_REALM)**
+- Full administration capabilities unlocked for members with appropriate roles;
+- Permission system enforced based on role and owner-configured toggles.
+
+**Revoked Community (REVOKED_MANOR or REVOKED_REALM)**
+- **All operations prohibited** for all roles;
+- Members cannot leave, administrators cannot manage;
+- Only server operators can restore or delete the community.
+
+##### Owner Permission Toggles
+
+Owners may individually enable or disable administration operations for **administrators** and **council** through permission management menus:
+
+- `RENAME_COMMUNITY` - Modify community name;
+- `MANAGE_MEMBERS` - Promote, demote, remove members;
+- `AUDIT_APPLICATIONS` - Review membership applications;
+- `MANAGE_ANNOUNCEMENTS` - Create and delete announcements;
+- `MANAGE_ADVANCEMENT` - Administer achievement systems;
+- `MANAGE_ASSETS` - Control community treasury;
+- `MODIFY_REGION_GEOMETRY` - Alter community boundaries;
+- `MODIFY_REGION_SETTINGS` - Adjust region properties;
+- `MANAGE_TELEPORT_POINTS` - Create teleportation destinations;
+- `CHANGE_JOIN_POLICY` - Toggle join policy settings.
+
+By default, all permissions are enabled. Owners may selectively disable specific operations to restrict administrator and council authority while maintaining their own full access.
 
 #### Geographic Functions
 
@@ -160,13 +240,24 @@ Members may interact with their community through the **Community Menu**, access
 
 ### Council System
 
-The **Council** is an independent governance system that may be enabled for a community to facilitate collective decision-making. When enabled, designated council members may participate in voting on significant community matters as an agent acting on behalf of the owner and administrators.
+The **Council** is an independent governance system that may be **enabled or disabled by the owner** to facilitate collective decision-making. When enabled, designated council members may participate in voting on significant community matters, acting as an agent with delegated authority subject to owner-configured permission restrictions.
 
-#### Council Structure
+#### Enabling the Council
 
-- Councils maintain an `enabled` flag indicating whether the system is active for the community;
-- Only members with `isCouncilMember` set to `true` in their member account may participate in council functions; and
+- Only the community **owner** may enable or disable the council system;
+- Council status is stored as the `enabled` flag in the community's council object;
+- Council members may be designated by setting `isCouncilMember` to `true` in member accounts;
 - Council membership is independent of the basic role hierarchy, allowing regular members to participate in governance.
+
+#### Council Authority
+
+Council members collectively execute administration operations through a voting mechanism:
+
+- Council authority is subject to **owner permission toggles**, identical to administrator restrictions;
+- **Cannot** execute operations disabled by the owner;
+- **Cannot** promote, demote, or remove the owner;
+- **Cannot** remove other council members;
+- Must operate through formal votes; individual council members have no unilateral authority.
 
 #### Council Voting
 

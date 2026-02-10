@@ -3,8 +3,8 @@ package com.imyvm.community.entrypoints.screen.outer_community
 import com.imyvm.community.application.interaction.common.filterCommunitiesByType
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.application.interaction.screen.outer_community.runSwitchFilterMode
-import com.imyvm.community.domain.Community
 import com.imyvm.community.domain.community.CommunityListFilterType
+import com.imyvm.community.domain.community.MemberRoleType
 import com.imyvm.community.entrypoints.screen.AbstractListMenu
 import com.imyvm.community.entrypoints.screen.component.getPlayerHeadButtonItemStackCommunity
 import com.imyvm.community.entrypoints.screen.inner_community.CommunityMenu
@@ -35,14 +35,59 @@ class CommunityListMenu(
                 name = community.generateCommunityMark(),
                 itemStack = getPlayerHeadButtonItemStackCommunity(community)
             ) { player ->
-                CommunityMenuOpener.open(player) { newSyncId ->
-                    CommunityMenu(newSyncId, player, community) {
-                        CommunityMenuOpener.open(player) { returnSyncId ->
-                            CommunityListMenu(
-                                syncId = returnSyncId,
-                                mode = mode,
-                                runBack = runBack
-                            )
+                val memberRole = community.getMemberRole(player.uuid)
+                
+                when (memberRole) {
+                    null -> {
+                        CommunityMenuOpener.open(player) { newSyncId ->
+                            NonMemberCommunityMenu(newSyncId, player, community) {
+                                CommunityMenuOpener.open(player) { returnSyncId ->
+                                    CommunityListMenu(
+                                        syncId = returnSyncId,
+                                        mode = mode,
+                                        runBack = runBack
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    MemberRoleType.APPLICANT -> {
+                        CommunityMenuOpener.open(player) { newSyncId ->
+                            ApplicantStatusMenu(newSyncId, player, community) {
+                                CommunityMenuOpener.open(player) { returnSyncId ->
+                                    CommunityListMenu(
+                                        syncId = returnSyncId,
+                                        mode = mode,
+                                        runBack = runBack
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    MemberRoleType.REFUSED -> {
+                        CommunityMenuOpener.open(player) { newSyncId ->
+                            RefusedStatusMenu(newSyncId, player, community) {
+                                CommunityMenuOpener.open(player) { returnSyncId ->
+                                    CommunityListMenu(
+                                        syncId = returnSyncId,
+                                        mode = mode,
+                                        runBack = runBack
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    MemberRoleType.OWNER, MemberRoleType.ADMIN, MemberRoleType.MEMBER -> {
+                        CommunityMenuOpener.open(player) { newSyncId ->
+                            CommunityMenu(newSyncId, player, community) {
+                                CommunityMenuOpener.open(player) { returnSyncId ->
+                                    CommunityListMenu(
+                                        syncId = returnSyncId,
+                                        mode = mode,
+                                        runBack = runBack
+                                    )
+                                }
+                            }
                         }
                     }
                 }

@@ -1,4 +1,4 @@
-package com.imyvm.community.application.interaction.screen.inner_community.operation_only
+package com.imyvm.community.application.interaction.screen.inner_community.administration_only
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.Community
@@ -25,7 +25,7 @@ fun getTeleportPointInformationItemStack(
         loreLines.add(Text.of("y=" + blockPos.y))
         loreLines.add(Text.of("z=" + blockPos.z))
     } else {
-        loreLines.add(Translator.tr("ui.community.operation.teleport_point.inquiry.lore.no_point")!!)
+        loreLines.add(Translator.tr("ui.community.administration.teleport_point.inquiry.lore.no_point")!!)
     }
 
     return getLoreButton(itemStack, loreLines)
@@ -40,14 +40,14 @@ fun runInquiryTeleportPoint(playerExecutor: ServerPlayerEntity, community: Commu
         if (blockPos != null) {
             playerExecutor.sendMessage(
                 Translator.tr(
-                    "ui.community.operation.teleport_point.inquiry.success.result",
+                    "ui.community.administration.teleport_point.inquiry.success.result",
                     blockPos.x,
                     blockPos.y,
                     blockPos.z
                 )
             )
         } else {
-            playerExecutor.sendMessage(Translator.tr("ui.community.operation.teleport_point.inquiry.success.no_point"))
+            playerExecutor.sendMessage(Translator.tr("ui.community.administration.teleport_point.inquiry.success.no_point"))
         }
     } else {
         playerExecutor.sendMessage(Translator.tr("community.not_found.region"))

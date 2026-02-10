@@ -34,12 +34,12 @@ fun getPermissionButtonItemStack(
         )
     }
     if (hasPermission != null) {
-        loreLines.add(Text.translatable("ui.community.operation.member.setting.lore.permission", hasPermission.toString()))
+        loreLines.add(Text.translatable("ui.community.administration.member.setting.lore.permission", hasPermission.toString()))
         scope?.let {
-            loreLines.add(Text.translatable("ui.community.operation.member.setting.lore.scope", scope.scopeName))
+            loreLines.add(Text.translatable("ui.community.administration.member.setting.lore.scope", scope.scopeName))
         }
         playerObject?.let {
-            loreLines.add(Text.translatable("ui.community.operation.member.setting.lore.player", playerObject.name))
+            loreLines.add(Text.translatable("ui.community.administration.member.setting.lore.player", playerObject.name))
         }
     }
 

@@ -1,9 +1,9 @@
 package com.imyvm.community.application.interaction.screen.inner_community.affairs
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
+import com.imyvm.community.application.permission.PermissionCheck
 import com.imyvm.community.domain.Community
 import com.imyvm.community.domain.Turnover
-import com.imyvm.community.domain.community.MemberRoleType
 import com.imyvm.community.entrypoints.screen.inner_community.affairs.assets.CommunityAssetsMenu
 import com.imyvm.community.entrypoints.screen.inner_community.affairs.assets.DonationMenu
 import com.imyvm.community.entrypoints.screen.inner_community.affairs.assets.DonorDetailsMenu
@@ -20,16 +20,14 @@ fun runOpenAssetsMenu(player: ServerPlayerEntity, community: Community, runBackG
 }
 
 fun runOpenDonationMenu(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit) {
-    val memberRole = community.getMemberRole(player.uuid)
-    if (memberRole == null || memberRole == MemberRoleType.APPLICANT || memberRole == MemberRoleType.REFUSED) {
-        player.sendMessage(Translator.tr("ui.community.assets.donate.error.not_member"))
-        player.closeHandledScreen()
-        return
-    }
-
-    CommunityMenuOpener.open(player) { syncId ->
-        DonationMenu(syncId, player, community) { runOpenAssetsMenu(player, community, runBackGrandfather) }
-    }
+    PermissionCheck.executeWithPermission(
+        player,
+        { PermissionCheck.canDonate(player, community) }
+    ) {
+        CommunityMenuOpener.open(player) { syncId ->
+            DonationMenu(syncId, player, community) { runOpenAssetsMenu(player, community, runBackGrandfather) }
+        }
+    } ?: player.closeHandledScreen()
 }
 
 fun runOpenDonorListMenu(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit) {
@@ -45,28 +43,33 @@ fun runOpenDonorDetailsMenu(player: ServerPlayerEntity, community: Community, do
 }
 
 fun onDonateConfirm(player: ServerPlayerEntity, community: Community, amount: Int, runBackGrandfather: (ServerPlayerEntity) -> Unit) {
-    val playerAccount = EconomyMod.data.getOrCreate(player)
-    
-    if (playerAccount.money < amount.toLong()) {
-        player.sendMessage(Translator.tr("ui.community.assets.donate.error.insufficient_funds"))
-        player.closeHandledScreen()
-        return
-    }
+    PermissionCheck.executeWithPermission(
+        player,
+        { PermissionCheck.canDonate(player, community) }
+    ) {
+        val playerAccount = EconomyMod.data.getOrCreate(player)
+        
+        if (playerAccount.money < amount.toLong()) {
+            player.sendMessage(Translator.tr("ui.community.assets.donate.error.insufficient_funds"))
+            player.closeHandledScreen()
+            return@executeWithPermission
+        }
 
-    val memberAccount = community.member[player.uuid]
-    if (memberAccount == null) {
-        player.sendMessage(Translator.tr("ui.community.assets.donate.error.not_member"))
-        player.closeHandledScreen()
-        return
-    }
+        val memberAccount = community.member[player.uuid]
+        if (memberAccount == null) {
+            player.sendMessage(Translator.tr("ui.community.assets.donate.error.not_member"))
+            player.closeHandledScreen()
+            return@executeWithPermission
+        }
 
-    playerAccount.addMoney(-amount.toLong())
-    memberAccount.turnover.add(Turnover(amount, System.currentTimeMillis()))
+        playerAccount.addMoney(-amount.toLong())
+        memberAccount.turnover.add(Turnover(amount, System.currentTimeMillis()))
 
-    val amountFormatted = "%.2f".format(amount / 100.0)
-    player.sendMessage(Translator.tr("ui.community.assets.donate.success", amountFormatted))
-    
-    runOpenAssetsMenu(player, community, runBackGrandfather)
+        val amountFormatted = "%.2f".format(amount / 100.0)
+        player.sendMessage(Translator.tr("ui.community.assets.donate.success", amountFormatted))
+        
+        runOpenAssetsMenu(player, community, runBackGrandfather)
+    } ?: player.closeHandledScreen()
 }
 
 private fun runBackToCommunityMenu(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit) {

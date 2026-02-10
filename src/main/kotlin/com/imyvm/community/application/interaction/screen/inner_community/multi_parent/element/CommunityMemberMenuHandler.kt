@@ -1,10 +1,10 @@
 package com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
+import com.imyvm.community.application.permission.PermissionCheck
 import com.imyvm.community.domain.Community
 import com.imyvm.community.domain.GeographicFunctionType
 import com.imyvm.community.domain.MemberAccount
-import com.imyvm.community.domain.community.MemberRoleType
 import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.element.CommunityMemberMenu
 import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.CommunityRegionScopeMenu
 import com.imyvm.community.entrypoints.screen.inner_community.administration_only.NotificationMenuAnvil
@@ -19,14 +19,19 @@ fun runOpenPlayerRegionScopeChoice(
     playerObject: GameProfile,
     runBackGrandfather: (ServerPlayerEntity) -> Unit
 ) {
-    CommunityMenuOpener.open(playerExecutor) { syncId ->
-        CommunityRegionScopeMenu(
-            syncId = syncId,
-            playerExecutor = playerExecutor,
-            community = community,
-            geographicFunctionType = GeographicFunctionType.SETTING_ADJUSTMENT,
-            playerObject = playerObject
-        ) { runBackToMemberMenu(playerExecutor, community, playerObject, runBackGrandfather) }
+    PermissionCheck.executeWithPermission(
+        playerExecutor,
+        { PermissionCheck.canManageMember(playerExecutor, community, playerObject.id) }
+    ) {
+        CommunityMenuOpener.open(playerExecutor) { syncId ->
+            CommunityRegionScopeMenu(
+                syncId = syncId,
+                playerExecutor = playerExecutor,
+                community = community,
+                geographicFunctionType = GeographicFunctionType.SETTING_ADJUSTMENT,
+                playerObject = playerObject
+            ) { runBackToMemberMenu(playerExecutor, community, playerObject, runBackGrandfather) }
+        }
     }
 }
 
@@ -35,22 +40,17 @@ fun runRemoveMember(
     playerExecutor: ServerPlayerEntity,
     playerObject: GameProfile
 ) {
-    val memberValue = community.member[playerObject.id]
-    if (memberValue == null) {
+    PermissionCheck.executeWithPermission(
+        playerExecutor,
+        { PermissionCheck.canRemoveMember(playerExecutor, community, playerObject.id) }
+    ) {
+        community.member.remove(playerObject.id)
         trMenu(
             playerExecutor,
-            "community.operation.member.remove.fail.not_member",
+            "community.member_management.remove.success",
             playerObject.name
         )
-        return
     }
-
-    community.member.remove(playerObject.id)
-    trMenu(
-        playerExecutor,
-        "community.operation.member.remove.success",
-        playerObject.name
-    )
 }
 
 fun runNotifyMember(
@@ -58,13 +58,18 @@ fun runNotifyMember(
     playerExecutor: ServerPlayerEntity,
     playerObject: GameProfile
 ) {
-    val handler = NotificationMenuAnvil(
+    PermissionCheck.executeWithPermission(
         playerExecutor,
-        initialName = Translator.tr("ui.community.operation.member.notify.to_edit")?.string ?: "(Edit your notification here)",
-        playerObject = playerObject,
-        community = community
-    )
-    handler.open()
+        { PermissionCheck.canManageMember(playerExecutor, community, playerObject.id) }
+    ) {
+        val handler = NotificationMenuAnvil(
+            playerExecutor,
+            initialName = Translator.tr("ui.community.administration.member.notify.to_edit")?.string ?: "(Edit your notification here)",
+            playerObject = playerObject,
+            community = community
+        )
+        handler.open()
+    }
 }
 
 fun runPromoteMember(
@@ -90,23 +95,19 @@ private fun handleRolePromotion(
     playerExecutor: ServerPlayerEntity,
     playerObject: GameProfile
 ) {
-    if (community.getMemberRole(playerObject.id) != MemberRoleType.MEMBER) {
-        trMenu(
-            playerExecutor,
-            "community.operation.member.promote.promote.fail.not_member",
-            playerObject.name
-        )
-        return
-    }
-
-    val memberValue = getMemberOrNotify(community, playerExecutor, playerObject, "promote.promote.fail.not_member")
-    if (memberValue != null) {
-        memberValue.basicRoleType = MemberRoleType.ADMIN
-        trMenu(
-            playerExecutor,
-            "community.operation.member.promote.promote.success",
-            playerObject.name
-        )
+    PermissionCheck.executeWithPermission(
+        playerExecutor,
+        { PermissionCheck.canPromoteMember(playerExecutor, community, playerObject.id) }
+    ) {
+        val memberValue = community.member[playerObject.id]
+        if (memberValue != null) {
+            memberValue.basicRoleType = com.imyvm.community.domain.community.MemberRoleType.ADMIN
+            trMenu(
+                playerExecutor,
+                "community.member_management.promote.success",
+                playerObject.name
+            )
+        }
     }
 }
 
@@ -115,23 +116,19 @@ private fun handleRoleDemotion(
     playerExecutor: ServerPlayerEntity,
     playerObject: GameProfile
 ) {
-    if (community.getMemberRole(playerObject.id) != MemberRoleType.ADMIN) {
-        trMenu(
-            playerExecutor,
-            "community.operation.member.promote.demote.fail.not_admin",
-            playerObject.name
-        )
-        return
-    }
-
-    val memberValue = getMemberOrNotify(community, playerExecutor, playerObject, "promote.demote.fail.not_member")
-    if (memberValue != null) {
-        memberValue.basicRoleType = MemberRoleType.MEMBER
-        trMenu(
-            playerExecutor,
-            "community.operation.member.promote.demote.success",
-            playerObject.name
-        )
+    PermissionCheck.executeWithPermission(
+        playerExecutor,
+        { PermissionCheck.canDemoteMember(playerExecutor, community, playerObject.id) }
+    ) {
+        val memberValue = community.member[playerObject.id]
+        if (memberValue != null) {
+            memberValue.basicRoleType = com.imyvm.community.domain.community.MemberRoleType.MEMBER
+            trMenu(
+                playerExecutor,
+                "community.member_management.demote.success",
+                playerObject.name
+            )
+        }
     }
 }
 
@@ -141,33 +138,21 @@ private fun handleGovernorshipUpdate(
     playerObject: GameProfile,
     governorship: Int
 ) {
-    val memberValue = getMemberOrNotify(community, playerExecutor, playerObject, "promote.governorship.fail.not_member")
-    if (memberValue != null) {
-        memberValue.governorship = governorship
-        trMenu(
-            playerExecutor,
-            "community.operation.member.promote.governorship.success",
-            playerObject.name,
-            governorship
-        )
+    PermissionCheck.executeWithPermission(
+        playerExecutor,
+        { PermissionCheck.canManageMember(playerExecutor, community, playerObject.id) }
+    ) {
+        val memberValue = community.member[playerObject.id]
+        if (memberValue != null) {
+            memberValue.governorship = governorship
+            trMenu(
+                playerExecutor,
+                "community.member_management.governorship.success",
+                playerObject.name,
+                governorship
+            )
+        }
     }
-}
-
-private fun getMemberOrNotify(
-    community: Community,
-    playerExecutor: ServerPlayerEntity,
-    playerObject: GameProfile,
-    failTranslationKeySuffix: String
-): MemberAccount? {
-    val memberValue = community.member[playerObject.id]
-    if (memberValue == null) {
-        trMenu(
-            playerExecutor,
-            "community.operation.member.$failTranslationKeySuffix",
-            playerObject.name
-        )
-    }
-    return memberValue
 }
 
 private fun runBackToMemberMenu(

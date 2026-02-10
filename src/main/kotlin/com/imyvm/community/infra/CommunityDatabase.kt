@@ -31,6 +31,7 @@ object CommunityDatabase {
                 stream.writeInt(community.status.value)
                 saveCommunityCouncil(stream, community)
                 saveCommunityAnnouncements(stream, community)
+                saveCommunityAdministrationPermissions(stream, community)
             }
         }
     }
@@ -54,6 +55,7 @@ object CommunityDatabase {
                 val status = CommunityStatus.fromValue(stream.readInt())
                 val council = loadCommunityCouncil(stream)
                 val announcements = loadCommunityAnnouncements(stream)
+                val administrationPermissions = loadCommunityAdministrationPermissions(stream)
 
                 val community = Community(
                     regionNumberId = regionNumberId,
@@ -61,7 +63,8 @@ object CommunityDatabase {
                     joinPolicy = joinPolicy,
                     status = status,
                     council = council,
-                    announcements = announcements
+                    announcements = announcements,
+                    administrationPermissions = administrationPermissions
                 )
                 communities.add(community)
             }
@@ -297,5 +300,35 @@ object CommunityDatabase {
         }
         
         return announcements
+    }
+
+    private fun saveCommunityAdministrationPermissions(stream: DataOutputStream, community: Community) {
+        val adminPermissions = community.administrationPermissions.getEnabledForAdmin()
+        stream.writeInt(adminPermissions.size)
+        for (permission in adminPermissions) {
+            stream.writeInt(permission.ordinal)
+        }
+
+        val councilPermissions = community.administrationPermissions.getEnabledForCouncil()
+        stream.writeInt(councilPermissions.size)
+        for (permission in councilPermissions) {
+            stream.writeInt(permission.ordinal)
+        }
+    }
+
+    private fun loadCommunityAdministrationPermissions(stream: DataInputStream): AdministrationPermissions {
+        val adminPermissionsSize = stream.readInt()
+        val adminPermissions = mutableSetOf<AdministrationPermission>()
+        for (i in 0 until adminPermissionsSize) {
+            adminPermissions.add(AdministrationPermission.entries[stream.readInt()])
+        }
+
+        val councilPermissionsSize = stream.readInt()
+        val councilPermissions = mutableSetOf<AdministrationPermission>()
+        for (i in 0 until councilPermissionsSize) {
+            councilPermissions.add(AdministrationPermission.entries[stream.readInt()])
+        }
+
+        return AdministrationPermissions(adminPermissions, councilPermissions)
     }
 }

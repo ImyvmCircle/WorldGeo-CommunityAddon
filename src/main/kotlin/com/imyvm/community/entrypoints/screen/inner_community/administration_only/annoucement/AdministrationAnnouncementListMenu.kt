@@ -22,7 +22,7 @@ class AdministrationAnnouncementListMenu(
     val runBack: ((ServerPlayerEntity) -> Unit)
 ) : AbstractListMenu(
     syncId = syncId,
-    menuTitle = Translator.tr("ui.community.operation.announcement_list.title"),
+    menuTitle = Translator.tr("ui.community.administration.announcement_list.title"),
     page = page,
     runBack = runBack
 ) {
@@ -43,12 +43,12 @@ class AdministrationAnnouncementListMenu(
                 itemStack = getLoreButton(
                     ItemStack(Items.PAPER),
                     listOf(
-                        Translator.tr("ui.community.operation.announcement_list.lore.author", authorName) ?: Text.of("By: $authorName"),
-                        Translator.tr("ui.community.operation.announcement_list.lore.time", timeFormatted) ?: Text.of("Time: $timeFormatted"),
-                        Translator.tr("ui.community.operation.announcement_list.lore.preview", preview) ?: Text.of(preview)
+                        Translator.tr("ui.community.administration.announcement_list.lore.author", authorName) ?: Text.of("By: $authorName"),
+                        Translator.tr("ui.community.administration.announcement_list.lore.time", timeFormatted) ?: Text.of("Time: $timeFormatted"),
+                        Translator.tr("ui.community.administration.announcement_list.lore.preview", preview) ?: Text.of(preview)
                     )
                 ),
-                name = Translator.tr("ui.community.operation.announcement_list.item")?.string ?: "Announcement"
+                name = Translator.tr("ui.community.administration.announcement_list.item")?.string ?: "Announcement"
             ) { onViewAdministrationAnnouncementListItem(playerExecutor, community, announcement.id, runBack) }
         }
         handlePageWithSize(announcements.size, announcementsPerPage)
@@ -63,7 +63,7 @@ class AdministrationAnnouncementListMenu(
     private fun addCreateButton() {
         addButton(
             slot = 4,
-            name = Translator.tr("ui.community.operation.announcement_list.create")?.string ?: "Create Announcement",
+            name = Translator.tr("ui.community.administration.announcement_list.create")?.string ?: "Create Announcement",
             item = Items.WRITABLE_BOOK
         ) {
             runCreateAnnouncement(playerExecutor, community, runBack)

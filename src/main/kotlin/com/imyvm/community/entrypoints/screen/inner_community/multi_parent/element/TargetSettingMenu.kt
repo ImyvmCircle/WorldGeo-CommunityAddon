@@ -39,25 +39,25 @@ class TargetSettingMenu(
 
         addButton(
             slot = 10,
-            name = Translator.tr("ui.community.operation.region.setting.list.permission.header")?.string ?: "Permission Settings",
+            name = Translator.tr("ui.community.administration.region.setting.list.permission.header")?.string ?: "Permission Settings",
             item = Items.SHIELD
         ) {}
 
         addButton(
             slot = 12,
-            name = Translator.tr("ui.community.operation.region.setting.list.permission.build_break")?.string ?: "Build/Break Permission",
+            name = Translator.tr("ui.community.administration.region.setting.list.permission.build_break")?.string ?: "Build/Break Permission",
             itemStack = getPermissionButtonItemStack(Items.DIAMOND_PICKAXE, community, scope, playerObject, PermissionKey.BUILD_BREAK)
         ) { if (isManageable) runTogglingPermissionSetting(playerExecutor, community, scope, playerObject, PermissionKey.BUILD_BREAK, runBack) }
 
         addButton(
             slot = 13,
-            name = Translator.tr("ui.community.operation.region.setting.list.permission.fly")?.string ?: "Fly Permission",
+            name = Translator.tr("ui.community.administration.region.setting.list.permission.fly")?.string ?: "Fly Permission",
             itemStack = getPermissionButtonItemStack(Items.ELYTRA, community, scope, playerObject, PermissionKey.FLY)
         ) { if (isManageable) runTogglingPermissionSetting(playerExecutor, community, scope, playerObject, PermissionKey.FLY, runBack)  }
 
         addButton(
             slot = 14,
-            name = Translator.tr("ui.community.operation.region.setting.list.permission.container")?.string ?: "Container Permission",
+            name = Translator.tr("ui.community.administration.region.setting.list.permission.container")?.string ?: "Container Permission",
             itemStack = getPermissionButtonItemStack(Items.CHEST, community, scope, playerObject, PermissionKey.CONTAINER)
         ) { if (isManageable) runTogglingPermissionSetting(playerExecutor, community, scope, playerObject, PermissionKey.CONTAINER, runBack) }
     }
@@ -65,7 +65,7 @@ class TargetSettingMenu(
     private fun addEffectSettingButtons(){
         addButton(
             slot = 28,
-            name = Translator.tr("ui.community.operation.region.setting.list.effect.header")?.string ?: "Effect Settings",
+            name = Translator.tr("ui.community.administration.region.setting.list.effect.header")?.string ?: "Effect Settings",
             item = Items.BEACON
         ) {}
     }
@@ -73,7 +73,7 @@ class TargetSettingMenu(
     private fun addRuleSettingButtons(){
         addButton(
             slot = 46,
-            name = Translator.tr("ui.community.operation.region.setting.list.rule.header")?.string ?: "Rule Settings",
+            name = Translator.tr("ui.community.administration.region.setting.list.rule.header")?.string ?: "Rule Settings",
             item = Items.WRITABLE_BOOK
         ) {}
 
@@ -85,8 +85,8 @@ class TargetSettingMenu(
             scope: GeoScope? = null,
             playerProfile: GameProfile? = null
         ): Text {
-            val nullTag = Translator.tr("ui.community.operation.region.setting.list.title.unknown")?.string ?: "Unknown"
-            val settingTag = Translator.tr("ui.community.operation.region.setting.list.title.setting")?.string ?: "Setting"
+            val nullTag = Translator.tr("ui.community.administration.region.setting.list.title.unknown")?.string ?: "Unknown"
+            val settingTag = Translator.tr("ui.community.administration.region.setting.list.title.setting")?.string ?: "Setting"
             var menuTitle = (community.getRegion()?.name ?: nullTag) + settingTag
             if (scope != null) menuTitle += " - ${scope.scopeName}"
             if (playerProfile != null) menuTitle += " - ${playerProfile.name}"

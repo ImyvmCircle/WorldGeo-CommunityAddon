@@ -23,7 +23,7 @@ class AdministrationAnnouncementDetailsMenu(
     val runBack: ((ServerPlayerEntity) -> Unit)
 ) : AbstractMenu(
     syncId,
-    menuTitle = Translator.tr("ui.community.operation.announcement_details.title"),
+    menuTitle = Translator.tr("ui.community.administration.announcement_details.title"),
     runBack = runBack
 ) {
     init {
@@ -45,19 +45,19 @@ class AdministrationAnnouncementDetailsMenu(
             itemStack = getLoreButton(
                 ItemStack(Items.PAPER),
                 listOf(
-                    Translator.tr("ui.community.operation.announcement_details.lore.author", authorName) ?: Text.of("By: $authorName"),
-                    Translator.tr("ui.community.operation.announcement_details.lore.time", timeFormatted) ?: Text.of("Time: $timeFormatted"),
-                    Translator.tr("ui.community.operation.announcement_details.lore.read", readCount, totalMembers) ?: Text.of("Read: $readCount/$totalMembers")
+                    Translator.tr("ui.community.administration.announcement_details.lore.author", authorName) ?: Text.of("By: $authorName"),
+                    Translator.tr("ui.community.administration.announcement_details.lore.time", timeFormatted) ?: Text.of("Time: $timeFormatted"),
+                    Translator.tr("ui.community.administration.announcement_details.lore.read", readCount, totalMembers) ?: Text.of("Read: $readCount/$totalMembers")
                 )
             ),
-            name = Translator.tr("ui.community.operation.announcement_details.content")?.string ?: "Content"
+            name = Translator.tr("ui.community.administration.announcement_details.content")?.string ?: "Content"
         ) { onViewAnnouncementContent(playerExecutor, announcement) }
     }
 
     private fun addDeleteButton(announcement: Announcement) {
         addButton(
             slot = 31,
-            name = Translator.tr("ui.community.operation.announcement_details.delete")?.string ?: "Delete",
+            name = Translator.tr("ui.community.administration.announcement_details.delete")?.string ?: "Delete",
             item = Items.BARRIER
         ) {
             onDeleteAnnouncement(playerExecutor, community, announcement.id, runBack)

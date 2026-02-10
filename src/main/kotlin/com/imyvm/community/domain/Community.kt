@@ -16,7 +16,8 @@ class Community(
     var joinPolicy: CommunityJoinPolicy,
     var status: CommunityStatus,
     var council: Council = Council(),
-    var announcements: MutableList<Announcement> = mutableListOf()
+    var announcements: MutableList<Announcement> = mutableListOf(),
+    var administrationPermissions: AdministrationPermissions = AdministrationPermissions()
 ) {
     fun generateCommunityMark(): String {
         return RegionDataApi.getRegion(this.regionNumberId!!)?.name ?: "Community #${this.regionNumberId}"
@@ -61,40 +62,16 @@ class Community(
         return member[playerUuid]?.basicRoleType
     }
 
+    @Deprecated("Use PermissionCheck.canManageMember instead", ReplaceWith("PermissionCheck.canManageMember(playerExecutor, this, targetPlayerUuid)"))
     fun isManageable(playerExecutor: ServerPlayerEntity, targetPlayerUuid: UUID): Boolean {
-        val executorRole = getMemberRole(playerExecutor.uuid) ?: return false
-        val targetRole = getMemberRole(targetPlayerUuid) ?: return false
-        if (!analyzeByRole(executorRole, targetRole)) return false
-        if (!analyzeByPrivilegeStatus(executorRole, targetPlayerUuid)) return false
-        return true
+        return com.imyvm.community.application.permission.PermissionCheck
+            .canManageMember(playerExecutor, this, targetPlayerUuid).isAllowed()
     }
 
+    @Deprecated("Use PermissionCheck.canExecuteAdministration instead", ReplaceWith("PermissionCheck.canExecuteAdministration(playerExecutor, this)"))
     fun isManageable(playerExecutor: ServerPlayerEntity): Boolean {
-        val memberRole = getMemberRole(playerExecutor.uuid) ?: return false
-        return memberRole == MemberRoleType.OWNER || memberRole == MemberRoleType.ADMIN
-    }
-
-    private fun analyzeByRole(executorRole: MemberRoleType, targetRole: MemberRoleType): Boolean {
-        return when (executorRole) {
-            MemberRoleType.OWNER -> true
-            MemberRoleType.ADMIN -> targetRole == MemberRoleType.MEMBER
-            MemberRoleType.MEMBER -> false
-            MemberRoleType.APPLICANT -> false
-            MemberRoleType.REFUSED -> false
-        }
-    }
-
-    private fun analyzeByPrivilegeStatus(executorRole: MemberRoleType, targetPlayerUuid: UUID): Boolean {
-        if (executorRole == MemberRoleType.OWNER) return true
-        else if (executorRole == MemberRoleType.ADMIN) {
-            val memberAccount = member[targetPlayerUuid] ?: return false
-            if (memberAccount.isCouncilMember || memberAccount.governorship != -1) {
-                return false
-            }
-        } else {
-            return false
-        }
-        return true
+        return com.imyvm.community.application.permission.PermissionCheck
+            .canExecuteAdministration(playerExecutor, this).isAllowed()
     }
 
     fun getTotalAssets(): Int {
@@ -132,5 +109,22 @@ class Community(
 
     fun getUnreadAnnouncementsFor(playerUUID: UUID): List<Announcement> {
         return getActiveAnnouncements().filter { !it.isReadBy(playerUUID) }
+    }
+
+    fun transferOwnership(newOwnerUUID: UUID): Boolean {
+        val currentOwnerUUID = getOwnerUUID() ?: return false
+        val newOwnerAccount = member[newOwnerUUID] ?: return false
+        val currentOwnerAccount = member[currentOwnerUUID] ?: return false
+
+        if (newOwnerAccount.basicRoleType == MemberRoleType.APPLICANT || 
+            newOwnerAccount.basicRoleType == MemberRoleType.REFUSED) {
+            return false
+        }
+
+        currentOwnerAccount.basicRoleType = MemberRoleType.ADMIN
+
+        newOwnerAccount.basicRoleType = MemberRoleType.OWNER
+
+        return true
     }
 }

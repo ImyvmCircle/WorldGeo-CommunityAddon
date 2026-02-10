@@ -23,9 +23,9 @@ class NotificationMenuAnvil(
 
         val messageSent = constructAndSendMail(member.mail, playerExecutor, community, finalName)
         if (messageSent) {
-            trMenu(playerExecutor, "community.operation.member.message.sent", playerObject.name)
+            trMenu(playerExecutor, "community.member_management.message.sent", playerObject.name)
         } else {
-            trMenu(playerExecutor, "community.operation.member.message.sent.error.empty", playerObject.name)
+            trMenu(playerExecutor, "community.member_management.message.sent.error.empty", playerObject.name)
         }
     }
 
@@ -33,11 +33,11 @@ class NotificationMenuAnvil(
 
     private fun checkPrerequisites(finalName: String): Boolean {
         if (finalName.isBlank()) {
-            trMenu(playerExecutor, "community.operation.member.message.sent.error.empty", playerObject.name)
+            trMenu(playerExecutor, "community.member_management.message.sent.error.empty", playerObject.name)
             return false
         }
         if (community.member[playerObject.id] == null) {
-            trMenu(playerExecutor, "community.operation.member.message.sent.error.not_member", playerObject.name)
+            trMenu(playerExecutor, "community.member_management.message.sent.error.not_member", playerObject.name)
             return false
         }
         return true

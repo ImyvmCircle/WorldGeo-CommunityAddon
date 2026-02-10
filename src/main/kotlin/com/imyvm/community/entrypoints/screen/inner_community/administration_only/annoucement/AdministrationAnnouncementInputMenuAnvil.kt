@@ -18,6 +18,6 @@ class AdministrationAnnouncementInputMenuAnvil(
     }
     
     override fun getMenuTitle(): Text {
-        return Translator.tr("ui.community.operation.announcement_input.title") ?: Text.of("Create Announcement")
+        return Translator.tr("ui.community.administration.announcement_input.title") ?: Text.of("Create Announcement")
     }
 }

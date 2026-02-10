@@ -1,6 +1,8 @@
 package com.imyvm.community.application.interaction.command
 
+import com.imyvm.community.application.permission.PermissionCheck
 import com.imyvm.community.domain.Community
+import com.imyvm.community.domain.community.AdministrationPermission
 import com.imyvm.community.domain.community.Announcement
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.TextParser
@@ -15,7 +17,7 @@ fun onAnnouncementCreateCommand(context: CommandContext<ServerCommandSource>, co
     if (!canManage(player, community)) return 0
 
     if (content.isBlank()) {
-        player.sendMessage(Translator.tr("ui.community.operation.announcement.error.empty"))
+        player.sendMessage(Translator.tr("ui.community.administration.announcement.error.empty"))
         return 0
     }
 
@@ -28,7 +30,7 @@ fun onAnnouncementCreateCommand(context: CommandContext<ServerCommandSource>, co
         member.sendMessage(announcement.content)
     }
 
-    player.sendMessage(Translator.tr("ui.community.operation.announcement.created"))
+    player.sendMessage(Translator.tr("ui.community.administration.announcement.created"))
     return 1
 }
 
@@ -71,7 +73,7 @@ fun onAnnouncementViewCommand(context: CommandContext<ServerCommandSource>, comm
 
     val announcement = community.getAnnouncementById(uuid)?.takeIf { !it.isDeleted }
         ?: run {
-            player.sendMessage(Translator.tr("ui.community.operation.announcement.error.not_found"))
+            player.sendMessage(Translator.tr("ui.community.administration.announcement.error.not_found"))
             return 0
         }
 
@@ -92,12 +94,12 @@ fun onAnnouncementOpListCommand(context: CommandContext<ServerCommandSource>): I
     }
 
     if (summary.isEmpty()) {
-        player.sendMessage(Translator.tr("community.announcement.op.list.empty"))
+        player.sendMessage(Translator.tr("community.announcement.administration.list.empty"))
         return 1
     }
 
     summary.forEach { (comm, count) ->
-        player.sendMessage(Translator.tr("community.announcement.op.list.community", comm.generateCommunityMark(), comm.regionNumberId, count))
+        player.sendMessage(Translator.tr("community.announcement.administration.list.community", comm.generateCommunityMark(), comm.regionNumberId, count))
     }
     player.sendMessage(Translator.tr("community.announcement.op.list.total", summary.sumOf { it.second }))
     return 1
@@ -117,13 +119,17 @@ private fun parseUUID(player: ServerPlayerEntity, idString: String): UUID? {
 }
 
 private fun canManage(player: ServerPlayerEntity, community: Community): Boolean {
-    if (community.isManageable(player)) return true
+    if (PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS).isAllowed()) {
+        return true
+    }
     player.sendMessage(Translator.tr("community.announcement.error.no_permission"))
     return false
 }
 
 private fun isMember(player: ServerPlayerEntity, community: Community): Boolean {
-    if (community.member.containsKey(player.uuid)) return true
+    if (PermissionCheck.canViewCommunity(player, community).isAllowed()) {
+        return true
+    }
     player.sendMessage(Translator.tr("community.announcement.error.not_member"))
     return false
 }
@@ -131,10 +137,10 @@ private fun isMember(player: ServerPlayerEntity, community: Community): Boolean 
 private fun performDelete(player: ServerPlayerEntity, community: Community, uuid: UUID): Int {
     return if (community.softDeleteAnnouncement(uuid)) {
         CommunityDatabase.save()
-        player.sendMessage(Translator.tr("ui.community.operation.announcement.deleted"))
+        player.sendMessage(Translator.tr("ui.community.administration.announcement.deleted"))
         1
     } else {
-        player.sendMessage(Translator.tr("ui.community.operation.announcement.error.not_found"))
+        player.sendMessage(Translator.tr("ui.community.administration.announcement.error.not_found"))
         0
     }
 }

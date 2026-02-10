@@ -3,8 +3,8 @@ package com.imyvm.community.entrypoints.screen.inner_community
 import com.imyvm.community.application.interaction.screen.inner_community.*
 import com.imyvm.community.application.interaction.screen.inner_community.affairs.runOpenAssetsMenu
 import com.imyvm.community.application.interaction.screen.inner_community.affairs.runOpenMemberAnnouncementListMenu
+import com.imyvm.community.application.permission.PermissionCheck
 import com.imyvm.community.domain.Community
-import com.imyvm.community.domain.community.MemberRoleType
 import com.imyvm.community.entrypoints.screen.AbstractMenu
 import com.imyvm.community.entrypoints.screen.component.getPlayerHeadButtonItemStackCommunity
 import com.imyvm.community.util.Translator
@@ -23,7 +23,7 @@ class CommunityMenu(
 ) {
     init {
         addOwnerHeadButton()
-        addOperationButtonTrail()
+        addAdministrationButtonTrail()
         addDescriptionButton()
         addInteractionButton()
     }
@@ -36,9 +36,8 @@ class CommunityMenu(
         ) {}
     }
 
-    private fun addOperationButtonTrail() {
-        if (community.getMemberRole(player.uuid) == MemberRoleType.OWNER ||
-            community.getMemberRole(player.uuid) == MemberRoleType.ADMIN ){
+    private fun addAdministrationButtonTrail() {
+        if (PermissionCheck.canExecuteAdministration(player, community).isAllowed()) {
             addButton(
                 slot = 12,
                 name = Translator.tr("ui.community.button.interaction.operations")?.string ?: "Community Operations",

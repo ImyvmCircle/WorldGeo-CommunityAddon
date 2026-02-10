@@ -1,11 +1,11 @@
 package com.imyvm.community.application.interaction.screen.outer_community
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
-import com.imyvm.community.infra.CommunityConfig
 import com.imyvm.community.entrypoints.screen.ConfirmMenu
 import com.imyvm.community.entrypoints.screen.component.ConfirmTaskType
 import com.imyvm.community.entrypoints.screen.outer_community.CommunityCreationMenu
 import com.imyvm.community.entrypoints.screen.outer_community.CommunityCreationRenameMenuAnvil
+import com.imyvm.community.infra.CommunityConfig
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.domain.component.GeoShapeType
 import net.minecraft.server.network.ServerPlayerEntity

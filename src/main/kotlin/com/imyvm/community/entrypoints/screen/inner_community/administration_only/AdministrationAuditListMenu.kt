@@ -34,7 +34,7 @@ class AdministrationAuditListMenu(
         if (applicants.isEmpty()) {
             addButton(
                 slot = 10,
-                name = Translator.tr("ui.community.operation.audit_list.no_requests")?.string ?: "No Audit Requests",
+                name = Translator.tr("ui.community.administration.audit_list.no_requests")?.string ?: "No Audit Requests",
                 item = Items.DARK_OAK_SIGN
             ) {}
         } else {
@@ -91,6 +91,6 @@ class AdministrationAuditListMenu(
 
     companion object {
         fun generateMenuTitle(community: Community): Text =
-            Text.of(community.generateCommunityMark() + "ui.community.operation.audit_list.title.component")
+            Text.of(community.generateCommunityMark() + "ui.community.administration.audit_list.title.component")
     }
 }
