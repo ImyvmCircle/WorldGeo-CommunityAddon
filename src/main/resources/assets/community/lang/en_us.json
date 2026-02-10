@@ -315,6 +315,30 @@
   "community.permission.error.not_council_member": "You are not a council member.",
   "community.permission.error.council_disabled": "The council system is not enabled for this community.",
 
+  "ui.council.button.create_vote": "Create Vote",
+  "ui.council.button.view_votes": "View Votes",
+  "ui.council.button.members": "Council Members",
+  "ui.council.button.info": "Council Info",
+  "ui.community.button.interaction.council": "Council",
+  
+  "council.vote.not_found": "Vote not found.",
+  "council.vote.expired": "This vote has expired.",
+  "council.vote.cast_success": "Vote cast successfully.",
+  "council.vote.retracted": "Vote retracted.",
+  "council.vote.created": "Vote created successfully.",
+  "council.vote.daily_limit_reached": "Daily vote creation limit reached.",
+  "council.vote.insufficient_assets": "Insufficient community assets. Need: {0}",
+  "council.vote.status": "Vote Status",
+  "council.vote.results": "Vote Results",
+  "council.vote.execution_data": "Action Details",
+  "council.vote.button.yea": "Vote Yea",
+  "council.vote.button.nay": "Vote Nay",
+  "council.vote.button.retract": "Retract Vote",
+  
+  "ui.community.administration.member.member_page.button.councilor.appoint": "Appoint as Councilor",
+  "ui.community.administration.member.member_page.button.councilor.remove": "Remove Councilor Status",
+  "community.member_management.councilor.success": "{0} has been {1} council",
+
   "mail.notification.community.message": "[UNREAD]({0})[{1}:[2]]: {3}",
   "mail.notification.header.single": "[Community Notification]: you have an unread message.",
   "mail.notification.header.multiple": "[Community Notification]: you have {0} unread messages."

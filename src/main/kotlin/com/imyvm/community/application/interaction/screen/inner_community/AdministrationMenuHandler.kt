@@ -14,34 +14,43 @@ import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.Commu
 import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.CommunityRegionScopeMenu
 import net.minecraft.server.network.ServerPlayerEntity
 
-fun runAdmRenameCommunity(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit){
+fun runAdmRenameCommunity(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit, voteCreationMode: Boolean = false){
     PermissionCheck.executeWithPermission(
         player,
-        { PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.RENAME_COMMUNITY) }
+        { 
+            if (voteCreationMode) PermissionCheck.canAccessCouncil(player, community)
+            else PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.RENAME_COMMUNITY) 
+        }
     ) {
         AdministrationRenameMenuAnvil(player, community = community, runBackGrandfather).open()
     }
 }
 
-fun runAdmManageMembers(player: ServerPlayerEntity, community: Community, runBackGrandfather: ((ServerPlayerEntity) -> Unit)) {
+fun runAdmManageMembers(player: ServerPlayerEntity, community: Community, runBackGrandfather: ((ServerPlayerEntity) -> Unit), voteCreationMode: Boolean = false) {
     PermissionCheck.executeWithPermission(
         player,
-        { PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_MEMBERS) }
+        { 
+            if (voteCreationMode) PermissionCheck.canAccessCouncil(player, community)
+            else PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_MEMBERS) 
+        }
     ) {
         CommunityMenuOpener.open(player) { syncId ->
             CommunityMemberListMenu(
                 syncId = syncId,
                 community = community,
                 playerExecutor = player
-            ) { runBackToCommunityAdministrationMenu(player, community, runBackGrandfather)}
+            ) { runBackToCommunityAdministrationMenu(player, community, runBackGrandfather, voteCreationMode)}
         }
     }
 }
 
-fun runAdmAuditRequests(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit) {
+fun runAdmAuditRequests(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit, voteCreationMode: Boolean = false) {
     PermissionCheck.executeWithPermission(
         player,
-        { PermissionCheck.canAuditApplications(player, community) }
+        { 
+            if (voteCreationMode) PermissionCheck.canAccessCouncil(player, community)
+            else PermissionCheck.canAuditApplications(player, community) 
+        }
     ) {
         CommunityMenuOpener.open(player) { syncId ->
             AdministrationAuditListMenu(
@@ -49,15 +58,18 @@ fun runAdmAuditRequests(player: ServerPlayerEntity, community: Community, runBac
                 community = community,
                 playerExecutor = player,
                 page = 0
-            ) { runBackToCommunityAdministrationMenu(player, community, runBackGrandfather) }
+            ) { runBackToCommunityAdministrationMenu(player, community, runBackGrandfather, voteCreationMode) }
         }
     }
 }
 
-fun runAdmAdvancement(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit){
+fun runAdmAdvancement(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit, voteCreationMode: Boolean = false){
     PermissionCheck.executeWithPermission(
         player,
-        { PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ADVANCEMENT) }
+        { 
+            if (voteCreationMode) PermissionCheck.canAccessCouncil(player, community)
+            else PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ADVANCEMENT) 
+        }
     ) {
         CommunityMenuOpener.open(player) { syncId ->
             AdministrationAdvancementMenu(syncId, community, player, runBackGrandfather)
@@ -69,7 +81,8 @@ fun runAdmRegion(
     player: ServerPlayerEntity,
     community: Community,
     geographicFunctionType: GeographicFunctionType,
-    runBackGrandfather: (ServerPlayerEntity) -> Unit
+    runBackGrandfather: (ServerPlayerEntity) -> Unit,
+    voteCreationMode: Boolean = false
 ) {
     val permission = when (geographicFunctionType) {
         GeographicFunctionType.GEOMETRY_MODIFICATION -> AdministrationPermission.MODIFY_REGION_GEOMETRY
@@ -80,7 +93,10 @@ fun runAdmRegion(
 
     PermissionCheck.executeWithPermission(
         player,
-        { PermissionCheck.canExecuteAdministration(player, community, permission) }
+        { 
+            if (voteCreationMode) PermissionCheck.canAccessCouncil(player, community)
+            else PermissionCheck.canExecuteAdministration(player, community, permission) 
+        }
     ) {
         CommunityMenuOpener.open(player) { syncId ->
             CommunityRegionScopeMenu(
@@ -88,37 +104,48 @@ fun runAdmRegion(
                 playerExecutor = player,
                 community = community,
                 geographicFunctionType = geographicFunctionType
-            ) { runBackToCommunityAdministrationMenu(player, community, runBackGrandfather) }
+            ) { runBackToCommunityAdministrationMenu(player, community, runBackGrandfather, voteCreationMode) }
         }
     }
 }
 
-fun runAdmChangeJoinPolicy(player: ServerPlayerEntity, community: Community, policy: CommunityJoinPolicy, runBack: (ServerPlayerEntity) -> Unit) {
-    PermissionCheck.executeWithPermission(
-        player,
-        { PermissionCheck.canChangeJoinPolicy(player, community) }
-    ) {
-        community.joinPolicy = when (policy) {
+fun runAdmChangeJoinPolicy(player: ServerPlayerEntity, community: Community, policy: CommunityJoinPolicy, runBack: (ServerPlayerEntity) -> Unit, voteCreationMode: Boolean = false) {
+    if (voteCreationMode) {
+        val newPolicy = when (policy) {
             CommunityJoinPolicy.OPEN -> CommunityJoinPolicy.APPLICATION
             CommunityJoinPolicy.APPLICATION -> CommunityJoinPolicy.INVITE_ONLY
             CommunityJoinPolicy.INVITE_ONLY -> CommunityJoinPolicy.OPEN
         }
-        runBackToCommunityAdministrationMenu(player, community, runBack)
+        com.imyvm.community.application.interaction.screen.inner_community.council.createChangeJoinPolicyVote(
+            player, community, newPolicy, runBack
+        )
+    } else {
+        PermissionCheck.executeWithPermission(
+            player,
+            { PermissionCheck.canChangeJoinPolicy(player, community) }
+        ) {
+            community.joinPolicy = when (policy) {
+                CommunityJoinPolicy.OPEN -> CommunityJoinPolicy.APPLICATION
+                CommunityJoinPolicy.APPLICATION -> CommunityJoinPolicy.INVITE_ONLY
+                CommunityJoinPolicy.INVITE_ONLY -> CommunityJoinPolicy.OPEN
+            }
+            runBackToCommunityAdministrationMenu(player, community, runBack, voteCreationMode)
+        }
     }
 }
 
-fun runAdmToggleCouncil(player: ServerPlayerEntity, community: Community, runBack: (ServerPlayerEntity) -> Unit) {
+fun runAdmToggleCouncil(player: ServerPlayerEntity, community: Community, runBack: (ServerPlayerEntity) -> Unit, voteCreationMode: Boolean = false) {
     PermissionCheck.executeWithPermission(
         player,
         { PermissionCheck.canToggleCouncil(player, community) }
     ) {
         community.council.enabled = !community.council.enabled
-        runBackToCommunityAdministrationMenu(player, community, runBack)
+        runBackToCommunityAdministrationMenu(player, community, runBack, voteCreationMode)
     }
 }
 
-private fun runBackToCommunityAdministrationMenu(player: ServerPlayerEntity, community: Community, runBack: (ServerPlayerEntity) -> Unit) {
+private fun runBackToCommunityAdministrationMenu(player: ServerPlayerEntity, community: Community, runBack: (ServerPlayerEntity) -> Unit, voteCreationMode: Boolean = false) {
     CommunityMenuOpener.open(player) { syncId ->
-        CommunityAdministrationMenu(syncId, community, player, runBack)
+        CommunityAdministrationMenu(syncId, community, player, runBack, voteCreationMode)
     }
 }

@@ -145,5 +145,45 @@ class CommunityConfig : HokiConfig("Community.conf") {
         ) { obj, path ->
             obj.getInt(path)
         }
+
+        @JvmField
+        @ConfigOption
+        val COUNCIL_MAX_VOTES_PER_DAY = Option(
+            "council.max_votes_per_day",
+            2,
+            "the maximum number of votes that can be created per day in council."
+        ) { obj, path ->
+            obj.getInt(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val COUNCIL_VOTE_CREATION_COST = Option(
+            "council.vote_creation_cost",
+            200,
+            "the cost in community assets to create a council vote."
+        ) { obj, path ->
+            obj.getInt(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val COUNCIL_VOTE_DURATION_HOURS = Option(
+            "council.vote_duration_hours",
+            48,
+            "the duration in hours for a council vote to remain active."
+        ) { obj, path ->
+            obj.getInt(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val COUNCIL_MIN_PARTICIPATION_PERCENTAGE = Option(
+            "council.min_participation_percentage",
+            0.0,
+            "the minimum percentage of council members that must vote for a vote to be valid (0.0 - 1.0)."
+        ) { obj, path ->
+            obj.getDouble(path)
+        }
     }
 }

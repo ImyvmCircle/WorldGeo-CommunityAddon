@@ -4,10 +4,9 @@ import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.application.permission.PermissionCheck
 import com.imyvm.community.domain.Community
 import com.imyvm.community.domain.GeographicFunctionType
-import com.imyvm.community.domain.MemberAccount
-import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.element.CommunityMemberMenu
-import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.CommunityRegionScopeMenu
 import com.imyvm.community.entrypoints.screen.inner_community.administration_only.NotificationMenuAnvil
+import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.CommunityRegionScopeMenu
+import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.element.CommunityMemberMenu
 import com.imyvm.community.util.Translator
 import com.imyvm.community.util.Translator.trMenu
 import com.mojang.authlib.GameProfile
@@ -152,6 +151,40 @@ private fun handleGovernorshipUpdate(
                 governorship
             )
         }
+    }
+}
+
+fun runToggleCouncilorStatus(
+    community: Community,
+    playerExecutor: ServerPlayerEntity,
+    playerObject: GameProfile,
+    runBack: (ServerPlayerEntity) -> Unit
+) {
+    PermissionCheck.executeWithPermission(
+        playerExecutor,
+        { PermissionCheck.canTransferOwnership(playerExecutor, community, playerObject.id) }
+    ) {
+        val memberValue = community.member[playerObject.id]
+        if (memberValue != null) {
+            val newAccount = com.imyvm.community.domain.MemberAccount(
+                joinedTime = memberValue.joinedTime,
+                basicRoleType = memberValue.basicRoleType,
+                isCouncilMember = !memberValue.isCouncilMember,
+                governorship = memberValue.governorship,
+                mail = memberValue.mail,
+                turnover = memberValue.turnover
+            )
+            community.member[playerObject.id] = newAccount
+            
+            val status = if (newAccount.isCouncilMember) "appointed as" else "removed from"
+            trMenu(
+                playerExecutor,
+                "community.member_management.councilor.success",
+                playerObject.name,
+                status
+            )
+        }
+        runBackToMemberMenu(playerExecutor, community, playerObject, runBack)
     }
 }
 

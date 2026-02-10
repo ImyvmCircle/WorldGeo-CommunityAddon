@@ -14,13 +14,19 @@ import net.minecraft.server.network.ServerPlayerEntity
 
 fun runOpenOperationMenu(player: ServerPlayerEntity, community: Community, runBackGrandfather : ((ServerPlayerEntity) -> Unit)) {
     CommunityMenuOpener.open(player) { syncId ->
-        CommunityAdministrationMenu(syncId, community, player) {
-            runBackToCommunityMenu(
-                player,
-                community,
-                runBackGrandfather
-            )
-        }
+        CommunityAdministrationMenu(
+            syncId, 
+            community, 
+            player, 
+            runBack = {
+                runBackToCommunityMenu(
+                    player,
+                    community,
+                    runBackGrandfather
+                )
+            },
+            voteCreationMode = false
+        )
     }
 }
 

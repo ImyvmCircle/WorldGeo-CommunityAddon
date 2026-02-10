@@ -5,7 +5,6 @@ import com.imyvm.community.domain.MemberAccount
 import com.imyvm.community.domain.Turnover
 import com.imyvm.community.domain.community.*
 import com.imyvm.community.domain.community.council.CouncilVote
-import com.imyvm.community.domain.community.council.ExecutionType
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.text.Text
 import java.io.DataInputStream
@@ -171,7 +170,12 @@ object CommunityDatabase {
         stream.writeInt(community.council.voteSet.size)
         
         for (vote in community.council.voteSet) {
-            stream.writeInt(vote.executionType.ordinal)
+            if (vote.permission == null) {
+                stream.writeBoolean(false)
+            } else {
+                stream.writeBoolean(true)
+                stream.writeInt(vote.permission.ordinal)
+            }
             stream.writeLong(vote.proposeTime)
 
             if (vote.proposerUUID == null) {
@@ -207,7 +211,11 @@ object CommunityDatabase {
         val voteSet = mutableSetOf<CouncilVote>()
         
         for (i in 0 until voteSetSize) {
-            val executionType = ExecutionType.values()[stream.readInt()]
+            val permission = if (stream.readBoolean()) {
+                AdministrationPermission.entries[stream.readInt()]
+            } else {
+                null
+            }
             val proposeTime = stream.readLong()
 
             val proposerUUID = if (stream.readBoolean()) {
@@ -237,7 +245,7 @@ object CommunityDatabase {
             }
             
             voteSet.add(CouncilVote(
-                executionType = executionType,
+                permission = permission,
                 proposeTime = proposeTime,
                 proposerUUID = proposerUUID,
                 yeaVotes = yeaVotes,

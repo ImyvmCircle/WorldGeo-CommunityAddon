@@ -68,7 +68,7 @@ class CommunityMemberMenu(
             item = Items.PAPER
         ) { runNotifyMember(community, playerExecutor, playerObject) }
 
-        if (community.getMemberRole(playerObject.id) == MemberRoleType.OWNER) {
+        if (community.getMemberRole(playerExecutor.uuid) == MemberRoleType.OWNER) {
             addButton(
                 slot = 25,
                 name = Translator.tr("ui.community.administration.member.member_page.button.promote.admin")?.string ?: "Promote to Admin",
@@ -76,6 +76,26 @@ class CommunityMemberMenu(
             ) { runPromoteMember(community, playerExecutor, playerObject) }
         }
 
+        if (PermissionCheck.canTransferOwnership(playerExecutor, community, playerObject.id).isAllowed()) {
+            val memberAccount = community.member[playerObject.id]
+            val isCouncilor = memberAccount?.isCouncilMember ?: false
+            addButton(
+                slot = 27,
+                name = if (isCouncilor) {
+                    Translator.tr("ui.community.administration.member.member_page.button.councilor.remove")?.string ?: "Remove Councilor"
+                } else {
+                    Translator.tr("ui.community.administration.member.member_page.button.councilor.appoint")?.string ?: "Appoint Councilor"
+                },
+                item = if (isCouncilor) Items.RED_BANNER else Items.YELLOW_BANNER
+            ) { 
+                com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.runToggleCouncilorStatus(
+                    community, 
+                    playerExecutor, 
+                    playerObject,
+                    runBack
+                ) 
+            }
+        }
     }
 
     companion object {

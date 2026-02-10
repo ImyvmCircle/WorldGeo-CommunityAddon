@@ -18,10 +18,11 @@ class CommunityAdministrationMenu(
     syncId: Int,
     community: Community,
     playerExecutor: ServerPlayerEntity,
-    val runBack : ((ServerPlayerEntity) -> Unit)
+    val runBack : ((ServerPlayerEntity) -> Unit),
+    val voteCreationMode: Boolean = false
 ): AbstractMenu(
     syncId,
-    menuTitle = generateCommunityOperationMenuTitle(community, playerExecutor),
+    menuTitle = generateCommunityOperationMenuTitle(community, playerExecutor, voteCreationMode),
     runBack = runBack
 ){
     init {
@@ -31,28 +32,28 @@ class CommunityAdministrationMenu(
 
     private fun addStaticButtons(player: ServerPlayerEntity, community: Community) {
 
-        if (PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.RENAME_COMMUNITY).isAllowed()) {
+        if (PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.RENAME_COMMUNITY).isAllowed() || voteCreationMode) {
             addButton(
                 slot = 10,
                 name = Translator.tr("ui.community.administration.button.name")?.string ?: "Community Name",
                 item = Items.NAME_TAG
-            ) { runAdmRenameCommunity(player, community, runBack) }
+            ) { runAdmRenameCommunity(player, community, runBack, voteCreationMode) }
         }
 
-        if (PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_MEMBERS).isAllowed()) {
+        if (PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_MEMBERS).isAllowed() || voteCreationMode) {
             addButton(
                 slot = 11,
                 name = Translator.tr("ui.community.administration.button.members")?.string ?: "Manage Members",
                 item = Items.PLAYER_HEAD
-            ) { runAdmManageMembers(player, community, runBack) }
+            ) { runAdmManageMembers(player, community, runBack, voteCreationMode) }
         }
 
-        if (PermissionCheck.canAuditApplications(player, community).isAllowed()) {
+        if (PermissionCheck.canAuditApplications(player, community).isAllowed() || voteCreationMode) {
             addButton(
                 slot = 12,
                 name = Translator.tr("ui.community.administration.button.audit")?.string ?: "Community Audit",
                 item = Items.REDSTONE_TORCH
-            ) { runAdmAuditRequests(player, community, runBack) }
+            ) { runAdmAuditRequests(player, community, runBack, voteCreationMode) }
         }
 
         if (PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS).isAllowed()) {
@@ -68,7 +69,7 @@ class CommunityAdministrationMenu(
                 slot = 14,
                 name = Translator.tr("ui.community.administration.button.advancement")?.string ?: "Advancement",
                 item = Items.ITEM_FRAME
-            ) { runAdmAdvancement(player, community, runBack) }
+            ) { runAdmAdvancement(player, community, runBack, voteCreationMode) }
         }
 
         if (PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ASSETS).isAllowed()) {
@@ -89,7 +90,8 @@ class CommunityAdministrationMenu(
                     player,
                     community,
                     geographicFunctionType = GeographicFunctionType.GEOMETRY_MODIFICATION,
-                    runBack
+                    runBack,
+                    voteCreationMode
                 )
             }
         }
@@ -104,7 +106,8 @@ class CommunityAdministrationMenu(
                     player,
                     community,
                     geographicFunctionType = GeographicFunctionType.SETTING_ADJUSTMENT,
-                    runBack
+                    runBack,
+                    voteCreationMode
                 )
             }
         }
@@ -119,14 +122,16 @@ class CommunityAdministrationMenu(
                     player,
                     community,
                     geographicFunctionType = GeographicFunctionType.TELEPORT_POINT_LOCATING,
-                    runBack
+                    runBack,
+                    voteCreationMode
                 )
             }
         }
     }
 
     private fun addChangeableButtons(player: ServerPlayerEntity, community: Community) {
-        if (PermissionCheck.canChangeJoinPolicy(player, community).isAllowed()) {
+
+        if (PermissionCheck.canChangeJoinPolicy(player, community).isAllowed() || voteCreationMode) {
             addButton(
                 slot = 28,
                 name = (Translator.tr("ui.community.administration.button.join_policy")?.string
@@ -136,25 +141,30 @@ class CommunityAdministrationMenu(
                     CommunityJoinPolicy.APPLICATION -> Items.YELLOW_WOOL
                     CommunityJoinPolicy.INVITE_ONLY -> Items.RED_WOOL
                 }
-            ) { runAdmChangeJoinPolicy(player, community, community.joinPolicy, runBack) }
+            ) { runAdmChangeJoinPolicy(player, community, community.joinPolicy, runBack, voteCreationMode) }
         }
 
-        if (PermissionCheck.canToggleCouncil(player, community).isAllowed()) {
+        if (PermissionCheck.canToggleCouncil(player, community).isAllowed() && !voteCreationMode) {
             addButton(
                 slot = 29,
                 name = (Translator.tr("ui.community.administration.button.council")?.string
                     ?: "Council: ") + if (community.council.enabled) "Enabled" else "Disabled",
                 item = if (community.council.enabled) Items.LIME_DYE else Items.GRAY_DYE
-            ) { runAdmToggleCouncil(player, community, runBack) }
+            ) { runAdmToggleCouncil(player, community, runBack, voteCreationMode) }
         }
     }
 
     companion object {
-        private fun generateCommunityOperationMenuTitle(community: Community, playerExecutor: ServerPlayerEntity): Text {
+        private fun generateCommunityOperationMenuTitle(
+            community: Community,
+            playerExecutor: ServerPlayerEntity,
+            voteCreationMode: Boolean = false
+        ): Text {
+            val suffix = if (voteCreationMode) " [Vote Creation]" else ""
             return Text.of(
                 community.generateCommunityMark()
                         + " - " + Translator.tr("ui.community.administration.title")?.string
-                        + ":" + playerExecutor.name.string
+                        + ":" + playerExecutor.name.string + suffix
             )
         }
     }
