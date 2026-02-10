@@ -1,13 +1,13 @@
-package com.imyvm.community.application.interaction.screen.inner_community
+package com.imyvm.community.application.interaction.screen.inner_community.affairs
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.Community
 import com.imyvm.community.domain.Turnover
 import com.imyvm.community.domain.community.MemberRoleType
-import com.imyvm.community.entrypoints.screen.inner_community.CommunityAssetsMenu
-import com.imyvm.community.entrypoints.screen.inner_community.DonationMenu
-import com.imyvm.community.entrypoints.screen.inner_community.DonorDetailsMenu
-import com.imyvm.community.entrypoints.screen.inner_community.DonorListMenu
+import com.imyvm.community.entrypoints.screen.inner_community.affairs.assets.CommunityAssetsMenu
+import com.imyvm.community.entrypoints.screen.inner_community.affairs.assets.DonationMenu
+import com.imyvm.community.entrypoints.screen.inner_community.affairs.assets.DonorDetailsMenu
+import com.imyvm.community.entrypoints.screen.inner_community.affairs.assets.DonorListMenu
 import com.imyvm.community.util.Translator
 import com.imyvm.economy.EconomyMod
 import net.minecraft.server.network.ServerPlayerEntity

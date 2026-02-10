@@ -1,7 +1,8 @@
 package com.imyvm.community.entrypoints.screen.inner_community
 
 import com.imyvm.community.application.interaction.screen.inner_community.*
-import com.imyvm.community.application.interaction.screen.inner_community.runOpenAssetsMenu
+import com.imyvm.community.application.interaction.screen.inner_community.affairs.runOpenAnnouncementListMenu
+import com.imyvm.community.application.interaction.screen.inner_community.affairs.runOpenAssetsMenu
 import com.imyvm.community.domain.Community
 import com.imyvm.community.domain.GeographicFunctionType
 import com.imyvm.community.domain.community.CommunityJoinPolicy
@@ -49,7 +50,7 @@ class CommunityAdministrationMenu(
             slot = 13,
             name = Translator.tr("ui.community.operation.button.announcement")?.string ?: "Announcement",
             item = Items.PAPER
-        ) {}
+        ) { runOpenAnnouncementListMenu(player, community, runBack) }
 
         addButton(
             slot = 14,
@@ -67,19 +68,40 @@ class CommunityAdministrationMenu(
             slot = 19,
             name = Translator.tr("ui.community.operation.button.region.geometry")?.string ?: "Region Geometry Modification",
             item = Items.MAP
-        ){ runAdmRegion(player, community, geographicFunctionType = GeographicFunctionType.GEOMETRY_MODIFICATION, runBack) }
+        ){
+            runAdmRegion(
+                player,
+                community,
+                geographicFunctionType = GeographicFunctionType.GEOMETRY_MODIFICATION,
+                runBack
+            )
+        }
 
         addButton(
             slot = 20,
             name = Translator.tr("ui.community.operation.button.region.setting")?.string ?: "Region Settings",
             item = Items.HEART_OF_THE_SEA
-        ){ runAdmRegion(player, community, geographicFunctionType = GeographicFunctionType.SETTING_ADJUSTMENT, runBack) }
+        ){
+            runAdmRegion(
+                player,
+                community,
+                geographicFunctionType = GeographicFunctionType.SETTING_ADJUSTMENT,
+                runBack
+            )
+        }
 
         addButton(
             slot = 21,
             name = Translator.tr("ui.community.operation.button.teleport")?.string ?: "Teleport Point Management",
             item = Items.ENDER_PEARL
-        ) { runAdmRegion(player, community, geographicFunctionType = GeographicFunctionType.TELEPORT_POINT_LOCATING, runBack)}
+        ) {
+            runAdmRegion(
+                player,
+                community,
+                geographicFunctionType = GeographicFunctionType.TELEPORT_POINT_LOCATING,
+                runBack
+            )
+        }
     }
 
     private fun addChangeableButtons(player: ServerPlayerEntity, community: Community) {

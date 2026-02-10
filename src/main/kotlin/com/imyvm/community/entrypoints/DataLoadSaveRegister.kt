@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 fun registerDataLoadAndSave(){
     dataLoad()
     dataSave()
+    captureServerInstance()
 }
 
 fun dataLoad() {
@@ -24,5 +25,15 @@ fun dataSave() {
         } catch (e: Exception) {
             WorldGeoCommunityAddon.logger.error("Failed to save community database: ${e.message}", e)
         }
+    }
+}
+
+fun captureServerInstance() {
+    ServerLifecycleEvents.SERVER_STARTED.register { server ->
+        WorldGeoCommunityAddon.server = server
+    }
+    
+    ServerLifecycleEvents.SERVER_STOPPING.register { _ ->
+        WorldGeoCommunityAddon.server = null
     }
 }

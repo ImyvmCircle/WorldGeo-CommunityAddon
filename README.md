@@ -236,6 +236,119 @@ Selecting a donor opens the **Donor Details Menu**, which shows:
 
 Each member account maintains a `turnover` ArrayList that records all donation history. The community's total assets are calculated dynamically by summing the `getTotalDonation()` method across all members, which aggregates each member's turnover records. The `getDonorList()` method returns member UUIDs sorted by total contribution, enabling efficient display of the most generous supporters.
 
+### Announcement System
+
+Communities possess a comprehensive announcement system enabling administrators to broadcast formatted messages to all members. Announcements support **MOTD (Message of the Day) formatting** with color codes (`&` or `§`) and are tracked with read/unread status for each member.
+
+#### Creating Announcements
+
+Community owners and administrators may create announcements through:
+
+- The **Announcement** button in the Community Administration Menu, which opens the **Announcement Management** interface; or
+- The command `/community announcement create <communityId> <content>`, where content supports MOTD formatting.
+
+When creating an announcement via menu:
+
+1. Click **Create Announcement** to open an anvil input interface;
+2. Enter the announcement content with optional formatting codes (e.g., `&cImportant: &7Server maintenance tonight`);
+3. The system parses the content using `TextParser`, converting formatting codes to styled Text components; and
+4. The announcement is immediately broadcast to all online members.
+
+#### Announcement Properties
+
+Each announcement maintains:
+
+- `id` - Unique UUID identifier;
+- `content` - Formatted Text with parsed MOTD styling;
+- `authorUUID` - The administrator who created it;
+- `timestamp` - Creation time (long);
+- `isDeleted` - Soft delete flag (hidden from members, visible to operators); and
+- `readBy` - Set of UUIDs tracking which members have viewed the announcement.
+
+#### Viewing Announcements
+
+Members access announcements through:
+
+- The **Announcement** button in the Community Menu, opening a list displaying:
+  - `[UNREAD]` in yellow for new announcements (writable book icon);
+  - `[READ]` in gray for viewed announcements (paper icon);
+  - Author name and timestamp;
+  - Preview of first 30 characters;
+  - Sorted by most recent first; or
+- Commands:
+  - `/community announcement list <communityName>` - Lists all announcements with status and preview;
+  - `/community announcement view <communityName> <announcementId>` - Displays full content and automatically marks as read.
+
+Example command output:
+```
+--- Announcements for MyRealm (ID: 5) ---
+1. [UNREAD] [a1b2c3d4...] Important: Server maintenance tonight...
+2. [READ] [e5f6g7h8...] Welcome new members! Please read the...
+```
+
+When a member views an announcement, it is automatically marked as read for that player and persisted to the database.
+
+#### Administrator Management
+
+Administrators manage announcements through the **Announcement Management** menu:
+
+- Browse all announcements (including deleted ones for administrators);
+- View detailed statistics showing read count (e.g., "Read: 15/23");
+- Delete announcements via the **Delete** button, which:
+  - Sets `isDeleted` to `true` (soft delete);
+  - Hides the announcement from members immediately;
+  - Preserves the data for operator auditing; or
+- Use commands:
+  - `/community announcement create <communityName> <content>` - Create announcement with MOTD formatting;
+  - `/community announcement delete <communityName> <announcementId>` - Soft delete an announcement.
+
+Example create command:
+```
+/community announcement create MyRealm &cImportant: &7Server maintenance tonight at 8pm
+```
+
+The content supports standard Minecraft color codes (`&0-9`, `&a-f`) and formatting (`&l` bold, `&o` italic, `&r` reset).
+
+#### Notification System
+
+The announcement system implements a dual notification strategy:
+
+**Online Members** - Immediately notified when announcement created:
+- Receive message: `[New Community Announcement]`;
+- Announcement content displayed directly in chat.
+
+**Offline Members** - Notified upon login:
+- System checks all communities where player is a member;
+- Counts unread announcements per community;
+- Displays summary: `Community [Name] has N unread announcement(s)`;
+- Final total: `You have N unread announcement(s) across all communities`;
+- Distinct from the personal mail system, which handles individual member-to-member messages.
+
+#### Operator Functions
+
+Server operators possess elevated privileges for cross-community announcement management:
+
+- `/community announcement op list` - Lists all announcements across all communities with counts per community;
+- `/community announcement op delete <communityId> <announcementId>` - Permanently force delete any announcement, bypassing administrator permissions;
+- Operators may view deleted announcements for auditing purposes;
+- All operator actions bypass standard permission checks.
+
+Example operator list output:
+```
+- MyManor (ID: 3): 2 announcement(s)
+- TestRealm (ID: 5): 5 announcement(s)
+Total: 7 announcement(s) across all communities.
+```
+
+#### Persistence
+
+Announcements are fully persisted in the community database (`iwg_community.db`):
+
+- Content stored as raw string and re-parsed on load to preserve formatting;
+- All read status tracked per UUID;
+- Soft-deleted announcements retained for operator review;
+- Atomic save operations after each create/delete/read action.
+
 ### Community Discovery
 
 Players may discover and join communities through the **Community List Menu**, accessible from the main menu via the **List Communities** button. The list provides filtering options to display:

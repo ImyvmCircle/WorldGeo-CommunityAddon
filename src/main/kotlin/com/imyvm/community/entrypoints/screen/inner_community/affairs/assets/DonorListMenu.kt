@@ -1,7 +1,7 @@
-package com.imyvm.community.entrypoints.screen.inner_community
+package com.imyvm.community.entrypoints.screen.inner_community.affairs.assets
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
-import com.imyvm.community.application.interaction.screen.inner_community.runOpenDonorDetailsMenu
+import com.imyvm.community.application.interaction.screen.inner_community.affairs.runOpenDonorDetailsMenu
 import com.imyvm.community.domain.Community
 import com.imyvm.community.entrypoints.screen.AbstractListMenu
 import com.imyvm.community.entrypoints.screen.component.createPlayerHeadItemStack

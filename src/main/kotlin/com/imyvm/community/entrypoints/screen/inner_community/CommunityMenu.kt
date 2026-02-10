@@ -1,7 +1,8 @@
 package com.imyvm.community.entrypoints.screen.inner_community
 
 import com.imyvm.community.application.interaction.screen.inner_community.*
-import com.imyvm.community.application.interaction.screen.inner_community.runOpenAssetsMenu
+import com.imyvm.community.application.interaction.screen.inner_community.affairs.runOpenAssetsMenu
+import com.imyvm.community.application.interaction.screen.inner_community.affairs.runOpenMemberAnnouncementListMenu
 import com.imyvm.community.domain.Community
 import com.imyvm.community.domain.community.MemberRoleType
 import com.imyvm.community.entrypoints.screen.AbstractMenu
@@ -57,7 +58,7 @@ class CommunityMenu(
             slot = 20,
             name = Translator.tr("ui.community.button.description.announcement")?.string ?: "Announcement",
             item = Items.MAP
-        ) {}
+        ) { runOpenMemberAnnouncementListMenu(player, community, runBack) }
 
 
         addButton(

@@ -121,6 +121,90 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                             .executes{ runQueryCommunityRegion(it) }
                     )
             )
+            .then(
+                literal("announcement")
+                    .then(
+                        literal("create")
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.word())
+                                    .suggests(ACTIVE_COMMUNITY_PROVIDER)
+                                    .then(
+                                        argument("content", StringArgumentType.greedyString())
+                                            .executes { context ->
+                                                val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+                                                val content = StringArgumentType.getString(context, "content")
+                                                runAnnouncementCreate(context, communityIdentifier, content)
+                                            }
+                                    )
+                            )
+                    )
+                    .then(
+                        literal("delete")
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.word())
+                                    .suggests(ACTIVE_COMMUNITY_PROVIDER)
+                                    .then(
+                                        argument("announcementId", StringArgumentType.word())
+                                            .executes { context ->
+                                                val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+                                                val announcementId = StringArgumentType.getString(context, "announcementId")
+                                                runAnnouncementDelete(context, communityIdentifier, announcementId)
+                                            }
+                                    )
+                            )
+                    )
+                    .then(
+                        literal("list")
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.word())
+                                    .suggests(ACTIVE_COMMUNITY_PROVIDER)
+                                    .executes { context ->
+                                        val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+                                        runAnnouncementList(context, communityIdentifier)
+                                    }
+                            )
+                    )
+                    .then(
+                        literal("view")
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.word())
+                                    .suggests(ACTIVE_COMMUNITY_PROVIDER)
+                                    .then(
+                                        argument("announcementId", StringArgumentType.word())
+                                            .executes { context ->
+                                                val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+                                                val announcementId = StringArgumentType.getString(context, "announcementId")
+                                                runAnnouncementView(context, communityIdentifier, announcementId)
+                                            }
+                                    )
+                            )
+                    )
+                    .then(
+                        literal("op")
+                            .requires { it.hasPermissionLevel(2) }
+                            .then(
+                                literal("list")
+                                    .executes { context ->
+                                        runAnnouncementOpList(context)
+                                    }
+                            )
+                            .then(
+                                literal("delete")
+                                    .then(
+                                        argument("communityIdentifier", StringArgumentType.word())
+                                            .suggests(ALL_COMMUNITY_PROVIDER)
+                                            .then(
+                                                argument("announcementId", StringArgumentType.word())
+                                                    .executes { context ->
+                                                        val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+                                                        val announcementId = StringArgumentType.getString(context, "announcementId")
+                                                        runAnnouncementOpDelete(context, communityIdentifier, announcementId)
+                                                    }
+                                            )
+                                    )
+                            )
+                    )
+            )
     )
 }
 
@@ -211,5 +295,44 @@ private fun runQueryCommunityRegion(context: CommandContext<ServerCommandSource>
     return identifierHandler(player, communityIdentifier) { targetCommunity ->
         val region = targetCommunity.getRegion() ?: return@identifierHandler
         onQueryCommunityRegion(player, region)
+    }
+}
+
+private fun runAnnouncementCreate(context: CommandContext<ServerCommandSource>, communityIdentifier: String, content: String): Int {
+    val player = context.source.player ?: return 0
+    return identifierHandler(player, communityIdentifier) { targetCommunity ->
+        onAnnouncementCreateCommand(context, targetCommunity, content)
+    }
+}
+
+private fun runAnnouncementDelete(context: CommandContext<ServerCommandSource>, communityIdentifier: String, announcementId: String): Int {
+    val player = context.source.player ?: return 0
+    return identifierHandler(player, communityIdentifier) { targetCommunity ->
+        onAnnouncementDeleteCommand(context, targetCommunity, announcementId)
+    }
+}
+
+private fun runAnnouncementList(context: CommandContext<ServerCommandSource>, communityIdentifier: String): Int {
+    val player = context.source.player ?: return 0
+    return identifierHandler(player, communityIdentifier) { targetCommunity ->
+        onAnnouncementListCommand(context, targetCommunity)
+    }
+}
+
+private fun runAnnouncementView(context: CommandContext<ServerCommandSource>, communityIdentifier: String, announcementId: String): Int {
+    val player = context.source.player ?: return 0
+    return identifierHandler(player, communityIdentifier) { targetCommunity ->
+        onAnnouncementViewCommand(context, targetCommunity, announcementId)
+    }
+}
+
+private fun runAnnouncementOpList(context: CommandContext<ServerCommandSource>): Int {
+    return onAnnouncementOpListCommand(context)
+}
+
+private fun runAnnouncementOpDelete(context: CommandContext<ServerCommandSource>, communityIdentifier: String, announcementId: String): Int {
+    val player = context.source.player ?: return 0
+    return identifierHandler(player, communityIdentifier) { targetCommunity ->
+        onAnnouncementOpDeleteCommand(context, targetCommunity, announcementId)
     }
 }

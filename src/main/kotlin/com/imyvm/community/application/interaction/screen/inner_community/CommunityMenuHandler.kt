@@ -4,6 +4,8 @@ import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.Community
 import com.imyvm.community.domain.GeographicFunctionType
 import com.imyvm.community.entrypoints.screen.inner_community.*
+import com.imyvm.community.entrypoints.screen.inner_community.CommunityAdministrationMenu
+import com.imyvm.community.entrypoints.screen.inner_community.affairs.CommunitySettingMenu
 import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.CommunityMemberListMenu
 import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.CommunityRegionScopeMenu
 import com.imyvm.iwg.inter.api.PlayerInteractionApi
@@ -12,7 +14,13 @@ import net.minecraft.server.network.ServerPlayerEntity
 
 fun runOpenOperationMenu(player: ServerPlayerEntity, community: Community, runBackGrandfather : ((ServerPlayerEntity) -> Unit)) {
     CommunityMenuOpener.open(player) { syncId ->
-        CommunityAdministrationMenu(syncId, community, player) { runBackToCommunityMenu(player, community, runBackGrandfather) }
+        CommunityAdministrationMenu(syncId, community, player) {
+            runBackToCommunityMenu(
+                player,
+                community,
+                runBackGrandfather
+            )
+        }
     }
 }
 
@@ -29,7 +37,13 @@ fun runOpenMemberListMenu(player: ServerPlayerEntity, community: Community, runB
 
 fun runOpenSettingMenu(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit) {
     CommunityMenuOpener.open(player) { syncId ->
-        CommunitySettingMenu(syncId, player, community) { runBackToCommunityMenu(player, community, runBackGrandfather) }
+        CommunitySettingMenu(syncId, player, community) {
+            runBackToCommunityMenu(
+                player,
+                community,
+                runBackGrandfather
+            )
+        }
     }
 }
 

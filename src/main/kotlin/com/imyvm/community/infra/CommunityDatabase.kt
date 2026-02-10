@@ -33,6 +33,7 @@ object CommunityDatabase {
                 stream.writeInt(community.joinPolicy.value)
                 stream.writeInt(community.status.value)
                 saveCommunityCouncil(stream, community)
+                saveCommunityAnnouncements(stream, community)
             }
         }
     }
@@ -55,13 +56,15 @@ object CommunityDatabase {
                 val joinPolicy = CommunityJoinPolicy.fromValue(stream.readInt())
                 val status = CommunityStatus.fromValue(stream.readInt())
                 val council = loadCommunityCouncil(stream)
+                val announcements = loadCommunityAnnouncements(stream)
 
                 val community = Community(
                     regionNumberId = regionNumberId,
                     member = memberMap,
                     joinPolicy = joinPolicy,
                     status = status,
-                    council = council
+                    council = council,
+                    announcements = announcements
                 )
                 communities.add(community)
             }
@@ -248,5 +251,54 @@ object CommunityDatabase {
             enabled = enabled,
             voteSet = voteSet
         )
+    }
+
+    private fun saveCommunityAnnouncements(stream: DataOutputStream, community: Community) {
+        stream.writeInt(community.announcements.size)
+        
+        for (announcement in community.announcements) {
+            stream.writeUTF(announcement.id.toString())
+            stream.writeUTF(announcement.content.string)
+            stream.writeUTF(announcement.authorUUID.toString())
+            stream.writeLong(announcement.timestamp)
+            stream.writeBoolean(announcement.isDeleted)
+            
+            // Save readBy set
+            stream.writeInt(announcement.readBy.size)
+            for (readerUUID in announcement.readBy) {
+                stream.writeUTF(readerUUID.toString())
+            }
+        }
+    }
+
+    private fun loadCommunityAnnouncements(stream: DataInputStream): MutableList<com.imyvm.community.domain.Announcement> {
+        val announcementsSize = stream.readInt()
+        val announcements = mutableListOf<com.imyvm.community.domain.Announcement>()
+        
+        for (i in 0 until announcementsSize) {
+            val id = UUID.fromString(stream.readUTF())
+            val contentString = stream.readUTF()
+            val content = com.imyvm.community.util.TextParser.parse(contentString)
+            val authorUUID = UUID.fromString(stream.readUTF())
+            val timestamp = stream.readLong()
+            val isDeleted = stream.readBoolean()
+
+            val readBySize = stream.readInt()
+            val readBy = mutableSetOf<UUID>()
+            for (j in 0 until readBySize) {
+                readBy.add(UUID.fromString(stream.readUTF()))
+            }
+            
+            announcements.add(com.imyvm.community.domain.Announcement(
+                id = id,
+                content = content,
+                authorUUID = authorUUID,
+                timestamp = timestamp,
+                isDeleted = isDeleted,
+                readBy = readBy
+            ))
+        }
+        
+        return announcements
     }
 }

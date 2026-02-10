@@ -18,7 +18,8 @@ class Community(
     var member: HashMap<UUID, MemberAccount>,
     var joinPolicy: CommunityJoinPolicy,
     var status: CommunityStatus,
-    var council: Council = Council()
+    var council: Council = Council(),
+    var announcements: MutableList<Announcement> = mutableListOf()
 ) {
     fun generateCommunityMark(): String {
         return RegionDataApi.getRegion(this.regionNumberId!!)?.name ?: "Community #${this.regionNumberId}"
@@ -108,5 +109,31 @@ class Community(
             .filter { it.value.turnover.isNotEmpty() }
             .sortedByDescending { it.value.getTotalDonation() }
             .map { it.key }
+    }
+
+    fun addAnnouncement(announcement: Announcement) {
+        announcements.add(announcement)
+    }
+
+    fun getActiveAnnouncements(): List<Announcement> {
+        return announcements.filter { !it.isDeleted }
+    }
+
+    fun getAllAnnouncements(): List<Announcement> {
+        return announcements
+    }
+
+    fun getAnnouncementById(id: UUID): Announcement? {
+        return announcements.find { it.id == id }
+    }
+
+    fun softDeleteAnnouncement(id: UUID): Boolean {
+        val announcement = getAnnouncementById(id) ?: return false
+        announcement.isDeleted = true
+        return true
+    }
+
+    fun getUnreadAnnouncementsFor(playerUUID: UUID): List<Announcement> {
+        return getActiveAnnouncements().filter { !it.isReadBy(playerUUID) }
     }
 }

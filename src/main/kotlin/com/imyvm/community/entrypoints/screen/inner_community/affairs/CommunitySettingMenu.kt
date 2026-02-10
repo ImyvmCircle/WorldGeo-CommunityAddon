@@ -1,4 +1,4 @@
-package com.imyvm.community.entrypoints.screen.inner_community
+package com.imyvm.community.entrypoints.screen.inner_community.affairs
 
 import com.imyvm.community.application.interaction.screen.inner_community.runOpenSettingPlayerTargeted
 import com.imyvm.community.application.interaction.screen.inner_community.runOpenSettingRegional

@@ -1,6 +1,6 @@
-package com.imyvm.community.entrypoints.screen.inner_community
+package com.imyvm.community.entrypoints.screen.inner_community.affairs.assets
 
-import com.imyvm.community.application.interaction.screen.inner_community.onDonateConfirm
+import com.imyvm.community.application.interaction.screen.inner_community.affairs.onDonateConfirm
 import com.imyvm.community.domain.Community
 import com.imyvm.community.entrypoints.screen.AbstractMenu
 import com.imyvm.community.entrypoints.screen.component.getLoreButton
