@@ -39,7 +39,7 @@ class DonorDetailsMenu(
             slot = 4,
             itemStack = getLoreButton(
                 createPlayerHeadItemStack(donorName, donorUUID),
-                listOf(Text.literal("§7Total Donation: $donationFormatted"))
+                listOf(Translator.tr("ui.community.assets.donor_details.lore.total", donationFormatted) ?: Text.of("§7Total Donation: $donationFormatted"))
             ),
             name = donorName
         ) {}
@@ -61,8 +61,8 @@ class DonorDetailsMenu(
                 itemStack = getLoreButton(
                     ItemStack(Items.PAPER),
                     listOf(
-                        Text.literal("§7Amount: $amountFormatted"),
-                        Text.literal("§7Time: $timeFormatted")
+                        Translator.tr("ui.community.assets.donor_details.lore.amount", amountFormatted) ?: Text.of("§7Amount: $amountFormatted"),
+                        Translator.tr("ui.community.assets.donor_details.lore.time", timeFormatted) ?: Text.of("§7Time: $timeFormatted")
                     )
                 ),
                 name = Translator.tr("ui.community.assets.turnover")?.string ?: "Donation"

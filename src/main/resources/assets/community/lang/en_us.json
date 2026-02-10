@@ -139,18 +139,24 @@
 
   "ui.community.assets.title": "Community Assets",
   "ui.community.assets.total": "Total Assets",
+  "ui.community.assets.total.lore": "§7{0}",
   "ui.community.assets.donate": "Donate",
   "ui.community.assets.donor_list": "Donor List",
 
   "ui.community.assets.donate.title": "Donate to Community",
   "ui.community.assets.donate.amount": "Donate",
+  "ui.community.assets.donate.amount.lore": "§7{0}",
   "ui.community.assets.donate.success": "Successfully donated ${0} to the community.",
   "ui.community.assets.donate.error.insufficient_funds": "You do not have enough currency to donate this amount.",
   "ui.community.assets.donate.error.not_member": "You must be a member of the community to donate.",
 
   "ui.community.assets.donor_list.title": "Community Donors",
-  
+  "ui.community.assets.donor_list.lore.total": "§7Total: {0}",
+
   "ui.community.assets.donor_details.title": "Donor Details",
+  "ui.community.assets.donor_details.lore.total": "§7Total Donation: {0}",
+  "ui.community.assets.donor_details.lore.amount": "§7Amount: {0}",
+  "ui.community.assets.donor_details.lore.time": "§7Time: {0}",
   "ui.community.assets.turnover": "Donation Record",
 
   "ui.community.operation.announcement_list.title": "Announcement Management",
@@ -222,6 +228,9 @@
   "ui.community.operation.member.member_page.button.remove": "Remove from Community",
   "ui.community.operation.member.member_page.button.message": "Send Message",
   "ui.community.operation.member.member_page.button.promote.admin": "Promote to Admin",
+  "ui.community.operation.member.setting.lore.permission": "§7Permission: {0}",
+  "ui.community.operation.member.setting.lore.scope": "§7Scope: {0}",
+  "ui.community.operation.member.setting.lore.player": "§7Player: {0}",
 
   "ui.community.operation.audit_list.title.component": " - Audit Requests",
   "ui.community.operation.audit_list.no_requests": "No pending member applications.",

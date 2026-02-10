@@ -34,7 +34,7 @@ class DonationMenu(
                 slot = slots[index],
                 itemStack = getLoreButton(
                     ItemStack(Items.GOLD_INGOT),
-                    listOf(Text.literal("§7$amountFormatted"))
+                    listOf(Translator.tr("ui.community.assets.donate.amount.lore", amountFormatted) ?: Text.of("§7$amountFormatted"))
                 ),
                 name = Translator.tr("ui.community.assets.donate.amount")?.string ?: "Donate"
             ) {

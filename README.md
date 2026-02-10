@@ -144,7 +144,7 @@ Each member account maintains the following attributes:
 Members may interact with their community through the **Community Menu**, accessible from the **My Communities** list in the main menu:
 
 - **Description** - View detailed information about the community's region;
-- **Announcement** *()* - View community announcements;
+- **Announcement** - View community announcements;
 - **Members** - Browse the complete member list;
 - **Assets** - View and manage community resources and donations;
 - **Settings** - Adjust personal community preferences through the **Community Setting Menu**;

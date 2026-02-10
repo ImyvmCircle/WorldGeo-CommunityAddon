@@ -39,7 +39,7 @@ class DonorListMenu(
                 slot = slot,
                 itemStack = getLoreButton(
                     createPlayerHeadItemStack(donorName, donorUUID),
-                    listOf(Text.literal("§7Total: $donationFormatted"))
+                    listOf(Translator.tr("ui.community.assets.donor_list.lore.total", donationFormatted) ?: Text.of("§7Total: $donationFormatted"))
                 ),
                 name = donorName
             ) {

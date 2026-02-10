@@ -35,7 +35,7 @@ class CommunityAssetsMenu(
             slot = 13,
             itemStack = getLoreButton(
                 ItemStack(Items.GOLD_BLOCK),
-                listOf(Text.literal("§7$assetsFormatted"))
+                listOf(Translator.tr("ui.community.assets.total.lore", assetsFormatted) ?: Text.of("§7$assetsFormatted"))
             ),
             name = Translator.tr("ui.community.assets.total")?.string ?: "Total Assets"
         ) {}
