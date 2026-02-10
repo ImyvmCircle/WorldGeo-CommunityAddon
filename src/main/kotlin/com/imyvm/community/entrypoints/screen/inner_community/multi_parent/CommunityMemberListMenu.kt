@@ -26,7 +26,6 @@ class CommunityMemberListMenu(
 
     private val playersPerPage = 35
     private val startSlot = 10
-    private val endSlot = 44
     private val playersInPageZero = playersPerPage - 2 * 7
     private val startSlotInPageZero = startSlot + 2 * 9 + 2
 
@@ -34,12 +33,12 @@ class CommunityMemberListMenu(
         if (page == 0) {
             addOwnerButton()
             addAdminButtons()
-            addMemberButtons()
+            addMembersForPage0()
         } else {
-            addMemberButtons()
+            addMembersForOtherPages()
         }
 
-        handlePage(community.getMemberUUIDs().size)
+        handlePageWithSize(community.getMemberUUIDs().size, playersPerPage)
     }
 
     private fun addOwnerButton() {
@@ -66,55 +65,57 @@ class CommunityMemberListMenu(
         ) {}
 
         val adminUUIDs = community.getAdminUUIDs()
-        for (uuid in adminUUIDs) {
+        for ((index, uuid) in adminUUIDs.withIndex()) {
             val adminName = UtilApi.getPlayerName(playerExecutor, uuid)
-            val slotIndex = 21 + adminUUIDs.indexOf(uuid)
             addButton(
-                slot = slotIndex,
+                slot = 21 + index,
                 name = adminName,
                 itemStack = createPlayerHeadItemStack(adminName, uuid)
             ) { runCommunityOpenMember(community, uuid, playerExecutor, runBack) }
         }
-
     }
 
-    private fun addMemberButtons() {
+    private fun addMembersForPage0() {
         addButton(
             slot = 28,
             name = (Translator.tr("ui.community.operation.member_list.member")?.string ?: "Members") + ":",
             item = Items.VILLAGER_SPAWN_EGG
         ) {}
 
-        val memberUUIDs = community.getMemberUUIDs()
-        val memberInPageList = if (page == 0) {
-            memberUUIDs.take(playersInPageZero)
-        } else {
-            memberUUIDs.drop((page - 1) * playersPerPage + playersInPageZero).take(playersPerPage)
-        }
-
-        var slotIndex = if (page == 0) startSlotInPageZero else startSlot
-        for (uuid in memberInPageList) {
+        val memberUUIDs = community.getMemberUUIDs().take(playersInPageZero)
+        renderList(memberUUIDs, playersInPageZero, startSlotInPageZero) { uuid, slot, _ ->
             val memberName = UtilApi.getPlayerName(playerExecutor, uuid)
-
             addButton(
-                slot = slotIndex,
+                slot = slot,
                 name = memberName,
                 itemStack = createPlayerHeadItemStack(memberName, uuid)
             ) { runCommunityOpenMember(community, uuid, playerExecutor, runBack) }
-
-            slotIndex = super.incrementSlotIndex(slotIndex)
-            if (slotIndex > endSlot) break
         }
     }
 
-    override fun calculateTotalPages(listSize: Int): Int {
-        return ((listSize + 2 * 7 + 2 + playersPerPage - 1) / playersPerPage)
+    private fun addMembersForOtherPages() {
+        val memberUUIDs = community.getMemberUUIDs()
+            .drop((page - 1) * playersPerPage + playersInPageZero)
+            .take(playersPerPage)
+        
+        renderList(memberUUIDs, playersPerPage, startSlot) { uuid, slot, _ ->
+            val memberName = UtilApi.getPlayerName(playerExecutor, uuid)
+            addButton(
+                slot = slot,
+                name = memberName,
+                itemStack = createPlayerHeadItemStack(memberName, uuid)
+            ) { runCommunityOpenMember(community, uuid, playerExecutor, runBack) }
+        }
     }
 
     override fun openNewPage(player: ServerPlayerEntity, newPage: Int) {
         CommunityMenuOpener.open(player) { syncId ->
             CommunityMemberListMenu(syncId, community, player, newPage, runBack)
         }
+    }
+
+    override fun calculateTotalPages(listSize: Int): Int {
+        return ((listSize + 2 * 7 + 2 + playersPerPage - 1) / playersPerPage)
     }
 
     companion object {

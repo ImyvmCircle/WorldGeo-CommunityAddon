@@ -28,7 +28,6 @@ class AdministrationAuditListMenu(
 
     private val playersPerPage = 35
     private val startSlot = 10
-    private val endSlot = 44
 
     init {
         val applicants = community.member.entries.filter { it.value.basicRoleType.name == "APPLICANT" }
@@ -39,14 +38,22 @@ class AdministrationAuditListMenu(
                 item = Items.DARK_OAK_SIGN
             ) {}
         } else {
-            addApplicantButtons(applicants)
+            renderList(applicants, playersPerPage, startSlot) { applicant, slot, _ ->
+                val uuid = applicant.key
+                val name = UtilApi.getPlayerName(playerExecutor.server, uuid)
+                val objectProfile = UtilApi.getPlayerProfile(playerExecutor.server, uuid)
+                
+                if (objectProfile != null) {
+                    addButton(
+                        slot = slot,
+                        name = name,
+                        itemStack = createPlayerHeadItemStack(name, uuid)
+                    ) { runOpenAuditMemberMenu(objectProfile) }
+                }
+            }
         }
 
-        handlePage(applicants.size)
-    }
-
-    override fun calculateTotalPages(listSize: Int): Int {
-        return (listSize / playersPerPage) + 1
+        handlePageWithSize(applicants.size, playersPerPage)
     }
 
     override fun openNewPage(player: ServerPlayerEntity, newPage: Int) {
@@ -58,25 +65,6 @@ class AdministrationAuditListMenu(
                 page = newPage,
                 runBackCommunityOperationMenu = runBackCommunityOperationMenu
             )
-        }
-    }
-
-    private fun addApplicantButtons(applicants: List<Map.Entry<UUID, MemberAccount>>) {
-        val applicantInPage = applicants.drop(page * playersPerPage).take(playersPerPage)
-
-        var slot = startSlot
-        val server = playerExecutor.server
-        for (applicant in applicantInPage) {
-            val uuid = applicant.key
-            val name = UtilApi.getPlayerName(server, uuid)
-            val objectProfile = UtilApi.getPlayerProfile(server, uuid) ?: continue
-            addButton(
-                slot = slot,
-                name = name,
-                itemStack = createPlayerHeadItemStack(name, uuid)
-            ) { runOpenAuditMemberMenu(objectProfile) }
-            slot = super.incrementSlotIndex(slot)
-            if (slot > endSlot) break
         }
     }
 

@@ -5,7 +5,8 @@ import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.application.interaction.screen.outer_community.runSwitchFilterMode
 import com.imyvm.community.domain.Community
 import com.imyvm.community.domain.community.CommunityListFilterType
-import com.imyvm.community.entrypoints.screen.AbstractCommunityListMenu
+import com.imyvm.community.entrypoints.screen.AbstractListMenu
+import com.imyvm.community.entrypoints.screen.component.getPlayerHeadButtonItemStackCommunity
 import com.imyvm.community.entrypoints.screen.inner_community.CommunityMenu
 import com.imyvm.community.util.Translator
 import net.minecraft.item.Items
@@ -15,41 +16,45 @@ class CommunityListMenu(
     syncId: Int,
     private val mode: CommunityListFilterType = CommunityListFilterType.JOIN_ABLE,
     page: Int = 0,
-    override val runBack: ((ServerPlayerEntity) -> Unit)
-) : AbstractCommunityListMenu(
+    val runBack: ((ServerPlayerEntity) -> Unit)
+) : AbstractListMenu(
     syncId = syncId,
     menuTitle = Translator.tr("ui.list.title"),
     page = page,
     runBack = runBack
 ) {
 
+    private val communitiesPerPage = 26
+    private val startSlot = 10
+
     init {
-        addCommunityButtons()
-        handlePage(getCommunities().size)
+        val communities = filterCommunitiesByType(mode)
+        renderList(communities, communitiesPerPage, startSlot) { community, slot, _ ->
+            addButton(
+                slot = slot,
+                name = community.generateCommunityMark(),
+                itemStack = getPlayerHeadButtonItemStackCommunity(community)
+            ) { player ->
+                CommunityMenuOpener.open(player) { newSyncId ->
+                    CommunityMenu(newSyncId, player, community) {
+                        CommunityMenuOpener.open(player) { returnSyncId ->
+                            CommunityListMenu(
+                                syncId = returnSyncId,
+                                mode = mode,
+                                runBack = runBack
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        handlePageWithSize(communities.size, communitiesPerPage)
         addModeButtons()
     }
 
-    override fun createNewMenu(syncId: Int, newPage: Int): AbstractCommunityListMenu {
-        return CommunityListMenu(syncId, mode, newPage, runBack)
-    }
-
-    override fun getCommunities(): List<Community> = filterCommunitiesByType(mode)
-
-    override fun onCommunityButtonClick(
-        player: ServerPlayerEntity,
-        community: Community,
-        runBack: (ServerPlayerEntity) -> Unit
-    ) {
+    override fun openNewPage(player: ServerPlayerEntity, newPage: Int) {
         CommunityMenuOpener.open(player) { syncId ->
-            CommunityMenu(syncId, player, community) {
-                CommunityMenuOpener.open(player) { newSyncId ->
-                    CommunityListMenu(
-                        syncId = newSyncId,
-                        mode = mode,
-                        runBack = runBack
-                    )
-                }
-            }
+            CommunityListMenu(syncId, mode, newPage, runBack)
         }
     }
 

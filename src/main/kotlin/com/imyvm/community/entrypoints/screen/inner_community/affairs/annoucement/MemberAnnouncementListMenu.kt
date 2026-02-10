@@ -30,33 +30,13 @@ class MemberAnnouncementListMenu(
     private val startSlot = 0
 
     init {
-        addAnnouncementButtons()
-        handlePage(community.getActiveAnnouncements().size)
-    }
-
-    override fun calculateTotalPages(listSize: Int): Int {
-        return (listSize + announcementsPerPage - 1) / announcementsPerPage
-    }
-
-    override fun openNewPage(player: ServerPlayerEntity, newPage: Int) {
-        CommunityMenuOpener.open(player) { syncId ->
-            MemberAnnouncementListMenu(syncId, community, player, newPage, runBack)
-        }
-    }
-
-    private fun addAnnouncementButtons() {
         val announcements = community.getActiveAnnouncements().sortedByDescending { it.timestamp }
-        val startIndex = page * announcementsPerPage
-        val endIndex = minOf(startIndex + announcementsPerPage, announcements.size)
-
-        for (i in startIndex until endIndex) {
-            val announcement = announcements[i]
+        renderList(announcements, announcementsPerPage, startSlot) { announcement, slot, _ ->
             val authorName = UtilApi.getPlayerName(player, announcement.authorUUID)
             val timeFormatted = getFormattedMillsHour(announcement.timestamp)
             val preview = announcement.content.string.take(30) + if (announcement.content.string.length > 30) "..." else ""
             val isRead = announcement.isReadBy(player.uuid)
 
-            val slot = startSlot + (i - startIndex)
             addButton(
                 slot = slot,
                 itemStack = getLoreButton(
@@ -71,6 +51,13 @@ class MemberAnnouncementListMenu(
                 ),
                 name = Translator.tr("ui.community.announcement_list.item")?.string ?: "Announcement"
             ) { onViewMemberAnnouncementListItem(player, community, announcement.id, runBack) }
+        }
+        handlePageWithSize(announcements.size, announcementsPerPage)
+    }
+
+    override fun openNewPage(player: ServerPlayerEntity, newPage: Int) {
+        CommunityMenuOpener.open(player) { syncId ->
+            MemberAnnouncementListMenu(syncId, community, player, newPage, runBack)
         }
     }
 }

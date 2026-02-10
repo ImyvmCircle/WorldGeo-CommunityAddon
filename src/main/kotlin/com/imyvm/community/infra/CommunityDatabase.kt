@@ -3,10 +3,7 @@ package com.imyvm.community.infra
 import com.imyvm.community.domain.Community
 import com.imyvm.community.domain.MemberAccount
 import com.imyvm.community.domain.Turnover
-import com.imyvm.community.domain.community.CommunityJoinPolicy
-import com.imyvm.community.domain.community.CommunityStatus
-import com.imyvm.community.domain.community.Council
-import com.imyvm.community.domain.community.MemberRoleType
+import com.imyvm.community.domain.community.*
 import com.imyvm.community.domain.community.council.CouncilVote
 import com.imyvm.community.domain.community.council.ExecutionType
 import net.fabricmc.loader.api.FabricLoader
@@ -146,7 +143,6 @@ object CommunityDatabase {
                 communityMail.add(Text.of(mailString))
             }
 
-            // Load turnover data
             val turnoverSize = stream.readInt()
             val turnoverList = ArrayList<Turnover>(turnoverSize)
             for (k in 0 until turnoverSize) {
@@ -262,8 +258,7 @@ object CommunityDatabase {
             stream.writeUTF(announcement.authorUUID.toString())
             stream.writeLong(announcement.timestamp)
             stream.writeBoolean(announcement.isDeleted)
-            
-            // Save readBy set
+
             stream.writeInt(announcement.readBy.size)
             for (readerUUID in announcement.readBy) {
                 stream.writeUTF(readerUUID.toString())
@@ -271,9 +266,9 @@ object CommunityDatabase {
         }
     }
 
-    private fun loadCommunityAnnouncements(stream: DataInputStream): MutableList<com.imyvm.community.domain.Announcement> {
+    private fun loadCommunityAnnouncements(stream: DataInputStream): MutableList<Announcement> {
         val announcementsSize = stream.readInt()
-        val announcements = mutableListOf<com.imyvm.community.domain.Announcement>()
+        val announcements = mutableListOf<Announcement>()
         
         for (i in 0 until announcementsSize) {
             val id = UUID.fromString(stream.readUTF())
@@ -289,14 +284,16 @@ object CommunityDatabase {
                 readBy.add(UUID.fromString(stream.readUTF()))
             }
             
-            announcements.add(com.imyvm.community.domain.Announcement(
-                id = id,
-                content = content,
-                authorUUID = authorUUID,
-                timestamp = timestamp,
-                isDeleted = isDeleted,
-                readBy = readBy
-            ))
+            announcements.add(
+                Announcement(
+                    id = id,
+                    content = content,
+                    authorUUID = authorUUID,
+                    timestamp = timestamp,
+                    isDeleted = isDeleted,
+                    readBy = readBy
+                )
+            )
         }
         
         return announcements

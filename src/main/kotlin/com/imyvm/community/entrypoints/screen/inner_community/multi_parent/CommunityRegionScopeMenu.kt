@@ -29,13 +29,16 @@ class CommunityRegionScopeMenu(
 
     private val unitsPerPage = 35
     private val startSlot = 10
-    private val endSlot = 44
     private val unitsInPageZero = unitsPerPage - 2
     private val startSlotInPageZero = startSlot + 2
 
     init {
-        if (page == 0) addGlobalButton()
-        addLocalButton()
+        if (page == 0) {
+            addGlobalButton()
+            addLocalButtonsForPage0()
+        } else {
+            addLocalButtonsForOtherPages()
+        }
     }
 
     private fun addGlobalButton() {
@@ -46,38 +49,49 @@ class CommunityRegionScopeMenu(
         ) { runExecuteRegion(playerExecutor, community, geographicFunctionType, playerObject, runBack) }
     }
 
-    private fun addLocalButton() {
-        val scopes = community.getRegion()?.geometryScope?: return
-        val scopesInPage = if (page == 0) {
-            scopes.take(unitsInPageZero)
-        } else {
-            scopes.drop((page - 1) * unitsPerPage + unitsInPageZero).take(unitsPerPage)
-        }
-
-        var slotIndex = if (page == 0) startSlotInPageZero else startSlot
-        for (scope in scopesInPage) {
-
-            val item = when (slotIndex % 9) {
-                0 -> Items.WAYFINDER_ARMOR_TRIM_SMITHING_TEMPLATE
-                1 -> Items.WARD_ARMOR_TRIM_SMITHING_TEMPLATE
-                2 -> Items.WILD_ARMOR_TRIM_SMITHING_TEMPLATE
-                3 -> Items.VEX_ARMOR_TRIM_SMITHING_TEMPLATE
-                4 -> Items.HOST_ARMOR_TRIM_SMITHING_TEMPLATE
-                5 -> Items.RAISER_ARMOR_TRIM_SMITHING_TEMPLATE
-                6 -> Items.FLOW_ARMOR_TRIM_SMITHING_TEMPLATE
-                7 -> Items.NETHERITE_UPGRADE_SMITHING_TEMPLATE
-                else -> Items.ITEM_FRAME
-            }
-
+    private fun addLocalButtonsForPage0() {
+        val scopes = community.getRegion()?.geometryScope ?: return
+        val scopesInPage = scopes.take(unitsInPageZero)
+        
+        renderList(scopesInPage, unitsInPageZero, startSlotInPageZero) { scope, slot, _ ->
+            val item = getScopeItemBySlot(slot)
             addButton(
-                slot = slotIndex,
+                slot = slot,
                 name = scope.scopeName,
                 item = item
             ) { runExecuteScope(playerExecutor, community, scope, geographicFunctionType, playerObject, runBack) }
-
-            slotIndex = incrementSlotIndex(slotIndex)
-            if (slotIndex > endSlot) break
         }
+        
+        handlePageWithSize(scopes.size, unitsPerPage)
+    }
+
+    private fun addLocalButtonsForOtherPages() {
+        val scopes = community.getRegion()?.geometryScope ?: return
+        val scopesInPage = scopes
+            .drop((page - 1) * unitsPerPage + unitsInPageZero)
+            .take(unitsPerPage)
+        
+        renderList(scopesInPage, unitsPerPage, startSlot) { scope, slot, _ ->
+            addButton(
+                slot = slot,
+                name = scope.scopeName,
+                item = getScopeItemBySlot(slot)
+            ) { runExecuteScope(playerExecutor, community, scope, geographicFunctionType, playerObject, runBack) }
+        }
+        
+        handlePageWithSize(scopes.size, unitsPerPage)
+    }
+
+    private fun getScopeItemBySlot(slot: Int) = when (slot % 9) {
+        0 -> Items.WAYFINDER_ARMOR_TRIM_SMITHING_TEMPLATE
+        1 -> Items.WARD_ARMOR_TRIM_SMITHING_TEMPLATE
+        2 -> Items.WILD_ARMOR_TRIM_SMITHING_TEMPLATE
+        3 -> Items.VEX_ARMOR_TRIM_SMITHING_TEMPLATE
+        4 -> Items.HOST_ARMOR_TRIM_SMITHING_TEMPLATE
+        5 -> Items.RAISER_ARMOR_TRIM_SMITHING_TEMPLATE
+        6 -> Items.FLOW_ARMOR_TRIM_SMITHING_TEMPLATE
+        7 -> Items.NETHERITE_UPGRADE_SMITHING_TEMPLATE
+        else -> Items.ITEM_FRAME
     }
 
     override fun calculateTotalPages(listSize: Int): Int {

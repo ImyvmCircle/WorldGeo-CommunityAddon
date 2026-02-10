@@ -1,9 +1,6 @@
 package com.imyvm.community.domain
 
-import com.imyvm.community.domain.community.CommunityJoinPolicy
-import com.imyvm.community.domain.community.CommunityStatus
-import com.imyvm.community.domain.community.Council
-import com.imyvm.community.domain.community.MemberRoleType
+import com.imyvm.community.domain.community.*
 import com.imyvm.community.util.Translator
 import com.imyvm.community.util.getFormattedMillsHour
 import com.imyvm.iwg.domain.Region

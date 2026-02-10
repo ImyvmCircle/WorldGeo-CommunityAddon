@@ -26,36 +26,15 @@ class DonorListMenu(
 
     private val donorsPerPage = 45
     private val startSlot = 0
-    private val endSlot = 44
 
     init {
-        addDonorButtons()
-        handlePage(community.getDonorList().size)
-    }
-
-    override fun calculateTotalPages(listSize: Int): Int {
-        return (listSize + donorsPerPage - 1) / donorsPerPage
-    }
-
-    override fun openNewPage(player: ServerPlayerEntity, newPage: Int) {
-        CommunityMenuOpener.open(player) { syncId ->
-            DonorListMenu(syncId, community, playerExecutor, newPage, runBack)
-        }
-    }
-
-    private fun addDonorButtons() {
         val donorList = community.getDonorList()
-        val startIndex = page * donorsPerPage
-        val endIndex = minOf(startIndex + donorsPerPage, donorList.size)
-
-        for (i in startIndex until endIndex) {
-            val donorUUID = donorList[i]
+        renderList(donorList, donorsPerPage, startSlot) { donorUUID, slot, _ ->
             val donorName = UtilApi.getPlayerName(playerExecutor, donorUUID)
             val memberAccount = community.member[donorUUID]
             val totalDonation = memberAccount?.getTotalDonation() ?: 0
             val donationFormatted = "%.2f".format(totalDonation / 100.0)
 
-            val slot = startSlot + (i - startIndex)
             addButton(
                 slot = slot,
                 itemStack = getLoreButton(
@@ -66,6 +45,13 @@ class DonorListMenu(
             ) {
                 runOpenDonorDetailsMenu(playerExecutor, community, donorUUID, runBack)
             }
+        }
+        handlePageWithSize(donorList.size, donorsPerPage)
+    }
+
+    override fun openNewPage(player: ServerPlayerEntity, newPage: Int) {
+        CommunityMenuOpener.open(player) { syncId ->
+            DonorListMenu(syncId, community, playerExecutor, newPage, runBack)
         }
     }
 }

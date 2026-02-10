@@ -32,12 +32,26 @@ class AdministrationAnnouncementListMenu(
 
     init {
         addCreateButton()
-        addAnnouncementButtons()
-        handlePage(community.getActiveAnnouncements().size)
-    }
+        val announcements = community.getActiveAnnouncements().sortedByDescending { it.timestamp }
+        renderList(announcements, announcementsPerPage, startSlot) { announcement, slot, _ ->
+            val authorName = UtilApi.getPlayerName(playerExecutor, announcement.authorUUID)
+            val timeFormatted = getFormattedMillsHour(announcement.timestamp)
+            val preview = announcement.content.string.take(30) + if (announcement.content.string.length > 30) "..." else ""
 
-    override fun calculateTotalPages(listSize: Int): Int {
-        return (listSize + announcementsPerPage - 1) / announcementsPerPage
+            addButton(
+                slot = slot,
+                itemStack = getLoreButton(
+                    ItemStack(Items.PAPER),
+                    listOf(
+                        Translator.tr("ui.community.operation.announcement_list.lore.author", authorName) ?: Text.of("By: $authorName"),
+                        Translator.tr("ui.community.operation.announcement_list.lore.time", timeFormatted) ?: Text.of("Time: $timeFormatted"),
+                        Translator.tr("ui.community.operation.announcement_list.lore.preview", preview) ?: Text.of(preview)
+                    )
+                ),
+                name = Translator.tr("ui.community.operation.announcement_list.item")?.string ?: "Announcement"
+            ) { onViewAdministrationAnnouncementListItem(playerExecutor, community, announcement.id, runBack) }
+        }
+        handlePageWithSize(announcements.size, announcementsPerPage)
     }
 
     override fun openNewPage(player: ServerPlayerEntity, newPage: Int) {
@@ -53,33 +67,6 @@ class AdministrationAnnouncementListMenu(
             item = Items.WRITABLE_BOOK
         ) {
             runCreateAnnouncement(playerExecutor, community, runBack)
-        }
-    }
-
-    private fun addAnnouncementButtons() {
-        val announcements = community.getActiveAnnouncements().sortedByDescending { it.timestamp }
-        val startIndex = page * announcementsPerPage
-        val endIndex = minOf(startIndex + announcementsPerPage, announcements.size)
-
-        for (i in startIndex until endIndex) {
-            val announcement = announcements[i]
-            val authorName = UtilApi.getPlayerName(playerExecutor, announcement.authorUUID)
-            val timeFormatted = getFormattedMillsHour(announcement.timestamp)
-            val preview = announcement.content.string.take(30) + if (announcement.content.string.length > 30) "..." else ""
-
-            val slot = startSlot + (i - startIndex)
-            addButton(
-                slot = slot,
-                itemStack = getLoreButton(
-                    ItemStack(Items.PAPER),
-                    listOf(
-                        Translator.tr("ui.community.operation.announcement_list.lore.author", authorName) ?: Text.of("By: $authorName"),
-                        Translator.tr("ui.community.operation.announcement_list.lore.time", timeFormatted) ?: Text.of("Time: $timeFormatted"),
-                        Translator.tr("ui.community.operation.announcement_list.lore.preview", preview) ?: Text.of(preview)
-                    )
-                ),
-                name = Translator.tr("ui.community.operation.announcement_list.item")?.string ?: "Announcement"
-            ) { onViewAdministrationAnnouncementListItem(playerExecutor, community, announcement.id, runBack) }
         }
     }
 }

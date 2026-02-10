@@ -2,7 +2,7 @@ package com.imyvm.community.entrypoints.screen.inner_community.administration_on
 
 import com.imyvm.community.application.interaction.screen.inner_community.affairs.onDeleteAnnouncement
 import com.imyvm.community.application.interaction.screen.inner_community.affairs.onViewAnnouncementContent
-import com.imyvm.community.domain.Announcement
+import com.imyvm.community.domain.community.Announcement
 import com.imyvm.community.domain.Community
 import com.imyvm.community.entrypoints.screen.AbstractMenu
 import com.imyvm.community.entrypoints.screen.component.getLoreButton

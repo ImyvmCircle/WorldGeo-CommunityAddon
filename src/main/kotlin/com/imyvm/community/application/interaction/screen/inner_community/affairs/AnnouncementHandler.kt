@@ -2,8 +2,8 @@ package com.imyvm.community.application.interaction.screen.inner_community.affai
 
 import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
-import com.imyvm.community.domain.Announcement
 import com.imyvm.community.domain.Community
+import com.imyvm.community.domain.community.Announcement
 import com.imyvm.community.entrypoints.screen.inner_community.administration_only.annoucement.AdministrationAnnouncementDetailsMenu
 import com.imyvm.community.entrypoints.screen.inner_community.administration_only.annoucement.AdministrationAnnouncementInputMenuAnvil
 import com.imyvm.community.entrypoints.screen.inner_community.administration_only.annoucement.AdministrationAnnouncementListMenu
