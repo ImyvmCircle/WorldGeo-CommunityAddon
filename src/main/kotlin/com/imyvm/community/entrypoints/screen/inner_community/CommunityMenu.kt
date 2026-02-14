@@ -113,7 +113,7 @@ class CommunityMenu(
         addButton(
             slot = 29,
             name = Translator.tr("ui.community.button.interaction.advancement")?.string ?: "Advancement",
-            item = Items.WRITABLE_BOOK
+            item = Items.COMPASS
         ) {}
 
         addButton(
@@ -123,7 +123,7 @@ class CommunityMenu(
         ) { runOpenAssetsMenu(player, community, runBack) }
 
         addButton(
-            slot = 31,
+            slot = 32,
             name = Translator.tr("ui.community.button.interaction.like")?.string ?: "Like Community",
             item = Items.PINK_DYE
         ) {}
