@@ -242,6 +242,7 @@
   "ui.community.administration.button.region.setting": "Region Setting Items Modification",
   "ui.community.administration.button.join_policy": "Join Policy: ",
   "ui.community.administration.button.teleport": "Manage Teleport Point",
+  "ui.community.administration.button.council": "Council Toggle",
 
   "ui.community.administration.rename.title": "Community Rename",
 
@@ -256,14 +257,25 @@
   "ui.community.administration.member.member_page.button.remove": "Remove from Community",
   "ui.community.administration.member.member_page.button.message": "Send Message",
   "ui.community.administration.member.member_page.button.promote.admin": "Promote to Admin",
+  "ui.community.administration.member.member_page.button.councilor.appoint": "Appoint as Councilor",
+  "ui.community.administration.member.member_page.button.councilor.remove": "Remove from Council",
+  "ui.community.administration.member.notify.to_edit": "Edit member settings in the region settings menu.",
   "ui.community.administration.member.setting.lore.permission": "§7Permission: {0}",
   "ui.community.administration.member.setting.lore.scope": "§7Scope: {0}",
   "ui.community.administration.member.setting.lore.player": "§7Player: {0}",
+
+  "ui.community.member_list.error.offline_member": "This member is currently offline.",
 
   "ui.community.administration.audit_list.title.component": " - Audit Requests",
   "ui.community.administration.audit_list.no_requests": "No pending member applications.",
 
   "ui.community.administration.audit.title": "- Audit Member Application",
+  "ui.community.administration.audit.button.accept": "Accept",
+  "ui.community.administration.audit.button.refuse": "Refuse",
+  "ui.community.administration.audit.message.accept.mail": "Your application to join the community has been accepted. Welcome!",
+  "ui.community.administration.audit.message.accept.success": "Successfully accepted {0} as a member.",
+  "ui.community.administration.audit.message.refuse.mail": "Your application to join the community has been refused.",
+  "ui.community.administration.audit.message.refuse.success": "Successfully refused {0}'s application.",
 
   "ui.community.administration.region.geometry.title.component": "Choose scale modifying geometry shape",
   "ui.community.administration.region.setting.manage.title.component": "Choose scale modifying region settings",
