@@ -9,7 +9,8 @@ data class MemberAccount (
     val isCouncilMember: Boolean = false,
     var governorship: Int = -1,
     var mail: ArrayList<Text> = arrayListOf(),
-    var turnover: ArrayList<Turnover> = arrayListOf()
+    var turnover: ArrayList<Turnover> = arrayListOf(),
+    var isInvited: Boolean = false
 ) {
     fun getTotalDonation(): Long {
         return turnover.sumOf { it.amount }

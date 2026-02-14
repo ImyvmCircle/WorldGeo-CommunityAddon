@@ -24,6 +24,8 @@ fun runConfirmDispatcher(
         ConfirmTaskType.CREATE_COMMUNITY -> runCommunityCreation(playerExecutor, communityType, communityName, shapeName)
         ConfirmTaskType.JOIN_COMMUNITY -> runCommunityJoin(playerExecutor, targetCommunity)
         ConfirmTaskType.LEAVE_COMMUNITY -> runCommunityLeave(playerExecutor, targetCommunity)
+        ConfirmTaskType.INVITATION_ACCEPT, ConfirmTaskType.INVITATION_REJECT -> {
+        }
     }
 }
 

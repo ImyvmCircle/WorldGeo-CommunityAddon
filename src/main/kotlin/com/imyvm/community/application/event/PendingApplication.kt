@@ -23,6 +23,55 @@ internal fun checkPendingOperations(server: MinecraftServer) {
             handleExpiredOperation(regionId, operation, iterator, server)
         }
     }
+    
+    checkPendingInvitations(server, now)
+}
+
+private fun checkPendingInvitations(server: MinecraftServer, now: Long) {
+    val invitationIterator: MutableIterator<MutableMap.MutableEntry<java.util.UUID, com.imyvm.community.domain.CommunityInvitation>> = 
+        WorldGeoCommunityAddon.pendingInvitations.entries.iterator()
+    
+    while (invitationIterator.hasNext()) {
+        val entry = invitationIterator.next()
+        val invitation = entry.value
+        if (invitation.expireAt <= now) {
+            handleExpiredInvitation(invitation, invitationIterator, server)
+        }
+    }
+}
+
+private fun handleExpiredInvitation(
+    invitation: com.imyvm.community.domain.CommunityInvitation,
+    iterator: MutableIterator<MutableMap.MutableEntry<java.util.UUID, com.imyvm.community.domain.CommunityInvitation>>,
+    server: MinecraftServer
+) {
+    val community = CommunityDatabase.communities.find { it.regionNumberId == invitation.communityRegionId }
+    
+    if (community != null) {
+        community.member.remove(invitation.inviteeUUID)
+        CommunityDatabase.save()
+        
+        val inviterPlayer = server.playerManager?.getPlayer(invitation.inviterUUID)
+        val inviteePlayer = server.playerManager?.getPlayer(invitation.inviteeUUID)
+        
+        inviterPlayer?.sendMessage(
+            Translator.tr(
+                "community.invite.expired.inviter",
+                inviteePlayer?.name?.string ?: "Unknown",
+                community.getRegion()?.name ?: "Community #${community.regionNumberId}"
+            )
+        )
+        
+        inviteePlayer?.sendMessage(
+            Translator.tr(
+                "community.invite.expired.invitee",
+                community.getRegion()?.name ?: "Community #${community.regionNumberId}"
+            )
+        )
+    }
+    
+    iterator.remove()
+    WorldGeoCommunityAddon.logger.info("Expired invitation for invitee ${invitation.inviteeUUID} to community ${invitation.communityRegionId}")
 }
 
 private fun handleExpiredOperation(
@@ -36,7 +85,6 @@ private fun handleExpiredOperation(
         iterator.remove()
         return
     }
-
     when (operation.type) {
         PendingOperationType.CREATE_COMMUNITY_REALM_REQUEST_RECRUITMENT -> {
             promoteCommunityIfEligible(regionId, community)

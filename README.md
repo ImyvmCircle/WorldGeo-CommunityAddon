@@ -197,6 +197,92 @@ When the join policy is set to `APPLICATION`, membership requests must be review
 - **Accept** - Approve the application and grant membership; or
 - **Refuse** - Deny the application, setting their status to `REFUSED`.
 
+#### Invitation System
+
+Communities may proactively recruit members through the **invitation mechanism**, allowing eligible members to invite online players directly. This system offers an alternative to passive application-based recruitment.
+
+##### Sending Invitations
+
+Members with sufficient permissions may invite online players through:
+
+- The **Invite Member** button in the Community Menu (interaction section);
+- Upon clicking, the **Online Player List Menu** displays all currently online players (excluding existing members);
+- Selecting a player initiates an invitation, which sends an interactive chat message to the target player.
+
+**Invitation Requirements:**
+- Inviter must be a member with a role other than `APPLICANT` or `REFUSED`;
+- Community must have sufficient assets to cover the join cost (deducted upon audit approval):
+  - Manor join cost: 1,500.00 (configurable);
+  - Realm join cost: 500.00 (configurable);
+- Target player must meet all standard joining conditions (not already a member, passes membership checks);
+- Community must not be at member capacity (for manors).
+
+##### Receiving Invitations
+
+When invited, the target player receives an interactive chat message containing:
+- Invitation details (inviter name and community name);
+- **[Accept]** button (green) - Click to accept the invitation;
+- **[Reject]** button (red) - Click to decline the invitation.
+
+The recipient may respond by:
+- Clicking the interactive buttons directly in chat; or
+- Using commands:
+  - `/community accept_invitation <communityIdentifier>` - Accept the invitation (where `communityIdentifier` can be the community name or region ID);
+  - `/community reject_invitation <communityIdentifier>` - Reject the invitation.
+
+**Invitation Response:**
+- **Accepting** - The player is added to the community as an `APPLICANT` with a special `isInvited` flag, pending administrator audit. The invitee receives confirmation and is instructed to check the community list for audit status. The invitation remains active until audit decision is made;
+- **Rejecting** - The invitation is discarded immediately, the player is removed from the pending applicant list, and the inviter is notified of the rejection;
+- **Timeout** - Invitations expire after 5 minutes (configurable via `INVITATION_RESPONSE_TIMEOUT_MINUTES`). When an invitation expires:
+  - The invited player is automatically removed from the applicant list;
+  - Both the inviter and invitee receive expiration notifications if they are online;
+  - Expired invitations cannot be accepted or rejected.
+
+##### Invitation Audit Process
+
+Invited players follow a modified audit workflow:
+
+**Upon Acceptance:**
+1. Player is granted immediate access as a pending member with `isInvited` flag set to `true`;
+2. Administrator reviews the application through the standard **Community Audit** interface;
+3. If **approved**:
+   - Community pays the join cost from its assets (not the invited player);
+   - Join cost is recorded as an expenditure in the community's financial records;
+   - Member role is upgraded to `MEMBER`, and `isInvited` flag is cleared;
+   - If community assets are insufficient, audit approval fails with an error message;
+4. If **refused**:
+   - Player is immediately removed from the community (unlike standard applicants who are marked as `REFUSED`);
+   - No join cost is deducted.
+
+**Asset Accounting:**
+- Community assets are calculated as: Total Income (donations) - Total Expenditures;
+- Expenditures are tracked separately in the `expenditures` ArrayList;
+- Each expenditure records:
+  - `amount` - The join cost paid;
+  - `timestamp` - The time of payment;
+- This ensures transparent financial tracking for invitation costs versus donation income.
+
+##### Technical Details
+
+**MemberAccount Attributes:**
+- `isInvited` (Boolean) - Flags whether the member joined via invitation (default: `false`);
+- Invited members with `APPLICANT` status are treated differently during audit to ensure community-funded membership.
+
+**Configuration Options:**
+- `INVITATION_RESPONSE_TIMEOUT_MINUTES` - Time limit in minutes for responding to invitations (default: 5 minutes);
+- `COMMUNITY_JOIN_COST_MANOR` - Join cost for manor communities paid by the community when invitation is approved (default: 1,500.00);
+- `COMMUNITY_JOIN_COST_REALM` - Join cost for realm communities paid by the community when invitation is approved (default: 500.00);
+- Timeout enforcement is automatic through the pending operations system, which checks every `PENDING_CHECK_INTERVAL_SECONDS`.
+
+**Permission System:**
+- Invitation privileges are governed by the member's role (not `APPLICANT` or `REFUSED`);
+- No separate permission toggle exists—all eligible members may invite;
+- Invitations must be sent to online players only.
+
+**Commands:**
+- `/community accept_invitation <communityIdentifier>` - Accept a pending invitation to join a community;
+- `/community reject_invitation <communityIdentifier>` - Reject a pending invitation to join a community.
+
 ### Membership
 
 #### Member Roles
@@ -216,8 +302,10 @@ Each member account maintains the following attributes:
 - `joinedTime` - Timestamp of when the member joined the community;
 - `basicRoleType` - The member's current role within the hierarchy;
 - `isCouncilMember` - Designation as a council member for governance purposes;
-- `governorship` - Custom governance value for advanced features; and
-- `mail` - An internal notification system (ArrayList) for community communications.
+- `governorship` - Custom governance value for advanced features;
+- `mail` - An internal notification system (ArrayList) for community communications;
+- `turnover` - Donation history tracking all contributions to the community; and
+- `isInvited` - Flag indicating whether the member joined via invitation (affects audit payment responsibility).
 
 #### Member Interaction *()* 
 
@@ -235,8 +323,8 @@ Members may interact with their community through the **Community Menu**, access
 - **Donate to Community** - Contribute currency to the community (opens the Assets menu);
 - **Community Shop** *()* - Access the community marketplace;
 - **Like Community** *()* - Rate the community;
-- **Leave Community** *()* - Exit the community; and
-- **Invite Member** *()* - Recruit new members to join.
+- **Leave Community** - Exit the community; and
+- **Invite Member** - Recruit new members to join by sending invitations to online players.
 
 ### Council System
 
@@ -304,7 +392,7 @@ The donation menu presents six predefined amounts: **1.00**, **5.00**, **10.00**
 
 The **Community Assets Menu** displays:
 
-- **Total Assets** - The sum of all donations from all members, displayed prominently as a gold block with formatted currency value;
+- **Total Assets** - The net assets calculated as total donations minus total expenditures (such as invitation join costs), displayed prominently as a gold block with formatted currency value;
 - **Donate** button - Opens the donation menu for contributing currency; and
 - **Donor List** button - Opens the comprehensive donor list.
 
@@ -325,7 +413,7 @@ Selecting a donor opens the **Donor Details Menu**, which shows:
 
 #### Technical Implementation
 
-Each member account maintains a `turnover` ArrayList that records all donation history. The community's total assets are calculated dynamically by summing the `getTotalDonation()` method across all members, which aggregates each member's turnover records. The `getDonorList()` method returns member UUIDs sorted by total contribution, enabling efficient display of the most generous supporters.
+Each member account maintains a `turnover` ArrayList that records all donation history. The community also maintains an `expenditures` ArrayList for tracking costs such as invitation-based membership fees. The community's total assets are calculated dynamically as: (sum of all donations) - (sum of all expenditures). The `getTotalDonation()` method aggregates each member's turnover records, while `getTotalAssets()` computes the net balance. The `getDonorList()` method returns member UUIDs sorted by total contribution, enabling efficient display of the most generous supporters.
 
 ### Announcement System
 

@@ -215,6 +215,22 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                             )
                     )
             )
+            .then(
+                literal("accept_invitation")
+                    .then(
+                        argument("communityIdentifier", StringArgumentType.greedyString())
+                            .suggests(ALL_COMMUNITY_PROVIDER)
+                            .executes { runAcceptInvitation(it) }
+                    )
+            )
+            .then(
+                literal("reject_invitation")
+                    .then(
+                        argument("communityIdentifier", StringArgumentType.greedyString())
+                            .suggests(ALL_COMMUNITY_PROVIDER)
+                            .executes { runRejectInvitation(it) }
+                    )
+            )
     )
 }
 
@@ -360,5 +376,23 @@ private fun runAnnouncementOpDelete(context: CommandContext<ServerCommandSource>
     val player = context.source.player ?: return 0
     return identifierHandler(player, communityIdentifier) { targetCommunity ->
         onAnnouncementOpDeleteCommand(context, targetCommunity, announcementId)
+    }
+}
+
+private fun runAcceptInvitation(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    return identifierHandler(player, communityIdentifier) { targetCommunity ->
+        com.imyvm.community.application.interaction.common.onAcceptInvitation(player, targetCommunity)
+        1
+    }
+}
+
+private fun runRejectInvitation(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    return identifierHandler(player, communityIdentifier) { targetCommunity ->
+        com.imyvm.community.application.interaction.common.onRejectInvitation(player, targetCommunity)
+        1
     }
 }

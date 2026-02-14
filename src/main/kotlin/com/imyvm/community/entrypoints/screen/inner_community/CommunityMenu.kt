@@ -144,7 +144,7 @@ class CommunityMenu(
             slot = 34,
             name = Translator.tr ("ui.community.button.interaction.invite")?.string ?: "Invite Member",
             item = Items.VILLAGER_SPAWN_EGG
-        ) {}
+        ) { runOpenInviteMemberMenu(player, community, runBack) }
     }
 }
 

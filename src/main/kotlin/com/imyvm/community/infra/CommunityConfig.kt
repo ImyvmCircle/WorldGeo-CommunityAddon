@@ -205,5 +205,15 @@ class CommunityConfig : HokiConfig("Community.conf") {
         ) { obj, path ->
             obj.getLong(path)
         }
+
+        @JvmField
+        @ConfigOption
+        val INVITATION_RESPONSE_TIMEOUT_MINUTES = Option(
+            "community.invitation_response_timeout_minutes",
+            5,
+            "the time limit in minutes for a player to respond to a community invitation."
+        ) { obj, path ->
+            obj.getInt(path)
+        }
     }
 }

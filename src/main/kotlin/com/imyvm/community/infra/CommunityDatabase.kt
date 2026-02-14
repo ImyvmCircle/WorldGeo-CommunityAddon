@@ -31,6 +31,7 @@ object CommunityDatabase {
                 saveCommunityCouncil(stream, community)
                 saveCommunityAnnouncements(stream, community)
                 saveCommunityAdministrationPermissions(stream, community)
+                saveCommunityExpenditures(stream, community)
             }
         }
     }
@@ -55,6 +56,7 @@ object CommunityDatabase {
                 val council = loadCommunityCouncil(stream)
                 val announcements = loadCommunityAnnouncements(stream)
                 val administrationPermissions = loadCommunityAdministrationPermissions(stream)
+                val expenditures = loadCommunityExpenditures(stream)
 
                 val community = Community(
                     regionNumberId = regionNumberId,
@@ -63,7 +65,8 @@ object CommunityDatabase {
                     status = status,
                     council = council,
                     announcements = announcements,
-                    administrationPermissions = administrationPermissions
+                    administrationPermissions = administrationPermissions,
+                    expenditures = expenditures
                 )
                 communities.add(community)
             }
@@ -117,6 +120,8 @@ object CommunityDatabase {
                 stream.writeLong(turnover.amount)
                 stream.writeLong(turnover.timestamp)
             }
+            
+            stream.writeBoolean(memberAccount.isInvited)
         }
     }
 
@@ -152,6 +157,12 @@ object CommunityDatabase {
                 val timestamp = stream.readLong()
                 turnoverList.add(Turnover(amount, timestamp))
             }
+            
+            val isInvited = try {
+                stream.readBoolean()
+            } catch (e: Exception) {
+                false
+            }
 
             memberMap[uuid] = MemberAccount(
                 joinedTime = joinedTime,
@@ -159,7 +170,8 @@ object CommunityDatabase {
                 isCouncilMember = isCouncilMember,
                 governorship = governorship,
                 mail = communityMail,
-                turnover = turnoverList
+                turnover = turnoverList,
+                isInvited = isInvited
             )
         }
         return memberMap
@@ -338,5 +350,29 @@ object CommunityDatabase {
         }
 
         return AdministrationPermissions(adminPermissions, councilPermissions)
+    }
+
+    private fun saveCommunityExpenditures(stream: DataOutputStream, community: Community) {
+        stream.writeInt(community.expenditures.size)
+        for (expenditure in community.expenditures) {
+            stream.writeLong(expenditure.amount)
+            stream.writeLong(expenditure.timestamp)
+        }
+    }
+
+    private fun loadCommunityExpenditures(stream: DataInputStream): ArrayList<Turnover> {
+        val expenditures = try {
+            val size = stream.readInt()
+            val list = ArrayList<Turnover>(size)
+            for (i in 0 until size) {
+                val amount = stream.readLong()
+                val timestamp = stream.readLong()
+                list.add(Turnover(amount, timestamp))
+            }
+            list
+        } catch (e: Exception) {
+            ArrayList()
+        }
+        return expenditures
     }
 }

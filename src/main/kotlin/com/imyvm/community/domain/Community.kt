@@ -17,7 +17,8 @@ class Community(
     var status: CommunityStatus,
     var council: Council = Council(),
     var announcements: MutableList<Announcement> = mutableListOf(),
-    var administrationPermissions: AdministrationPermissions = AdministrationPermissions()
+    var administrationPermissions: AdministrationPermissions = AdministrationPermissions(),
+    var expenditures: ArrayList<Turnover> = arrayListOf()
 ) {
     fun isManor(): Boolean {
         return status == CommunityStatus.PENDING_MANOR || status == CommunityStatus.ACTIVE_MANOR || status == CommunityStatus.REVOKED_MANOR
@@ -79,7 +80,9 @@ class Community(
     }
 
     fun getTotalAssets(): Long {
-        return member.values.sumOf { it.getTotalDonation() }
+        val totalIncome = member.values.sumOf { it.getTotalDonation() }
+        val totalExpenditure = expenditures.sumOf { it.amount }
+        return totalIncome - totalExpenditure
     }
 
     fun getDonorList(): List<UUID> {

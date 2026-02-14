@@ -43,6 +43,25 @@
   "community.join.applied": "Your application to join community {0} (ID {1}) has been submitted.",
   "community.join.error.invite_only": "The community with ID {0} is invite-only. You cannot join without an invitation.",
 
+  "community.invite.error.no_permission": "You do not have permission to invite members to this community.",
+  "community.invite.error.insufficient_assets": "The community does not have sufficient assets ({0}) to pay for invited member join costs.",
+  "community.invite.error.target_ineligible": "Player {0} is not eligible to join this community.",
+  "community.invite.sent": "Invitation sent to {0} to join {1}.",
+  "community.invite.received": "You have been invited by {0} to join {1}. You have {2} minutes to respond.",
+  "community.invite.button.accept": "Accept",
+  "community.invite.button.reject": "Reject",
+  "community.invite.button.accept.hover": "Click to accept the invitation",
+  "community.invite.button.reject.hover": "Click to reject the invitation",
+  "community.invite.accepted": "You have accepted the invitation to {0}. Check the community list to view your audit status.",
+  "community.invite.rejected": "You have rejected the invitation to {0}.",
+  "community.invite.rejected.inviter": "{0} has rejected your invitation to join {1}.",
+  "community.invite.error.no_invitation": "You do not have a pending invitation to this community.",
+  "community.invite.error.expired": "This invitation has expired.",
+  "community.invite.expired.inviter": "Your invitation to {0} to join {1} has expired.",
+  "community.invite.expired.invitee": "Your invitation to join {0} has expired.",
+
+  "community.audit.error.insufficient_assets": "Cannot approve {0}: Community does not have sufficient assets ({1}) to pay the join cost.",
+
   "community.leave.success": "You have successfully left {0}.",
   "community.leave.error.missing_data": "Error: Missing community data for leave operation.",
 
@@ -134,6 +153,7 @@
   "ui.community.button.interaction.like": "Like Community",
   "ui.community.button.interaction.leave": "Leave Community",
   "ui.community.button.interaction.invite": "Invite Member",
+  "ui.community.invite.online_players": "Select Player to Invite",
   "ui.community.button.interaction.operations": "Community Administration",
 
   "ui.community.administration.title": "Community Administration",

@@ -13,5 +13,6 @@ enum class PendingOperationType(val value: Int) {
     JOIN_COMMUNITY(3),
     CHANGE_ROLE(4),
     CHANGE_JOIN_POLICY(5),
-    AUDITING_COMMUNITY_REQUEST(6);
+    AUDITING_COMMUNITY_REQUEST(6),
+    INVITATION(7);
 }

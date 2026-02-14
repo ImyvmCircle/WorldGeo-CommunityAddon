@@ -19,8 +19,34 @@ fun runAccept(
     ) {
         val objectAccount = community.member[playerObject.id]
         if (objectAccount != null) {
+            if (objectAccount.isInvited) {
+                val cost = if (community.isManor()) 
+                    com.imyvm.community.infra.CommunityConfig.COMMUNITY_JOIN_COST_MANOR.value 
+                    else com.imyvm.community.infra.CommunityConfig.COMMUNITY_JOIN_COST_REALM.value
+                
+                if (community.getTotalAssets() < cost) {
+                    playerExecutor.sendMessage(
+                        com.imyvm.community.util.Translator.tr(
+                            "community.audit.error.insufficient_assets",
+                            playerObject.name,
+                            cost / 100.0
+                        )
+                    )
+                    playerExecutor.closeHandledScreen()
+                    return@executeWithPermission
+                }
+                
+                community.expenditures.add(
+                    com.imyvm.community.domain.Turnover(
+                        amount = cost,
+                        timestamp = System.currentTimeMillis()
+                    )
+                )
+            }
+            
             objectAccount.basicRoleType = MemberRoleType.MEMBER
             objectAccount.joinedTime = System.currentTimeMillis()
+            objectAccount.isInvited = false
             constructAndSendMail(
                 objectAccount.mail,
                 playerExecutor,
@@ -32,6 +58,7 @@ fun runAccept(
                 "ui.community.administration.audit.message.accept.success",
                 playerObject.name
             )
+            com.imyvm.community.infra.CommunityDatabase.save()
         }
     }
 }
@@ -47,19 +74,29 @@ fun runRefuse(
     ) {
         val objectAccount = community.member[playerObject.id]
         if (objectAccount != null) {
-            objectAccount.basicRoleType = MemberRoleType.REFUSED
-            objectAccount.joinedTime = System.currentTimeMillis()
-            constructAndSendMail(
-                objectAccount.mail,
-                playerExecutor,
-                community,
-                "ui.community.administration.audit.message.refuse.mail"
-            )
-            trMenu(
-                playerExecutor,
-                "ui.community.administration.audit.message.refuse.success",
-                playerObject.name
-            )
+            if (objectAccount.isInvited) {
+                community.member.remove(playerObject.id)
+                trMenu(
+                    playerExecutor,
+                    "ui.community.administration.audit.message.refuse.success",
+                    playerObject.name
+                )
+            } else {
+                objectAccount.basicRoleType = MemberRoleType.REFUSED
+                objectAccount.joinedTime = System.currentTimeMillis()
+                constructAndSendMail(
+                    objectAccount.mail,
+                    playerExecutor,
+                    community,
+                    "ui.community.administration.audit.message.refuse.mail"
+                )
+                trMenu(
+                    playerExecutor,
+                    "ui.community.administration.audit.message.refuse.success",
+                    playerObject.name
+                )
+            }
+            com.imyvm.community.infra.CommunityDatabase.save()
         }
     }
 }
