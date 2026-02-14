@@ -6,13 +6,14 @@ import com.imyvm.community.util.Translator
 import com.imyvm.iwg.ImyvmWorldGeo
 import net.minecraft.item.Items
 import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.text.Text
 
 class MainMenu(
     syncId: Int,
     val playerExecutor: ServerPlayerEntity
 ) : AbstractMenu(
         syncId,
-        menuTitle = Translator.tr("ui.main.title")
+        menuTitle = Translator.tr("ui.main.title") ?: Text.literal("Community Menu")
     ) {
 
     init {

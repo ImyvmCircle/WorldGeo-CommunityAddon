@@ -3,6 +3,7 @@ package com.imyvm.community
 import com.imyvm.community.domain.PendingOperation
 import com.imyvm.community.entrypoints.command.register
 import com.imyvm.community.entrypoints.event.registerAnnouncementNotification
+import com.imyvm.community.entrypoints.event.registerChatInterceptor
 import com.imyvm.community.entrypoints.event.registerExpireCheck
 import com.imyvm.community.entrypoints.event.registerMailCheck
 import com.imyvm.community.entrypoints.registerDataLoadAndSave
@@ -19,6 +20,7 @@ class WorldGeoCommunityAddon : ModInitializer {
 		registerExpireCheck()
 		registerMailCheck()
 		registerAnnouncementNotification()
+		registerChatInterceptor()
 
 		CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> register(dispatcher) }
 		logger.info("$MOD_ID initialized successfully.")

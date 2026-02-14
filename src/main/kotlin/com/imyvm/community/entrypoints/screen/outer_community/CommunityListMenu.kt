@@ -11,6 +11,7 @@ import com.imyvm.community.entrypoints.screen.inner_community.CommunityMenu
 import com.imyvm.community.util.Translator
 import net.minecraft.item.Items
 import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.text.Text
 
 class CommunityListMenu(
     syncId: Int,
@@ -19,7 +20,7 @@ class CommunityListMenu(
     val runBack: ((ServerPlayerEntity) -> Unit)
 ) : AbstractListMenu(
     syncId = syncId,
-    menuTitle = Translator.tr("ui.list.title"),
+    menuTitle = Translator.tr("ui.list.title") ?: Text.literal("Community List"),
     page = page,
     runBack = runBack
 ) {

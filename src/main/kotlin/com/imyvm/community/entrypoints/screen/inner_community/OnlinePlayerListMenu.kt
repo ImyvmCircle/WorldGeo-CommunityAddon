@@ -19,7 +19,7 @@ class OnlinePlayerListMenu private constructor(
     val runBack: ((ServerPlayerEntity) -> Unit)
 ) : AbstractListMenu(
     syncId = syncId,
-    menuTitle = Translator.tr("ui.community.invite.online_players"),
+    menuTitle = Translator.tr("ui.community.invite.online_players") ?: Text.literal("Invite Player"),
     page = page,
     runBack = runBack
 ) {

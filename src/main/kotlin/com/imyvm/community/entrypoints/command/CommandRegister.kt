@@ -243,11 +243,11 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     )
             )
             .then(
-                literal("chat_toggle")
+                literal("chat_channel")
                     .then(
                         argument("communityIdentifier", StringArgumentType.greedyString())
                             .suggests(ALL_COMMUNITY_PROVIDER)
-                            .executes { runToggleChatRoomSend(it) }
+                            .executes { runToggleChatChannel(it) }
                     )
             )
             .then(
@@ -435,12 +435,12 @@ private fun runSendChatMessage(context: CommandContext<ServerCommandSource>): In
     }
 }
 
-private fun runToggleChatRoomSend(context: CommandContext<ServerCommandSource>): Int {
+private fun runToggleChatChannel(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
     val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
     
     return identifierHandler(player, communityIdentifier) { targetCommunity ->
-        com.imyvm.community.application.interaction.common.ChatRoomHandler.toggleChatRoomSend(player, targetCommunity)
+        com.imyvm.community.application.interaction.common.ChatRoomHandler.toggleChatChannel(player, targetCommunity)
         1
     }
 }

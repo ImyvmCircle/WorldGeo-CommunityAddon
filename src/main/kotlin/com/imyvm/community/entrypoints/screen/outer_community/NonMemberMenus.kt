@@ -5,6 +5,7 @@ import com.imyvm.community.entrypoints.screen.AbstractMenu
 import com.imyvm.community.util.Translator
 import net.minecraft.item.Items
 import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.text.Text
 
 class NonMemberCommunityMenu(
     syncId: Int,
@@ -13,7 +14,8 @@ class NonMemberCommunityMenu(
     private val runBack: ((ServerPlayerEntity) -> Unit)
 ) : AbstractMenu(
     syncId,
-    menuTitle = Translator.tr("ui.non_member.title", community.generateCommunityMark()),
+    menuTitle = Translator.tr("ui.non_member.title", community.generateCommunityMark()) 
+        ?: Text.literal("${community.generateCommunityMark()} - Not a Member"),
     runBack = runBack
 ) {
     init {
@@ -55,7 +57,8 @@ class ApplicantStatusMenu(
     private val runBack: ((ServerPlayerEntity) -> Unit)
 ) : AbstractMenu(
     syncId,
-    menuTitle = Translator.tr("ui.applicant.title", community.generateCommunityMark()),
+    menuTitle = Translator.tr("ui.applicant.title", community.generateCommunityMark())
+        ?: Text.literal("${community.generateCommunityMark()} - Application Status"),
     runBack = runBack
 ) {
     init {
@@ -90,7 +93,8 @@ class RefusedStatusMenu(
     private val runBack: ((ServerPlayerEntity) -> Unit)
 ) : AbstractMenu(
     syncId,
-    menuTitle = Translator.tr("ui.refused.title", community.generateCommunityMark()),
+    menuTitle = Translator.tr("ui.refused.title", community.generateCommunityMark())
+        ?: Text.literal("${community.generateCommunityMark()} - Application Refused"),
     runBack = runBack
 ) {
     init {

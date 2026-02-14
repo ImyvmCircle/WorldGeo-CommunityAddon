@@ -11,8 +11,7 @@ data class MemberAccount (
     var mail: ArrayList<Text> = arrayListOf(),
     var turnover: ArrayList<Turnover> = arrayListOf(),
     var isInvited: Boolean = false,
-    var chatRoomSendEnabled: Boolean = false,  // Toggle for sending messages to chat room
-    var chatHistoryEnabled: Boolean = true      // Toggle for receiving chat messages
+    var chatHistoryEnabled: Boolean = true
 ) {
     fun getTotalDonation(): Long {
         return turnover.sumOf { it.amount }

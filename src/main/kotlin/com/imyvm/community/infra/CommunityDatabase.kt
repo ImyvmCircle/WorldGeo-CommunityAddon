@@ -125,7 +125,6 @@ object CommunityDatabase {
             }
             
             stream.writeBoolean(memberAccount.isInvited)
-            stream.writeBoolean(memberAccount.chatRoomSendEnabled)
             stream.writeBoolean(memberAccount.chatHistoryEnabled)
         }
     }
@@ -169,10 +168,10 @@ object CommunityDatabase {
                 false
             }
 
-            val chatRoomSendEnabled = try {
+            try {
                 stream.readBoolean()
             } catch (e: Exception) {
-                false
+
             }
 
             val chatHistoryEnabled = try {
@@ -189,7 +188,6 @@ object CommunityDatabase {
                 mail = communityMail,
                 turnover = turnoverList,
                 isInvited = isInvited,
-                chatRoomSendEnabled = chatRoomSendEnabled,
                 chatHistoryEnabled = chatHistoryEnabled
             )
         }

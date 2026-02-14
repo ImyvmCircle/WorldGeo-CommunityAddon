@@ -12,7 +12,10 @@ import net.minecraft.text.Text
 object ChatRoomHandler {
 
     fun sendChatMessage(player: ServerPlayerEntity, community: Community, message: String): Boolean {
-        val memberAccount = community.member[player.uuid] ?: return false
+        val memberAccount = community.member[player.uuid] ?: run {
+            player.sendMessage(Translator.tr("community.chat.error.not_member"))
+            return false
+        }
 
         if (memberAccount.basicRoleType == MemberRoleType.APPLICANT || 
             memberAccount.basicRoleType == MemberRoleType.REFUSED) {
@@ -35,16 +38,12 @@ object ChatRoomHandler {
 
     fun broadcastChatMessage(community: Community, sender: ServerPlayerEntity, message: String) {
         val senderAccount = community.member[sender.uuid] ?: return
-        val senderRole = getRoleDisplayName(senderAccount.basicRoleType)
+        val roleDisplay = getRoleDisplayName(senderAccount.basicRoleType, community.isManor())
+        val communityColor = getCommunityColor(community.regionNumberId ?: 0)
         val communityName = community.generateCommunityMark()
 
-        val formattedMessage = Translator.tr(
-            "community.chat.message.format",
-            communityName,
-            senderRole,
-            sender.name.string,
-            message
-        )
+        val prefix = "${communityColor}【${communityName}】§r${roleDisplay}"
+        val formattedMessage = Text.literal("$prefix §f${sender.name.string}§7: §f$message")
 
         for ((memberUUID, memberAccount) in community.member) {
             if (isFormalMember(memberAccount.basicRoleType) && memberAccount.chatHistoryEnabled) {
@@ -56,7 +55,7 @@ object ChatRoomHandler {
         }
     }
 
-    fun toggleChatRoomSend(player: ServerPlayerEntity, community: Community): Boolean {
+    fun toggleChatChannel(player: ServerPlayerEntity, community: Community): Boolean {
         val memberAccount = community.member[player.uuid] ?: return false
         
         if (!isFormalMember(memberAccount.basicRoleType)) {
@@ -64,11 +63,17 @@ object ChatRoomHandler {
             return false
         }
 
-        memberAccount.chatRoomSendEnabled = !memberAccount.chatRoomSendEnabled
-        CommunityDatabase.save()
+        val currentChannel = ChatChannelManager.getActiveChannel(player.uuid)
+        val targetRegionId = community.regionNumberId ?: return false
         
-        val status = if (memberAccount.chatRoomSendEnabled) "enabled" else "disabled"
-        player.sendMessage(Translator.tr("community.chat.toggle.send.$status"))
+        if (currentChannel == targetRegionId) {
+            ChatChannelManager.clearChannel(player.uuid)
+            player.sendMessage(Translator.tr("community.chat.channel.disabled", community.generateCommunityMark()))
+        } else {
+            ChatChannelManager.setActiveChannel(player.uuid, targetRegionId)
+            player.sendMessage(Translator.tr("community.chat.channel.enabled", community.generateCommunityMark()))
+        }
+        
         return true
     }
 
@@ -94,12 +99,30 @@ object ChatRoomHandler {
                roleType == MemberRoleType.MEMBER
     }
 
-    private fun getRoleDisplayName(roleType: MemberRoleType): String {
+    private fun getRoleDisplayName(roleType: MemberRoleType, isManor: Boolean): String {
         return when (roleType) {
-            MemberRoleType.OWNER -> Translator.tr("community.role.owner")?.string ?: "Owner"
-            MemberRoleType.ADMIN -> Translator.tr("community.role.admin")?.string ?: "Admin"
-            MemberRoleType.MEMBER -> Translator.tr("community.role.member")?.string ?: "Member"
-            else -> roleType.name
+            MemberRoleType.OWNER -> if (isManor) "§6⚜Landowner⚜§r" else "§6♛Lord♛§r"
+            MemberRoleType.ADMIN -> if (isManor) "§5✦HouseKeeper✦§r" else "§5★Steward★§r"
+            MemberRoleType.MEMBER -> if (isManor) "§aResident§r" else "§aCitizen§r"
+            else -> "§7${roleType.name}§r"
         }
+    }
+
+    private fun getCommunityColor(regionId: Int): String {
+        val colors = listOf(
+            "§c", // RED
+            "§6", // GOLD
+            "§e", // YELLOW
+            "§a", // GREEN
+            "§b", // AQUA
+            "§9", // BLUE
+            "§d", // LIGHT_PURPLE
+            "§5", // DARK_PURPLE
+            "§3", // DARK_AQUA
+            "§2"  // DARK_GREEN
+        )
+
+        val colorIndex = (regionId * 31 + regionId.toString().hashCode()).mod(colors.size)
+        return colors[colorIndex]
     }
 }

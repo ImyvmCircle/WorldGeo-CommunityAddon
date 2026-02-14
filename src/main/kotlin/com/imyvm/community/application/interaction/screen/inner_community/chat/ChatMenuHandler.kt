@@ -41,14 +41,12 @@ fun runOpenChatHistoryPage(
     }
 }
 
-fun runToggleChatSend(
+fun runToggleChatChannel(
     player: ServerPlayerEntity,
     community: Community,
     runBack: (ServerPlayerEntity) -> Unit
 ) {
-    val memberAccount = community.member[player.uuid] ?: return
-    memberAccount.chatRoomSendEnabled = !memberAccount.chatRoomSendEnabled
-    CommunityDatabase.save()
+    com.imyvm.community.application.interaction.common.ChatRoomHandler.toggleChatChannel(player, community)
     
     // Reopen menu to show updated status
     runOpenChatRoomMenu(player, community, runBack)

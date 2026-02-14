@@ -7,6 +7,7 @@ import com.imyvm.community.entrypoints.screen.component.getPlayerHeadButtonItemS
 import com.imyvm.community.entrypoints.screen.inner_community.CommunityMenu
 import com.imyvm.community.util.Translator
 import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.text.Text
 
 class MyCommunityListMenu(
     syncId: Int,
@@ -15,7 +16,7 @@ class MyCommunityListMenu(
     val runBack: (ServerPlayerEntity) -> Unit
 ) : AbstractListMenu(
     syncId = syncId,
-    menuTitle = Translator.tr("ui.my_communities.title"),
+    menuTitle = Translator.tr("ui.my_communities.title") ?: Text.literal("My Communities"),
     page = page,
     runBack = runBack
 ) {
