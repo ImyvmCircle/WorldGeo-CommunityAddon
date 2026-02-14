@@ -5,6 +5,8 @@ import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.application.permission.PermissionCheck
 import com.imyvm.community.domain.Community
 import com.imyvm.community.domain.MemberAccount
+import com.imyvm.community.domain.PendingOperation
+import com.imyvm.community.domain.PendingOperationType
 import com.imyvm.community.domain.community.CommunityJoinPolicy
 import com.imyvm.community.domain.community.CommunityStatus
 import com.imyvm.community.domain.community.MemberRoleType
@@ -15,7 +17,11 @@ import com.imyvm.community.util.Translator
 import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.economy.EconomyMod
 import net.minecraft.server.network.ServerPlayerEntity
+import java.util.UUID
 
+private fun getInvitationKey(inviteeUUID: UUID): Int {
+    return inviteeUUID.hashCode()
+}
 fun onJoinCommunity(player: ServerPlayerEntity, targetCommunity: Community): Int {
     if (!checkPlayerMembershipJoin(player, targetCommunity)) return 0
     if (!checkMemberNumberManor(player, targetCommunity)) return 0
@@ -175,7 +181,7 @@ fun validateInvitationTarget(inviter: ServerPlayerEntity, target: ServerPlayerEn
 
 fun sendInvitation(inviter: ServerPlayerEntity, target: ServerPlayerEntity, community: Community) {
     val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
-    val timeoutMinutes = com.imyvm.community.infra.CommunityConfig.INVITATION_RESPONSE_TIMEOUT_MINUTES.value
+    val timeoutMinutes = CommunityConfig.INVITATION_RESPONSE_TIMEOUT_MINUTES.value
     
     community.member[target.uuid] = MemberAccount(
         joinedTime = System.currentTimeMillis(),
@@ -184,13 +190,14 @@ fun sendInvitation(inviter: ServerPlayerEntity, target: ServerPlayerEntity, comm
     )
     
     val expireAt = System.currentTimeMillis() + timeoutMinutes * 60 * 1000L
-    WorldGeoCommunityAddon.pendingInvitations[target.uuid] = 
-        com.imyvm.community.domain.CommunityInvitation(
-            inviterUUID = inviter.uuid,
-            inviteeUUID = target.uuid,
-            communityRegionId = community.regionNumberId!!,
-            expireAt = expireAt
-        )
+    val invitationKey = getInvitationKey(target.uuid)
+    
+    WorldGeoCommunityAddon.pendingOperations[invitationKey] = PendingOperation(
+        expireAt = expireAt,
+        type = PendingOperationType.INVITATION,
+        inviterUUID = inviter.uuid,
+        inviteeUUID = target.uuid
+    )
     
     com.imyvm.community.infra.CommunityDatabase.save()
     
@@ -247,17 +254,19 @@ fun sendInvitation(inviter: ServerPlayerEntity, target: ServerPlayerEntity, comm
 }
 
 fun onAcceptInvitation(player: ServerPlayerEntity, community: Community) {
-    val invitation = WorldGeoCommunityAddon.pendingInvitations[player.uuid]
+    val invitationKey = getInvitationKey(player.uuid)
+    val pendingOp = WorldGeoCommunityAddon.pendingOperations[invitationKey]
     val memberAccount = community.member[player.uuid]
     
-    if (invitation == null || memberAccount == null || !memberAccount.isInvited || memberAccount.basicRoleType != MemberRoleType.APPLICANT) {
+    if (pendingOp == null || pendingOp.type != PendingOperationType.INVITATION || 
+        memberAccount == null || !memberAccount.isInvited || memberAccount.basicRoleType != MemberRoleType.APPLICANT) {
         player.sendMessage(Translator.tr("community.invite.error.no_invitation"))
         return
     }
     
-    if (invitation.expireAt <= System.currentTimeMillis()) {
+    if (pendingOp.expireAt <= System.currentTimeMillis()) {
         player.sendMessage(Translator.tr("community.invite.error.expired"))
-        WorldGeoCommunityAddon.pendingInvitations.remove(player.uuid)
+        WorldGeoCommunityAddon.pendingOperations.remove(invitationKey)
         community.member.remove(player.uuid)
         com.imyvm.community.infra.CommunityDatabase.save()
         return
@@ -270,22 +279,27 @@ fun onAcceptInvitation(player: ServerPlayerEntity, community: Community) {
 }
 
 fun onRejectInvitation(player: ServerPlayerEntity, community: Community) {
-    val invitation = WorldGeoCommunityAddon.pendingInvitations[player.uuid]
+    val invitationKey = getInvitationKey(player.uuid)
+    val pendingOp = WorldGeoCommunityAddon.pendingOperations[invitationKey]
     val memberAccount = community.member[player.uuid]
     
-    if (invitation == null || memberAccount == null || !memberAccount.isInvited || memberAccount.basicRoleType != MemberRoleType.APPLICANT) {
+    if (pendingOp == null || pendingOp.type != PendingOperationType.INVITATION || 
+        memberAccount == null || !memberAccount.isInvited || memberAccount.basicRoleType != MemberRoleType.APPLICANT) {
         player.sendMessage(Translator.tr("community.invite.error.no_invitation"))
         return
     }
     
-    WorldGeoCommunityAddon.pendingInvitations.remove(player.uuid)
+    WorldGeoCommunityAddon.pendingOperations.remove(invitationKey)
     community.member.remove(player.uuid)
     
     val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
     player.sendMessage(Translator.tr("community.invite.rejected", communityName))
     
-    val inviterPlayer = player.server.playerManager?.getPlayer(invitation.inviterUUID)
-    inviterPlayer?.sendMessage(Translator.tr("community.invite.rejected.inviter", player.name.string, communityName))
+    val inviterUUID = pendingOp.inviterUUID
+    if (inviterUUID != null) {
+        val inviterPlayer = player.server.playerManager?.getPlayer(inviterUUID)
+        inviterPlayer?.sendMessage(Translator.tr("community.invite.rejected.inviter", player.name.string, communityName))
+    }
     
     com.imyvm.community.infra.CommunityDatabase.save()
 }

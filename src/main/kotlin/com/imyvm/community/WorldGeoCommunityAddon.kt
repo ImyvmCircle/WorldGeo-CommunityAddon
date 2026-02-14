@@ -29,7 +29,6 @@ class WorldGeoCommunityAddon : ModInitializer {
 		val logger: Logger = LoggerFactory.getLogger(MOD_ID)
 
 		val pendingOperations: MutableMap<Int, PendingOperation> = mutableMapOf()
-		val pendingInvitations: MutableMap<java.util.UUID, com.imyvm.community.domain.CommunityInvitation> = mutableMapOf()
 		var server: MinecraftServer? = null
 	}
 }

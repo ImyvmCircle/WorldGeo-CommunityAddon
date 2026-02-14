@@ -264,6 +264,16 @@ Invited players follow a modified audit workflow:
 
 ##### Technical Details
 
+**Unified PendingOperation System:**
+- Invitations are stored in the same `pendingOperations` map as community creation requests;
+- Uses invitee UUID's hashCode as the key for invitation operations (mirroring how region ID is used as key for community operations);
+- `PendingOperation` includes optional parameters for invitation-specific data:
+  - `inviterUUID` - The UUID of the player who sent the invitation;
+  - `inviteeUUID` - The UUID of the invited player;
+- The target community is found by searching for a member with matching UUID and `isInvited=true` flag (no redundant storage);
+- Integration with existing `PendingCheck` system handles automatic expiration;
+- Follows the exact same storage pattern as community creation: **key carries the identifier, not stored redundantly inside the object**.
+
 **MemberAccount Attributes:**
 - `isInvited` (Boolean) - Flags whether the member joined via invitation (default: `false`);
 - Invited members with `APPLICANT` status are treated differently during audit to ensure community-funded membership.

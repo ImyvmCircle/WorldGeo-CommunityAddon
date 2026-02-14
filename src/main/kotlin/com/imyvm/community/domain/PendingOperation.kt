@@ -1,9 +1,12 @@
 package com.imyvm.community.domain
 
+import java.util.*
 
 class PendingOperation(
     val expireAt: Long,
-    val type: PendingOperationType
+    val type: PendingOperationType,
+    val inviterUUID: UUID? = null,
+    val inviteeUUID: UUID? = null
 )
 
 enum class PendingOperationType(val value: Int) {
