@@ -231,6 +231,33 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                             .executes { runRejectInvitation(it) }
                     )
             )
+            .then(
+                literal("chat")
+                    .then(
+                        argument("communityIdentifier", StringArgumentType.string())
+                            .suggests(ALL_COMMUNITY_PROVIDER)
+                            .then(
+                                argument("message", StringArgumentType.greedyString())
+                                    .executes { runSendChatMessage(it) }
+                            )
+                    )
+            )
+            .then(
+                literal("chat_toggle")
+                    .then(
+                        argument("communityIdentifier", StringArgumentType.greedyString())
+                            .suggests(ALL_COMMUNITY_PROVIDER)
+                            .executes { runToggleChatRoomSend(it) }
+                    )
+            )
+            .then(
+                literal("chat_view_toggle")
+                    .then(
+                        argument("communityIdentifier", StringArgumentType.greedyString())
+                            .suggests(ALL_COMMUNITY_PROVIDER)
+                            .executes { runToggleChatHistoryView(it) }
+                    )
+            )
     )
 }
 
@@ -396,3 +423,35 @@ private fun runRejectInvitation(context: CommandContext<ServerCommandSource>): I
         1
     }
 }
+
+private fun runSendChatMessage(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    val message = StringArgumentType.getString(context, "message")
+    
+    return identifierHandler(player, communityIdentifier) { targetCommunity ->
+        com.imyvm.community.application.interaction.common.ChatRoomHandler.sendChatMessage(player, targetCommunity, message)
+        1
+    }
+}
+
+private fun runToggleChatRoomSend(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    
+    return identifierHandler(player, communityIdentifier) { targetCommunity ->
+        com.imyvm.community.application.interaction.common.ChatRoomHandler.toggleChatRoomSend(player, targetCommunity)
+        1
+    }
+}
+
+private fun runToggleChatHistoryView(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    
+    return identifierHandler(player, communityIdentifier) { targetCommunity ->
+        com.imyvm.community.application.interaction.common.ChatRoomHandler.toggleChatHistoryView(player, targetCommunity)
+        1
+    }
+}
+

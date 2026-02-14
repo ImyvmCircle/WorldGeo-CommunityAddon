@@ -32,6 +32,7 @@ object CommunityDatabase {
                 saveCommunityAnnouncements(stream, community)
                 saveCommunityAdministrationPermissions(stream, community)
                 saveCommunityExpenditures(stream, community)
+                saveCommunityMessages(stream, community)
             }
         }
     }
@@ -57,6 +58,7 @@ object CommunityDatabase {
                 val announcements = loadCommunityAnnouncements(stream)
                 val administrationPermissions = loadCommunityAdministrationPermissions(stream)
                 val expenditures = loadCommunityExpenditures(stream)
+                val messages = loadCommunityMessages(stream)
 
                 val community = Community(
                     regionNumberId = regionNumberId,
@@ -66,7 +68,8 @@ object CommunityDatabase {
                     council = council,
                     announcements = announcements,
                     administrationPermissions = administrationPermissions,
-                    expenditures = expenditures
+                    expenditures = expenditures,
+                    messages = messages
                 )
                 communities.add(community)
             }
@@ -122,6 +125,8 @@ object CommunityDatabase {
             }
             
             stream.writeBoolean(memberAccount.isInvited)
+            stream.writeBoolean(memberAccount.chatRoomSendEnabled)
+            stream.writeBoolean(memberAccount.chatHistoryEnabled)
         }
     }
 
@@ -164,6 +169,18 @@ object CommunityDatabase {
                 false
             }
 
+            val chatRoomSendEnabled = try {
+                stream.readBoolean()
+            } catch (e: Exception) {
+                false
+            }
+
+            val chatHistoryEnabled = try {
+                stream.readBoolean()
+            } catch (e: Exception) {
+                true
+            }
+
             memberMap[uuid] = MemberAccount(
                 joinedTime = joinedTime,
                 basicRoleType = role,
@@ -171,7 +188,9 @@ object CommunityDatabase {
                 governorship = governorship,
                 mail = communityMail,
                 turnover = turnoverList,
-                isInvited = isInvited
+                isInvited = isInvited,
+                chatRoomSendEnabled = chatRoomSendEnabled,
+                chatHistoryEnabled = chatHistoryEnabled
             )
         }
         return memberMap
@@ -374,5 +393,70 @@ object CommunityDatabase {
             ArrayList()
         }
         return expenditures
+    }
+
+    private fun saveCommunityMessages(stream: DataOutputStream, community: Community) {
+        stream.writeInt(community.messages.size)
+        for (message in community.messages) {
+            stream.writeUTF(message.id.toString())
+            stream.writeInt(message.type.value)
+            stream.writeUTF(message.content.string)
+            stream.writeUTF(message.senderUUID.toString())
+            stream.writeLong(message.timestamp)
+            stream.writeBoolean(message.isDeleted)
+            
+            stream.writeInt(message.readBy.size)
+            for (uuid in message.readBy) {
+                stream.writeUTF(uuid.toString())
+            }
+            
+            stream.writeBoolean(message.recipientUUID != null)
+            if (message.recipientUUID != null) {
+                stream.writeUTF(message.recipientUUID.toString())
+            }
+        }
+    }
+
+    private fun loadCommunityMessages(stream: DataInputStream): MutableList<CommunityMessage> {
+        val messages = try {
+            val size = stream.readInt()
+            val list = mutableListOf<CommunityMessage>()
+            for (i in 0 until size) {
+                val id = UUID.fromString(stream.readUTF())
+                val type = MessageType.entries.find { it.value == stream.readInt() } ?: MessageType.CHAT
+                val content = Text.of(stream.readUTF())
+                val senderUUID = UUID.fromString(stream.readUTF())
+                val timestamp = stream.readLong()
+                val isDeleted = stream.readBoolean()
+                
+                val readBySize = stream.readInt()
+                val readBy = mutableSetOf<UUID>()
+                for (j in 0 until readBySize) {
+                    readBy.add(UUID.fromString(stream.readUTF()))
+                }
+                
+                val hasRecipient = stream.readBoolean()
+                val recipientUUID = if (hasRecipient) {
+                    UUID.fromString(stream.readUTF())
+                } else {
+                    null
+                }
+                
+                list.add(CommunityMessage(
+                    id = id,
+                    type = type,
+                    content = content,
+                    senderUUID = senderUUID,
+                    timestamp = timestamp,
+                    isDeleted = isDeleted,
+                    readBy = readBy,
+                    recipientUUID = recipientUUID
+                ))
+            }
+            list
+        } catch (e: Exception) {
+            mutableListOf()
+        }
+        return messages
     }
 }

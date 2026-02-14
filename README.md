@@ -291,7 +291,10 @@ Invited players follow a modified audit workflow:
 
 **Commands:**
 - `/community accept_invitation <communityIdentifier>` - Accept a pending invitation to join a community;
-- `/community reject_invitation <communityIdentifier>` - Reject a pending invitation to join a community.
+- `/community reject_invitation <communityIdentifier>` - Reject a pending invitation to join a community;
+- `/community chat <communityIdentifier> <message>` - Send a message to the community chat room;
+- `/community chat_toggle <communityIdentifier>` - Toggle send mode on/off (when enabled, all messages go to community chat);
+- `/community chat_view_toggle <communityIdentifier>` - Toggle viewing community chat messages on/off.
 
 ### Membership
 
@@ -331,10 +334,43 @@ Members may interact with their community through the **Community Menu**, access
 - **Community Chat** *()* - Access community messaging system;
 - **Advancement** *()* - View community achievements;
 - **Donate to Community** - Contribute currency to the community (opens the Assets menu);
-- **Community Shop** *()* - Access the community marketplace;
 - **Like Community** *()* - Rate the community;
 - **Leave Community** - Exit the community; and
 - **Invite Member** - Recruit new members to join by sending invitations to online players.
+
+#### Community Chat Room
+
+The chat room system allows formal community members to communicate with each other through a dedicated channel.
+
+**Access & Permissions:**
+- Only formal members (Owner, Admin, Member) can access the chat room
+- Applicants and refused members cannot use chat features
+
+**Toggle Modes:**
+- **Send Mode:** When enabled, all messages typed by the player are automatically sent to the community chat instead of global chat
+- **View Mode:** When enabled, player receives community chat messages; when disabled, chat messages are hidden
+
+**Message Format:**
+```
+[CommunityName][Role] PlayerName: Message
+```
+Example: `[Riverside][Admin] Steve: Hello everyone!`
+
+**Chat History:**
+- View up to 50 messages per page
+- Messages display timestamp, sender name, role, and content
+- Navigate between pages using Previous/Next buttons
+- Empty history shows "No messages yet"
+
+**Usage Methods:**
+1. **Command-based:** Use `/community chat <community> <message>` to send a single message
+2. **Toggle-based:** Enable send mode in the Chat Room menu or with `/community chat_toggle <community>`, then type normally
+
+**Technical Details:**
+- Messages stored in unified `CommunityMessage` storage with type `CHAT`
+- Per-member toggles: `chatRoomSendEnabled` (default: false), `chatHistoryEnabled` (default: true)
+- Only online members with `chatHistoryEnabled=true` receive broadcasts
+- Messages persist in database for history viewing
 
 ### Council System
 

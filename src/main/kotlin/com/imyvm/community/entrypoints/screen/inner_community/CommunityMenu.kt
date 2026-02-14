@@ -107,8 +107,8 @@ class CommunityMenu(
         addButton(
             slot = 28,
             name = Translator.tr("ui.community.button.interaction.chat")?.string ?: "Community Chat",
-            item = Items.LECTERN
-        ) {}
+            item = Items.WRITABLE_BOOK
+        ) { com.imyvm.community.application.interaction.screen.inner_community.chat.runOpenChatRoomMenu(player, community, runBack) }
 
         addButton(
             slot = 29,
@@ -124,12 +124,6 @@ class CommunityMenu(
 
         addButton(
             slot = 31,
-            name = Translator.tr("ui.community.button.interaction.shop")?.string ?: "Community Shop",
-            item = Items.CHEST
-        ) {}
-
-        addButton(
-            slot = 32,
             name = Translator.tr("ui.community.button.interaction.like")?.string ?: "Like Community",
             item = Items.PINK_DYE
         ) {}

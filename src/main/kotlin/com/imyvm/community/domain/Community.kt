@@ -18,7 +18,8 @@ class Community(
     var council: Council = Council(),
     var announcements: MutableList<Announcement> = mutableListOf(),
     var administrationPermissions: AdministrationPermissions = AdministrationPermissions(),
-    var expenditures: ArrayList<Turnover> = arrayListOf()
+    var expenditures: ArrayList<Turnover> = arrayListOf(),
+    var messages: MutableList<CommunityMessage> = mutableListOf()  // Unified message storage
 ) {
     fun isManor(): Boolean {
         return status == CommunityStatus.PENDING_MANOR || status == CommunityStatus.ACTIVE_MANOR || status == CommunityStatus.REVOKED_MANOR
@@ -133,5 +134,27 @@ class Community(
         newOwnerAccount.basicRoleType = MemberRoleType.OWNER
 
         return true
+    }
+
+    fun addMessage(message: CommunityMessage) {
+        messages.add(message)
+    }
+
+    fun getChatMessages(): List<CommunityMessage> {
+        return messages.filter { it.type == MessageType.CHAT && !it.isDeleted }
+            .sortedByDescending { it.timestamp }
+    }
+
+    fun getMailsFor(playerUUID: UUID): List<CommunityMessage> {
+        return messages.filter { 
+            it.type == MessageType.MAIL && 
+            !it.isDeleted && 
+            it.recipientUUID == playerUUID 
+        }.sortedByDescending { it.timestamp }
+    }
+
+    fun getAnnouncementsAsMessages(): List<CommunityMessage> {
+        return messages.filter { it.type == MessageType.ANNOUNCEMENT && !it.isDeleted }
+            .sortedByDescending { it.timestamp }
     }
 }
