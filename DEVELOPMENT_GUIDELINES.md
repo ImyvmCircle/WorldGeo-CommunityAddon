@@ -1,6 +1,6 @@
 # 通用上下文
 
-1. 本mod有i18n系统，通过`Translator.tr()`函数实现，以下说的所有按钮目前实现的名称均为英文，请不要做中文文件。原则上不要使用`Text.literal()`。
+1. 本mod有i18n系统，通过`Translator.tr()`函数实现，以下说的所有按钮目前实现的名称均为英文，请不要做中文文件。原则上不要使用`Text.literal()`。需实现`resource`里面对应的英文项目。对于发送给玩家的文本，需用MOTD格式制作比较美观的色彩和加粗下划线等效果，但不要引入Unicode特殊符号。
 2. `CommunityConfig`里面存储了本mod的所有配置项。
 3. `CommunityDatabase`是数据库的维护类。凡是涉及改动`Communtiy`成员变量的操作，必须要看看是否涉及数据库存储的改动。
 4. `PendingOperation`涉及所有需要在一定时限内作出反应的任务，实现由`PendingApplication`做出。
@@ -13,5 +13,6 @@
 11. 任何Command最好不要以任何形式的id为某个参数位置上的唯一可用参数，比如`regionNumberId`和`annoucementId`，因为这些Id设计上不是人类可读的。实在需要使用的话，请在register()函数中参考别的Provider提供一个Provider。
 12. 任何玩家列表默认有正版的头颅解析显示。请参考`CommunityMemberListMenu`中玩家的列表。
 13. 我们这个项目中所说的toggle开关的实现范例是`MainMenu`中的Selection Mode开关及其对应`Handler`实现。其实质是修改数据，并重新根据修改后的数据加载本页面。
-14. 修改机制之后，必须检查`README.md`进行修改。
+14. 任何涉及到金钱的操作，都要明白金钱以`EconomyMod`实现，单位是`Long`，且转换为玩家可读的格式需要除以100并保留两位小数点。
 15. 原则上不要新建新的class，也不要添加Comments.
+16. 修改机制之后，必须检查`README.md`进行修改。
