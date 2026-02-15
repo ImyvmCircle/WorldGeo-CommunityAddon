@@ -42,6 +42,8 @@
   "community.join.error.already_applied": "You have already applied to join the community with ID {0}.",
   "community.join.applied": "Your application to join community {0} (ID {1}) has been submitted.",
   "community.join.error.invite_only": "The community with ID {0} is invite-only. You cannot join without an invitation.",
+  "community.join.payment.deducted": "§e${0} has been deducted from your account for the join fee.",
+  "community.join.refund": "§a${0} has been refunded to your account since your application was refused.",
 
   "community.invite.error.no_permission": "You do not have permission to invite members to this community.",
   "community.invite.error.insufficient_assets": "The community does not have sufficient assets ({0}) to pay for invited member join costs.",
@@ -154,19 +156,16 @@
   "ui.community.button.interaction.invite": "Invite Member",
 
   "ui.community.chat.title": "Community Chat Room",
-  "ui.community.chat.button.toggle_channel": "Toggle Chat Channel",
-  "ui.community.chat.button.toggle_view": "Toggle Receive Messages",
+  "ui.community.chat.button.toggle_channel": "Toggle Default Chat Channel",
   "ui.community.chat.status.enabled": "Active",
   "ui.community.chat.status.disabled": "Inactive",
   "ui.community.chat.status.current": "Current: {0}",
-  "ui.community.chat.lore.channel_active": "§aYour chat is redirected to this community",
+  "ui.community.chat.lore.channel_active": "§aYour messages are sent to this community",
   "ui.community.chat.lore.channel_active2": "§aType normally to send messages here",
-  "ui.community.chat.lore.channel_inactive": "§7Your chat goes to global",
+  "ui.community.chat.lore.channel_inactive": "§7Your messages go to global",
   "ui.community.chat.lore.channel_other": "§7You are currently in another community's chat",
   "ui.community.chat.lore.channel_click": "§7Click to disable and return to global chat",
   "ui.community.chat.lore.channel_click2": "§7Click to switch to this community's chat",
-  "ui.community.chat.lore.view_enabled": "§aYou receive chat messages in game",
-  "ui.community.chat.lore.view_disabled": "§cYou won't receive chat messages",
   "ui.community.chat.lore.history": "§7View all chat messages in this community",
   "ui.community.chat.button.history": "View Chat History",
   "ui.community.chat.button.instruction": "How to Send Messages",
@@ -189,8 +188,6 @@
   "community.chat.error.not_member": "You must be a formal member to use the chat room.",
   "community.chat.channel.enabled": "§aChat channel activated for {0}. Your messages will now go to this community.",
   "community.chat.channel.disabled": "§7Chat channel deactivated for {0}. Your messages will now go to global chat.",
-  "community.chat.toggle.view.enabled": "Message receiving enabled. You will receive community chat messages.",
-  "community.chat.toggle.view.disabled": "Message receiving disabled. You won't receive community chat messages.",
 
   "ui.community.invite.online_players": "Select Player to Invite",
   "ui.community.button.interaction.operations": "Community Administration",
@@ -289,6 +286,13 @@
   "ui.community.administration.member_list.owner": "Owners",
   "ui.community.administration.member_list.admin": "Admins",
   "ui.community.administration.member_list.member": "Members",
+  
+  "community.role.owner.realm": "Lord",
+  "community.role.owner.manor": "Landowner",
+  "community.role.admin.realm": "Steward",
+  "community.role.admin.manor": "HouseKeeper",
+  "community.role.member.realm": "Citizen",
+  "community.role.member.manor": "Resident",
   "ui.community.member_list.error.member_not_found": "Managing member not found.",
 
   "ui.community.administration.member.title.component": "- Member Management",
@@ -420,5 +424,10 @@
 
   "mail.notification.community.message": "[UNREAD]({0})[{1}:[2]]: {3}",
   "mail.notification.header.single": "[Community Notification]: you have an unread message.",
-  "mail.notification.header.multiple": "[Community Notification]: you have {0} unread messages."
+  "mail.notification.header.multiple": "[Community Notification]: you have {0} unread messages.",
+  
+  "community.notification.member_joined": "§a[JOIN] §r{0} has joined {1}",
+  "community.notification.application_received": "§e[APPLICATION] §r{0} has applied to join {1}",
+  "community.notification.member_accepted": "§a[ACCEPTED] §r{0} has been accepted to {1}",
+  "community.notification.member_left": "§c[LEAVE] §r{0} has left {1}"
 }

@@ -113,7 +113,7 @@ class CommunityMenu(
         addButton(
             slot = 29,
             name = Translator.tr("ui.community.button.interaction.advancement")?.string ?: "Advancement",
-            item = Items.COMPASS
+            item = Items.EXPERIENCE_BOTTLE
         ) {}
 
         addButton(

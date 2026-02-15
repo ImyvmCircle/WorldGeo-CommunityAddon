@@ -250,14 +250,6 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                             .executes { runToggleChatChannel(it) }
                     )
             )
-            .then(
-                literal("chat_view_toggle")
-                    .then(
-                        argument("communityIdentifier", StringArgumentType.greedyString())
-                            .suggests(ALL_COMMUNITY_PROVIDER)
-                            .executes { runToggleChatHistoryView(it) }
-                    )
-            )
     )
 }
 
@@ -441,16 +433,6 @@ private fun runToggleChatChannel(context: CommandContext<ServerCommandSource>): 
     
     return identifierHandler(player, communityIdentifier) { targetCommunity ->
         com.imyvm.community.application.interaction.common.ChatRoomHandler.toggleChatChannel(player, targetCommunity)
-        1
-    }
-}
-
-private fun runToggleChatHistoryView(context: CommandContext<ServerCommandSource>): Int {
-    val player = context.source.player ?: return 0
-    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
-    
-    return identifierHandler(player, communityIdentifier) { targetCommunity ->
-        com.imyvm.community.application.interaction.common.ChatRoomHandler.toggleChatHistoryView(player, targetCommunity)
         1
     }
 }

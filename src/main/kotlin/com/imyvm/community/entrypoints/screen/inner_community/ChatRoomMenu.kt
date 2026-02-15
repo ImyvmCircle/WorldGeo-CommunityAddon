@@ -22,7 +22,6 @@ class ChatRoomMenu(
 ) {
     init {
         addToggleChatChannelButton()
-        addToggleViewButton()
         addViewHistoryButton()
         addSendInstructionButton()
     }
@@ -46,7 +45,7 @@ class ChatRoomMenu(
         
         if (isActive) {
             loreLines.add(Text.literal(Translator.tr("ui.community.chat.lore.channel_active")?.string ?: 
-                "§aYour chat is redirected to this community"))
+                "§aYour messages are sent to this community"))
             loreLines.add(Text.literal(Translator.tr("ui.community.chat.lore.channel_active2")?.string ?: 
                 "§aType normally to send messages here"))
             loreLines.add(Text.literal(""))
@@ -59,7 +58,7 @@ class ChatRoomMenu(
                 loreLines.add(Text.literal(""))
             }
             loreLines.add(Text.literal(Translator.tr("ui.community.chat.lore.channel_inactive")?.string ?: 
-                "§7Your chat goes to global"))
+                "§7Your messages go to global"))
             loreLines.add(Text.literal(""))
             loreLines.add(Text.literal(Translator.tr("ui.community.chat.lore.channel_click2")?.string ?: 
                 "§7Click to switch to this community's chat"))
@@ -68,44 +67,11 @@ class ChatRoomMenu(
         val buttonStack = getLoreButton(itemStack, loreLines)
         
         addButton(
-            slot = 11,
+            slot = 13,
             itemStack = buttonStack,
-            name = Translator.tr("ui.community.chat.button.toggle_channel")?.string ?: "Toggle Chat Channel"
+            name = Translator.tr("ui.community.chat.button.toggle_channel")?.string ?: "Toggle Default Chat Channel"
         ) {
             com.imyvm.community.application.interaction.screen.inner_community.chat.runToggleChatChannel(player, community, runBack)
-        }
-    }
-
-    private fun addToggleViewButton() {
-        val memberAccount = community.member[player.uuid] ?: return
-        val isEnabled = memberAccount.chatHistoryEnabled
-        
-        val statusText = if (isEnabled) 
-            Translator.tr("ui.community.chat.status.enabled")?.string ?: "Enabled" 
-        else 
-            Translator.tr("ui.community.chat.status.disabled")?.string ?: "Disabled"
-        
-        val itemType = if (isEnabled) Items.ENDER_EYE else Items.ENDER_PEARL
-        val itemStack = ItemStack(itemType)
-        
-        val loreLines = listOf(
-            Text.literal(Translator.tr("ui.community.chat.status.current", statusText)?.string ?: "§7Current: $statusText"),
-            Text.literal(""),
-            Text.literal(if (isEnabled) {
-                Translator.tr("ui.community.chat.lore.view_enabled")?.string ?: "§aYou receive chat messages in game"
-            } else {
-                Translator.tr("ui.community.chat.lore.view_disabled")?.string ?: "§cYou won't receive chat messages"
-            })
-        )
-        
-        val buttonStack = getLoreButton(itemStack, loreLines)
-        
-        addButton(
-            slot = 15,
-            itemStack = buttonStack,
-            name = Translator.tr("ui.community.chat.button.toggle_view")?.string ?: "Toggle Receive Messages"
-        ) {
-            com.imyvm.community.application.interaction.screen.inner_community.chat.runToggleChatView(player, community, runBack)
         }
     }
 
@@ -117,7 +83,7 @@ class ChatRoomMenu(
         val buttonStack = getLoreButton(itemStack, loreLines)
         
         addButton(
-            slot = 13,
+            slot = 11,
             itemStack = buttonStack,
             name = Translator.tr("ui.community.chat.button.history")?.string ?: "View Chat History"
         ) {
@@ -143,7 +109,7 @@ class ChatRoomMenu(
         val buttonStack = getLoreButton(itemStack, loreLines)
         
         addButton(
-            slot = 31,
+            slot = 15,
             itemStack = buttonStack,
             name = Translator.tr("ui.community.chat.button.instruction")?.string ?: "How to Send Messages"
         ) {

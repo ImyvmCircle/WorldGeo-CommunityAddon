@@ -55,15 +55,7 @@ private fun runCommunityJoin(
         return
     }
 
-    val result = onJoinCommunityDirectly(playerExecutor, targetCommunity)
-
-    if (result == 1) {
-        val newAccount = targetCommunity.member[playerExecutor.uuid]
-        if (newAccount != null) {
-            newAccount.turnover.add(Turnover(amount = -500, timestamp = System.currentTimeMillis()))
-            CommunityDatabase.save()
-        }
-    }
+    onJoinCommunityDirectly(playerExecutor, targetCommunity)
 }
 
 private fun runCommunityLeave(
@@ -79,13 +71,33 @@ private fun runCommunityLeave(
         playerExecutor,
         { PermissionCheck.canQuitCommunity(playerExecutor, targetCommunity) }
     ) {
+        val communityName = targetCommunity.getRegion()?.name ?: "Community #${targetCommunity.regionNumberId}"
+        
         targetCommunity.member.remove(playerExecutor.uuid)
         CommunityDatabase.save()
         
         playerExecutor.sendMessage(
-            Translator.tr("community.leave.success", 
-                targetCommunity.getRegion()?.name ?: "Community #${targetCommunity.regionNumberId}"
-            )
+            Translator.tr("community.leave.success", communityName)
         )
+        
+        val notification = Translator.tr("community.notification.member_left", playerExecutor.name.string, communityName)
+            ?: net.minecraft.text.Text.literal("${playerExecutor.name.string} has left $communityName")
+        notifyOfficials(targetCommunity, playerExecutor.server, notification)
+    }
+}
+
+private fun notifyOfficials(community: Community, server: net.minecraft.server.MinecraftServer, message: net.minecraft.text.Text) {
+    for ((memberUUID, memberAccount) in community.member) {
+        val isOfficial = memberAccount.basicRoleType == com.imyvm.community.domain.community.MemberRoleType.OWNER ||
+                        memberAccount.basicRoleType == com.imyvm.community.domain.community.MemberRoleType.ADMIN ||
+                        memberAccount.isCouncilMember
+        
+        if (isOfficial) {
+            val officialPlayer = server.playerManager.getPlayer(memberUUID)
+            if (officialPlayer != null) {
+                officialPlayer.sendMessage(message)
+            }
+            memberAccount.mail.add(message)
+        }
     }
 }

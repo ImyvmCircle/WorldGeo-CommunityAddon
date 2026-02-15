@@ -43,9 +43,8 @@ class NonMemberCommunityMenu(
             name = Translator.tr("ui.non_member.button.join")?.string ?: "Request to Join",
             item = Items.EMERALD
         ) { 
-            // TODO: Implement join logic - this should call the join handler
-            player.sendMessage(Translator.tr("ui.non_member.join.clicked"))
             player.closeHandledScreen()
+            com.imyvm.community.application.interaction.common.onJoinCommunity(player, community)
         }
     }
 }

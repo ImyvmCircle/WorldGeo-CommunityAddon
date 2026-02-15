@@ -42,11 +42,11 @@ object ChatRoomHandler {
         val communityColor = getCommunityColor(community.regionNumberId ?: 0)
         val communityName = community.generateCommunityMark()
 
-        val prefix = "${communityColor}【${communityName}】§r${roleDisplay}"
-        val formattedMessage = Text.literal("$prefix §f${sender.name.string}§7: §f$message")
+        val prefix = "${communityColor}❮${communityName}❯§r ${roleDisplay}"
+        val formattedMessage = Text.literal("$prefix §f${sender.name.string}§7: §r$message")
 
         for ((memberUUID, memberAccount) in community.member) {
-            if (isFormalMember(memberAccount.basicRoleType) && memberAccount.chatHistoryEnabled) {
+            if (isFormalMember(memberAccount.basicRoleType)) {
                 val memberPlayer = sender.server.playerManager.getPlayer(memberUUID)
                 if (memberPlayer != null) {
                     memberPlayer.sendMessage(formattedMessage)
@@ -77,22 +77,6 @@ object ChatRoomHandler {
         return true
     }
 
-    fun toggleChatHistoryView(player: ServerPlayerEntity, community: Community): Boolean {
-        val memberAccount = community.member[player.uuid] ?: return false
-        
-        if (!isFormalMember(memberAccount.basicRoleType)) {
-            player.sendMessage(Translator.tr("community.chat.error.not_member"))
-            return false
-        }
-
-        memberAccount.chatHistoryEnabled = !memberAccount.chatHistoryEnabled
-        CommunityDatabase.save()
-        
-        val status = if (memberAccount.chatHistoryEnabled) "enabled" else "disabled"
-        player.sendMessage(Translator.tr("community.chat.toggle.view.$status"))
-        return true
-    }
-
     private fun isFormalMember(roleType: MemberRoleType): Boolean {
         return roleType == MemberRoleType.OWNER || 
                roleType == MemberRoleType.ADMIN || 
@@ -101,28 +85,28 @@ object ChatRoomHandler {
 
     private fun getRoleDisplayName(roleType: MemberRoleType, isManor: Boolean): String {
         return when (roleType) {
-            MemberRoleType.OWNER -> if (isManor) "§6⚜Landowner⚜§r" else "§6♛Lord♛§r"
-            MemberRoleType.ADMIN -> if (isManor) "§5✦HouseKeeper✦§r" else "§5★Steward★§r"
-            MemberRoleType.MEMBER -> if (isManor) "§aResident§r" else "§aCitizen§r"
+            MemberRoleType.OWNER -> if (isManor) "§6§l⚜ Landowner ⚜§r" else "§6§l♛ Lord ♛§r"
+            MemberRoleType.ADMIN -> if (isManor) "§5§l✦ HouseKeeper ✦§r" else "§5§l★ Steward ★§r"
+            MemberRoleType.MEMBER -> if (isManor) "§a§o◈ Resident ◈§r" else "§a§o◆ Citizen ◆§r"
             else -> "§7${roleType.name}§r"
         }
     }
 
     private fun getCommunityColor(regionId: Int): String {
         val colors = listOf(
-            "§c", // RED
-            "§6", // GOLD
-            "§e", // YELLOW
-            "§a", // GREEN
-            "§b", // AQUA
-            "§9", // BLUE
-            "§d", // LIGHT_PURPLE
-            "§5", // DARK_PURPLE
-            "§3", // DARK_AQUA
-            "§2"  // DARK_GREEN
+            "§c§l", // RED BOLD
+            "§6§l", // GOLD BOLD
+            "§e§l", // YELLOW BOLD
+            "§a§l", // GREEN BOLD
+            "§b§l", // AQUA BOLD
+            "§9§l", // BLUE BOLD
+            "§d§l", // LIGHT_PURPLE BOLD
+            "§5§l", // DARK_PURPLE BOLD
+            "§3§l", // DARK_AQUA BOLD
+            "§2§l"  // DARK_GREEN BOLD
         )
 
-        val colorIndex = (regionId * 31 + regionId.toString().hashCode()).mod(colors.size)
+        val colorIndex = ((regionId * 7919 + regionId.toString().hashCode() * 31) and 0x7FFFFFFF).mod(colors.size)
         return colors[colorIndex]
     }
 }

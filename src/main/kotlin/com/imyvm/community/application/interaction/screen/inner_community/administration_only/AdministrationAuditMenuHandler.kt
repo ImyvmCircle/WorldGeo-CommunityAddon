@@ -44,7 +44,7 @@ fun runAccept(
                 )
             }
             
-            objectAccount.basicRoleType = MemberRoleType.MEMBER
+            objectAccount.basicRoleType = com.imyvm.community.domain.community.MemberRoleType.MEMBER
             objectAccount.joinedTime = System.currentTimeMillis()
             objectAccount.isInvited = false
             constructAndSendMail(
@@ -58,7 +58,29 @@ fun runAccept(
                 "ui.community.administration.audit.message.accept.success",
                 playerObject.name
             )
+            
+            val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
+            val notification = com.imyvm.community.util.Translator.tr("community.notification.member_accepted", playerObject.name, communityName)
+                ?: net.minecraft.text.Text.literal("${playerObject.name} has been accepted to $communityName")
+            notifyOfficials(community, playerExecutor.server, notification)
+            
             com.imyvm.community.infra.CommunityDatabase.save()
+        }
+    }
+}
+
+private fun notifyOfficials(community: Community, server: net.minecraft.server.MinecraftServer, message: net.minecraft.text.Text) {
+    for ((memberUUID, memberAccount) in community.member) {
+        val isOfficial = memberAccount.basicRoleType == com.imyvm.community.domain.community.MemberRoleType.OWNER ||
+                        memberAccount.basicRoleType == com.imyvm.community.domain.community.MemberRoleType.ADMIN ||
+                        memberAccount.isCouncilMember
+        
+        if (isOfficial) {
+            val officialPlayer = server.playerManager.getPlayer(memberUUID)
+            if (officialPlayer != null) {
+                officialPlayer.sendMessage(message)
+            }
+            memberAccount.mail.add(message)
         }
     }
 }
@@ -76,13 +98,24 @@ fun runRefuse(
         if (objectAccount != null) {
             if (objectAccount.isInvited) {
                 community.member.remove(playerObject.id)
-                trMenu(
-                    playerExecutor,
-                    "ui.community.administration.audit.message.refuse.success",
-                    playerObject.name
-                )
             } else {
-                objectAccount.basicRoleType = MemberRoleType.REFUSED
+                val cost = if (community.isManor()) 
+                    com.imyvm.community.infra.CommunityConfig.COMMUNITY_JOIN_COST_MANOR.value 
+                    else com.imyvm.community.infra.CommunityConfig.COMMUNITY_JOIN_COST_REALM.value
+                
+                val applicantPlayer = playerExecutor.server.playerManager.getPlayer(playerObject.id)
+                if (applicantPlayer != null) {
+                    val playerData = com.imyvm.economy.EconomyMod.data.getOrCreate(applicantPlayer)
+                    playerData.money += cost
+                    applicantPlayer.sendMessage(
+                        com.imyvm.community.util.Translator.tr(
+                            "community.join.refund",
+                            cost / 100.0
+                        )
+                    )
+                }
+                
+                objectAccount.basicRoleType = com.imyvm.community.domain.community.MemberRoleType.REFUSED
                 objectAccount.joinedTime = System.currentTimeMillis()
                 constructAndSendMail(
                     objectAccount.mail,
@@ -90,12 +123,12 @@ fun runRefuse(
                     community,
                     "ui.community.administration.audit.message.refuse.mail"
                 )
-                trMenu(
-                    playerExecutor,
-                    "ui.community.administration.audit.message.refuse.success",
-                    playerObject.name
-                )
             }
+            trMenu(
+                playerExecutor,
+                "ui.community.administration.audit.message.refuse.success",
+                playerObject.name
+            )
             com.imyvm.community.infra.CommunityDatabase.save()
         }
     }

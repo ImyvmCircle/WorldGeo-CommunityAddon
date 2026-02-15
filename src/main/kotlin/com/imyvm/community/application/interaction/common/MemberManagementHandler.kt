@@ -1,5 +1,6 @@
 package com.imyvm.community.application.interaction.common
 
+import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.application.interaction.common.helper.checkPlayerMembershipJoin
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.application.permission.PermissionCheck
@@ -14,13 +15,27 @@ import com.imyvm.community.entrypoints.screen.ConfirmMenu
 import com.imyvm.community.entrypoints.screen.component.ConfirmTaskType
 import com.imyvm.community.infra.CommunityConfig
 import com.imyvm.community.util.Translator
-import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.economy.EconomyMod
 import net.minecraft.server.network.ServerPlayerEntity
-import java.util.UUID
+import net.minecraft.text.Text
+import java.util.*
 
 private fun getInvitationKey(inviteeUUID: UUID): Int {
     return inviteeUUID.hashCode()
+}
+
+private fun notifyOfficials(community: Community, server: net.minecraft.server.MinecraftServer, message: Text) {
+    for ((memberUUID, memberAccount) in community.member) {
+        val isOfficial = memberAccount.basicRoleType == MemberRoleType.OWNER ||
+                        memberAccount.basicRoleType == MemberRoleType.ADMIN ||
+                        memberAccount.isCouncilMember
+        
+        if (isOfficial) {
+            val officialPlayer = server.playerManager.getPlayer(memberUUID)
+            officialPlayer?.sendMessage(message)
+            memberAccount.mail.add(message)
+        }
+    }
 }
 fun onJoinCommunity(player: ServerPlayerEntity, targetCommunity: Community): Int {
     if (!checkPlayerMembershipJoin(player, targetCommunity)) return 0
@@ -77,9 +92,10 @@ private fun checkPlayerHasEnoughCurrency(player: ServerPlayerEntity, targetCommu
 
 private fun showJoinConfirmMenu(player: ServerPlayerEntity, targetCommunity: Community) {
     val communityName = targetCommunity.getRegion()?.name ?: "Community #${targetCommunity.regionNumberId}"
+    val cost = ((if(targetCommunity.isManor()) CommunityConfig.COMMUNITY_JOIN_COST_MANOR.value else CommunityConfig.COMMUNITY_JOIN_COST_REALM.value)/100.00).toString()
     val cautions = listOf(
-        Translator.tr("ui.confirm.join.caution", communityName, 500)?.string 
-            ?: "Join $communityName for 500 assets?"
+        Translator.tr("ui.confirm.join.caution", communityName, cost)?.string
+            ?: "Join $communityName for $cost assets?"
     )
     
     CommunityMenuOpener.open(player) { syncId ->
@@ -123,11 +139,32 @@ fun tryJoinByPolicy(player: ServerPlayerEntity, targetCommunity: Community): Int
 }
 
 private fun joinUnderOpenPolicy(player: ServerPlayerEntity, targetCommunity: Community): Int {
+    val cost = if(targetCommunity.isManor()) CommunityConfig.COMMUNITY_JOIN_COST_MANOR.value else CommunityConfig.COMMUNITY_JOIN_COST_REALM.value
+    
+    val playerData = EconomyMod.data.getOrCreate(player)
+    if (playerData.money < cost) {
+        player.sendMessage(
+            Translator.tr("community.join.error.insufficient_assets", cost / 100.0, playerData.money / 100.0)
+        )
+        return 0
+    }
+    
+    playerData.money -= cost
+    
     targetCommunity.member[player.uuid] = MemberAccount(
         joinedTime = System.currentTimeMillis(),
         basicRoleType = MemberRoleType.MEMBER
     )
+    
     player.sendMessage(Translator.tr("community.join.success", targetCommunity.regionNumberId))
+    player.sendMessage(Translator.tr("community.join.payment.deducted", cost / 100.0))
+    
+    val communityName = targetCommunity.getRegion()?.name ?: "Community #${targetCommunity.regionNumberId}"
+    val notification = Translator.tr("community.notification.member_joined", player.name.string, communityName) 
+        ?: net.minecraft.text.Text.literal("${player.name.string} has joined $communityName")
+    notifyOfficials(targetCommunity, player.server, notification)
+    
+    com.imyvm.community.infra.CommunityDatabase.save()
     return 1
 }
 
@@ -136,12 +173,34 @@ private fun joinUnderApplicationPolicy(player: ServerPlayerEntity, targetCommuni
         player.sendMessage(Translator.tr("community.join.error.already_applied", targetCommunity.regionNumberId))
         return 0
     }
+    
+    val cost = if(targetCommunity.isManor()) CommunityConfig.COMMUNITY_JOIN_COST_MANOR.value else CommunityConfig.COMMUNITY_JOIN_COST_REALM.value
+    
+    val playerData = EconomyMod.data.getOrCreate(player)
+    if (playerData.money < cost) {
+        player.sendMessage(
+            Translator.tr("community.join.error.insufficient_assets", cost / 100.0, playerData.money / 100.0)
+        )
+        return 0
+    }
+    
+    playerData.money -= cost
+    
     targetCommunity.member[player.uuid] = MemberAccount(
         joinedTime = System.currentTimeMillis(),
         basicRoleType = MemberRoleType.APPLICANT
     )
+    
     player.sendMessage(targetCommunity.getRegion()
         ?.let { Translator.tr("community.join.applied", it.name ,targetCommunity.regionNumberId) })
+    player.sendMessage(Translator.tr("community.join.payment.deducted", cost / 100.0))
+    
+    val communityName = targetCommunity.getRegion()?.name ?: "Community #${targetCommunity.regionNumberId}"
+    val notification = Translator.tr("community.notification.application_received", player.name.string, communityName)
+        ?: net.minecraft.text.Text.literal("${player.name.string} has applied to join $communityName")
+    notifyOfficials(targetCommunity, player.server, notification)
+    
+    com.imyvm.community.infra.CommunityDatabase.save()
     return 1
 }
 

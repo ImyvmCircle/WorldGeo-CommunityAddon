@@ -168,12 +168,6 @@ object CommunityDatabase {
                 false
             }
 
-            try {
-                stream.readBoolean()
-            } catch (e: Exception) {
-
-            }
-
             val chatHistoryEnabled = try {
                 stream.readBoolean()
             } catch (e: Exception) {

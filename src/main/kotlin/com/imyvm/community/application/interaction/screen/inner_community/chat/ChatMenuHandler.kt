@@ -2,10 +2,9 @@ package com.imyvm.community.application.interaction.screen.inner_community.chat
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.Community
-import com.imyvm.community.entrypoints.screen.inner_community.ChatHistoryMenu
 import com.imyvm.community.entrypoints.screen.inner_community.ChatRoomMenu
-import com.imyvm.community.infra.CommunityDatabase
 import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.text.Text
 
 fun runOpenChatRoomMenu(
     player: ServerPlayerEntity,
@@ -24,21 +23,43 @@ fun runOpenChatHistory(
     runBack: (ServerPlayerEntity) -> Unit
 ) {
     player.closeHandledScreen()
-    CommunityMenuOpener.open(player) { syncId ->
-        ChatHistoryMenu(syncId, player, community, 0, runBack)
+    
+    val chatMessages = community.getChatMessages()
+    
+    if (chatMessages.isEmpty()) {
+        player.sendMessage(Text.literal("§7No messages in chat history yet."))
+        player.sendMessage(Text.literal("§7Use §e/community chat ${community.generateCommunityMark()} <message>§7 to send messages!"))
+        return
     }
-}
-
-fun runOpenChatHistoryPage(
-    player: ServerPlayerEntity,
-    community: Community,
-    page: Int,
-    runBack: (ServerPlayerEntity) -> Unit
-) {
-    player.closeHandledScreen()
-    CommunityMenuOpener.open(player) { syncId ->
-        ChatHistoryMenu(syncId, player, community, page, runBack)
+    
+    player.sendMessage(Text.literal("§7§m                                                    "))
+    player.sendMessage(Text.literal("§6§lChat History: §r${community.generateCommunityMark()}"))
+    player.sendMessage(Text.literal("§7Showing last ${minOf(20, chatMessages.size)} messages"))
+    player.sendMessage(Text.literal(""))
+    
+    val messagesToShow = chatMessages.take(20)
+    
+    for (message in messagesToShow) {
+        val senderName = community.member[message.senderUUID]?.let {
+            player.server.userCache?.getByUuid(message.senderUUID)?.get()?.name ?: "Unknown"
+        } ?: "Unknown"
+        
+        val role = community.getMemberRole(message.senderUUID)
+        val roleDisplay = when (role?.name) {
+            "OWNER" -> if (community.isManor()) "§6Landowner§r" else "§6Lord§r"
+            "ADMIN" -> if (community.isManor()) "§5HouseKeeper§r" else "§5Steward§r"
+            "MEMBER" -> if (community.isManor()) "§aResident§r" else "§aCitizen§r"
+            else -> "§7Member§r"
+        }
+        
+        val timestamp = com.imyvm.community.util.getFormattedMillsHour(message.timestamp)
+        val messageText = message.content.string
+        
+        player.sendMessage(Text.literal("§8[$timestamp]§r $roleDisplay §f$senderName§7: §r$messageText"))
     }
+    
+    player.sendMessage(Text.literal(""))
+    player.sendMessage(Text.literal("§7§m                                                    "))
 }
 
 fun runToggleChatChannel(
@@ -48,19 +69,5 @@ fun runToggleChatChannel(
 ) {
     com.imyvm.community.application.interaction.common.ChatRoomHandler.toggleChatChannel(player, community)
     
-    // Reopen menu to show updated status
-    runOpenChatRoomMenu(player, community, runBack)
-}
-
-fun runToggleChatView(
-    player: ServerPlayerEntity,
-    community: Community,
-    runBack: (ServerPlayerEntity) -> Unit
-) {
-    val memberAccount = community.member[player.uuid] ?: return
-    memberAccount.chatHistoryEnabled = !memberAccount.chatHistoryEnabled
-    CommunityDatabase.save()
-    
-    // Reopen menu to show updated status
     runOpenChatRoomMenu(player, community, runBack)
 }

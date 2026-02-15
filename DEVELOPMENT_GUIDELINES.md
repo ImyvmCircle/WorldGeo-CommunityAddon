@@ -14,3 +14,4 @@
 12. 任何玩家列表默认有正版的头颅解析显示。请参考`CommunityMemberListMenu`中玩家的列表。
 13. 我们这个项目中所说的toggle开关的实现范例是`MainMenu`中的Selection Mode开关及其对应`Handler`实现。其实质是修改数据，并重新根据修改后的数据加载本页面。
 14. 修改机制之后，必须检查`README.md`进行修改。
+15. 原则上不要新建新的class，也不要添加Comments.
