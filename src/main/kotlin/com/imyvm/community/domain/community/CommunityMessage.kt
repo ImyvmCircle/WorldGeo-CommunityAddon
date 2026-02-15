@@ -11,7 +11,7 @@ data class CommunityMessage(
     val timestamp: Long = System.currentTimeMillis(),
     var isDeleted: Boolean = false,
     val readBy: MutableSet<UUID> = mutableSetOf(),
-    val recipientUUID: UUID? = null  // For MAIL type only
+    val recipientUUID: UUID? = null
 ) {
     fun isReadBy(playerUUID: UUID): Boolean {
         return readBy.contains(playerUUID)

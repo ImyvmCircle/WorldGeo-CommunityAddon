@@ -43,9 +43,28 @@ fun runExecuteScope(
 ) {
     when (geographicFunctionType){
         GeographicFunctionType.GEOMETRY_MODIFICATION -> {
-            val communityRegion = community.getRegion()
-            communityRegion?.let { PlayerInteractionApi.modifyScope(playerExecutor, it, scope.scopeName) }
-            playerExecutor.closeHandledScreen()
+            val permission = com.imyvm.community.domain.community.AdministrationPermission.MODIFY_REGION_GEOMETRY
+            com.imyvm.community.application.permission.PermissionCheck.executeWithPermission(
+                playerExecutor,
+                { com.imyvm.community.application.permission.PermissionCheck.canExecuteAdministration(playerExecutor, community, permission) }
+            ) {
+                val communityRegion = community.getRegion()
+                communityRegion?.let { 
+                    PlayerInteractionApi.modifyScope(playerExecutor, it, scope.scopeName)
+                    
+                    val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
+                    val notification = com.imyvm.community.util.Translator.tr(
+                        "community.notification.geometry_modified",
+                        scope.scopeName,
+                        playerExecutor.name.string,
+                        communityName
+                    ) ?: net.minecraft.text.Text.literal("Geometry of scope '${scope.scopeName}' was modified in $communityName by ${playerExecutor.name.string}")
+                    com.imyvm.community.application.interaction.common.notifyOfficials(community, playerExecutor.server, notification, playerExecutor)
+                    
+                    com.imyvm.community.infra.CommunityDatabase.save()
+                }
+                playerExecutor.closeHandledScreen()
+            }
         }
         GeographicFunctionType.SETTING_ADJUSTMENT -> {
             CommunityMenuOpener.open(playerExecutor) { syncId ->

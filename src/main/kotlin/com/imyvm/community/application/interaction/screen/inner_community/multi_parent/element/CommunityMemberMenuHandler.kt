@@ -43,12 +43,34 @@ fun runRemoveMember(
         playerExecutor,
         { PermissionCheck.canRemoveMember(playerExecutor, community, playerObject.id) }
     ) {
+        val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
+        
+        val targetNotification = com.imyvm.community.util.Translator.tr(
+            "community.notification.target.removed",
+            communityName,
+            playerExecutor.name.string
+        ) ?: net.minecraft.text.Text.literal("You were removed from $communityName by ${playerExecutor.name.string}")
+        com.imyvm.community.application.interaction.common.notifyTargetPlayer(
+            playerExecutor.server, playerObject.id, targetNotification, community
+        )
+        
         community.member.remove(playerObject.id)
+        
         trMenu(
             playerExecutor,
             "community.member_management.remove.success",
             playerObject.name
         )
+        
+        val notification = com.imyvm.community.util.Translator.tr(
+            "community.notification.member_removed",
+            playerObject.name,
+            playerExecutor.name.string,
+            communityName
+        ) ?: net.minecraft.text.Text.literal("${playerObject.name} was removed from $communityName by ${playerExecutor.name.string}")
+        com.imyvm.community.application.interaction.common.notifyOfficials(community, playerExecutor.server, notification, playerExecutor)
+        
+        com.imyvm.community.infra.CommunityDatabase.save()
     }
 }
 
@@ -101,11 +123,33 @@ private fun handleRolePromotion(
         val memberValue = community.member[playerObject.id]
         if (memberValue != null) {
             memberValue.basicRoleType = com.imyvm.community.domain.community.MemberRoleType.ADMIN
+            
+            val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
+            
+            val targetNotification = com.imyvm.community.util.Translator.tr(
+                "community.notification.target.promoted",
+                communityName,
+                playerExecutor.name.string
+            ) ?: net.minecraft.text.Text.literal("You were promoted to Admin in $communityName by ${playerExecutor.name.string}")
+            com.imyvm.community.application.interaction.common.notifyTargetPlayer(
+                playerExecutor.server, playerObject.id, targetNotification, community
+            )
+            
             trMenu(
                 playerExecutor,
                 "community.member_management.promote.success",
                 playerObject.name
             )
+            
+            val notification = com.imyvm.community.util.Translator.tr(
+                "community.notification.member_promoted",
+                playerObject.name,
+                playerExecutor.name.string,
+                communityName
+            ) ?: net.minecraft.text.Text.literal("${playerObject.name} was promoted to Admin in $communityName by ${playerExecutor.name.string}")
+            com.imyvm.community.application.interaction.common.notifyOfficials(community, playerExecutor.server, notification, playerExecutor)
+            
+            com.imyvm.community.infra.CommunityDatabase.save()
         }
     }
 }
@@ -122,11 +166,33 @@ private fun handleRoleDemotion(
         val memberValue = community.member[playerObject.id]
         if (memberValue != null) {
             memberValue.basicRoleType = com.imyvm.community.domain.community.MemberRoleType.MEMBER
+            
+            val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
+            
+            val targetNotification = com.imyvm.community.util.Translator.tr(
+                "community.notification.target.demoted",
+                communityName,
+                playerExecutor.name.string
+            ) ?: net.minecraft.text.Text.literal("You were demoted to Member in $communityName by ${playerExecutor.name.string}")
+            com.imyvm.community.application.interaction.common.notifyTargetPlayer(
+                playerExecutor.server, playerObject.id, targetNotification, community
+            )
+            
             trMenu(
                 playerExecutor,
                 "community.member_management.demote.success",
                 playerObject.name
             )
+            
+            val notification = com.imyvm.community.util.Translator.tr(
+                "community.notification.member_demoted",
+                playerObject.name,
+                playerExecutor.name.string,
+                communityName
+            ) ?: net.minecraft.text.Text.literal("${playerObject.name} was demoted to Member in $communityName by ${playerExecutor.name.string}")
+            com.imyvm.community.application.interaction.common.notifyOfficials(community, playerExecutor.server, notification, playerExecutor)
+            
+            com.imyvm.community.infra.CommunityDatabase.save()
         }
     }
 }
@@ -150,6 +216,18 @@ private fun handleGovernorshipUpdate(
                 playerObject.name,
                 governorship
             )
+            
+            val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
+            val notification = com.imyvm.community.util.Translator.tr(
+                "community.notification.governorship_changed",
+                playerObject.name,
+                governorship,
+                playerExecutor.name.string,
+                communityName
+            ) ?: net.minecraft.text.Text.literal("${playerObject.name}'s governorship was set to $governorship in $communityName by ${playerExecutor.name.string}")
+            com.imyvm.community.application.interaction.common.notifyOfficials(community, playerExecutor.server, notification, playerExecutor)
+            
+            com.imyvm.community.infra.CommunityDatabase.save()
         }
     }
 }
@@ -172,9 +250,24 @@ fun runToggleCouncilorStatus(
                 isCouncilMember = !memberValue.isCouncilMember,
                 governorship = memberValue.governorship,
                 mail = memberValue.mail,
-                turnover = memberValue.turnover
+                turnover = memberValue.turnover,
+                isInvited = memberValue.isInvited,
+                chatHistoryEnabled = memberValue.chatHistoryEnabled
             )
             community.member[playerObject.id] = newAccount
+            
+            val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
+            val action = if (newAccount.isCouncilMember) "appointed as Councilor" else "removed from Councilor"
+            
+            val targetNotification = com.imyvm.community.util.Translator.tr(
+                "community.notification.target.councilor_changed",
+                action,
+                communityName,
+                playerExecutor.name.string
+            ) ?: net.minecraft.text.Text.literal("You were $action in $communityName by ${playerExecutor.name.string}")
+            com.imyvm.community.application.interaction.common.notifyTargetPlayer(
+                playerExecutor.server, playerObject.id, targetNotification, community
+            )
             
             val status = if (newAccount.isCouncilMember) "appointed as" else "removed from"
             trMenu(
@@ -183,6 +276,17 @@ fun runToggleCouncilorStatus(
                 playerObject.name,
                 status
             )
+            
+            val notification = com.imyvm.community.util.Translator.tr(
+                "community.notification.councilor_changed",
+                playerObject.name,
+                action,
+                playerExecutor.name.string,
+                communityName
+            ) ?: net.minecraft.text.Text.literal("${playerObject.name} was $action in $communityName by ${playerExecutor.name.string}")
+            com.imyvm.community.application.interaction.common.notifyOfficials(community, playerExecutor.server, notification, playerExecutor)
+            
+            com.imyvm.community.infra.CommunityDatabase.save()
         }
         runBackToMemberMenu(playerExecutor, community, playerObject, runBack)
     }

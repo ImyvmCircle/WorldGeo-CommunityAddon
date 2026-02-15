@@ -54,8 +54,14 @@ fun runTogglingPermissionSetting(
     permissionKey: PermissionKey,
     runBack: (ServerPlayerEntity) -> Unit
 ) {
-    togglePermissionSettingInRegion(playerExecutor, community, scope, playerObject, permissionKey)
-    refreshSettingInMenu(playerExecutor, community, scope, playerObject, runBack)
+    val permission = com.imyvm.community.domain.community.AdministrationPermission.MODIFY_REGION_SETTINGS
+    com.imyvm.community.application.permission.PermissionCheck.executeWithPermission(
+        playerExecutor,
+        { com.imyvm.community.application.permission.PermissionCheck.canExecuteAdministration(playerExecutor, community, permission) }
+    ) {
+        togglePermissionSettingInRegion(playerExecutor, community, scope, playerObject, permissionKey)
+        refreshSettingInMenu(playerExecutor, community, scope, playerObject, runBack)
+    }
 }
 
 private fun togglePermissionSettingInRegion(
@@ -68,7 +74,8 @@ private fun togglePermissionSettingInRegion(
     val region = community.getRegion() ?: return
     val targetPlayerId = targetPlayer?.id
 
-    val newValueStr = (!RegionDataApi.getPermissionValueRegion(region, scope, targetPlayerId, permissionKey)).toString()
+    val oldValue = RegionDataApi.getPermissionValueRegion(region, scope, targetPlayerId, permissionKey)
+    val newValueStr = (!oldValue).toString()
 
     val permissionKeyStr = permissionKey.toString()
     val targetPlayerIdStr = targetPlayerId?.toString()
@@ -82,6 +89,23 @@ private fun togglePermissionSettingInRegion(
             playerExecutor, region, scope.scopeName, permissionKeyStr, newValueStr, targetPlayerIdStr
         )
     }
+    
+    val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
+    val scopeInfo = scope?.let { "in scope '${it.scopeName}'" } ?: "region-wide"
+    val targetInfo = targetPlayer?.let { "for ${it.name}" } ?: "for all members"
+    val notification = com.imyvm.community.util.Translator.tr(
+        "community.notification.setting_changed",
+        permissionKey.toString(),
+        oldValue.toString(),
+        newValueStr,
+        scopeInfo,
+        targetInfo,
+        playerExecutor.name.string,
+        communityName
+    ) ?: net.minecraft.text.Text.literal("Setting '$permissionKey' changed from $oldValue to $newValueStr $scopeInfo $targetInfo in $communityName by ${playerExecutor.name.string}")
+    com.imyvm.community.application.interaction.common.notifyOfficials(community, playerExecutor.server, notification, playerExecutor)
+    
+    com.imyvm.community.infra.CommunityDatabase.save()
 }
 
 private fun refreshSettingInMenu(

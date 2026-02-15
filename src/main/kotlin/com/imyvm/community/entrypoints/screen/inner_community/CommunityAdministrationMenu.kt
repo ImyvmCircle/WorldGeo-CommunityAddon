@@ -32,7 +32,7 @@ class CommunityAdministrationMenu(
 
     private fun addStaticButtons(player: ServerPlayerEntity, community: Community) {
 
-        if (PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.RENAME_COMMUNITY).isAllowed() || voteCreationMode) {
+        if (PermissionCheck.canRenameCommunity(player, community).isAllowed() || voteCreationMode) {
             addButton(
                 slot = 10,
                 name = Translator.tr("ui.community.administration.button.name")?.string ?: "Community Name",

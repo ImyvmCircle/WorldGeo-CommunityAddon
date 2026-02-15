@@ -20,10 +20,22 @@ class AdministrationRenameMenuAnvil(
     initialName = community.regionNumberId?.let { RegionDataApi.getRegion(it)?.name } ?: "Unknown Name"
 ) {
     override fun processRenaming(finalName: String) {
+        val oldName = community.regionNumberId?.let { com.imyvm.iwg.inter.api.RegionDataApi.getRegion(it)?.name } ?: "Unknown"
+        
         if (renameCommunity(player, community, finalName) == 0) {
             player.closeHandledScreen()
             return
         }
+        
+        val notification = com.imyvm.community.util.Translator.tr(
+            "community.notification.renamed",
+            oldName,
+            finalName,
+            player.name.string
+        ) ?: net.minecraft.text.Text.literal("Community renamed from '$oldName' to '$finalName' by ${player.name.string}")
+        com.imyvm.community.application.interaction.common.notifyOfficials(community, player.server, notification, player)
+        
+        com.imyvm.community.infra.CommunityDatabase.save()
         reopenAdministrationMenuWithNewName(player, community)
     }
 

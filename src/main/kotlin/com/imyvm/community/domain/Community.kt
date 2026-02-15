@@ -19,7 +19,7 @@ class Community(
     var announcements: MutableList<Announcement> = mutableListOf(),
     var administrationPermissions: AdministrationPermissions = AdministrationPermissions(),
     var expenditures: ArrayList<Turnover> = arrayListOf(),
-    var messages: MutableList<CommunityMessage> = mutableListOf()  // Unified message storage
+    var messages: MutableList<CommunityMessage> = mutableListOf()
 ) {
     fun isManor(): Boolean {
         return status == CommunityStatus.PENDING_MANOR || status == CommunityStatus.ACTIVE_MANOR || status == CommunityStatus.REVOKED_MANOR

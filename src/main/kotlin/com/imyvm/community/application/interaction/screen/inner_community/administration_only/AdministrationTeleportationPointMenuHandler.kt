@@ -60,43 +60,87 @@ fun runToggleTeleportPointAccessibility(
     scope: GeoScope,
     runBack: (ServerPlayerEntity) -> Unit
 ) {
-    val region = community.getRegion()
-    if (region != null) {
-        PlayerInteractionApi.toggleTeleportPointAccessibility(scope)
-        CommunityMenuOpener.open(playerExecutor) { syncId ->
-            AdministrationTeleportPointMenu(
-                syncId = syncId,
-                playerExecutor = playerExecutor,
-                community = community,
-                scope = scope,
-                runBack = runBack
-            )
+    val permission = com.imyvm.community.domain.community.AdministrationPermission.MANAGE_TELEPORT_POINTS
+    com.imyvm.community.application.permission.PermissionCheck.executeWithPermission(
+        playerExecutor,
+        { com.imyvm.community.application.permission.PermissionCheck.canExecuteAdministration(playerExecutor, community, permission) }
+    ) {
+        val region = community.getRegion()
+        if (region != null) {
+            PlayerInteractionApi.toggleTeleportPointAccessibility(scope)
+            CommunityMenuOpener.open(playerExecutor) { syncId ->
+                AdministrationTeleportPointMenu(
+                    syncId = syncId,
+                    playerExecutor = playerExecutor,
+                    community = community,
+                    scope = scope,
+                    runBack = runBack
+                )
+            }
+        } else {
+            playerExecutor.closeHandledScreen()
+            playerExecutor.sendMessage(Translator.tr("community.not_found.region"))
         }
-    } else {
-        playerExecutor.closeHandledScreen()
-        playerExecutor.sendMessage(Translator.tr("community.not_found.region"))
     }
 }
 
 fun runSettingTeleportPoint(playerExecutor: ServerPlayerEntity, community: Community, scope: GeoScope) {
-    playerExecutor.closeHandledScreen()
+    val permission = com.imyvm.community.domain.community.AdministrationPermission.MANAGE_TELEPORT_POINTS
+    com.imyvm.community.application.permission.PermissionCheck.executeWithPermission(
+        playerExecutor,
+        { com.imyvm.community.application.permission.PermissionCheck.canExecuteAdministration(playerExecutor, community, permission) }
+    ) {
+        playerExecutor.closeHandledScreen()
 
-    val region = community.getRegion()
-    if (region != null) {
-        PlayerInteractionApi.addTeleportPoint(playerExecutor, region, scope)
-    } else {
-        playerExecutor.sendMessage(Translator.tr("community.not_found.region"))
+        val region = community.getRegion()
+        if (region != null) {
+            PlayerInteractionApi.addTeleportPoint(playerExecutor, region, scope)
+            
+            val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
+            val blockPos = playerExecutor.blockPos
+            val notification = com.imyvm.community.util.Translator.tr(
+                "community.notification.teleport_point_set",
+                scope.scopeName,
+                blockPos.x,
+                blockPos.y,
+                blockPos.z,
+                playerExecutor.name.string,
+                communityName
+            ) ?: net.minecraft.text.Text.literal("Teleport point for scope '${scope.scopeName}' was set to (${blockPos.x}, ${blockPos.y}, ${blockPos.z}) in $communityName by ${playerExecutor.name.string}")
+            com.imyvm.community.application.interaction.common.notifyOfficials(community, playerExecutor.server, notification, playerExecutor)
+            
+            com.imyvm.community.infra.CommunityDatabase.save()
+        } else {
+            playerExecutor.sendMessage(Translator.tr("community.not_found.region"))
+        }
     }
 }
 
 fun runResetTeleportPoint(playerExecutor: ServerPlayerEntity, community: Community, scope: GeoScope) {
-    playerExecutor.closeHandledScreen()
+    val permission = com.imyvm.community.domain.community.AdministrationPermission.MANAGE_TELEPORT_POINTS
+    com.imyvm.community.application.permission.PermissionCheck.executeWithPermission(
+        playerExecutor,
+        { com.imyvm.community.application.permission.PermissionCheck.canExecuteAdministration(playerExecutor, community, permission) }
+    ) {
+        playerExecutor.closeHandledScreen()
 
-    val region = community.getRegion()
-    if (region != null) {
-        PlayerInteractionApi.resetTeleportPoint(playerExecutor, region, scope)
-    } else {
-        playerExecutor.sendMessage(Translator.tr("community.not_found.region"))
+        val region = community.getRegion()
+        if (region != null) {
+            PlayerInteractionApi.resetTeleportPoint(playerExecutor, region, scope)
+            
+            val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
+            val notification = com.imyvm.community.util.Translator.tr(
+                "community.notification.teleport_point_reset",
+                scope.scopeName,
+                playerExecutor.name.string,
+                communityName
+            ) ?: net.minecraft.text.Text.literal("Teleport point for scope '${scope.scopeName}' was reset in $communityName by ${playerExecutor.name.string}")
+            com.imyvm.community.application.interaction.common.notifyOfficials(community, playerExecutor.server, notification, playerExecutor)
+            
+            com.imyvm.community.infra.CommunityDatabase.save()
+        } else {
+            playerExecutor.sendMessage(Translator.tr("community.not_found.region"))
+        }
     }
 }
 

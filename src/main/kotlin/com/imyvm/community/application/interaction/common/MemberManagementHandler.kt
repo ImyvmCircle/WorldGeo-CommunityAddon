@@ -24,7 +24,7 @@ private fun getInvitationKey(inviteeUUID: UUID): Int {
     return inviteeUUID.hashCode()
 }
 
-private fun notifyOfficials(community: Community, server: net.minecraft.server.MinecraftServer, message: Text) {
+fun notifyOfficials(community: Community, server: net.minecraft.server.MinecraftServer, message: Text, executor: ServerPlayerEntity? = null) {
     for ((memberUUID, memberAccount) in community.member) {
         val isOfficial = memberAccount.basicRoleType == MemberRoleType.OWNER ||
                         memberAccount.basicRoleType == MemberRoleType.ADMIN ||
@@ -37,6 +37,15 @@ private fun notifyOfficials(community: Community, server: net.minecraft.server.M
         }
     }
 }
+
+fun notifyTargetPlayer(server: net.minecraft.server.MinecraftServer, targetUUID: UUID, message: Text, community: Community) {
+    val targetPlayer = server.playerManager.getPlayer(targetUUID)
+    targetPlayer?.sendMessage(message)
+    
+    val targetAccount = community.member[targetUUID]
+    targetAccount?.mail?.add(message)
+}
+
 fun onJoinCommunity(player: ServerPlayerEntity, targetCommunity: Community): Int {
     if (!checkPlayerMembershipJoin(player, targetCommunity)) return 0
     if (!checkMemberNumberManor(player, targetCommunity)) return 0
@@ -162,7 +171,7 @@ private fun joinUnderOpenPolicy(player: ServerPlayerEntity, targetCommunity: Com
     val communityName = targetCommunity.getRegion()?.name ?: "Community #${targetCommunity.regionNumberId}"
     val notification = Translator.tr("community.notification.member_joined", player.name.string, communityName) 
         ?: net.minecraft.text.Text.literal("${player.name.string} has joined $communityName")
-    notifyOfficials(targetCommunity, player.server, notification)
+    notifyOfficials(targetCommunity, player.server, notification, player)
     
     com.imyvm.community.infra.CommunityDatabase.save()
     return 1
@@ -198,7 +207,7 @@ private fun joinUnderApplicationPolicy(player: ServerPlayerEntity, targetCommuni
     val communityName = targetCommunity.getRegion()?.name ?: "Community #${targetCommunity.regionNumberId}"
     val notification = Translator.tr("community.notification.application_received", player.name.string, communityName)
         ?: net.minecraft.text.Text.literal("${player.name.string} has applied to join $communityName")
-    notifyOfficials(targetCommunity, player.server, notification)
+    notifyOfficials(targetCommunity, player.server, notification, player)
     
     com.imyvm.community.infra.CommunityDatabase.save()
     return 1
@@ -310,6 +319,21 @@ fun sendInvitation(inviter: ServerPlayerEntity, target: ServerPlayerEntity, comm
     }
     
     inviter.sendMessage(Translator.tr("community.invite.sent", target.name.string, communityName))
+
+    val notification = Translator.tr(
+        "community.notification.invitation_sent",
+        target.name.string,
+        inviter.name.string,
+        communityName
+    ) ?: net.minecraft.text.Text.literal("${target.name.string} was invited to $communityName by ${inviter.name.string}")
+    notifyOfficials(community, inviter.server, notification, inviter)
+
+    val targetNotification = Translator.tr(
+        "community.notification.target.invitation_received",
+        communityName,
+        inviter.name.string
+    ) ?: net.minecraft.text.Text.literal("You have been invited to $communityName by ${inviter.name.string}")
+    notifyTargetPlayer(inviter.server, target.uuid, targetNotification, community)
 }
 
 fun onAcceptInvitation(player: ServerPlayerEntity, community: Community) {
@@ -333,6 +357,19 @@ fun onAcceptInvitation(player: ServerPlayerEntity, community: Community) {
     
     val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
     player.sendMessage(Translator.tr("community.invite.accepted", communityName))
+
+    val notification = Translator.tr(
+        "community.notification.invitation_accepted",
+        player.name.string,
+        communityName
+    ) ?: net.minecraft.text.Text.literal("${player.name.string} has accepted invitation to $communityName (awaiting audit)")
+    notifyOfficials(community, player.server, notification, player)
+
+    val targetNotification = Translator.tr(
+        "community.notification.target.invitation_accepted_awaiting_audit",
+        communityName
+    ) ?: net.minecraft.text.Text.literal("You have accepted invitation to $communityName. Awaiting admin approval.")
+    notifyTargetPlayer(player.server, player.uuid, targetNotification, community)
     
     com.imyvm.community.infra.CommunityDatabase.save()
 }
@@ -359,6 +396,13 @@ fun onRejectInvitation(player: ServerPlayerEntity, community: Community) {
         val inviterPlayer = player.server.playerManager?.getPlayer(inviterUUID)
         inviterPlayer?.sendMessage(Translator.tr("community.invite.rejected.inviter", player.name.string, communityName))
     }
+    
+    val notification = Translator.tr(
+        "community.notification.invitation_rejected_by_invitee",
+        player.name.string,
+        communityName
+    ) ?: net.minecraft.text.Text.literal("${player.name.string} has rejected invitation to $communityName")
+    notifyOfficials(community, player.server, notification, player)
     
     com.imyvm.community.infra.CommunityDatabase.save()
 }

@@ -19,7 +19,7 @@ fun runAdmRenameCommunity(player: ServerPlayerEntity, community: Community, runB
         player,
         { 
             if (voteCreationMode) PermissionCheck.canAccessCouncil(player, community)
-            else PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.RENAME_COMMUNITY) 
+            else PermissionCheck.canRenameCommunity(player, community)
         }
     ) {
         AdministrationRenameMenuAnvil(player, community = community, runBackGrandfather).open()
@@ -124,11 +124,24 @@ fun runAdmChangeJoinPolicy(player: ServerPlayerEntity, community: Community, pol
             player,
             { PermissionCheck.canChangeJoinPolicy(player, community) }
         ) {
+            val oldPolicy = community.joinPolicy
             community.joinPolicy = when (policy) {
                 CommunityJoinPolicy.OPEN -> CommunityJoinPolicy.APPLICATION
                 CommunityJoinPolicy.APPLICATION -> CommunityJoinPolicy.INVITE_ONLY
                 CommunityJoinPolicy.INVITE_ONLY -> CommunityJoinPolicy.OPEN
             }
+            
+            val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
+            val notification = com.imyvm.community.util.Translator.tr(
+                "community.notification.join_policy_changed",
+                oldPolicy.name,
+                community.joinPolicy.name,
+                player.name.string,
+                communityName
+            ) ?: net.minecraft.text.Text.literal("Join policy changed from ${oldPolicy.name} to ${community.joinPolicy.name} in $communityName by ${player.name.string}")
+            com.imyvm.community.application.interaction.common.notifyOfficials(community, player.server, notification, player)
+            
+            com.imyvm.community.infra.CommunityDatabase.save()
             runBackToCommunityAdministrationMenu(player, community, runBack, voteCreationMode)
         }
     }
@@ -140,6 +153,18 @@ fun runAdmToggleCouncil(player: ServerPlayerEntity, community: Community, runBac
         { PermissionCheck.canToggleCouncil(player, community) }
     ) {
         community.council.enabled = !community.council.enabled
+        
+        val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
+        val action = if (community.council.enabled) "enabled" else "disabled"
+        val notification = com.imyvm.community.util.Translator.tr(
+            "community.notification.council_toggled",
+            action,
+            player.name.string,
+            communityName
+        ) ?: net.minecraft.text.Text.literal("Council was $action in $communityName by ${player.name.string}")
+        com.imyvm.community.application.interaction.common.notifyOfficials(community, player.server, notification, player)
+        
+        com.imyvm.community.infra.CommunityDatabase.save()
         runBackToCommunityAdministrationMenu(player, community, runBack, voteCreationMode)
     }
 }

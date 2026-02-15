@@ -90,6 +90,17 @@ object PermissionCheck {
         }
     }
 
+    fun canRenameCommunity(executor: ServerPlayerEntity, community: Community): PermissionResult {
+        val executorRole = community.getMemberRole(executor.uuid)
+            ?: return PermissionResult.Denied("community.permission.error.not_member")
+
+        return if (executorRole == MemberRoleType.OWNER) {
+            PermissionResult.Allowed
+        } else {
+            PermissionResult.Denied("community.permission.error.owner_only")
+        }
+    }
+
     fun canExecuteAdministration(
         executor: ServerPlayerEntity,
         community: Community,
