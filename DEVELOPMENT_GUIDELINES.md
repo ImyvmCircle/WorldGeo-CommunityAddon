@@ -1,9 +1,9 @@
 # 通用上下文
 
-1. 本mod有i18n系统，通过`Translator.tr()`函数实现，以下说的所有按钮目前实现的名称均为英文，请不要做中文文件。原则上不要使用`Text.literal()`。需实现`resource`里面对应的英文项目。对于发送给玩家的文本，需用MOTD格式制作比较美观的色彩和加粗下划线等效果，但不要引入Unicode特殊符号。
+1. 本mod有i18n系统，通过`Translator.tr()`函数实现，以下说的所有按钮目前实现的名称均为英文，请不要做中文文件。原则上不要使用`Text.literal()`。需实现`resource`里面对应的英文项目。对于发送给玩家的文本，需用MOTD格式制作比较美观的色彩和加粗下划线等效果，但不要引入Unicode特殊符号。对于`MANOR`和`RECTANGLE`等变量值，请用人类可读文本，转化成`manor`或`rectangle`等正常词汇文本引入消息，而不要直接放入消息。
 2. `CommunityConfig`里面存储了本mod的所有配置项。
 3. `CommunityDatabase`是数据库的维护类。凡是涉及改动`Communtiy`成员变量的操作，必须要看看是否涉及数据库存储的改动。
-4. `PendingOperation`涉及所有需要在一定时限内作出反应的任务，实现由`PendingApplication`做出。
+4. `PendingOperation`涉及所有需要在一定时限内作出反应的任务，实现由`PendingApplication`做出，创建任何`PendingOperation`一定要通过`pendingApplication`中心化管理。
 5. 聚落的正式成员是由`MemberRoleType`定义的，不包含`APPLICANT`和`REFUSED`。谈论是否在某个聚落的时候，默认只包含`OWNER`、`ADMIN`和`MEMBER`。
 6. 涉及到聚落权限的内容，必须检查修改对应操作入口是否与`AdministrationPermission(s)`和`PermissionCheck`等相关类相联系并实现了权限检查。
 7. 对于`Menu`点击后要发送文本消息给玩家的情况，请记得关闭面板本身玩家才能看到文本消息。这中间，一定要合理规划流程，避免关闭使得某些后面的面板功能实质上玩家无法到达。

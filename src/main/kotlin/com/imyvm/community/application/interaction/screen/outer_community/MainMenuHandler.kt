@@ -84,14 +84,17 @@ fun runToggleSelectionMode(player: ServerPlayerEntity) {
     val isSelectionModeEnabled = ImyvmWorldGeo.pointSelectingPlayers.containsKey(player.uuid)
     if (isSelectionModeEnabled) {
         PlayerInteractionApi.stopSelection(player)
+        player.sendMessage(Translator.tr("community.selection_mode.disabled"))
     } else {
         PlayerInteractionApi.startSelection(player)
+        player.sendMessage(Translator.tr("community.selection_mode.enabled"))
     }
     runBackOrRefreshMainMenu(player)
 }
 
 fun runResetSelection(player: ServerPlayerEntity) {
     PlayerInteractionApi.resetSelection(player)
+    player.sendMessage(Translator.tr("community.selection_mode.reset"))
     runBackOrRefreshMainMenu(player)
 }
 

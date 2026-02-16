@@ -2,17 +2,21 @@ package com.imyvm.community.entrypoints.command
 
 import com.imyvm.community.application.interaction.command.*
 import com.imyvm.community.application.interaction.common.onCreateCommunityRequest
+import com.imyvm.community.application.interaction.common.onConfirmCommunityCreation
+import com.imyvm.community.application.interaction.common.onCancelCommunityCreation
 import com.imyvm.community.application.interaction.common.onJoinCommunity
 import com.imyvm.community.application.interaction.common.onLeaveCommunity
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.community.CommunityListFilterType
 import com.imyvm.community.entrypoints.command.helper.*
 import com.imyvm.community.entrypoints.screen.outer_community.MainMenu
+import com.imyvm.community.util.Translator
 import com.imyvm.iwg.inter.api.PlayerInteractionApi.resetSelection
 import com.imyvm.iwg.inter.api.PlayerInteractionApi.startSelection
 import com.imyvm.iwg.inter.api.PlayerInteractionApi.stopSelection
 import com.imyvm.iwg.inter.register.command.helper.SHAPE_TYPE_SUGGESTION_PROVIDER
 import com.mojang.brigadier.CommandDispatcher
+import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.context.CommandContext
 import net.minecraft.server.command.CommandManager.argument
@@ -250,6 +254,20 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                             .executes { runToggleChatChannel(it) }
                     )
             )
+            .then(
+                literal("__confirm_creation__")
+                    .then(
+                        argument("regionId", IntegerArgumentType.integer())
+                            .executes { runConfirmCommunityCreation(it) }
+                    )
+            )
+            .then(
+                literal("__cancel_creation__")
+                    .then(
+                        argument("regionId", IntegerArgumentType.integer())
+                            .executes { runCancelCommunityCreation(it) }
+                    )
+            )
     )
 }
 
@@ -266,17 +284,29 @@ private fun runInitialUI(context: CommandContext<ServerCommandSource>): Int {
 
 private fun runStartSelect(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
-    return startSelection(player)
+    val result = startSelection(player)
+    if (result == 1) {
+        player.sendMessage(Translator.tr("community.selection_mode.enabled"))
+    }
+    return result
 }
 
 private fun runStopSelect(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
-    return stopSelection(player)
+    val result = stopSelection(player)
+    if (result == 1) {
+        player.sendMessage(Translator.tr("community.selection_mode.disabled"))
+    }
+    return result
 }
 
 private fun runResetSelect(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
-    return resetSelection(player)
+    val result = resetSelection(player)
+    if (result == 1) {
+        player.sendMessage(Translator.tr("community.selection_mode.reset"))
+    }
+    return result
 }
 
 private fun runCreateCommunity(context: CommandContext<ServerCommandSource>): Int {
@@ -285,6 +315,18 @@ private fun runCreateCommunity(context: CommandContext<ServerCommandSource>): In
     val name = StringArgumentType.getString(context, "name")
     val shapeName = StringArgumentType.getString(context, "shapeType").uppercase(Locale.getDefault())
     return onCreateCommunityRequest(player, communityType, name, shapeName)
+}
+
+private fun runConfirmCommunityCreation(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val regionId = IntegerArgumentType.getInteger(context, "regionId")
+    return onConfirmCommunityCreation(player, regionId)
+}
+
+private fun runCancelCommunityCreation(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val regionId = IntegerArgumentType.getInteger(context, "regionId")
+    return onCancelCommunityCreation(player, regionId)
 }
 
 private fun runForceDeleteCommunity(context: CommandContext<ServerCommandSource>): Int {

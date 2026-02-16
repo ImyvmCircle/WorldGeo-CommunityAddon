@@ -1,12 +1,12 @@
 package com.imyvm.community.application.interaction.common
 
 import com.imyvm.community.WorldGeoCommunityAddon
+import com.imyvm.community.application.event.addPendingOperation
 import com.imyvm.community.application.interaction.common.helper.checkPlayerMembershipJoin
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.application.permission.PermissionCheck
 import com.imyvm.community.domain.Community
 import com.imyvm.community.domain.MemberAccount
-import com.imyvm.community.domain.PendingOperation
 import com.imyvm.community.domain.PendingOperationType
 import com.imyvm.community.domain.community.CommunityJoinPolicy
 import com.imyvm.community.domain.community.CommunityStatus
@@ -257,12 +257,12 @@ fun sendInvitation(inviter: ServerPlayerEntity, target: ServerPlayerEntity, comm
         isInvited = true
     )
     
-    val expireAt = System.currentTimeMillis() + timeoutMinutes * 60 * 1000L
     val invitationKey = getInvitationKey(target.uuid)
     
-    WorldGeoCommunityAddon.pendingOperations[invitationKey] = PendingOperation(
-        expireAt = expireAt,
+    addPendingOperation(
+        regionId = invitationKey,
         type = PendingOperationType.INVITATION,
+        expireMinutes = timeoutMinutes,
         inviterUUID = inviter.uuid,
         inviteeUUID = target.uuid
     )

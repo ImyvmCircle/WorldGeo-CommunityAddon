@@ -22,6 +22,7 @@ object CommunityDatabase {
     fun save() {
         val file = this.getDatabasePath()
         DataOutputStream(file.toFile().outputStream()).use { stream ->
+            // 保存Communities
             stream.writeInt(communities.size)
             for (community in communities) {
                 saveCommunityRegionNumberId(stream,community)
@@ -33,7 +34,11 @@ object CommunityDatabase {
                 saveCommunityAdministrationPermissions(stream, community)
                 saveCommunityExpenditures(stream, community)
                 saveCommunityMessages(stream, community)
+                stream.writeLong(community.creationCost)
             }
+            
+            // 保存PendingOperations
+            savePendingOperations(stream)
         }
     }
 
@@ -59,6 +64,16 @@ object CommunityDatabase {
                 val administrationPermissions = loadCommunityAdministrationPermissions(stream)
                 val expenditures = loadCommunityExpenditures(stream)
                 val messages = loadCommunityMessages(stream)
+                
+                val creationCost = if (stream.available() > 0) {
+                    try {
+                        stream.readLong()
+                    } catch (e: Exception) {
+                        0L
+                    }
+                } else {
+                    0L
+                }
 
                 val community = Community(
                     regionNumberId = regionNumberId,
@@ -69,9 +84,14 @@ object CommunityDatabase {
                     announcements = announcements,
                     administrationPermissions = administrationPermissions,
                     expenditures = expenditures,
-                    messages = messages
+                    messages = messages,
+                    creationCost = creationCost
                 )
                 communities.add(community)
+            }
+            
+            if (stream.available() > 0) {
+                loadPendingOperations(stream)
             }
         }
     }
@@ -450,5 +470,103 @@ object CommunityDatabase {
             mutableListOf()
         }
         return messages
+    }
+    
+    private fun savePendingOperations(stream: DataOutputStream) {
+        val ops = com.imyvm.community.WorldGeoCommunityAddon.pendingOperations
+        stream.writeInt(ops.size)
+        for ((regionId, operation) in ops) {
+            stream.writeInt(regionId)
+            stream.writeLong(operation.expireAt)
+            stream.writeInt(operation.type.value)
+            
+            // 保存inviterUUID
+            val hasInviter = operation.inviterUUID != null
+            stream.writeBoolean(hasInviter)
+            if (hasInviter) {
+                stream.writeUTF(operation.inviterUUID.toString())
+            }
+            
+            // 保存inviteeUUID
+            val hasInvitee = operation.inviteeUUID != null
+            stream.writeBoolean(hasInvitee)
+            if (hasInvitee) {
+                stream.writeUTF(operation.inviteeUUID.toString())
+            }
+            
+            // 保存creationData
+            val hasCreationData = operation.creationData != null
+            stream.writeBoolean(hasCreationData)
+            if (hasCreationData) {
+                val data = operation.creationData!!
+                stream.writeUTF(data.communityName)
+                stream.writeUTF(data.communityType)
+                stream.writeUTF(data.shapeName)
+                stream.writeInt(data.regionNumberId)
+                stream.writeUTF(data.creatorUUID.toString())
+                stream.writeLong(data.totalCost)
+            }
+        }
+    }
+    
+    private fun loadPendingOperations(stream: DataInputStream) {
+        try {
+            val size = stream.readInt()
+            com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.clear()
+            
+            for (i in 0 until size) {
+                val regionId = stream.readInt()
+                val expireAt = stream.readLong()
+                val type = com.imyvm.community.domain.PendingOperationType.fromValue(stream.readInt())
+                
+                // 加载inviterUUID
+                val hasInviter = stream.readBoolean()
+                val inviterUUID = if (hasInviter) {
+                    UUID.fromString(stream.readUTF())
+                } else {
+                    null
+                }
+                
+                // 加载inviteeUUID
+                val hasInvitee = stream.readBoolean()
+                val inviteeUUID = if (hasInvitee) {
+                    UUID.fromString(stream.readUTF())
+                } else {
+                    null
+                }
+                
+                // 加载creationData
+                val hasCreationData = stream.readBoolean()
+                val creationData = if (hasCreationData) {
+                    val communityName = stream.readUTF()
+                    val communityType = stream.readUTF()
+                    val shapeName = stream.readUTF()
+                    val creationRegionId = stream.readInt()
+                    val creatorUUID = UUID.fromString(stream.readUTF())
+                    val totalCost = stream.readLong()
+                    com.imyvm.community.domain.CreationConfirmationData(
+                        communityName = communityName,
+                        communityType = communityType,
+                        shapeName = shapeName,
+                        regionNumberId = creationRegionId,
+                        creatorUUID = creatorUUID,
+                        totalCost = totalCost
+                    )
+                } else {
+                    null
+                }
+                
+                val operation = com.imyvm.community.domain.PendingOperation(
+                    expireAt = expireAt,
+                    type = type,
+                    inviterUUID = inviterUUID,
+                    inviteeUUID = inviteeUUID,
+                    creationData = creationData
+                )
+                com.imyvm.community.WorldGeoCommunityAddon.pendingOperations[regionId] = operation
+            }
+        } catch (e: Exception) {
+            com.imyvm.community.WorldGeoCommunityAddon.logger.error("Failed to load pending operations: ${e.message}")
+        }
     }
 }

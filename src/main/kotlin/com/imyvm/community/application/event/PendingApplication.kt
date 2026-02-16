@@ -11,6 +11,7 @@ import com.imyvm.community.infra.CommunityConfig
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.Translator
 import net.minecraft.server.MinecraftServer
+import java.util.*
 
 internal fun checkPendingOperations(server: MinecraftServer) {
     val now = System.currentTimeMillis()
@@ -34,6 +35,10 @@ private fun handleExpiredOperation(
     when (operation.type) {
         PendingOperationType.INVITATION -> {
             handleExpiredInvitation(operation, server)
+            iterator.remove()
+        }
+        PendingOperationType.CREATE_COMMUNITY_CONFIRMATION -> {
+            handleExpiredCreationConfirmation(key, operation, server)
             iterator.remove()
         }
         PendingOperationType.CREATE_COMMUNITY_REALM_REQUEST_RECRUITMENT -> {
@@ -92,6 +97,33 @@ private fun handleExpiredInvitation(
     WorldGeoCommunityAddon.logger.info("Expired invitation for invitee $inviteeUUID")
 }
 
+private fun handleExpiredCreationConfirmation(
+    regionId: Int,
+    operation: PendingOperation,
+    server: MinecraftServer
+) {
+    val creationData = operation.creationData ?: return
+    val creatorPlayer = server.playerManager?.getPlayer(creationData.creatorUUID)
+
+    val region = com.imyvm.iwg.inter.api.RegionDataApi.getRegion(regionId)
+    if (region != null && creatorPlayer != null) {
+        try {
+            com.imyvm.iwg.inter.api.PlayerInteractionApi.deleteRegion(creatorPlayer, region)
+            WorldGeoCommunityAddon.logger.info("Deleted region $regionId for expired creation confirmation")
+        } catch (e: Exception) {
+            WorldGeoCommunityAddon.logger.error("Failed to delete region $regionId: ${e.message}")
+        }
+    }
+
+    creatorPlayer?.sendMessage(
+        Translator.tr(
+            "community.create.confirmation.expired"
+        )
+    )
+    
+    WorldGeoCommunityAddon.logger.info("Expired creation confirmation for region $regionId by ${creationData.creatorUUID}")
+}
+
 private fun promoteCommunityIfEligible(regionId: Int, community: Community) {
     val ownerEntry = community.member.entries.find { community.getMemberRole(it.key) == MemberRoleType.OWNER }
     if (ownerEntry != null &&
@@ -129,10 +161,36 @@ private fun removePendingOperation(
 }
 
 private fun addAuditingRequestRealm(regionId: Int, community: Community) {
-    WorldGeoCommunityAddon.pendingOperations[regionId] = PendingOperation(
-        expireAt = System.currentTimeMillis() + CommunityConfig.AUDITING_EXPIRE_HOURS.value * 3600 * 1000,
-        type = PendingOperationType.AUDITING_COMMUNITY_REQUEST
+    addPendingOperation(
+        regionId = regionId,
+        type = PendingOperationType.AUDITING_COMMUNITY_REQUEST,
+        expireHours = CommunityConfig.AUDITING_EXPIRE_HOURS.value
     )
     community.status = CommunityStatus.PENDING_REALM
     WorldGeoCommunityAddon.logger.info("Community request $regionId moved to auditing stage.")
+}
+
+fun addPendingOperation(
+    regionId: Int,
+    type: PendingOperationType,
+    expireHours: Int? = null,
+    expireMinutes: Int? = null,
+    inviterUUID: UUID? = null,
+    inviteeUUID: UUID? = null,
+    creationData: com.imyvm.community.domain.CreationConfirmationData? = null
+) {
+    val expireTime = when {
+        expireHours != null -> System.currentTimeMillis() + expireHours * 3600 * 1000L
+        expireMinutes != null -> System.currentTimeMillis() + expireMinutes * 60 * 1000L
+        else -> throw IllegalArgumentException("Must specify either expireHours or expireMinutes")
+    }
+    
+    WorldGeoCommunityAddon.pendingOperations[regionId] = PendingOperation(
+        expireAt = expireTime,
+        type = type,
+        inviterUUID = inviterUUID,
+        inviteeUUID = inviteeUUID,
+        creationData = creationData
+    )
+    WorldGeoCommunityAddon.logger.info("Added pending operation: type=$type, regionId=$regionId, expireAt=$expireTime")
 }

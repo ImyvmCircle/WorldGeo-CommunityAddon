@@ -6,7 +6,17 @@ class PendingOperation(
     val expireAt: Long,
     val type: PendingOperationType,
     val inviterUUID: UUID? = null,
-    val inviteeUUID: UUID? = null
+    val inviteeUUID: UUID? = null,
+    val creationData: CreationConfirmationData? = null
+)
+
+data class CreationConfirmationData(
+    val communityName: String,
+    val communityType: String,
+    val shapeName: String,
+    val regionNumberId: Int,
+    val creatorUUID: UUID,
+    val totalCost: Long
 )
 
 enum class PendingOperationType(val value: Int) {
@@ -17,5 +27,13 @@ enum class PendingOperationType(val value: Int) {
     CHANGE_ROLE(4),
     CHANGE_JOIN_POLICY(5),
     AUDITING_COMMUNITY_REQUEST(6),
-    INVITATION(7);
+    INVITATION(7),
+    CREATE_COMMUNITY_CONFIRMATION(8);
+    
+    companion object {
+        fun fromValue(value: Int): PendingOperationType {
+            return entries.find { it.value == value } 
+                ?: throw IllegalArgumentException("Unknown PendingOperationType value: $value")
+        }
+    }
 }

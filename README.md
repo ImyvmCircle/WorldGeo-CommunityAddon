@@ -51,15 +51,23 @@ A **community creation request** may be initialized spontaneously by any player 
             * that `POLYGON` means all points are vertices of the polygon in order;
         * may also  be chosen when initiating the creation request after the point selection; and
     * a set of **rules** executed to check whether the combination of points and type is valid when initiating the creation request, and their details are provided by IMYVMWorldGeo; and
-* that the player **possesses sufficient in-game currency** to cover the **community creation fee** for the specified *community type*, 
-    * that a `MANOR` is charged 15000 by default; and
-    * that a `REALM` is charged 30000 by default.
+* that the player **possesses sufficient in-game currency** to cover the **community creation fee** for the specified *community type*, which consists of:
+    * **Base Cost**:
+        * that a `MANOR` is charged 5000 by default; and
+        * that a `REALM` is charged 8000 by default.
+    * **Area-Based Fee** (charged proportionally based on region size):
+        * **Manor**: 1000 per 10,000 m² (first 10,000 m² free)
+            * Formula: `baseCost + max(0, (area - 10000) / 10000 * 1000)`
+            * Example: A 25,000 m² manor costs 5000 + 1500 = 6500 (65.00)
+        * **Realm**: 3000 per 40,000 m² (first 40,000 m² free)
+            * Formula: `baseCost + max(0, (area - 40000) / 40000 * 3000)`
+            * Example: An 80,000 m² realm costs 8000 + 3000 = 11000 (110.00)
 
 When criteria above are achieved, a player may **initialize the creation request**, and the player
 
 - defines the `Community Name`, `Community Type` and `GeoShapeType` in this step;
 - may use the command `/community create <geoShapeType> <communityType> [communityName]`; and
-- may left-click the `Create Community` button in the box-interface `Community Main Menu`, set the community information in this step as mentioned, left-click `Confirm Creation` button, and then `Confirm` again.
+- may left-click the `Create Community` button in the box-interface `Community Main Menu`, set the community information in this step as mentioned, and left-click `Confirm Creation` button to directly create the community (no additional confirmation step required).
 
 #### Automatic Inspection and Proto-Community
 
@@ -161,6 +169,28 @@ Owners may individually enable or disable administration operations for **admini
 - `CHANGE_JOIN_POLICY` - Toggle join policy settings.
 
 By default, all permissions are enabled. Owners may selectively disable specific operations to restrict administrator and council authority while maintaining their own full access.
+
+##### Administrative Notifications
+
+All administrative actions automatically notify relevant parties through a comprehensive notification system:
+
+**Officials Notification** - Sent to owners, administrators, and council members (excluding the executor):
+- Member management actions (promote, demote, remove, appoint councilor);
+- Membership applications and audit decisions (accept, reject);
+- Invitation workflow events (send, accept, reject, audit);
+- Join and leave events (including OPEN policy joins);
+- Community setting changes (join policy, council toggle, rename);
+- Regional modifications (geometry changes, teleport point operations, setting adjustments).
+
+**Target Player Notification** - Sent directly to affected players:
+- Role changes (promotion, demotion, councilor appointment);
+- Membership status changes (accepted, rejected, removed);
+- Invitation events (received, audit results).
+
+**Notification Delivery**:
+- Online players: Immediate in-game message with formatted MOTD codes;
+- Offline players: Persistent mail delivered upon login;
+- All notifications include action details, executor name, and timestamp.
 
 #### Geographic Functions
 
@@ -293,8 +323,7 @@ Invited players follow a modified audit workflow:
 - `/community accept_invitation <communityIdentifier>` - Accept a pending invitation to join a community;
 - `/community reject_invitation <communityIdentifier>` - Reject a pending invitation to join a community;
 - `/community chat <communityIdentifier> <message>` - Send a message to the community chat room;
-- `/community chat_toggle <communityIdentifier>` - Toggle send mode on/off (when enabled, all messages go to community chat);
-- `/community chat_view_toggle <communityIdentifier>` - Toggle viewing community chat messages on/off.
+- `/community chat_toggle <communityIdentifier>` - Toggle channel mode on/off (when enabled, all messages go to community chat).
 
 ### Membership
 
@@ -347,28 +376,42 @@ The chat room system allows formal community members to communicate with each ot
 - Applicants and refused members cannot use chat features
 
 **Toggle Modes:**
-- **Send Mode:** When enabled, all messages typed by the player are automatically sent to the community chat instead of global chat
-- **View Mode:** When enabled, player receives community chat messages; when disabled, chat messages are hidden
+- **Channel Toggle:** Enable/disable community chat channel (located at center of Chat Room menu)
+  - When enabled, all messages typed are sent to community chat instead of global chat
+  - When disabled, messages go to global chat as normal
 
-**Message Format:**
+**Message Format & Styling:**
+
+Messages are displayed with colorful, decorative formatting based on member role and community type:
+
+*Manor Format:*
 ```
-[CommunityName][Role] PlayerName: Message
+[CommunityName] §6Lord§r/§eHouseKeeper§r/§7Citizen§r PlayerName: Message
 ```
-Example: `[Riverside][Admin] Steve: Hello everyone!`
+
+*Realm Format:*
+```
+[CommunityName] §4Landowner§r/§6Steward§r/§2Resident§r PlayerName: Message
+```
+
+Role decorations:
+- **Owner**: Lord (Manor) / Landowner (Realm) - bold gold/dark red
+- **Admin**: HouseKeeper (Manor) / Steward (Realm) - yellow/gold  
+- **Member**: Citizen (Manor) / Resident (Realm) - gray/green
 
 **Chat History:**
-- View up to 50 messages per page
-- Messages display timestamp, sender name, role, and content
-- Navigate between pages using Previous/Next buttons
+- Direct display of last 20 messages when opening Chat Room menu
+- Messages show sender name, role decoration, and content
+- Automatically scrolls to show most recent messages
 - Empty history shows "No messages yet"
 
 **Usage Methods:**
 1. **Command-based:** Use `/community chat <community> <message>` to send a single message
-2. **Toggle-based:** Enable send mode in the Chat Room menu or with `/community chat_toggle <community>`, then type normally
+2. **Toggle-based:** Enable channel toggle in Chat Room menu or with `/community chat_toggle <community>`, then type normally
 
 **Technical Details:**
 - Messages stored in unified `CommunityMessage` storage with type `CHAT`
-- Per-member toggles: `chatRoomSendEnabled` (default: false), `chatHistoryEnabled` (default: true)
+- Per-member toggle: `chatHistoryEnabled` (default: true)
 - Only online members with `chatHistoryEnabled=true` receive broadcasts
 - Messages persist in database for history viewing
 

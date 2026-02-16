@@ -79,11 +79,18 @@ private fun handleAuditingChoices(player: ServerPlayerEntity, choice: String, ta
                 }
             }
             player.sendMessage(Translator.tr("community.audit.approved", targetCommunity.regionNumberId))
+            notifyOPsAndOwnerAboutAuditApproved(player, targetCommunity)
             return 1
         }
         "no" -> {
-            revokeCommunityWithRefund(player, targetCommunity)
+            val owner = getOwnerPlayer(targetCommunity, player.server)
+            val refundAmount = targetCommunity.creationCost / 100.0
+            revokeCommunity(targetCommunity)
+            if (owner != null) {
+                refundNotCreated(owner, targetCommunity)
+            }
             player.sendMessage(Translator.tr("community.audit.denied", targetCommunity.regionNumberId))
+            notifyOPsAndOwnerAboutAuditDenied(player, targetCommunity, refundAmount, owner)
             return 1
         }
         else -> {
@@ -91,6 +98,44 @@ private fun handleAuditingChoices(player: ServerPlayerEntity, choice: String, ta
             return 0
         }
     }
+}
+
+private fun notifyOPsAndOwnerAboutAuditApproved(auditor: ServerPlayerEntity, community: Community) {
+    val ownerUUID = getOwnerUUID(community)
+    val message = Translator.tr(
+        "community.audit.notification.approved",
+        community.regionNumberId,
+        auditor.name.string
+    )
+    
+    auditor.server.playerManager.playerList.forEach { player ->
+        if (player.hasPermissionLevel(2) || player.uuid == ownerUUID) {
+            player.sendMessage(message)
+        }
+    }
+}
+
+private fun notifyOPsAndOwnerAboutAuditDenied(auditor: ServerPlayerEntity, community: Community, refundAmount: Double, owner: ServerPlayerEntity?) {
+    val ownerUUID = getOwnerUUID(community)
+    val refundText = String.format("%.2f", refundAmount)
+    val message = Translator.tr(
+        "community.audit.notification.denied",
+        community.regionNumberId,
+        auditor.name.string,
+        refundText
+    )
+    
+    auditor.server.playerManager.playerList.forEach { player ->
+        if (player.hasPermissionLevel(2) || player.uuid == ownerUUID) {
+            player.sendMessage(message)
+        }
+    }
+}
+
+private fun getOwnerUUID(community: Community): java.util.UUID? {
+    return community.member.entries.find { 
+        community.getMemberRole(it.key) == com.imyvm.community.domain.community.MemberRoleType.OWNER 
+    }?.key
 }
 
 private fun promoteToActiveManor(player: ServerPlayerEntity, targetCommunity: Community) {
@@ -105,15 +150,17 @@ private fun promoteToActiveRealm(player: ServerPlayerEntity, targetCommunity: Co
     WorldGeoCommunityAddon.logger.info("Community ${targetCommunity.regionNumberId} promoted to ACTIVE_REALM by player ${player.uuid}.")
 }
 
-private fun revokeCommunityWithRefund(player: ServerPlayerEntity, targetCommunity: Community) {
-    revokeCommunity(targetCommunity)
-    refundNotCreated(player, targetCommunity)
-}
-
 private fun revokeCommunity(targetCommunity: Community) {
     targetCommunity.status = when (targetCommunity.status) {
         CommunityStatus.PENDING_MANOR, CommunityStatus.ACTIVE_MANOR -> CommunityStatus.REVOKED_MANOR
         CommunityStatus.PENDING_REALM, CommunityStatus.RECRUITING_REALM, CommunityStatus.ACTIVE_REALM -> CommunityStatus.REVOKED_REALM
         else -> targetCommunity.status
     }
+}
+
+private fun getOwnerPlayer(community: Community, server: net.minecraft.server.MinecraftServer): ServerPlayerEntity? {
+    val ownerUUID = community.member.entries.find { 
+        community.getMemberRole(it.key) == com.imyvm.community.domain.community.MemberRoleType.OWNER 
+    }?.key
+    return ownerUUID?.let { server.playerManager?.getPlayer(it) }
 }

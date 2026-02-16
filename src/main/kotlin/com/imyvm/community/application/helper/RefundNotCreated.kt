@@ -7,10 +7,6 @@ import com.imyvm.economy.EconomyMod
 import net.minecraft.server.network.ServerPlayerEntity
 
 fun refundNotCreated(player: ServerPlayerEntity, community: Community) {
-    val price = when (community.status) {
-        CommunityStatus.REVOKED_REALM -> CommunityConfig.PRICE_REALM.value
-        else -> CommunityConfig.PRICE_MANOR.value
-    }
     val playerAccount = EconomyMod.data.getOrCreate(player)
-    playerAccount.addMoney(price)
+    playerAccount.addMoney(community.creationCost)
 }
