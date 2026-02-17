@@ -127,11 +127,25 @@ private fun handleExpiredCreationConfirmation(
 private fun promoteCommunityIfEligible(regionId: Int, community: Community) {
     val ownerEntry = community.member.entries.find { community.getMemberRole(it.key) == MemberRoleType.OWNER }
     if (ownerEntry != null &&
-        community.member.count { community.getMemberRole(it.key) != MemberRoleType.APPLICANT } >= CommunityConfig.MIN_NUMBER_MEMBER_REALM.value &&
-        community.status == CommunityStatus.PENDING_REALM
+        community.member.count { community.getMemberRole(it.key) != MemberRoleType.APPLICANT && community.getMemberRole(it.key) != MemberRoleType.REFUSED } >= CommunityConfig.MIN_NUMBER_MEMBER_REALM.value &&
+        community.status == CommunityStatus.RECRUITING_REALM
     ) {
-        addAuditingRequestRealm(regionId, community)
+        WorldGeoCommunityAddon.pendingOperations.remove(regionId)
+        addAuditingRequestRealm(regionId, community, ownerEntry.key)
         WorldGeoCommunityAddon.logger.info("Community $regionId promoted to auditing stage.")
+    }
+}
+
+fun checkAndPromoteRecruitingRealm(community: Community) {
+    if (community.status == CommunityStatus.RECRUITING_REALM && community.regionNumberId != null) {
+        val formalMemberCount = community.member.count { 
+            community.getMemberRole(it.key) != MemberRoleType.APPLICANT && 
+            community.getMemberRole(it.key) != MemberRoleType.REFUSED 
+        }
+        
+        if (formalMemberCount >= CommunityConfig.MIN_NUMBER_MEMBER_REALM.value) {
+            promoteCommunityIfEligible(community.regionNumberId, community)
+        }
     }
 }
 
@@ -160,13 +174,21 @@ private fun removePendingOperation(
         ?.sendMessage(Translator.tr("pending.expired", operationType), false)
 }
 
-private fun addAuditingRequestRealm(regionId: Int, community: Community) {
+private fun addAuditingRequestRealm(regionId: Int, community: Community, ownerUUID: UUID) {
     addPendingOperation(
         regionId = regionId,
         type = PendingOperationType.AUDITING_COMMUNITY_REQUEST,
         expireHours = CommunityConfig.AUDITING_EXPIRE_HOURS.value
     )
     community.status = CommunityStatus.PENDING_REALM
+    CommunityDatabase.save()
+    
+    val server = WorldGeoCommunityAddon.server
+    val ownerPlayer = server?.playerManager?.getPlayer(ownerUUID)
+    if (ownerPlayer != null) {
+        com.imyvm.community.application.interaction.common.notifyOPsAndOwnerAboutCreationRequest(ownerPlayer, regionId)
+    }
+    
     WorldGeoCommunityAddon.logger.info("Community request $regionId moved to auditing stage.")
 }
 

@@ -390,7 +390,6 @@
   "community.notification.join_policy_changed": "§e§l[POLICY CHANGE]§r §eJoin policy changed from §6§l{0}§r §eto §a§l{1}§r §ein §f§l{3}§r §eby §b{2}",
   "community.notification.council_toggled": "§5§l[COUNCIL]§r §5Council was §d§l{0}§r §5in §f§l{2}§r §5by §b{1}",
   "community.notification.renamed": "§b§l[RENAME]§r §bCommunity renamed from §e§l'{0}'§r §bto §a§l'{1}'§r §bby §d{2}",
-  "community.notification.geometry_modified": "§3§l[GEOMETRY]§r §3Geometry of scope §e§l'{0}'§r §3was §b§lmodified§r §3in §f§l{2}§r §3by §b{1}",
   "community.notification.setting_changed": "§e§l[SETTING]§r §eSetting §6§l'{0}'§r §echanged from §c§l{1}§r §eto §a§l{2}§r §7{3} {4}§r §ein §f§l{6}§r §eby §b{5}",
   "community.notification.teleport_point_set": "§d§l[TELEPORT]§r §dTeleport point for scope §e§l'{0}'§r §dset to §b§l({1}, {2}, {3})§r §din §f§l{5}§r §dby §b{4}",
   "community.notification.teleport_point_reset": "§c§l[TELEPORT RESET]§r §cTeleport point for scope §e§l'{0}'§r §cwas §4§lreset§r §cin §f§l{2}§r §cby §b{1}",
@@ -463,5 +462,5 @@
   "community.region.territory.manor": "manor territory",
   "community.region.territory.realm": "realm territory",
   "community.region.district": "administrative district",
-  "community.notification.geometry_modified": "§e§l[TERRITORY MODIFIED]§r §e{0} §b§l'{1}'§r §ewas modified in {2} §f§l'{3}'§r §eby §d§l{4}§e."
+  "community.notification.geometry_modified": "§e§l[TERRITORY MODIFIED]§r §e{0} §b§l{1}§r §ewas modified in {2} §f§l{3}§r §eby §d§l{4}§e."
 }

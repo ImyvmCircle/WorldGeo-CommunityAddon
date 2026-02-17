@@ -17,6 +17,11 @@ fun runAccept(
         playerExecutor,
         { PermissionCheck.canAcceptApplicant(playerExecutor, community, playerObject.id) }
     ) {
+        if (!com.imyvm.community.application.interaction.common.checkMemberNumberManor(playerExecutor, community)) {
+            playerExecutor.closeHandledScreen()
+            return@executeWithPermission
+        }
+        
         val objectAccount = community.member[playerObject.id]
         if (objectAccount != null) {
             if (objectAccount.isInvited) {
@@ -82,6 +87,8 @@ fun runAccept(
             notifyOfficials(community, playerExecutor.server, notification, playerExecutor)
             
             com.imyvm.community.infra.CommunityDatabase.save()
+            
+            com.imyvm.community.application.event.checkAndPromoteRecruitingRealm(community)
         }
     }
 }

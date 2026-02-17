@@ -129,8 +129,8 @@ fun checkMemberNumberManor(player: ServerPlayerEntity,targetCommunity: Community
             targetCommunity.member.count {
                 targetCommunity.getMemberRole(it.key) != MemberRoleType.APPLICANT &&
                         targetCommunity.getMemberRole(it.key) != MemberRoleType.REFUSED
-            } >= CommunityConfig.MIN_NUMBER_MEMBER_REALM.value) {
-            player.sendMessage(Translator.tr("community.join.error.full", CommunityConfig.MIN_NUMBER_MEMBER_REALM.value))
+            } >= CommunityConfig.MAX_MEMBER_MANOR.value) {
+            player.sendMessage(Translator.tr("community.join.error.full", targetCommunity.getRegion()?.name, CommunityConfig.MAX_MEMBER_MANOR.value))
             return false
         }
     }
@@ -174,6 +174,9 @@ private fun joinUnderOpenPolicy(player: ServerPlayerEntity, targetCommunity: Com
     notifyOfficials(targetCommunity, player.server, notification, player)
     
     com.imyvm.community.infra.CommunityDatabase.save()
+    
+    com.imyvm.community.application.event.checkAndPromoteRecruitingRealm(targetCommunity)
+    
     return 1
 }
 
@@ -227,7 +230,7 @@ fun validateInvitationSender(inviter: ServerPlayerEntity, community: Community):
     
     val cost = if (community.isManor()) CommunityConfig.COMMUNITY_JOIN_COST_MANOR.value else CommunityConfig.COMMUNITY_JOIN_COST_REALM.value
     if (community.getTotalAssets() < cost) {
-        inviter.sendMessage(Translator.tr("community.invite.error.insufficient_assets", cost / 100.0))
+        inviter.sendMessage(Translator.tr("community.invite.error.insufficient_assets", (cost / 100.0).toString()))
         return false
     }
     
@@ -248,6 +251,8 @@ fun validateInvitationTarget(inviter: ServerPlayerEntity, target: ServerPlayerEn
 }
 
 fun sendInvitation(inviter: ServerPlayerEntity, target: ServerPlayerEntity, community: Community) {
+    if (!checkMemberNumberManor(inviter, community)) return
+    
     val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
     val timeoutMinutes = CommunityConfig.INVITATION_RESPONSE_TIMEOUT_MINUTES.value
     
@@ -357,6 +362,8 @@ fun onAcceptInvitation(player: ServerPlayerEntity, community: Community) {
     
     val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
     player.sendMessage(Translator.tr("community.invite.accepted", communityName))
+
+    WorldGeoCommunityAddon.pendingOperations.remove(invitationKey)
 
     val notification = Translator.tr(
         "community.notification.invitation_accepted",

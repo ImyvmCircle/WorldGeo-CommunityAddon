@@ -1,6 +1,8 @@
 # 通用上下文
 
-1. 本mod有i18n系统，通过`Translator.tr()`函数实现，以下说的所有按钮目前实现的名称均为英文，请不要做中文文件。原则上不要使用`Text.literal()`。需实现`resource`里面对应的英文项目。对于发送给玩家的文本，需用MOTD格式制作比较美观的色彩和加粗下划线等效果，但不要引入Unicode特殊符号。对于`MANOR`和`RECTANGLE`等变量值，请用人类可读文本，转化成`manor`或`rectangle`等正常词汇文本引入消息，而不要直接放入消息。
+每次完成任务前后，必须逐条检查任务完成方案和执行是否符合以下开发规范：
+
+1. 本mod有i18n系统，通过`Translator.tr()`函数实现，以下说的所有按钮目前实现的名称均为英文，请不要做中文文件。原则上不要使用`Text.literal()`。需实现`resource`里面对应的英文项目。对于发送给玩家的文本，需用MOTD格式制作比较美观的色彩和加粗下划线等效果，但不要引入Unicode特殊符号。对于`MANOR`和`RECTANGLE`等变量值，请用人类可读文本，转化成`manor`或`rectangle`等正常词汇文本引入消息，而不要直接放入消息。不要使用单引号包围参数，否则参数无法显示。
 2. `CommunityConfig`里面存储了本mod的所有配置项。任何的具体数值，都应该写进去。
 3. `CommunityDatabase`是数据库的维护类。凡是涉及改动`Communtiy`成员变量的操作，必须要看看是否涉及数据库存储的改动。
 4. `PendingOperation`涉及所有需要在一定时限内作出反应的任务，实现由`PendingApplication`做出，创建任何`PendingOperation`一定要通过`pendingApplication`中心化管理。这主要用于确认逻辑。

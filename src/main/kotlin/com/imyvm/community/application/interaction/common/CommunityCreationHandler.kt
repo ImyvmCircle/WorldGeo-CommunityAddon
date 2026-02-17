@@ -194,11 +194,10 @@ private fun handleRequestBranches(player: ServerPlayerEntity, communityType: Str
             type = PendingOperationType.CREATE_COMMUNITY_REALM_REQUEST_RECRUITMENT,
             expireHours = CommunityConfig.REALM_REQUEST_EXPIRE_HOURS.value
         )
-        notifyOPsAndOwnerAboutCreationRequest(player, regionNumberId)
     }
 }
 
-private fun notifyOPsAndOwnerAboutCreationRequest(creator: ServerPlayerEntity, regionNumberId: Int) {
+internal fun notifyOPsAndOwnerAboutCreationRequest(creator: ServerPlayerEntity, regionNumberId: Int) {
     val message = Translator.tr(
         "community.create.notification.new_request",
         creator.name.string,

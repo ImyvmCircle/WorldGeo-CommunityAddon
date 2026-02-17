@@ -101,9 +101,9 @@ fun onConfirmScopeModification(player: ServerPlayerEntity, regionNumberId: Int, 
         "community.notification.geometry_modified",
         districtType,
         scopeName,
-        player.name.string,
         territoryType,
-        communityName
+        communityName,
+        player.name.string
     ) ?: Text.literal("$districtType '$scopeName' was modified in $territoryType '$communityName' by ${player.name.string}")
 
     notifyOfficials(community, player.server, notification, player)

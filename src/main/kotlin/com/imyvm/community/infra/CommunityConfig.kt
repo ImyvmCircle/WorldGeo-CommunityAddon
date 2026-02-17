@@ -11,7 +11,7 @@ class CommunityConfig : HokiConfig("Community.conf") {
         val LANGUAGE = Option(
             "language",
             "en_us",
-            "the language of the mod. (e.g., en_us, zh_cn)"
+            "the language of the mod."
         ) { obj, path ->
             obj.getString(path)
         }
@@ -21,7 +21,7 @@ class CommunityConfig : HokiConfig("Community.conf") {
         val TIMEZONE = Option(
             "timezone",
             "Asia/Hong_Kong",
-            "the time zone of the mod. (e.g., Asia/Singapore, UTC+8)"
+            "the time zone of the mod."
         ) { obj, path ->
             obj.getString(path)
         }
@@ -130,7 +130,7 @@ class CommunityConfig : HokiConfig("Community.conf") {
         @ConfigOption
         val MAX_MEMBER_MANOR = Option(
             "community.max_member_manor",
-            5,
+            1,
             "the maximum number of members in a manor."
         ) { obj, path ->
             obj.getInt(path)
