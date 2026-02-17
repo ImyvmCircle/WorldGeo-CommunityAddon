@@ -203,6 +203,70 @@ The **Community Region Scope Menu** provides tools for managing geographical asp
 
 Communities support both **global** settings that apply to the entire region, and **local** settings for named sub-scopes within the community (managed through the `geometryScope` list). Each scope is represented visually in the menu interface with distinct items such as armor trim templates and item frames.
 
+#### Territory Modification
+
+Community administrators may alter the geographical boundaries of their territory's administrative districts (scopes) through the **Region Geometry** function. This allows communities to expand, contract, or reshape their territorial claims after initial creation.
+
+##### Modification Process
+
+To modify a territorial scope:
+
+1. Access the **Community Region Scope Menu** through the **Region Geometry** administration function;
+2. Select the administrative district you wish to modify;
+3. Choose the `GEOMETRY_MODIFICATION` operation;
+4. Use the point selection system (same as region creation) to define the new boundaries;
+5. Review the detailed Land Deed Statement showing area changes and costs;
+6. Confirm the modification to execute the change.
+
+##### Pricing System
+
+Territory modifications incur costs or provide refunds based on area changes:
+
+**Expansion Costs**
+- Area increases are charged at full price using the same rates as initial creation;
+- **Manor**: 1,000 per 10,000 m² unit;
+- **Realm**: 3,000 per 40,000 m² unit;
+- Example: Expanding a manor by 15,000 m² costs 1,500.00.
+
+**Contraction Refunds**
+- Area decreases are refunded at 50% of the original price (default rate);
+- Refund calculation considers your community's free area allowance:
+  - **Full refund**: If your total area after reduction remains above the free area limit (10,000 m² for manors, 40,000 m² for realms), all decreased area is refunded at the 50% rate;
+  - **Partial refund**: If total area after reduction falls below the free area limit, only the portion that was above the limit is refunded;
+  - **No refund**: If your community's area is already within the free area allowance, no refund is issued.
+
+##### Confirmation Display
+
+Before execution, you will see a **Land Deed Statement** displaying:
+
+- Administrative district name being modified;
+- Current area, new area, and net change;
+- Cost (for expansion) or refund amount (for contraction);
+- Detailed calculation showing how the price was determined;
+- Current community assets and projected balance after modification;
+- Warning if assets are insufficient (expansion only).
+
+##### Requirements
+
+**For Expansions:**
+- Community treasury must contain sufficient funds to cover the expansion cost;
+- If assets are insufficient, the modification will be rejected.
+
+**For All Modifications:**
+- The new boundaries must be geometrically valid;
+- The modified territory cannot conflict with other communities' regions;
+- All modification requests are validated before execution.
+
+##### Notifications
+
+After a successful modification:
+
+- The change is recorded in the community's activity log;
+- An announcement is automatically sent to all community members, informing them of:
+  - Which administrative district was modified;
+  - How much the area changed;
+  - The financial impact on community assets.
+
 #### Member Management
 
 Through the **Manage Members** function, administrators access the **Community Member List Menu**, which displays:

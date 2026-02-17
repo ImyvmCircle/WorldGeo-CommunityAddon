@@ -215,5 +215,75 @@ class CommunityConfig : HokiConfig("Community.conf") {
         ) { obj, path ->
             obj.getInt(path)
         }
+
+        @JvmField
+        @ConfigOption
+        val MANOR_FREE_AREA = Option(
+            "economy.manor_free_area",
+            10000.0,
+            "the free area for manor (m²) that does not incur additional cost."
+        ) { obj, path ->
+            obj.getDouble(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val MANOR_AREA_PRICE_PER_UNIT = Option(
+            "economy.manor_area_price_per_unit",
+            1000L,
+            "the price per unit area for manor above free area."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val MANOR_AREA_UNIT_SIZE = Option(
+            "economy.manor_area_unit_size",
+            10000.0,
+            "the unit size (m²) for manor area pricing."
+        ) { obj, path ->
+            obj.getDouble(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val REALM_FREE_AREA = Option(
+            "economy.realm_free_area",
+            40000.0,
+            "the free area for realm (m²) that does not incur additional cost."
+        ) { obj, path ->
+            obj.getDouble(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val REALM_AREA_PRICE_PER_UNIT = Option(
+            "economy.realm_area_price_per_unit",
+            3000L,
+            "the price per unit area for realm above free area."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val REALM_AREA_UNIT_SIZE = Option(
+            "economy.realm_area_unit_size",
+            40000.0,
+            "the unit size (m²) for realm area pricing."
+        ) { obj, path ->
+            obj.getDouble(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val AREA_REFUND_RATE = Option(
+            "economy.area_refund_rate",
+            0.5,
+            "the refund rate (0.0 - 1.0) when reducing community area."
+        ) { obj, path ->
+            obj.getDouble(path)
+        }
     }
 }

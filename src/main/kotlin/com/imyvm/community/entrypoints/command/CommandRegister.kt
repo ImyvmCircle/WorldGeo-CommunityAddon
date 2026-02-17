@@ -1,11 +1,7 @@
 package com.imyvm.community.entrypoints.command
 
 import com.imyvm.community.application.interaction.command.*
-import com.imyvm.community.application.interaction.common.onCreateCommunityRequest
-import com.imyvm.community.application.interaction.common.onConfirmCommunityCreation
-import com.imyvm.community.application.interaction.common.onCancelCommunityCreation
-import com.imyvm.community.application.interaction.common.onJoinCommunity
-import com.imyvm.community.application.interaction.common.onLeaveCommunity
+import com.imyvm.community.application.interaction.common.*
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.community.CommunityListFilterType
 import com.imyvm.community.entrypoints.command.helper.*
@@ -255,17 +251,37 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     )
             )
             .then(
-                literal("__confirm_creation__")
+                literal("confirm_creation")
                     .then(
                         argument("regionId", IntegerArgumentType.integer())
                             .executes { runConfirmCommunityCreation(it) }
                     )
             )
             .then(
-                literal("__cancel_creation__")
+                literal("cancel_creation")
                     .then(
                         argument("regionId", IntegerArgumentType.integer())
                             .executes { runCancelCommunityCreation(it) }
+                    )
+            )
+            .then(
+                literal("confirm_modification")
+                    .then(
+                        argument("regionId", IntegerArgumentType.integer())
+                            .then(
+                                argument("scopeName", StringArgumentType.greedyString())
+                                    .executes { runConfirmScopeModification(it) }
+                            )
+                    )
+            )
+            .then(
+                literal("cancel_modification")
+                    .then(
+                        argument("regionId", IntegerArgumentType.integer())
+                            .then(
+                                argument("scopeName", StringArgumentType.greedyString())
+                                    .executes { runCancelScopeModification(it) }
+                            )
                     )
             )
     )
@@ -327,6 +343,20 @@ private fun runCancelCommunityCreation(context: CommandContext<ServerCommandSour
     val player = context.source.player ?: return 0
     val regionId = IntegerArgumentType.getInteger(context, "regionId")
     return onCancelCommunityCreation(player, regionId)
+}
+
+private fun runConfirmScopeModification(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val regionId = IntegerArgumentType.getInteger(context, "regionId")
+    val scopeName = StringArgumentType.getString(context, "scopeName")
+    return onConfirmScopeModification(player, regionId, scopeName)
+}
+
+private fun runCancelScopeModification(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val regionId = IntegerArgumentType.getInteger(context, "regionId")
+    val scopeName = StringArgumentType.getString(context, "scopeName")
+    return onCancelScopeModification(player, regionId, scopeName)
 }
 
 private fun runForceDeleteCommunity(context: CommandContext<ServerCommandSource>): Int {
