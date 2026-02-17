@@ -47,6 +47,10 @@ object PermissionCheck {
         community: Community,
         targetUUID: UUID
     ): PermissionResult {
+        if (isCommunityRevoked(community)) {
+            return PermissionResult.Denied("community.permission.error.revoked")
+        }
+
         val executorRole = community.getMemberRole(executor.uuid)
             ?: return PermissionResult.Denied("community.permission.error.not_member")
 
@@ -69,6 +73,10 @@ object PermissionCheck {
     }
 
     fun canToggleCouncil(executor: ServerPlayerEntity, community: Community): PermissionResult {
+        if (isCommunityRevoked(community)) {
+            return PermissionResult.Denied("community.permission.error.revoked")
+        }
+
         val executorRole = community.getMemberRole(executor.uuid)
             ?: return PermissionResult.Denied("community.permission.error.not_member")
 
@@ -167,6 +175,10 @@ object PermissionCheck {
     }
 
     fun canAccessCouncil(executor: ServerPlayerEntity, community: Community): PermissionResult {
+        if (isCommunityRevoked(community)) {
+            return PermissionResult.Denied("community.permission.error.revoked")
+        }
+
         val executorRole = community.getMemberRole(executor.uuid)
             ?: return PermissionResult.Denied("community.permission.error.not_member")
 
@@ -193,6 +205,10 @@ object PermissionCheck {
         community: Community,
         targetUUID: UUID
     ): PermissionResult {
+        if (isCommunityRevoked(community)) {
+            return PermissionResult.Denied("community.permission.error.revoked")
+        }
+
         if (!isCommunityActive(community)) {
             return PermissionResult.Denied("community.permission.error.not_active")
         }
@@ -267,6 +283,10 @@ object PermissionCheck {
     }
 
     fun canAuditApplications(executor: ServerPlayerEntity, community: Community): PermissionResult {
+        if (isCommunityRevoked(community)) {
+            return PermissionResult.Denied("community.permission.error.revoked")
+        }
+
         val executorRole = community.getMemberRole(executor.uuid)
             ?: return PermissionResult.Denied("community.permission.error.not_member")
 
@@ -321,6 +341,10 @@ object PermissionCheck {
     }
 
     fun canChangeJoinPolicy(executor: ServerPlayerEntity, community: Community): PermissionResult {
+        if (isCommunityRevoked(community)) {
+            return PermissionResult.Denied("community.permission.error.revoked")
+        }
+
         val executorRole = community.getMemberRole(executor.uuid)
             ?: return PermissionResult.Denied("community.permission.error.not_member")
 
@@ -378,6 +402,10 @@ object PermissionCheck {
     }
 
     fun canDonate(executor: ServerPlayerEntity, community: Community): PermissionResult {
+        if (isCommunityRevoked(community)) {
+            return PermissionResult.Denied("community.permission.error.revoked")
+        }
+
         val executorRole = community.getMemberRole(executor.uuid)
             ?: return PermissionResult.Denied("community.permission.error.not_member")
 
