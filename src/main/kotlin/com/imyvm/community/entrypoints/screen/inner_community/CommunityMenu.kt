@@ -4,7 +4,7 @@ import com.imyvm.community.application.interaction.screen.inner_community.*
 import com.imyvm.community.application.interaction.screen.inner_community.affairs.runOpenAssetsMenu
 import com.imyvm.community.application.interaction.screen.inner_community.affairs.runOpenMemberAnnouncementListMenu
 import com.imyvm.community.application.permission.PermissionCheck
-import com.imyvm.community.domain.Community
+import com.imyvm.community.domain.model.Community
 import com.imyvm.community.entrypoints.screen.AbstractMenu
 import com.imyvm.community.entrypoints.screen.component.getPlayerHeadButtonItemStackCommunity
 import com.imyvm.community.util.Translator

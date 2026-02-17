@@ -1,8 +1,8 @@
 package com.imyvm.community.entrypoints.screen.inner_community.council
 
 import com.imyvm.community.application.interaction.screen.inner_community.council.runOpenVoteDetailsMenu
-import com.imyvm.community.domain.Community
-import com.imyvm.community.domain.community.council.CouncilVote
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.community.council.CouncilVote
 import com.imyvm.community.entrypoints.screen.AbstractMenu
 import com.imyvm.community.util.Translator
 import net.minecraft.component.DataComponentTypes

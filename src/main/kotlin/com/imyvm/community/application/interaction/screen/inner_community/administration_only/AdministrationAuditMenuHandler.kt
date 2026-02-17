@@ -1,8 +1,8 @@
 package com.imyvm.community.application.interaction.screen.inner_community.administration_only
 
 import com.imyvm.community.application.permission.PermissionCheck
-import com.imyvm.community.domain.Community
-import com.imyvm.community.domain.community.MemberRoleType
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.util.Translator.trMenu
 import com.imyvm.community.util.constructAndSendMail
 import com.mojang.authlib.GameProfile
@@ -42,14 +42,14 @@ fun runAccept(
                 }
                 
                 community.expenditures.add(
-                    com.imyvm.community.domain.Turnover(
+                    com.imyvm.community.domain.model.Turnover(
                         amount = cost,
                         timestamp = System.currentTimeMillis()
                     )
                 )
             }
             
-            objectAccount.basicRoleType = com.imyvm.community.domain.community.MemberRoleType.MEMBER
+            objectAccount.basicRoleType = com.imyvm.community.domain.model.community.MemberRoleType.MEMBER
             objectAccount.joinedTime = System.currentTimeMillis()
             val wasInvited = objectAccount.isInvited
             objectAccount.isInvited = false
@@ -95,8 +95,8 @@ fun runAccept(
 
 private fun notifyOfficials(community: Community, server: net.minecraft.server.MinecraftServer, message: net.minecraft.text.Text, executor: ServerPlayerEntity? = null) {
     for ((memberUUID, memberAccount) in community.member) {
-        val isOfficial = memberAccount.basicRoleType == com.imyvm.community.domain.community.MemberRoleType.OWNER ||
-                        memberAccount.basicRoleType == com.imyvm.community.domain.community.MemberRoleType.ADMIN ||
+        val isOfficial = memberAccount.basicRoleType == com.imyvm.community.domain.model.community.MemberRoleType.OWNER ||
+                        memberAccount.basicRoleType == com.imyvm.community.domain.model.community.MemberRoleType.ADMIN ||
                         memberAccount.isCouncilMember
         
         if (isOfficial && (executor == null || memberUUID != executor.uuid)) {
@@ -152,7 +152,7 @@ fun runRefuse(
                     )
                 }
                 
-                objectAccount.basicRoleType = com.imyvm.community.domain.community.MemberRoleType.REFUSED
+                objectAccount.basicRoleType = com.imyvm.community.domain.model.community.MemberRoleType.REFUSED
                 objectAccount.joinedTime = System.currentTimeMillis()
                 
                 val targetNotification = com.imyvm.community.util.Translator.tr(

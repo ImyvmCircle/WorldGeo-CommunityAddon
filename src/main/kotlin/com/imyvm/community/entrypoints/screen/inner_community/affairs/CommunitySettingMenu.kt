@@ -2,7 +2,7 @@ package com.imyvm.community.entrypoints.screen.inner_community.affairs
 
 import com.imyvm.community.application.interaction.screen.inner_community.runOpenSettingPlayerTargeted
 import com.imyvm.community.application.interaction.screen.inner_community.runOpenSettingRegional
-import com.imyvm.community.domain.Community
+import com.imyvm.community.domain.model.Community
 import com.imyvm.community.entrypoints.screen.AbstractMenu
 import com.imyvm.community.entrypoints.screen.component.createPlayerHeadItemStack
 import com.imyvm.community.entrypoints.screen.component.getPlayerHeadButtonItemStackCommunity

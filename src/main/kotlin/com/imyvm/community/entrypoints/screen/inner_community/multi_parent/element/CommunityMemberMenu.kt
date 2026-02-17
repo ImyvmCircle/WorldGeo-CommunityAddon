@@ -5,8 +5,8 @@ import com.imyvm.community.application.interaction.screen.inner_community.multi_
 import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.runPromoteMember
 import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.runRemoveMember
 import com.imyvm.community.application.permission.PermissionCheck
-import com.imyvm.community.domain.Community
-import com.imyvm.community.domain.community.MemberRoleType
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.entrypoints.screen.AbstractMenu
 import com.imyvm.community.entrypoints.screen.component.createPlayerHeadItemStack
 import com.imyvm.community.util.Translator

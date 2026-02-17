@@ -1,7 +1,7 @@
 package com.imyvm.community.entrypoints.screen
 
 import com.imyvm.community.application.interaction.screen.runConfirmDispatcher
-import com.imyvm.community.domain.Community
+import com.imyvm.community.domain.model.Community
 import com.imyvm.community.entrypoints.screen.component.ConfirmTaskType
 import com.imyvm.community.util.Translator
 import net.minecraft.item.Items

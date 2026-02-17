@@ -1,8 +1,8 @@
-package com.imyvm.community.domain.community.council
+package com.imyvm.community.domain.model.community.council
 
-import com.imyvm.community.domain.Community
-import com.imyvm.community.domain.community.AdministrationPermission
-import com.imyvm.community.domain.community.Council
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.policy.permission.AdministrationPermission
+import com.imyvm.community.domain.model.community.Council
 import com.imyvm.community.infra.CommunityConfig
 import java.util.*
 
@@ -83,7 +83,7 @@ class CouncilVote(
 }
 
 sealed class VoteExecutionData {
-    data class ChangeJoinPolicy(val newPolicy: com.imyvm.community.domain.community.CommunityJoinPolicy) : VoteExecutionData()
+    data class ChangeJoinPolicy(val newPolicy: com.imyvm.community.domain.model.community.CommunityJoinPolicy) : VoteExecutionData()
     data class ManageMember(
         val targetUUID: UUID,
         val action: MemberAction

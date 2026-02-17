@@ -1,9 +1,9 @@
 package com.imyvm.community.application.interaction.common
 
-import com.imyvm.community.domain.Community
-import com.imyvm.community.domain.community.CommunityMessage
-import com.imyvm.community.domain.community.MemberRoleType
-import com.imyvm.community.domain.community.MessageType
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.community.CommunityMessage
+import com.imyvm.community.domain.model.community.MemberRoleType
+import com.imyvm.community.domain.model.community.MessageType
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.Translator
 import net.minecraft.server.network.ServerPlayerEntity

@@ -2,7 +2,7 @@ package com.imyvm.community.entrypoints.screen.inner_community.affairs.assets
 
 import com.imyvm.community.application.interaction.screen.inner_community.affairs.runOpenDonationMenu
 import com.imyvm.community.application.interaction.screen.inner_community.affairs.runOpenDonorListMenu
-import com.imyvm.community.domain.Community
+import com.imyvm.community.domain.model.Community
 import com.imyvm.community.entrypoints.screen.AbstractMenu
 import com.imyvm.community.entrypoints.screen.component.getLoreButton
 import com.imyvm.community.util.Translator

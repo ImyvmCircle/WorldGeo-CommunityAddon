@@ -1,14 +1,15 @@
 package com.imyvm.community.application.interaction.screen.inner_community.multi_parent
 
 import com.imyvm.community.application.event.addPendingOperation
+import com.imyvm.community.domain.policy.permission.AdministrationPermission
 import com.imyvm.community.application.interaction.common.helper.calculateModificationCost
 import com.imyvm.community.application.interaction.common.helper.generateModificationConfirmationMessage
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.application.interaction.screen.inner_community.runTeleportCommunity
-import com.imyvm.community.domain.Community
-import com.imyvm.community.domain.GeographicFunctionType
-import com.imyvm.community.domain.PendingOperationType
-import com.imyvm.community.domain.ScopeModificationConfirmationData
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.GeographicFunctionType
+import com.imyvm.community.domain.model.PendingOperationType
+import com.imyvm.community.domain.model.ScopeModificationConfirmationData
 import com.imyvm.community.entrypoints.screen.inner_community.administration_only.AdministrationTeleportPointMenu
 import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.CommunityRegionScopeMenu
 import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.element.TargetSettingMenu
@@ -51,7 +52,7 @@ fun runExecuteScope(
 ) {
     when (geographicFunctionType){
         GeographicFunctionType.GEOMETRY_MODIFICATION -> {
-            val permission = com.imyvm.community.domain.community.AdministrationPermission.MODIFY_REGION_GEOMETRY
+            val permission = com.imyvm.community.domain.policy.permission.AdministrationPermission.MODIFY_REGION_GEOMETRY
             com.imyvm.community.application.permission.PermissionCheck.executeWithPermission(
                 playerExecutor,
                 { com.imyvm.community.application.permission.PermissionCheck.canExecuteAdministration(playerExecutor, community, permission) }

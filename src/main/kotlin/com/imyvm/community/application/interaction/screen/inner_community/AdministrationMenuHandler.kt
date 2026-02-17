@@ -2,10 +2,10 @@ package com.imyvm.community.application.interaction.screen.inner_community
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.application.permission.PermissionCheck
-import com.imyvm.community.domain.Community
-import com.imyvm.community.domain.GeographicFunctionType
-import com.imyvm.community.domain.community.AdministrationPermission
-import com.imyvm.community.domain.community.CommunityJoinPolicy
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.GeographicFunctionType
+import com.imyvm.community.domain.policy.permission.AdministrationPermission
+import com.imyvm.community.domain.model.community.CommunityJoinPolicy
 import com.imyvm.community.entrypoints.screen.inner_community.CommunityAdministrationMenu
 import com.imyvm.community.entrypoints.screen.inner_community.administration_only.AdministrationAdvancementMenu
 import com.imyvm.community.entrypoints.screen.inner_community.administration_only.AdministrationAuditListMenu
@@ -18,8 +18,13 @@ fun runAdmRenameCommunity(player: ServerPlayerEntity, community: Community, runB
     PermissionCheck.executeWithPermission(
         player,
         { 
-            if (voteCreationMode) PermissionCheck.canAccessCouncil(player, community)
-            else PermissionCheck.canRenameCommunity(player, community)
+            if (voteCreationMode) {
+                PermissionCheck.canAccessCouncil(player, community)
+            } else {
+                val renameCheck = PermissionCheck.canRenameCommunity(player, community)
+                if (!renameCheck.isAllowed()) return@executeWithPermission renameCheck
+                PermissionCheck.canExecuteOperationInProto(player, community, AdministrationPermission.RENAME_COMMUNITY)
+            }
         }
     ) {
         AdministrationRenameMenuAnvil(player, community = community, runBackGrandfather).open()
@@ -30,8 +35,13 @@ fun runAdmManageMembers(player: ServerPlayerEntity, community: Community, runBac
     PermissionCheck.executeWithPermission(
         player,
         { 
-            if (voteCreationMode) PermissionCheck.canAccessCouncil(player, community)
-            else PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_MEMBERS) 
+            if (voteCreationMode) {
+                PermissionCheck.canAccessCouncil(player, community)
+            } else {
+                val adminCheck = PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_MEMBERS)
+                if (!adminCheck.isAllowed()) return@executeWithPermission adminCheck
+                PermissionCheck.canExecuteOperationInProto(player, community, AdministrationPermission.MANAGE_MEMBERS)
+            }
         }
     ) {
         CommunityMenuOpener.open(player) { syncId ->
@@ -67,8 +77,13 @@ fun runAdmAdvancement(player: ServerPlayerEntity, community: Community, runBackG
     PermissionCheck.executeWithPermission(
         player,
         { 
-            if (voteCreationMode) PermissionCheck.canAccessCouncil(player, community)
-            else PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ADVANCEMENT) 
+            if (voteCreationMode) {
+                PermissionCheck.canAccessCouncil(player, community)
+            } else {
+                val adminCheck = PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ADVANCEMENT)
+                if (!adminCheck.isAllowed()) return@executeWithPermission adminCheck
+                PermissionCheck.canExecuteOperationInProto(player, community, AdministrationPermission.MANAGE_ADVANCEMENT)
+            }
         }
     ) {
         CommunityMenuOpener.open(player) { syncId ->
@@ -94,8 +109,17 @@ fun runAdmRegion(
     PermissionCheck.executeWithPermission(
         player,
         { 
-            if (voteCreationMode) PermissionCheck.canAccessCouncil(player, community)
-            else PermissionCheck.canExecuteAdministration(player, community, permission) 
+            if (voteCreationMode) {
+                PermissionCheck.canAccessCouncil(player, community)
+            } else {
+                val adminCheck = PermissionCheck.canExecuteAdministration(player, community, permission)
+                if (!adminCheck.isAllowed()) return@executeWithPermission adminCheck
+                if (permission != null) {
+                    PermissionCheck.canExecuteOperationInProto(player, community, permission)
+                } else {
+                    PermissionCheck.PermissionResult.Allowed
+                }
+            }
         }
     ) {
         CommunityMenuOpener.open(player) { syncId ->

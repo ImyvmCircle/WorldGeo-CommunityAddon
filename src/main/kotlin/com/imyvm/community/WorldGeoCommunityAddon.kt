@@ -1,6 +1,6 @@
 package com.imyvm.community
 
-import com.imyvm.community.domain.PendingOperation
+import com.imyvm.community.domain.model.PendingOperation
 import com.imyvm.community.entrypoints.command.register
 import com.imyvm.community.entrypoints.event.registerAnnouncementNotification
 import com.imyvm.community.entrypoints.event.registerChatInterceptor

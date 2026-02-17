@@ -1,14 +1,14 @@
 package com.imyvm.community.application.interaction.common
 
 import com.imyvm.community.WorldGeoCommunityAddon
-import com.imyvm.community.domain.PendingOperationType
+import com.imyvm.community.domain.model.PendingOperationType
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.inter.api.PlayerInteractionApi
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
 
-private fun getAndValidatePendingOperation(player: ServerPlayerEntity, regionNumberId: Int, scopeName: String): com.imyvm.community.domain.PendingOperation? {
+private fun getAndValidatePendingOperation(player: ServerPlayerEntity, regionNumberId: Int, scopeName: String): com.imyvm.community.domain.model.PendingOperation? {
     val pendingOp = WorldGeoCommunityAddon.pendingOperations[regionNumberId]
 
     if (pendingOp == null || pendingOp.type != PendingOperationType.MODIFY_SCOPE_CONFIRMATION) {
@@ -61,7 +61,7 @@ fun onConfirmScopeModification(player: ServerPlayerEntity, regionNumberId: Int, 
     PlayerInteractionApi.modifyScope(player, communityRegion, scopeName)
 
     if (modificationData.cost > 0) {
-        community.expenditures.add(com.imyvm.community.domain.Turnover(
+        community.expenditures.add(com.imyvm.community.domain.model.Turnover(
             amount = modificationData.cost,
             timestamp = System.currentTimeMillis()
         ))
@@ -70,7 +70,7 @@ fun onConfirmScopeModification(player: ServerPlayerEntity, regionNumberId: Int, 
         val ownerUUID = community.getOwnerUUID()
         if (ownerUUID != null) {
             val ownerAccount = community.member[ownerUUID]
-            ownerAccount?.turnover?.add(com.imyvm.community.domain.Turnover(
+            ownerAccount?.turnover?.add(com.imyvm.community.domain.model.Turnover(
                 amount = refundAmount,
                 timestamp = System.currentTimeMillis()
             ))

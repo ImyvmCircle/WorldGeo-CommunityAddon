@@ -1,7 +1,7 @@
 package com.imyvm.community.application.interaction.screen.inner_community
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
-import com.imyvm.community.domain.Community
+import com.imyvm.community.domain.model.Community
 import com.imyvm.community.entrypoints.screen.inner_community.OnlinePlayerListMenu
 import net.minecraft.server.network.ServerPlayerEntity
 

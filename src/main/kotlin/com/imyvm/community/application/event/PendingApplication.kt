@@ -2,11 +2,11 @@ package com.imyvm.community.application.event
 
 import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.application.helper.refundNotCreated
-import com.imyvm.community.domain.Community
-import com.imyvm.community.domain.PendingOperation
-import com.imyvm.community.domain.PendingOperationType
-import com.imyvm.community.domain.community.CommunityStatus
-import com.imyvm.community.domain.community.MemberRoleType
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.PendingOperation
+import com.imyvm.community.domain.model.PendingOperationType
+import com.imyvm.community.domain.model.community.CommunityStatus
+import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.infra.CommunityConfig
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.Translator
@@ -199,8 +199,8 @@ fun addPendingOperation(
     expireMinutes: Int? = null,
     inviterUUID: UUID? = null,
     inviteeUUID: UUID? = null,
-    creationData: com.imyvm.community.domain.CreationConfirmationData? = null,
-    modificationData: com.imyvm.community.domain.ScopeModificationConfirmationData? = null
+    creationData: com.imyvm.community.domain.model.CreationConfirmationData? = null,
+    modificationData: com.imyvm.community.domain.model.ScopeModificationConfirmationData? = null
 ) {
     val expireTime = when {
         expireHours != null -> System.currentTimeMillis() + expireHours * 3600 * 1000L

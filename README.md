@@ -28,7 +28,7 @@ Players can establish two types of communities, manors (small-scale) or realms (
 
 Every community, whether a modest **Manor** or a sprawling **Realm**, exists in a specific state that dictates what players can do. 
 
-`RECRUITING` is a unique status to realms, during which a realm may gather sufficient members to enter into the next stage, or it will be revoked. At this stage, only the community name, join policy and the membership be administrated. Member who joined the community may also leave it.
+`RECRUITING` is a unique status to realms, during which a realm may gather sufficient members to enter into the next stage, or it will be revoked. At this stage, only limited administration is allowed: the owner may appoint administrators and adjust the join policy, while both owner and administrators may review membership applications. Members who joined the community may also leave it.
 
 `PENDING` is a status where the community request meets the automatic requirements and waits for a Server operator to audit it. The administrative power of a pending community is the same as that of a recruiting community.
 
@@ -151,8 +151,14 @@ The community implements a comprehensive permission system that governs what ope
 - Only recruitment-related operations permitted:
   - Change join policy (OWNER or ADMIN);
   - Audit new member applications (OWNER or ADMIN);
+  - Manage members - appoint/demote administrators (OWNER only);
   - Quit the community (all members except OWNER);
-- All other administration functions restricted until community becomes ACTIVE.
+- All other administration functions restricted until community becomes ACTIVE:
+  - Rename community;
+  - Post announcements;
+  - Configure advancement system;
+  - Modify region geometry or settings;
+  - Manage teleport points.
 
 **Active Community (ACTIVE_MANOR or ACTIVE_REALM)**
 - Full administration capabilities unlocked for members with appropriate roles;

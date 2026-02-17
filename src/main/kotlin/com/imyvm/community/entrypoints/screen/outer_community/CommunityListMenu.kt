@@ -3,8 +3,8 @@ package com.imyvm.community.entrypoints.screen.outer_community
 import com.imyvm.community.application.interaction.common.filterCommunitiesByType
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.application.interaction.screen.outer_community.runSwitchFilterMode
-import com.imyvm.community.domain.community.CommunityListFilterType
-import com.imyvm.community.domain.community.MemberRoleType
+import com.imyvm.community.domain.model.community.CommunityListFilterType
+import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.entrypoints.screen.AbstractListMenu
 import com.imyvm.community.entrypoints.screen.component.getPlayerHeadButtonItemStackCommunity
 import com.imyvm.community.entrypoints.screen.inner_community.CommunityMenu

@@ -1,7 +1,7 @@
 package com.imyvm.community.entrypoints.screen.component
 
-import com.imyvm.community.domain.Community
-import com.imyvm.community.domain.community.MemberRoleType
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.util.Translator
 import com.mojang.authlib.properties.PropertyMap
 import net.minecraft.component.DataComponentTypes

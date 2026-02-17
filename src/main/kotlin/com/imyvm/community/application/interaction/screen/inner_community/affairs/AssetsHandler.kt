@@ -2,8 +2,8 @@ package com.imyvm.community.application.interaction.screen.inner_community.affai
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.application.permission.PermissionCheck
-import com.imyvm.community.domain.Community
-import com.imyvm.community.domain.Turnover
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.Turnover
 import com.imyvm.community.entrypoints.screen.inner_community.affairs.assets.CommunityAssetsMenu
 import com.imyvm.community.entrypoints.screen.inner_community.affairs.assets.DonationMenu
 import com.imyvm.community.entrypoints.screen.inner_community.affairs.assets.DonorDetailsMenu

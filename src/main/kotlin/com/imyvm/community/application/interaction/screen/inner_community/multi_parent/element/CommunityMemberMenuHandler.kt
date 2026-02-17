@@ -2,8 +2,9 @@ package com.imyvm.community.application.interaction.screen.inner_community.multi
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.application.permission.PermissionCheck
-import com.imyvm.community.domain.Community
-import com.imyvm.community.domain.GeographicFunctionType
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.MemberAccount
+import com.imyvm.community.domain.model.GeographicFunctionType
 import com.imyvm.community.entrypoints.screen.inner_community.administration_only.NotificationMenuAnvil
 import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.CommunityRegionScopeMenu
 import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.element.CommunityMemberMenu
@@ -122,7 +123,7 @@ private fun handleRolePromotion(
     ) {
         val memberValue = community.member[playerObject.id]
         if (memberValue != null) {
-            memberValue.basicRoleType = com.imyvm.community.domain.community.MemberRoleType.ADMIN
+            memberValue.basicRoleType = com.imyvm.community.domain.model.community.MemberRoleType.ADMIN
             
             val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
             
@@ -165,7 +166,7 @@ private fun handleRoleDemotion(
     ) {
         val memberValue = community.member[playerObject.id]
         if (memberValue != null) {
-            memberValue.basicRoleType = com.imyvm.community.domain.community.MemberRoleType.MEMBER
+            memberValue.basicRoleType = com.imyvm.community.domain.model.community.MemberRoleType.MEMBER
             
             val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
             
@@ -244,7 +245,7 @@ fun runToggleCouncilorStatus(
     ) {
         val memberValue = community.member[playerObject.id]
         if (memberValue != null) {
-            val newAccount = com.imyvm.community.domain.MemberAccount(
+            val newAccount = com.imyvm.community.domain.model.MemberAccount(
                 joinedTime = memberValue.joinedTime,
                 basicRoleType = memberValue.basicRoleType,
                 isCouncilMember = !memberValue.isCouncilMember,

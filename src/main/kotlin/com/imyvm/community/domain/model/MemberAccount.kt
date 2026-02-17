@@ -1,6 +1,6 @@
-package com.imyvm.community.domain
+package com.imyvm.community.domain.model
 
-import com.imyvm.community.domain.community.MemberRoleType
+import com.imyvm.community.domain.model.community.MemberRoleType
 import net.minecraft.text.Text
 
 data class MemberAccount (

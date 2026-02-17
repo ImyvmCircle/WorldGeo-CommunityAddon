@@ -1,9 +1,9 @@
 package com.imyvm.community.application.interaction.command
 
 import com.imyvm.community.application.permission.PermissionCheck
-import com.imyvm.community.domain.Community
-import com.imyvm.community.domain.community.AdministrationPermission
-import com.imyvm.community.domain.community.Announcement
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.policy.permission.AdministrationPermission
+import com.imyvm.community.domain.model.community.Announcement
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.TextParser
 import com.imyvm.community.util.Translator

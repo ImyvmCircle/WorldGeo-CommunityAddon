@@ -1,9 +1,9 @@
 package com.imyvm.community.application.permission
 
-import com.imyvm.community.domain.Community
-import com.imyvm.community.domain.community.AdministrationPermission
-import com.imyvm.community.domain.community.CommunityStatus
-import com.imyvm.community.domain.community.MemberRoleType
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.community.CommunityStatus
+import com.imyvm.community.domain.model.community.MemberRoleType
+import com.imyvm.community.domain.policy.permission.AdministrationPermission
 import com.imyvm.community.util.Translator
 import net.minecraft.server.network.ServerPlayerEntity
 import java.util.*
@@ -132,6 +132,40 @@ object PermissionCheck {
         }
     }
 
+    fun canExecuteOperationInProto(
+        executor: ServerPlayerEntity,
+        community: Community,
+        permission: AdministrationPermission
+    ): PermissionResult {
+        if (!isProtoCommunity(community)) {
+            return PermissionResult.Allowed
+        }
+
+        val executorRole = community.getMemberRole(executor.uuid)
+            ?: return PermissionResult.Denied("community.permission.error.not_member")
+
+        return when (permission) {
+            AdministrationPermission.MANAGE_MEMBERS -> {
+                if (executorRole == MemberRoleType.OWNER) {
+                    PermissionResult.Allowed
+                } else {
+                    PermissionResult.Denied("community.permission.error.proto_owner_only")
+                }
+            }
+            AdministrationPermission.RENAME_COMMUNITY,
+            AdministrationPermission.MANAGE_ANNOUNCEMENTS,
+            AdministrationPermission.MANAGE_ADVANCEMENT,
+            AdministrationPermission.MODIFY_REGION_GEOMETRY,
+            AdministrationPermission.MODIFY_REGION_SETTINGS,
+            AdministrationPermission.MANAGE_TELEPORT_POINTS -> {
+                PermissionResult.Denied("community.permission.error.proto_restricted")
+            }
+            else -> {
+                PermissionResult.Denied("community.permission.error.proto_restricted")
+            }
+        }
+    }
+
     fun canAccessCouncil(executor: ServerPlayerEntity, community: Community): PermissionResult {
         val executorRole = community.getMemberRole(executor.uuid)
             ?: return PermissionResult.Denied("community.permission.error.not_member")
@@ -235,6 +269,14 @@ object PermissionCheck {
     fun canAuditApplications(executor: ServerPlayerEntity, community: Community): PermissionResult {
         val executorRole = community.getMemberRole(executor.uuid)
             ?: return PermissionResult.Denied("community.permission.error.not_member")
+
+        if (isProtoCommunity(community)) {
+            return if (executorRole == MemberRoleType.OWNER || executorRole == MemberRoleType.ADMIN) {
+                PermissionResult.Allowed
+            } else {
+                PermissionResult.Denied("community.permission.error.proto_only_owner_admin")
+            }
+        }
 
         return when (executorRole) {
             MemberRoleType.OWNER -> PermissionResult.Allowed

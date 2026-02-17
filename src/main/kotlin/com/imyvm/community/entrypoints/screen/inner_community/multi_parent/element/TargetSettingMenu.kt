@@ -2,7 +2,7 @@ package com.imyvm.community.entrypoints.screen.inner_community.multi_parent.elem
 
 import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.getPermissionButtonItemStack
 import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.runTogglingPermissionSetting
-import com.imyvm.community.domain.Community
+import com.imyvm.community.domain.model.Community
 import com.imyvm.community.entrypoints.screen.AbstractMenu
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.domain.component.GeoScope

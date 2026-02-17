@@ -1,9 +1,9 @@
 package com.imyvm.community.application.interaction.common
 
-import com.imyvm.community.domain.Community
-import com.imyvm.community.domain.community.CommunityJoinPolicy
-import com.imyvm.community.domain.community.CommunityListFilterType
-import com.imyvm.community.domain.community.CommunityStatus
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.community.CommunityJoinPolicy
+import com.imyvm.community.domain.model.community.CommunityListFilterType
+import com.imyvm.community.domain.model.community.CommunityStatus
 import com.imyvm.community.infra.CommunityDatabase
 
 fun filterCommunitiesByType(type: CommunityListFilterType): List<Community> {

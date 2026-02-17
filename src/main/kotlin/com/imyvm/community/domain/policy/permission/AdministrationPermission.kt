@@ -1,4 +1,4 @@
-package com.imyvm.community.domain.community
+package com.imyvm.community.domain.policy.permission
 
 enum class AdministrationPermission(val displayKey: String) {
     RENAME_COMMUNITY("ui.community.administration.button.name"),

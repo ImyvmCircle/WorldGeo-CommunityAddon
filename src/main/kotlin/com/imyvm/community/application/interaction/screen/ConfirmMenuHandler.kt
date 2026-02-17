@@ -3,8 +3,8 @@ package com.imyvm.community.application.interaction.screen
 import com.imyvm.community.application.interaction.common.onCreateCommunityRequest
 import com.imyvm.community.application.interaction.common.onJoinCommunityDirectly
 import com.imyvm.community.application.permission.PermissionCheck
-import com.imyvm.community.domain.Community
-import com.imyvm.community.domain.Turnover
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.Turnover
 import com.imyvm.community.entrypoints.screen.component.ConfirmTaskType
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.Translator
@@ -88,8 +88,8 @@ private fun runCommunityLeave(
 
 private fun notifyOfficials(community: Community, server: net.minecraft.server.MinecraftServer, message: net.minecraft.text.Text) {
     for ((memberUUID, memberAccount) in community.member) {
-        val isOfficial = memberAccount.basicRoleType == com.imyvm.community.domain.community.MemberRoleType.OWNER ||
-                        memberAccount.basicRoleType == com.imyvm.community.domain.community.MemberRoleType.ADMIN ||
+        val isOfficial = memberAccount.basicRoleType == com.imyvm.community.domain.model.community.MemberRoleType.OWNER ||
+                        memberAccount.basicRoleType == com.imyvm.community.domain.model.community.MemberRoleType.ADMIN ||
                         memberAccount.isCouncilMember
         
         if (isOfficial) {

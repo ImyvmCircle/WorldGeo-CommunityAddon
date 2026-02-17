@@ -1,4 +1,4 @@
-package com.imyvm.community.domain
+package com.imyvm.community.domain.model
 
 enum class GeographicFunctionType {
     GEOMETRY_MODIFICATION,

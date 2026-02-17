@@ -3,7 +3,7 @@ package com.imyvm.community.entrypoints.command
 import com.imyvm.community.application.interaction.command.*
 import com.imyvm.community.application.interaction.common.*
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
-import com.imyvm.community.domain.community.CommunityListFilterType
+import com.imyvm.community.domain.model.community.CommunityListFilterType
 import com.imyvm.community.entrypoints.command.helper.*
 import com.imyvm.community.entrypoints.screen.outer_community.MainMenu
 import com.imyvm.community.util.Translator

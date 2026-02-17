@@ -1,7 +1,7 @@
 package com.imyvm.community.entrypoints.screen.inner_community.administration_only.annoucement
 
 import com.imyvm.community.application.interaction.screen.inner_community.affairs.onCreateAnnouncementConfirm
-import com.imyvm.community.domain.Community
+import com.imyvm.community.domain.model.Community
 import com.imyvm.community.entrypoints.screen.AbstractRenameMenuAnvil
 import com.imyvm.community.util.Translator
 import net.minecraft.server.network.ServerPlayerEntity

@@ -1,6 +1,6 @@
 package com.imyvm.community.entrypoints.command.helper
 
-import com.imyvm.community.domain.Community
+import com.imyvm.community.domain.model.Community
 import com.imyvm.community.infra.CommunityDatabase.communities
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.inter.api.RegionDataApi.getRegionList

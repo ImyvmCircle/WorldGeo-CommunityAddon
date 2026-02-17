@@ -1,10 +1,13 @@
 package com.imyvm.community.infra
 
-import com.imyvm.community.domain.Community
-import com.imyvm.community.domain.MemberAccount
-import com.imyvm.community.domain.Turnover
-import com.imyvm.community.domain.community.*
-import com.imyvm.community.domain.community.council.CouncilVote
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.MemberAccount
+import com.imyvm.community.domain.model.PendingOperation
+import com.imyvm.community.domain.model.Turnover
+import com.imyvm.community.domain.model.community.*
+import com.imyvm.community.domain.model.community.council.CouncilVote
+import com.imyvm.community.domain.policy.permission.AdministrationPermission
+import com.imyvm.community.domain.policy.permission.AdministrationPermissions
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.text.Text
 import java.io.DataInputStream
@@ -517,7 +520,7 @@ object CommunityDatabase {
             for (i in 0 until size) {
                 val regionId = stream.readInt()
                 val expireAt = stream.readLong()
-                val type = com.imyvm.community.domain.PendingOperationType.fromValue(stream.readInt())
+                val type = com.imyvm.community.domain.model.PendingOperationType.fromValue(stream.readInt())
                 
                 // 加载inviterUUID
                 val hasInviter = stream.readBoolean()
@@ -544,7 +547,7 @@ object CommunityDatabase {
                     val creationRegionId = stream.readInt()
                     val creatorUUID = UUID.fromString(stream.readUTF())
                     val totalCost = stream.readLong()
-                    com.imyvm.community.domain.CreationConfirmationData(
+                    com.imyvm.community.domain.model.CreationConfirmationData(
                         communityName = communityName,
                         communityType = communityType,
                         shapeName = shapeName,
@@ -556,7 +559,7 @@ object CommunityDatabase {
                     null
                 }
                 
-                val operation = com.imyvm.community.domain.PendingOperation(
+                val operation = com.imyvm.community.domain.model.PendingOperation(
                     expireAt = expireAt,
                     type = type,
                     inviterUUID = inviterUUID,

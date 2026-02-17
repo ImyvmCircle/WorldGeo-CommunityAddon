@@ -1,7 +1,7 @@
 package com.imyvm.community.application.helper
 
-import com.imyvm.community.domain.Community
-import com.imyvm.community.domain.community.CommunityStatus
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.community.CommunityStatus
 import com.imyvm.community.infra.CommunityConfig
 import com.imyvm.economy.EconomyMod
 import net.minecraft.server.network.ServerPlayerEntity

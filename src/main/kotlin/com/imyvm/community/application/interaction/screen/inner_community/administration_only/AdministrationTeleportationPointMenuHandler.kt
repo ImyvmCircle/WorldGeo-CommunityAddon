@@ -1,7 +1,8 @@
 package com.imyvm.community.application.interaction.screen.inner_community.administration_only
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
-import com.imyvm.community.domain.Community
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.policy.permission.AdministrationPermission
 import com.imyvm.community.entrypoints.screen.component.getLoreButton
 import com.imyvm.community.entrypoints.screen.inner_community.administration_only.AdministrationTeleportPointMenu
 import com.imyvm.community.util.Translator
@@ -60,7 +61,7 @@ fun runToggleTeleportPointAccessibility(
     scope: GeoScope,
     runBack: (ServerPlayerEntity) -> Unit
 ) {
-    val permission = com.imyvm.community.domain.community.AdministrationPermission.MANAGE_TELEPORT_POINTS
+    val permission = com.imyvm.community.domain.policy.permission.AdministrationPermission.MANAGE_TELEPORT_POINTS
     com.imyvm.community.application.permission.PermissionCheck.executeWithPermission(
         playerExecutor,
         { com.imyvm.community.application.permission.PermissionCheck.canExecuteAdministration(playerExecutor, community, permission) }
@@ -85,7 +86,7 @@ fun runToggleTeleportPointAccessibility(
 }
 
 fun runSettingTeleportPoint(playerExecutor: ServerPlayerEntity, community: Community, scope: GeoScope) {
-    val permission = com.imyvm.community.domain.community.AdministrationPermission.MANAGE_TELEPORT_POINTS
+    val permission = com.imyvm.community.domain.policy.permission.AdministrationPermission.MANAGE_TELEPORT_POINTS
     com.imyvm.community.application.permission.PermissionCheck.executeWithPermission(
         playerExecutor,
         { com.imyvm.community.application.permission.PermissionCheck.canExecuteAdministration(playerExecutor, community, permission) }
@@ -117,7 +118,7 @@ fun runSettingTeleportPoint(playerExecutor: ServerPlayerEntity, community: Commu
 }
 
 fun runResetTeleportPoint(playerExecutor: ServerPlayerEntity, community: Community, scope: GeoScope) {
-    val permission = com.imyvm.community.domain.community.AdministrationPermission.MANAGE_TELEPORT_POINTS
+    val permission = com.imyvm.community.domain.policy.permission.AdministrationPermission.MANAGE_TELEPORT_POINTS
     com.imyvm.community.application.permission.PermissionCheck.executeWithPermission(
         playerExecutor,
         { com.imyvm.community.application.permission.PermissionCheck.canExecuteAdministration(playerExecutor, community, permission) }

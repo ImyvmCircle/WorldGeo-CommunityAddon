@@ -1,4 +1,4 @@
-package com.imyvm.community.domain.community
+package com.imyvm.community.domain.model.community
 
 import net.minecraft.text.Text
 import java.util.*

@@ -1,7 +1,8 @@
 package com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
-import com.imyvm.community.domain.Community
+import com.imyvm.community.domain.policy.permission.AdministrationPermission
+import com.imyvm.community.domain.model.Community
 import com.imyvm.community.entrypoints.screen.component.getLoreButton
 import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.element.TargetSettingMenu
 import com.imyvm.iwg.domain.Region
@@ -54,7 +55,7 @@ fun runTogglingPermissionSetting(
     permissionKey: PermissionKey,
     runBack: (ServerPlayerEntity) -> Unit
 ) {
-    val permission = com.imyvm.community.domain.community.AdministrationPermission.MODIFY_REGION_SETTINGS
+    val permission = com.imyvm.community.domain.policy.permission.AdministrationPermission.MODIFY_REGION_SETTINGS
     com.imyvm.community.application.permission.PermissionCheck.executeWithPermission(
         playerExecutor,
         { com.imyvm.community.application.permission.PermissionCheck.canExecuteAdministration(playerExecutor, community, permission) }

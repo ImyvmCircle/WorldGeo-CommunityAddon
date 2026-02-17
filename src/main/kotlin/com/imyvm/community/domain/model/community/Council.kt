@@ -1,7 +1,7 @@
-package com.imyvm.community.domain.community
+package com.imyvm.community.domain.model.community
 
-import com.imyvm.community.domain.Community
-import com.imyvm.community.domain.community.council.CouncilVote
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.community.council.CouncilVote
 import com.imyvm.community.infra.CommunityConfig
 import java.time.LocalDate
 import java.time.ZoneId

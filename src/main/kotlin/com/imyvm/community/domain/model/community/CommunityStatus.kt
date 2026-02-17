@@ -1,4 +1,4 @@
-package com.imyvm.community.domain.community
+package com.imyvm.community.domain.model.community
 
 enum class CommunityStatus(val value: Int) {
     RECRUITING_REALM(0),

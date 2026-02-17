@@ -1,8 +1,8 @@
 package com.imyvm.community.application.interaction.command
 
 import com.imyvm.community.application.interaction.common.filterCommunitiesByType
-import com.imyvm.community.domain.Community
-import com.imyvm.community.domain.community.CommunityListFilterType
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.community.CommunityListFilterType
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.inter.api.PlayerInteractionApi

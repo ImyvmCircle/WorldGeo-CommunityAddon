@@ -130,7 +130,7 @@ class CommunityConfig : HokiConfig("Community.conf") {
         @ConfigOption
         val MAX_MEMBER_MANOR = Option(
             "community.max_member_manor",
-            1,
+            4,
             "the maximum number of members in a manor."
         ) { obj, path ->
             obj.getInt(path)

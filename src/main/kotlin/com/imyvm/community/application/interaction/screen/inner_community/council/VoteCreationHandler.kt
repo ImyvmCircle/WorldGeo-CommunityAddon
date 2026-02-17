@@ -1,10 +1,10 @@
 package com.imyvm.community.application.interaction.screen.inner_community.council
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
-import com.imyvm.community.domain.Community
-import com.imyvm.community.domain.community.AdministrationPermission
-import com.imyvm.community.domain.community.CommunityJoinPolicy
-import com.imyvm.community.domain.community.council.VoteExecutionData
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.policy.permission.AdministrationPermission
+import com.imyvm.community.domain.model.community.CommunityJoinPolicy
+import com.imyvm.community.domain.model.community.council.VoteExecutionData
 import com.imyvm.community.entrypoints.screen.inner_community.CommunityAdministrationMenu
 import net.minecraft.server.network.ServerPlayerEntity
 import java.util.*

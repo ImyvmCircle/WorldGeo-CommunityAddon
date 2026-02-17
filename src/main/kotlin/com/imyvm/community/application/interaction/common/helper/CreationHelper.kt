@@ -1,8 +1,8 @@
 package com.imyvm.community.application.interaction.common.helper
 
-import com.imyvm.community.domain.territory.cost.CreationCostResult
-import com.imyvm.community.domain.territory.cost.TerritoryPricing
-import com.imyvm.community.domain.territory.cost.TerritoryConfirmationMessage
+import com.imyvm.community.domain.policy.territory.CreationCostResult
+import com.imyvm.community.domain.policy.territory.TerritoryPricing
+import com.imyvm.community.domain.policy.territory.TerritoryConfirmationMessage
 import com.imyvm.iwg.domain.component.GeoShapeType
 import net.minecraft.text.Text
 

@@ -1,4 +1,4 @@
-package com.imyvm.community.domain.community
+package com.imyvm.community.domain.policy.permission
 
 class AdministrationPermissions(
     private val enabledForAdmin: MutableSet<AdministrationPermission> = AdministrationPermission.getDefaultEnabledPermissions().toMutableSet(),

@@ -3,8 +3,8 @@ package com.imyvm.community.entrypoints.screen.inner_community.multi_parent
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.runExecuteRegion
 import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.runExecuteScope
-import com.imyvm.community.domain.Community
-import com.imyvm.community.domain.GeographicFunctionType
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.GeographicFunctionType
 import com.imyvm.community.entrypoints.screen.AbstractListMenu
 import com.imyvm.community.util.Translator
 import com.mojang.authlib.GameProfile

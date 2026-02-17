@@ -346,6 +346,8 @@
   "community.permission.error.owner_cannot_remove_self": "The owner cannot remove themselves from the community.",
   "community.permission.error.not_applicant": "The target is not an applicant.",
   "community.permission.error.proto_only_owner_admin": "Only the owner or administrators can perform this operation in proto-community status.",
+  "community.permission.error.proto_owner_only": "Only the owner can perform this operation in proto-community status.",
+  "community.permission.error.proto_restricted": "This operation is not available during recruitment/pending phase.",
   "community.permission.error.owner_cannot_quit": "The owner cannot quit the community. Transfer ownership first.",
   "community.permission.error.applicant_refused_cannot_quit": "Applicants and refused members cannot quit the community.",
   "community.permission.error.cannot_quit_status": "You cannot quit the community in its current status.",

@@ -1,7 +1,7 @@
 package com.imyvm.community.entrypoints.screen.inner_community
 
 import com.imyvm.community.application.interaction.common.ChatChannelManager
-import com.imyvm.community.domain.Community
+import com.imyvm.community.domain.model.Community
 import com.imyvm.community.entrypoints.screen.AbstractMenu
 import com.imyvm.community.entrypoints.screen.component.getLoreButton
 import com.imyvm.community.util.Translator
@@ -27,7 +27,6 @@ class ChatRoomMenu(
     }
 
     private fun addToggleChatChannelButton() {
-        val memberAccount = community.member[player.uuid] ?: return
         val activeChannel = ChatChannelManager.getActiveChannel(player.uuid)
         val isActive = activeChannel == community.regionNumberId
         

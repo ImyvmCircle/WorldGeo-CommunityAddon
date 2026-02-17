@@ -1,8 +1,8 @@
 package com.imyvm.community.application.interaction.common.helper
 
-import com.imyvm.community.domain.Community
-import com.imyvm.community.domain.community.CommunityStatus
-import com.imyvm.community.domain.community.MemberRoleType
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.community.CommunityStatus
+import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.Translator
 import net.minecraft.server.network.ServerPlayerEntity

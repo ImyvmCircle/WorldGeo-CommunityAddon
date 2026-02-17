@@ -3,9 +3,9 @@ package com.imyvm.community.application.interaction.screen.inner_community.affai
 import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.application.permission.PermissionCheck
-import com.imyvm.community.domain.Community
-import com.imyvm.community.domain.community.AdministrationPermission
-import com.imyvm.community.domain.community.Announcement
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.policy.permission.AdministrationPermission
+import com.imyvm.community.domain.model.community.Announcement
 import com.imyvm.community.entrypoints.screen.inner_community.administration_only.annoucement.AdministrationAnnouncementDetailsMenu
 import com.imyvm.community.entrypoints.screen.inner_community.administration_only.annoucement.AdministrationAnnouncementInputMenuAnvil
 import com.imyvm.community.entrypoints.screen.inner_community.administration_only.annoucement.AdministrationAnnouncementListMenu
@@ -20,7 +20,11 @@ import java.util.*
 fun runOpenAnnouncementListMenu(player: ServerPlayerEntity, community: Community, runBack: (ServerPlayerEntity) -> Unit) {
     PermissionCheck.executeWithPermission(
         player,
-        { PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS) }
+        { 
+            val adminCheck = PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS)
+            if (!adminCheck.isAllowed()) return@executeWithPermission adminCheck
+            PermissionCheck.canExecuteOperationInProto(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS)
+        }
     ) {
         CommunityMenuOpener.open(player) { syncId ->
             AdministrationAnnouncementListMenu(syncId, community, player, 0, runBack)
@@ -36,7 +40,11 @@ fun runOpenAnnouncementDetailsMenu(
 ) {
     PermissionCheck.executeWithPermission(
         player,
-        { PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS) }
+        { 
+            val adminCheck = PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS)
+            if (!adminCheck.isAllowed()) return@executeWithPermission adminCheck
+            PermissionCheck.canExecuteOperationInProto(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS)
+        }
     ) {
         CommunityMenuOpener.open(player) { syncId ->
             AdministrationAnnouncementDetailsMenu(syncId, community, player, announcementId) {
@@ -49,7 +57,11 @@ fun runOpenAnnouncementDetailsMenu(
 fun runCreateAnnouncement(player: ServerPlayerEntity, community: Community, runBack: (ServerPlayerEntity) -> Unit) {
     PermissionCheck.executeWithPermission(
         player,
-        { PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS) }
+        { 
+            val adminCheck = PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS)
+            if (!adminCheck.isAllowed()) return@executeWithPermission adminCheck
+            PermissionCheck.canExecuteOperationInProto(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS)
+        }
     ) {
         player.closeHandledScreen()
         AdministrationAnnouncementInputMenuAnvil(player, community, runBack).open()
@@ -64,7 +76,11 @@ fun onCreateAnnouncementConfirm(
 ) {
     PermissionCheck.executeWithPermission(
         player,
-        { PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS) }
+        { 
+            val adminCheck = PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS)
+            if (!adminCheck.isAllowed()) return@executeWithPermission adminCheck
+            PermissionCheck.canExecuteOperationInProto(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS)
+        }
     ) {
         if (content.isBlank()) {
             player.sendMessage(Translator.tr("ui.community.administration.announcement.error.empty"))
@@ -96,7 +112,11 @@ fun onDeleteAnnouncement(
 ) {
     PermissionCheck.executeWithPermission(
         player,
-        { PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS) }
+        { 
+            val adminCheck = PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS)
+            if (!adminCheck.isAllowed()) return@executeWithPermission adminCheck
+            PermissionCheck.canExecuteOperationInProto(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS)
+        }
     ) {
         if (community.softDeleteAnnouncement(announcementId)) {
             CommunityDatabase.save()

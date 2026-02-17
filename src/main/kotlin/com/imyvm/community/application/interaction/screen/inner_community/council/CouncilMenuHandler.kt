@@ -2,10 +2,10 @@ package com.imyvm.community.application.interaction.screen.inner_community.counc
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.application.permission.PermissionCheck
-import com.imyvm.community.domain.Community
-import com.imyvm.community.domain.community.AdministrationPermission
-import com.imyvm.community.domain.community.council.CouncilVote
-import com.imyvm.community.domain.community.council.VoteExecutionData
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.policy.permission.AdministrationPermission
+import com.imyvm.community.domain.model.community.council.CouncilVote
+import com.imyvm.community.domain.model.community.council.VoteExecutionData
 import com.imyvm.community.entrypoints.screen.inner_community.council.CouncilMenu
 import com.imyvm.community.entrypoints.screen.inner_community.council.VoteDetailsMenu
 import com.imyvm.community.entrypoints.screen.inner_community.council.VoteListMenu
@@ -127,7 +127,7 @@ fun runCreateVoteProposal(
             val proposerDonations = proposerAccount.getTotalDonation()
             if (proposerDonations >= cost) {
                 proposerAccount.turnover.add(
-                    com.imyvm.community.domain.Turnover(
+                    com.imyvm.community.domain.model.Turnover(
                         amount = -cost,
                         timestamp = System.currentTimeMillis()
                     )
@@ -182,10 +182,10 @@ private fun executeVote(community: Community, vote: CouncilVote) {
             if (member != null) {
                 when (data.action) {
                     VoteExecutionData.ManageMember.MemberAction.PROMOTE -> {
-                        member.basicRoleType = com.imyvm.community.domain.community.MemberRoleType.ADMIN
+                        member.basicRoleType = com.imyvm.community.domain.model.community.MemberRoleType.ADMIN
                     }
                     VoteExecutionData.ManageMember.MemberAction.DEMOTE -> {
-                        member.basicRoleType = com.imyvm.community.domain.community.MemberRoleType.MEMBER
+                        member.basicRoleType = com.imyvm.community.domain.model.community.MemberRoleType.MEMBER
                     }
                     VoteExecutionData.ManageMember.MemberAction.REMOVE -> {
                         community.member.remove(data.targetUUID)
@@ -197,10 +197,10 @@ private fun executeVote(community: Community, vote: CouncilVote) {
             val applicant = community.member[data.applicantUUID]
             if (applicant != null) {
                 if (data.accept) {
-                    applicant.basicRoleType = com.imyvm.community.domain.community.MemberRoleType.MEMBER
+                    applicant.basicRoleType = com.imyvm.community.domain.model.community.MemberRoleType.MEMBER
                     applicant.joinedTime = System.currentTimeMillis()
                 } else {
-                    applicant.basicRoleType = com.imyvm.community.domain.community.MemberRoleType.REFUSED
+                    applicant.basicRoleType = com.imyvm.community.domain.model.community.MemberRoleType.REFUSED
                 }
             }
         }

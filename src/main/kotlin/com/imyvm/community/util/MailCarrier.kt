@@ -1,6 +1,6 @@
 package com.imyvm.community.util
 
-import com.imyvm.community.domain.Community
+import com.imyvm.community.domain.model.Community
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
 

@@ -2,7 +2,7 @@ package com.imyvm.community.entrypoints.screen.inner_community.council
 
 import com.imyvm.community.application.interaction.screen.inner_community.council.runCastVote
 import com.imyvm.community.application.interaction.screen.inner_community.council.runRetractVote
-import com.imyvm.community.domain.Community
+import com.imyvm.community.domain.model.Community
 import com.imyvm.community.entrypoints.screen.AbstractMenu
 import com.imyvm.community.util.Translator
 import net.minecraft.component.DataComponentTypes
@@ -34,7 +34,7 @@ class VoteDetailsMenu(
         }
     }
 
-    private fun displayVoteInfo(vote: com.imyvm.community.domain.community.council.CouncilVote) {
+    private fun displayVoteInfo(vote: com.imyvm.community.domain.model.community.council.CouncilVote) {
         val titleStack = ItemStack(Items.PAPER)
         titleStack.set(DataComponentTypes.LORE, LoreComponent(listOf(
             Text.of(""),
@@ -92,7 +92,7 @@ class VoteDetailsMenu(
         ) {}
     }
 
-    private fun displayVotingButtons(vote: com.imyvm.community.domain.community.council.CouncilVote) {
+    private fun displayVotingButtons(vote: com.imyvm.community.domain.model.community.council.CouncilVote) {
         if (vote.isExpired()) {
             val status = if (vote.isEnacted == true) {
                 if (vote.isPassed()) "✓ Executed" else "Failed"
@@ -156,17 +156,17 @@ class VoteDetailsMenu(
         }
     }
 
-    private fun getExecutionDataLore(data: com.imyvm.community.domain.community.council.VoteExecutionData?): List<Text> {
+    private fun getExecutionDataLore(data: com.imyvm.community.domain.model.community.council.VoteExecutionData?): List<Text> {
         return when (data) {
-            is com.imyvm.community.domain.community.council.VoteExecutionData.ChangeJoinPolicy -> listOf(
+            is com.imyvm.community.domain.model.community.council.VoteExecutionData.ChangeJoinPolicy -> listOf(
                 Text.of("Action: Change Join Policy"),
                 Text.of("New Policy: ${data.newPolicy}")
             )
-            is com.imyvm.community.domain.community.council.VoteExecutionData.ManageMember -> listOf(
+            is com.imyvm.community.domain.model.community.council.VoteExecutionData.ManageMember -> listOf(
                 Text.of("Action: ${data.action.name}"),
                 Text.of("Target: ${data.targetUUID}")
             )
-            is com.imyvm.community.domain.community.council.VoteExecutionData.AuditApplication -> listOf(
+            is com.imyvm.community.domain.model.community.council.VoteExecutionData.AuditApplication -> listOf(
                 Text.of("Action: ${if (data.accept) "Approve" else "Reject"} Application"),
                 Text.of("Applicant: ${data.applicantUUID}")
             )

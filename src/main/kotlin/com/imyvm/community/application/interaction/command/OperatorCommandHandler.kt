@@ -2,8 +2,8 @@ package com.imyvm.community.application.interaction.command
 
 import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.application.helper.refundNotCreated
-import com.imyvm.community.domain.Community
-import com.imyvm.community.domain.community.CommunityStatus
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.community.CommunityStatus
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.inter.api.PlayerInteractionApi
@@ -134,7 +134,7 @@ private fun notifyOPsAndOwnerAboutAuditDenied(auditor: ServerPlayerEntity, commu
 
 private fun getOwnerUUID(community: Community): java.util.UUID? {
     return community.member.entries.find { 
-        community.getMemberRole(it.key) == com.imyvm.community.domain.community.MemberRoleType.OWNER 
+        community.getMemberRole(it.key) == com.imyvm.community.domain.model.community.MemberRoleType.OWNER 
     }?.key
 }
 
@@ -160,7 +160,7 @@ private fun revokeCommunity(targetCommunity: Community) {
 
 private fun getOwnerPlayer(community: Community, server: net.minecraft.server.MinecraftServer): ServerPlayerEntity? {
     val ownerUUID = community.member.entries.find { 
-        community.getMemberRole(it.key) == com.imyvm.community.domain.community.MemberRoleType.OWNER 
+        community.getMemberRole(it.key) == com.imyvm.community.domain.model.community.MemberRoleType.OWNER 
     }?.key
     return ownerUUID?.let { server.playerManager?.getPlayer(it) }
 }

@@ -2,8 +2,8 @@ package com.imyvm.community.application.interaction.screen.inner_community
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.application.permission.PermissionCheck
-import com.imyvm.community.domain.Community
-import com.imyvm.community.domain.GeographicFunctionType
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.GeographicFunctionType
 import com.imyvm.community.entrypoints.screen.ConfirmMenu
 import com.imyvm.community.entrypoints.screen.component.ConfirmTaskType
 import com.imyvm.community.entrypoints.screen.inner_community.CommunityAdministrationMenu

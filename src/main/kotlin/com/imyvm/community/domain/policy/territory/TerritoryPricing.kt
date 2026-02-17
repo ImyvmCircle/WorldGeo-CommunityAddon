@@ -1,4 +1,4 @@
-package com.imyvm.community.domain.territory.cost
+package com.imyvm.community.domain.policy.territory
 
 import com.imyvm.community.infra.CommunityConfig
 

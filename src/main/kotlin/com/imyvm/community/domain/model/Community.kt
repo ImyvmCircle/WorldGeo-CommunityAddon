@@ -1,6 +1,7 @@
-package com.imyvm.community.domain
+package com.imyvm.community.domain.model
 
-import com.imyvm.community.domain.community.*
+import com.imyvm.community.domain.model.community.*
+import com.imyvm.community.domain.policy.permission.AdministrationPermissions
 import com.imyvm.community.util.Translator
 import com.imyvm.community.util.getFormattedMillsHour
 import com.imyvm.iwg.domain.Region

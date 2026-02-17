@@ -2,9 +2,9 @@ package com.imyvm.community.application.interaction.screen.outer_community
 
 import com.imyvm.community.application.interaction.common.helper.checkPlayerMembershipPreCreation
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
-import com.imyvm.community.domain.Community
-import com.imyvm.community.domain.community.CommunityListFilterType
-import com.imyvm.community.domain.community.MemberRoleType
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.community.CommunityListFilterType
+import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.entrypoints.screen.inner_community.CommunityMenu
 import com.imyvm.community.entrypoints.screen.outer_community.CommunityCreationMenu

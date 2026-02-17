@@ -1,8 +1,8 @@
 package com.imyvm.community.entrypoints.screen.inner_community.administration_only
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
-import com.imyvm.community.domain.Community
-import com.imyvm.community.domain.MemberAccount
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.MemberAccount
 import com.imyvm.community.entrypoints.screen.AbstractListMenu
 import com.imyvm.community.entrypoints.screen.component.createPlayerHeadItemStack
 import com.imyvm.community.util.Translator
