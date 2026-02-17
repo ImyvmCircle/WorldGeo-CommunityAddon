@@ -1,6 +1,6 @@
 package com.imyvm.community.application.interaction.command
 
-import com.imyvm.community.application.permission.PermissionCheck
+import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.policy.permission.AdministrationPermission
 import com.imyvm.community.domain.model.community.Announcement
@@ -119,7 +119,7 @@ private fun parseUUID(player: ServerPlayerEntity, idString: String): UUID? {
 }
 
 private fun canManage(player: ServerPlayerEntity, community: Community): Boolean {
-    if (PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS).isAllowed()) {
+    if (CommunityPermissionPolicy.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS).isAllowed()) {
         return true
     }
     player.sendMessage(Translator.tr("community.announcement.error.no_permission"))
@@ -127,7 +127,7 @@ private fun canManage(player: ServerPlayerEntity, community: Community): Boolean
 }
 
 private fun isMember(player: ServerPlayerEntity, community: Community): Boolean {
-    if (PermissionCheck.canViewCommunity(player, community).isAllowed()) {
+    if (CommunityPermissionPolicy.canViewCommunity(player, community).isAllowed()) {
         return true
     }
     player.sendMessage(Translator.tr("community.announcement.error.not_member"))

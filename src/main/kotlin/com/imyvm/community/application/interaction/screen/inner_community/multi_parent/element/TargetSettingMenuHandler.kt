@@ -56,9 +56,9 @@ fun runTogglingPermissionSetting(
     runBack: (ServerPlayerEntity) -> Unit
 ) {
     val permission = com.imyvm.community.domain.policy.permission.AdministrationPermission.MODIFY_REGION_SETTINGS
-    com.imyvm.community.application.permission.PermissionCheck.executeWithPermission(
+    com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.executeWithPermission(
         playerExecutor,
-        { com.imyvm.community.application.permission.PermissionCheck.canExecuteAdministration(playerExecutor, community, permission) }
+        { com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.canExecuteAdministration(playerExecutor, community, permission) }
     ) {
         togglePermissionSettingInRegion(playerExecutor, community, scope, playerObject, permissionKey)
         refreshSettingInMenu(playerExecutor, community, scope, playerObject, runBack)

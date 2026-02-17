@@ -3,7 +3,7 @@ package com.imyvm.community.entrypoints.screen.inner_community
 import com.imyvm.community.application.interaction.screen.inner_community.*
 import com.imyvm.community.application.interaction.screen.inner_community.affairs.runOpenAnnouncementListMenu
 import com.imyvm.community.application.interaction.screen.inner_community.affairs.runOpenAssetsMenu
-import com.imyvm.community.application.permission.PermissionCheck
+import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.GeographicFunctionType
 import com.imyvm.community.domain.policy.permission.AdministrationPermission
@@ -32,7 +32,7 @@ class CommunityAdministrationMenu(
 
     private fun addStaticButtons(player: ServerPlayerEntity, community: Community) {
 
-        if (PermissionCheck.canRenameCommunity(player, community).isAllowed() || voteCreationMode) {
+        if (CommunityPermissionPolicy.canRenameCommunity(player, community).isAllowed() || voteCreationMode) {
             addButton(
                 slot = 10,
                 name = Translator.tr("ui.community.administration.button.name")?.string ?: "Community Name",
@@ -40,7 +40,7 @@ class CommunityAdministrationMenu(
             ) { runAdmRenameCommunity(player, community, runBack, voteCreationMode) }
         }
 
-        if (PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_MEMBERS).isAllowed() || voteCreationMode) {
+        if (CommunityPermissionPolicy.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_MEMBERS).isAllowed() || voteCreationMode) {
             addButton(
                 slot = 11,
                 name = Translator.tr("ui.community.administration.button.members")?.string ?: "Manage Members",
@@ -48,7 +48,7 @@ class CommunityAdministrationMenu(
             ) { runAdmManageMembers(player, community, runBack, voteCreationMode) }
         }
 
-        if (PermissionCheck.canAuditApplications(player, community).isAllowed() || voteCreationMode) {
+        if (CommunityPermissionPolicy.canAuditApplications(player, community).isAllowed() || voteCreationMode) {
             addButton(
                 slot = 12,
                 name = Translator.tr("ui.community.administration.button.audit")?.string ?: "Community Audit",
@@ -56,7 +56,7 @@ class CommunityAdministrationMenu(
             ) { runAdmAuditRequests(player, community, runBack, voteCreationMode) }
         }
 
-        if (PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS).isAllowed()) {
+        if (CommunityPermissionPolicy.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS).isAllowed()) {
             addButton(
                 slot = 13,
                 name = Translator.tr("ui.community.administration.button.announcement")?.string ?: "Announcement",
@@ -64,7 +64,7 @@ class CommunityAdministrationMenu(
             ) { runOpenAnnouncementListMenu(player, community, runBack) }
         }
 
-        if (PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ADVANCEMENT).isAllowed()) {
+        if (CommunityPermissionPolicy.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ADVANCEMENT).isAllowed()) {
             addButton(
                 slot = 14,
                 name = Translator.tr("ui.community.administration.button.advancement")?.string ?: "Advancement",
@@ -72,7 +72,7 @@ class CommunityAdministrationMenu(
             ) { runAdmAdvancement(player, community, runBack, voteCreationMode) }
         }
 
-        if (PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ASSETS).isAllowed()) {
+        if (CommunityPermissionPolicy.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ASSETS).isAllowed()) {
             addButton(
                 slot = 15,
                 name = Translator.tr("ui.community.administration.button.assets")?.string ?: "Assets",
@@ -80,7 +80,7 @@ class CommunityAdministrationMenu(
             ) { runOpenAssetsMenu(player, community, runBack) }
         }
 
-        if (PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MODIFY_REGION_GEOMETRY).isAllowed()) {
+        if (CommunityPermissionPolicy.canExecuteAdministration(player, community, AdministrationPermission.MODIFY_REGION_GEOMETRY).isAllowed()) {
             addButton(
                 slot = 19,
                 name = Translator.tr("ui.community.administration.button.region.geometry")?.string ?: "Region Geometry Modification",
@@ -96,7 +96,7 @@ class CommunityAdministrationMenu(
             }
         }
 
-        if (PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MODIFY_REGION_SETTINGS).isAllowed()) {
+        if (CommunityPermissionPolicy.canExecuteAdministration(player, community, AdministrationPermission.MODIFY_REGION_SETTINGS).isAllowed()) {
             addButton(
                 slot = 20,
                 name = Translator.tr("ui.community.administration.button.region.setting")?.string ?: "Region Settings",
@@ -112,7 +112,7 @@ class CommunityAdministrationMenu(
             }
         }
 
-        if (PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_TELEPORT_POINTS).isAllowed()) {
+        if (CommunityPermissionPolicy.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_TELEPORT_POINTS).isAllowed()) {
             addButton(
                 slot = 21,
                 name = Translator.tr("ui.community.administration.button.teleport")?.string ?: "Teleport Point Management",
@@ -131,7 +131,7 @@ class CommunityAdministrationMenu(
 
     private fun addChangeableButtons(player: ServerPlayerEntity, community: Community) {
 
-        if (PermissionCheck.canChangeJoinPolicy(player, community).isAllowed() || voteCreationMode) {
+        if (CommunityPermissionPolicy.canChangeJoinPolicy(player, community).isAllowed() || voteCreationMode) {
             addButton(
                 slot = 28,
                 name = (Translator.tr("ui.community.administration.button.join_policy")?.string
@@ -144,7 +144,7 @@ class CommunityAdministrationMenu(
             ) { runAdmChangeJoinPolicy(player, community, community.joinPolicy, runBack, voteCreationMode) }
         }
 
-        if (PermissionCheck.canToggleCouncil(player, community).isAllowed() && !voteCreationMode) {
+        if (CommunityPermissionPolicy.canToggleCouncil(player, community).isAllowed() && !voteCreationMode) {
             addButton(
                 slot = 29,
                 name = (Translator.tr("ui.community.administration.button.council")?.string

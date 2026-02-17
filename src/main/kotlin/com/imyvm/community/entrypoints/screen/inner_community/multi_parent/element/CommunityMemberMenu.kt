@@ -4,7 +4,7 @@ import com.imyvm.community.application.interaction.screen.inner_community.multi_
 import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.runOpenPlayerRegionScopeChoice
 import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.runPromoteMember
 import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.runRemoveMember
-import com.imyvm.community.application.permission.PermissionCheck
+import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.entrypoints.screen.AbstractMenu
@@ -29,7 +29,7 @@ class CommunityMemberMenu(
 
     init {
         addDescriptionButtons()
-        if (PermissionCheck.canManageMember(playerExecutor, community, playerObject.id).isAllowed()) {
+        if (CommunityPermissionPolicy.canManageMember(playerExecutor, community, playerObject.id).isAllowed()) {
             addManageButtons()
         }
     }
@@ -76,7 +76,7 @@ class CommunityMemberMenu(
             ) { runPromoteMember(community, playerExecutor, playerObject) }
         }
 
-        if (PermissionCheck.canTransferOwnership(playerExecutor, community, playerObject.id).isAllowed()) {
+        if (CommunityPermissionPolicy.canTransferOwnership(playerExecutor, community, playerObject.id).isAllowed()) {
             val memberAccount = community.member[playerObject.id]
             val isCouncilor = memberAccount?.isCouncilMember ?: false
             addButton(

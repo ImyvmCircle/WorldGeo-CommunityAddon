@@ -1,7 +1,7 @@
 package com.imyvm.community.application.interaction.screen.inner_community
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
-import com.imyvm.community.application.permission.PermissionCheck
+import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.GeographicFunctionType
 import com.imyvm.community.entrypoints.screen.ConfirmMenu
@@ -86,7 +86,7 @@ fun runTeleportToScope(player: ServerPlayerEntity, community: Community, runBack
 }
 
 fun runShowLeaveConfirmMenu(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit) {
-    val permissionResult = PermissionCheck.canQuitCommunity(player, community)
+    val permissionResult = CommunityPermissionPolicy.canQuitCommunity(player, community)
     if (!permissionResult.isAllowed()) {
         permissionResult.sendFeedback(player)
         return

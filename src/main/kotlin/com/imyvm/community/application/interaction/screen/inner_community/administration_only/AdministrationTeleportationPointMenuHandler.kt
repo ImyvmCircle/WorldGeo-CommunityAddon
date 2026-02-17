@@ -62,9 +62,9 @@ fun runToggleTeleportPointAccessibility(
     runBack: (ServerPlayerEntity) -> Unit
 ) {
     val permission = com.imyvm.community.domain.policy.permission.AdministrationPermission.MANAGE_TELEPORT_POINTS
-    com.imyvm.community.application.permission.PermissionCheck.executeWithPermission(
+    com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.executeWithPermission(
         playerExecutor,
-        { com.imyvm.community.application.permission.PermissionCheck.canExecuteAdministration(playerExecutor, community, permission) }
+        { com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.canExecuteAdministration(playerExecutor, community, permission) }
     ) {
         val region = community.getRegion()
         if (region != null) {
@@ -87,9 +87,9 @@ fun runToggleTeleportPointAccessibility(
 
 fun runSettingTeleportPoint(playerExecutor: ServerPlayerEntity, community: Community, scope: GeoScope) {
     val permission = com.imyvm.community.domain.policy.permission.AdministrationPermission.MANAGE_TELEPORT_POINTS
-    com.imyvm.community.application.permission.PermissionCheck.executeWithPermission(
+    com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.executeWithPermission(
         playerExecutor,
-        { com.imyvm.community.application.permission.PermissionCheck.canExecuteAdministration(playerExecutor, community, permission) }
+        { com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.canExecuteAdministration(playerExecutor, community, permission) }
     ) {
         playerExecutor.closeHandledScreen()
 
@@ -119,9 +119,9 @@ fun runSettingTeleportPoint(playerExecutor: ServerPlayerEntity, community: Commu
 
 fun runResetTeleportPoint(playerExecutor: ServerPlayerEntity, community: Community, scope: GeoScope) {
     val permission = com.imyvm.community.domain.policy.permission.AdministrationPermission.MANAGE_TELEPORT_POINTS
-    com.imyvm.community.application.permission.PermissionCheck.executeWithPermission(
+    com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.executeWithPermission(
         playerExecutor,
-        { com.imyvm.community.application.permission.PermissionCheck.canExecuteAdministration(playerExecutor, community, permission) }
+        { com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.canExecuteAdministration(playerExecutor, community, permission) }
     ) {
         playerExecutor.closeHandledScreen()
 

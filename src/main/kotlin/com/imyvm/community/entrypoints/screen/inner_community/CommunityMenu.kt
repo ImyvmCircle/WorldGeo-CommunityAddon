@@ -3,7 +3,7 @@ package com.imyvm.community.entrypoints.screen.inner_community
 import com.imyvm.community.application.interaction.screen.inner_community.*
 import com.imyvm.community.application.interaction.screen.inner_community.affairs.runOpenAssetsMenu
 import com.imyvm.community.application.interaction.screen.inner_community.affairs.runOpenMemberAnnouncementListMenu
-import com.imyvm.community.application.permission.PermissionCheck
+import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.entrypoints.screen.AbstractMenu
 import com.imyvm.community.entrypoints.screen.component.getPlayerHeadButtonItemStackCommunity
@@ -37,7 +37,7 @@ class CommunityMenu(
     }
 
     private fun addAdministrationButtonTrail() {
-        if (PermissionCheck.canExecuteAdministration(player, community).isAllowed()) {
+        if (CommunityPermissionPolicy.canExecuteAdministration(player, community).isAllowed()) {
             addButton(
                 slot = 12,
                 name = Translator.tr("ui.community.button.interaction.operations")?.string ?: "Community Operations",
@@ -45,7 +45,7 @@ class CommunityMenu(
             ) { runOpenOperationMenu(player, community, runBack) }
         }
 
-        if (community.council.enabled && PermissionCheck.canAccessCouncil(player, community).isAllowed()) {
+        if (community.council.enabled && CommunityPermissionPolicy.canAccessCouncil(player, community).isAllowed()) {
             addButton(
                 slot = 13,
                 name = Translator.tr("ui.community.button.interaction.council")?.string ?: "Council",

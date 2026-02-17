@@ -1,7 +1,7 @@
 package com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
-import com.imyvm.community.application.permission.PermissionCheck
+import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.MemberAccount
 import com.imyvm.community.domain.model.GeographicFunctionType
@@ -19,9 +19,9 @@ fun runOpenPlayerRegionScopeChoice(
     playerObject: GameProfile,
     runBackGrandfather: (ServerPlayerEntity) -> Unit
 ) {
-    PermissionCheck.executeWithPermission(
+    CommunityPermissionPolicy.executeWithPermission(
         playerExecutor,
-        { PermissionCheck.canManageMember(playerExecutor, community, playerObject.id) }
+        { CommunityPermissionPolicy.canManageMember(playerExecutor, community, playerObject.id) }
     ) {
         CommunityMenuOpener.open(playerExecutor) { syncId ->
             CommunityRegionScopeMenu(
@@ -40,9 +40,9 @@ fun runRemoveMember(
     playerExecutor: ServerPlayerEntity,
     playerObject: GameProfile
 ) {
-    PermissionCheck.executeWithPermission(
+    CommunityPermissionPolicy.executeWithPermission(
         playerExecutor,
-        { PermissionCheck.canRemoveMember(playerExecutor, community, playerObject.id) }
+        { CommunityPermissionPolicy.canRemoveMember(playerExecutor, community, playerObject.id) }
     ) {
         val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
         
@@ -80,9 +80,9 @@ fun runNotifyMember(
     playerExecutor: ServerPlayerEntity,
     playerObject: GameProfile
 ) {
-    PermissionCheck.executeWithPermission(
+    CommunityPermissionPolicy.executeWithPermission(
         playerExecutor,
-        { PermissionCheck.canManageMember(playerExecutor, community, playerObject.id) }
+        { CommunityPermissionPolicy.canManageMember(playerExecutor, community, playerObject.id) }
     ) {
         val handler = NotificationMenuAnvil(
             playerExecutor,
@@ -117,9 +117,9 @@ private fun handleRolePromotion(
     playerExecutor: ServerPlayerEntity,
     playerObject: GameProfile
 ) {
-    PermissionCheck.executeWithPermission(
+    CommunityPermissionPolicy.executeWithPermission(
         playerExecutor,
-        { PermissionCheck.canPromoteMember(playerExecutor, community, playerObject.id) }
+        { CommunityPermissionPolicy.canPromoteMember(playerExecutor, community, playerObject.id) }
     ) {
         val memberValue = community.member[playerObject.id]
         if (memberValue != null) {
@@ -160,9 +160,9 @@ private fun handleRoleDemotion(
     playerExecutor: ServerPlayerEntity,
     playerObject: GameProfile
 ) {
-    PermissionCheck.executeWithPermission(
+    CommunityPermissionPolicy.executeWithPermission(
         playerExecutor,
-        { PermissionCheck.canDemoteMember(playerExecutor, community, playerObject.id) }
+        { CommunityPermissionPolicy.canDemoteMember(playerExecutor, community, playerObject.id) }
     ) {
         val memberValue = community.member[playerObject.id]
         if (memberValue != null) {
@@ -204,9 +204,9 @@ private fun handleGovernorshipUpdate(
     playerObject: GameProfile,
     governorship: Int
 ) {
-    PermissionCheck.executeWithPermission(
+    CommunityPermissionPolicy.executeWithPermission(
         playerExecutor,
-        { PermissionCheck.canManageMember(playerExecutor, community, playerObject.id) }
+        { CommunityPermissionPolicy.canManageMember(playerExecutor, community, playerObject.id) }
     ) {
         val memberValue = community.member[playerObject.id]
         if (memberValue != null) {
@@ -239,9 +239,9 @@ fun runToggleCouncilorStatus(
     playerObject: GameProfile,
     runBack: (ServerPlayerEntity) -> Unit
 ) {
-    PermissionCheck.executeWithPermission(
+    CommunityPermissionPolicy.executeWithPermission(
         playerExecutor,
-        { PermissionCheck.canTransferOwnership(playerExecutor, community, playerObject.id) }
+        { CommunityPermissionPolicy.canTransferOwnership(playerExecutor, community, playerObject.id) }
     ) {
         val memberValue = community.member[playerObject.id]
         if (memberValue != null) {

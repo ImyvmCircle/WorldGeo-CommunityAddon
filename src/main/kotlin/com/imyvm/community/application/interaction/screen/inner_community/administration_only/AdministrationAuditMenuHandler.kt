@@ -1,6 +1,6 @@
 package com.imyvm.community.application.interaction.screen.inner_community.administration_only
 
-import com.imyvm.community.application.permission.PermissionCheck
+import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.util.Translator.trMenu
@@ -13,9 +13,9 @@ fun runAccept(
     playerExecutor: ServerPlayerEntity,
     playerObject: GameProfile
 ) {
-    PermissionCheck.executeWithPermission(
+    CommunityPermissionPolicy.executeWithPermission(
         playerExecutor,
-        { PermissionCheck.canAcceptApplicant(playerExecutor, community, playerObject.id) }
+        { CommunityPermissionPolicy.canAcceptApplicant(playerExecutor, community, playerObject.id) }
     ) {
         if (!com.imyvm.community.application.interaction.common.checkMemberNumberManor(playerExecutor, community)) {
             playerExecutor.closeHandledScreen()
@@ -114,9 +114,9 @@ fun runRefuse(
     playerExecutor: ServerPlayerEntity,
     playerObject: GameProfile
 ) {
-    PermissionCheck.executeWithPermission(
+    CommunityPermissionPolicy.executeWithPermission(
         playerExecutor,
-        { PermissionCheck.canRefuseApplicant(playerExecutor, community, playerObject.id) }
+        { CommunityPermissionPolicy.canRefuseApplicant(playerExecutor, community, playerObject.id) }
     ) {
         val objectAccount = community.member[playerObject.id]
         if (objectAccount != null) {

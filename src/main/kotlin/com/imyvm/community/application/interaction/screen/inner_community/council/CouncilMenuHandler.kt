@@ -1,7 +1,7 @@
 package com.imyvm.community.application.interaction.screen.inner_community.council
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
-import com.imyvm.community.application.permission.PermissionCheck
+import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.policy.permission.AdministrationPermission
 import com.imyvm.community.domain.model.community.council.CouncilVote
@@ -16,9 +16,9 @@ import net.minecraft.text.Text
 import java.util.*
 
 fun runOpenCouncilMenu(player: ServerPlayerEntity, community: Community, runBack: (ServerPlayerEntity) -> Unit) {
-    PermissionCheck.executeWithPermission(
+    CommunityPermissionPolicy.executeWithPermission(
         player,
-        { PermissionCheck.canAccessCouncil(player, community) }
+        { CommunityPermissionPolicy.canAccessCouncil(player, community) }
     ) {
         CommunityMenuOpener.open(player) { syncId ->
             CouncilMenu(syncId, community, player, runBack)
@@ -39,9 +39,9 @@ fun runOpenVoteDetailsMenu(player: ServerPlayerEntity, community: Community, vot
 }
 
 fun runCastVote(player: ServerPlayerEntity, community: Community, voteId: UUID, support: Boolean, runBack: (ServerPlayerEntity) -> Unit) {
-    PermissionCheck.executeWithPermission(
+    CommunityPermissionPolicy.executeWithPermission(
         player,
-        { PermissionCheck.canAccessCouncil(player, community) }
+        { CommunityPermissionPolicy.canAccessCouncil(player, community) }
     ) {
         val vote = community.council.getVote(voteId)
         if (vote == null) {
@@ -64,9 +64,9 @@ fun runCastVote(player: ServerPlayerEntity, community: Community, voteId: UUID, 
 }
 
 fun runRetractVote(player: ServerPlayerEntity, community: Community, voteId: UUID, runBack: (ServerPlayerEntity) -> Unit) {
-    PermissionCheck.executeWithPermission(
+    CommunityPermissionPolicy.executeWithPermission(
         player,
-        { PermissionCheck.canAccessCouncil(player, community) }
+        { CommunityPermissionPolicy.canAccessCouncil(player, community) }
     ) {
         val vote = community.council.getVote(voteId)
         if (vote == null) {
@@ -99,9 +99,9 @@ fun runCreateVoteProposal(
     permission: AdministrationPermission?,
     runBack: (ServerPlayerEntity) -> Unit
 ) {
-    PermissionCheck.executeWithPermission(
+    CommunityPermissionPolicy.executeWithPermission(
         player,
-        { PermissionCheck.canAccessCouncil(player, community) }
+        { CommunityPermissionPolicy.canAccessCouncil(player, community) }
     ) {
         if (!community.council.canCreateVoteToday()) {
             player.sendMessage(

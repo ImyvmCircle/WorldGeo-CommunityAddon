@@ -53,9 +53,9 @@ fun runExecuteScope(
     when (geographicFunctionType){
         GeographicFunctionType.GEOMETRY_MODIFICATION -> {
             val permission = com.imyvm.community.domain.policy.permission.AdministrationPermission.MODIFY_REGION_GEOMETRY
-            com.imyvm.community.application.permission.PermissionCheck.executeWithPermission(
+            com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.executeWithPermission(
                 playerExecutor,
-                { com.imyvm.community.application.permission.PermissionCheck.canExecuteAdministration(playerExecutor, community, permission) }
+                { com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.canExecuteAdministration(playerExecutor, community, permission) }
             ) {
                 val communityRegion = community.getRegion()
                 if (communityRegion == null) {

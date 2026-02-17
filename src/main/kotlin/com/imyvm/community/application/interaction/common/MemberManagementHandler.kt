@@ -4,7 +4,7 @@ import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.application.event.addPendingOperation
 import com.imyvm.community.application.interaction.common.helper.checkPlayerMembershipJoin
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
-import com.imyvm.community.application.permission.PermissionCheck
+import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.MemberAccount
 import com.imyvm.community.domain.model.PendingOperationType
@@ -56,7 +56,7 @@ fun onJoinCommunity(player: ServerPlayerEntity, targetCommunity: Community): Int
 }
 
 fun onLeaveCommunity(player: ServerPlayerEntity, targetCommunity: Community): Int {
-    val permissionResult = PermissionCheck.canQuitCommunity(player, targetCommunity)
+    val permissionResult = CommunityPermissionPolicy.canQuitCommunity(player, targetCommunity)
     if (!permissionResult.isAllowed()) {
         permissionResult.sendFeedback(player)
         return 0

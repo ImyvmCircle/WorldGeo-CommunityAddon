@@ -2,7 +2,7 @@ package com.imyvm.community.application.interaction.screen.inner_community.affai
 
 import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
-import com.imyvm.community.application.permission.PermissionCheck
+import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.policy.permission.AdministrationPermission
 import com.imyvm.community.domain.model.community.Announcement
@@ -18,12 +18,12 @@ import net.minecraft.server.network.ServerPlayerEntity
 import java.util.*
 
 fun runOpenAnnouncementListMenu(player: ServerPlayerEntity, community: Community, runBack: (ServerPlayerEntity) -> Unit) {
-    PermissionCheck.executeWithPermission(
+    CommunityPermissionPolicy.executeWithPermission(
         player,
         { 
-            val adminCheck = PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS)
+            val adminCheck = CommunityPermissionPolicy.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS)
             if (!adminCheck.isAllowed()) return@executeWithPermission adminCheck
-            PermissionCheck.canExecuteOperationInProto(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS)
+            CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS)
         }
     ) {
         CommunityMenuOpener.open(player) { syncId ->
@@ -38,12 +38,12 @@ fun runOpenAnnouncementDetailsMenu(
     announcementId: UUID,
     runBack: (ServerPlayerEntity) -> Unit
 ) {
-    PermissionCheck.executeWithPermission(
+    CommunityPermissionPolicy.executeWithPermission(
         player,
         { 
-            val adminCheck = PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS)
+            val adminCheck = CommunityPermissionPolicy.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS)
             if (!adminCheck.isAllowed()) return@executeWithPermission adminCheck
-            PermissionCheck.canExecuteOperationInProto(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS)
+            CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS)
         }
     ) {
         CommunityMenuOpener.open(player) { syncId ->
@@ -55,12 +55,12 @@ fun runOpenAnnouncementDetailsMenu(
 }
 
 fun runCreateAnnouncement(player: ServerPlayerEntity, community: Community, runBack: (ServerPlayerEntity) -> Unit) {
-    PermissionCheck.executeWithPermission(
+    CommunityPermissionPolicy.executeWithPermission(
         player,
         { 
-            val adminCheck = PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS)
+            val adminCheck = CommunityPermissionPolicy.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS)
             if (!adminCheck.isAllowed()) return@executeWithPermission adminCheck
-            PermissionCheck.canExecuteOperationInProto(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS)
+            CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS)
         }
     ) {
         player.closeHandledScreen()
@@ -74,12 +74,12 @@ fun onCreateAnnouncementConfirm(
     content: String,
     runBack: (ServerPlayerEntity) -> Unit
 ) {
-    PermissionCheck.executeWithPermission(
+    CommunityPermissionPolicy.executeWithPermission(
         player,
         { 
-            val adminCheck = PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS)
+            val adminCheck = CommunityPermissionPolicy.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS)
             if (!adminCheck.isAllowed()) return@executeWithPermission adminCheck
-            PermissionCheck.canExecuteOperationInProto(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS)
+            CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS)
         }
     ) {
         if (content.isBlank()) {
@@ -110,12 +110,12 @@ fun onDeleteAnnouncement(
     announcementId: UUID,
     runBack: (ServerPlayerEntity) -> Unit
 ) {
-    PermissionCheck.executeWithPermission(
+    CommunityPermissionPolicy.executeWithPermission(
         player,
         { 
-            val adminCheck = PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS)
+            val adminCheck = CommunityPermissionPolicy.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS)
             if (!adminCheck.isAllowed()) return@executeWithPermission adminCheck
-            PermissionCheck.canExecuteOperationInProto(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS)
+            CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS)
         }
     ) {
         if (community.softDeleteAnnouncement(announcementId)) {
@@ -129,9 +129,9 @@ fun onDeleteAnnouncement(
 }
 
 fun runOpenMemberAnnouncementListMenu(player: ServerPlayerEntity, community: Community, runBack: (ServerPlayerEntity) -> Unit) {
-    PermissionCheck.executeWithPermission(
+    CommunityPermissionPolicy.executeWithPermission(
         player,
-        { PermissionCheck.canViewCommunity(player, community) }
+        { CommunityPermissionPolicy.canViewCommunity(player, community) }
     ) {
         CommunityMenuOpener.open(player) { syncId ->
             MemberAnnouncementListMenu(syncId, community, player, 0, runBack)
@@ -145,9 +145,9 @@ fun runOpenMemberAnnouncementDetailsMenu(
     announcementId: UUID,
     runBack: (ServerPlayerEntity) -> Unit
 ) {
-    PermissionCheck.executeWithPermission(
+    CommunityPermissionPolicy.executeWithPermission(
         player,
-        { PermissionCheck.canViewCommunity(player, community) }
+        { CommunityPermissionPolicy.canViewCommunity(player, community) }
     ) {
         CommunityMenuOpener.open(player) { syncId ->
             MemberAnnouncementDetailsMenu(syncId, community, player, announcementId) {

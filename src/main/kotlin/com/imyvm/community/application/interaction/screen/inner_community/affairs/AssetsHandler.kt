@@ -1,7 +1,7 @@
 package com.imyvm.community.application.interaction.screen.inner_community.affairs
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
-import com.imyvm.community.application.permission.PermissionCheck
+import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.Turnover
 import com.imyvm.community.entrypoints.screen.inner_community.affairs.assets.CommunityAssetsMenu
@@ -20,9 +20,9 @@ fun runOpenAssetsMenu(player: ServerPlayerEntity, community: Community, runBackG
 }
 
 fun runOpenDonationMenu(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit) {
-    PermissionCheck.executeWithPermission(
+    CommunityPermissionPolicy.executeWithPermission(
         player,
-        { PermissionCheck.canDonate(player, community) }
+        { CommunityPermissionPolicy.canDonate(player, community) }
     ) {
         CommunityMenuOpener.open(player) { syncId ->
             DonationMenu(syncId, player, community) { runOpenAssetsMenu(player, community, runBackGrandfather) }
@@ -43,9 +43,9 @@ fun runOpenDonorDetailsMenu(player: ServerPlayerEntity, community: Community, do
 }
 
 fun onDonateConfirm(player: ServerPlayerEntity, community: Community, amount: Long, runBackGrandfather: (ServerPlayerEntity) -> Unit) {
-    PermissionCheck.executeWithPermission(
+    CommunityPermissionPolicy.executeWithPermission(
         player,
-        { PermissionCheck.canDonate(player, community) }
+        { CommunityPermissionPolicy.canDonate(player, community) }
     ) {
         val playerAccount = EconomyMod.data.getOrCreate(player)
         

@@ -2,7 +2,7 @@ package com.imyvm.community.application.interaction.screen
 
 import com.imyvm.community.application.interaction.common.onCreateCommunityRequest
 import com.imyvm.community.application.interaction.common.onJoinCommunityDirectly
-import com.imyvm.community.application.permission.PermissionCheck
+import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.Turnover
 import com.imyvm.community.entrypoints.screen.component.ConfirmTaskType
@@ -67,9 +67,9 @@ private fun runCommunityLeave(
         return
     }
 
-    PermissionCheck.executeWithPermission(
+    CommunityPermissionPolicy.executeWithPermission(
         playerExecutor,
-        { PermissionCheck.canQuitCommunity(playerExecutor, targetCommunity) }
+        { CommunityPermissionPolicy.canQuitCommunity(playerExecutor, targetCommunity) }
     ) {
         val communityName = targetCommunity.getRegion()?.name ?: "Community #${targetCommunity.regionNumberId}"
         

@@ -1,7 +1,7 @@
 package com.imyvm.community.application.interaction.screen.inner_community
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
-import com.imyvm.community.application.permission.PermissionCheck
+import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.GeographicFunctionType
 import com.imyvm.community.domain.policy.permission.AdministrationPermission
@@ -15,15 +15,15 @@ import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.Commu
 import net.minecraft.server.network.ServerPlayerEntity
 
 fun runAdmRenameCommunity(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit, voteCreationMode: Boolean = false){
-    PermissionCheck.executeWithPermission(
+    CommunityPermissionPolicy.executeWithPermission(
         player,
         { 
             if (voteCreationMode) {
-                PermissionCheck.canAccessCouncil(player, community)
+                CommunityPermissionPolicy.canAccessCouncil(player, community)
             } else {
-                val renameCheck = PermissionCheck.canRenameCommunity(player, community)
+                val renameCheck = CommunityPermissionPolicy.canRenameCommunity(player, community)
                 if (!renameCheck.isAllowed()) return@executeWithPermission renameCheck
-                PermissionCheck.canExecuteOperationInProto(player, community, AdministrationPermission.RENAME_COMMUNITY)
+                CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdministrationPermission.RENAME_COMMUNITY)
             }
         }
     ) {
@@ -32,15 +32,15 @@ fun runAdmRenameCommunity(player: ServerPlayerEntity, community: Community, runB
 }
 
 fun runAdmManageMembers(player: ServerPlayerEntity, community: Community, runBackGrandfather: ((ServerPlayerEntity) -> Unit), voteCreationMode: Boolean = false) {
-    PermissionCheck.executeWithPermission(
+    CommunityPermissionPolicy.executeWithPermission(
         player,
         { 
             if (voteCreationMode) {
-                PermissionCheck.canAccessCouncil(player, community)
+                CommunityPermissionPolicy.canAccessCouncil(player, community)
             } else {
-                val adminCheck = PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_MEMBERS)
+                val adminCheck = CommunityPermissionPolicy.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_MEMBERS)
                 if (!adminCheck.isAllowed()) return@executeWithPermission adminCheck
-                PermissionCheck.canExecuteOperationInProto(player, community, AdministrationPermission.MANAGE_MEMBERS)
+                CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdministrationPermission.MANAGE_MEMBERS)
             }
         }
     ) {
@@ -55,11 +55,11 @@ fun runAdmManageMembers(player: ServerPlayerEntity, community: Community, runBac
 }
 
 fun runAdmAuditRequests(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit, voteCreationMode: Boolean = false) {
-    PermissionCheck.executeWithPermission(
+    CommunityPermissionPolicy.executeWithPermission(
         player,
         { 
-            if (voteCreationMode) PermissionCheck.canAccessCouncil(player, community)
-            else PermissionCheck.canAuditApplications(player, community) 
+            if (voteCreationMode) CommunityPermissionPolicy.canAccessCouncil(player, community)
+            else CommunityPermissionPolicy.canAuditApplications(player, community) 
         }
     ) {
         CommunityMenuOpener.open(player) { syncId ->
@@ -74,15 +74,15 @@ fun runAdmAuditRequests(player: ServerPlayerEntity, community: Community, runBac
 }
 
 fun runAdmAdvancement(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit, voteCreationMode: Boolean = false){
-    PermissionCheck.executeWithPermission(
+    CommunityPermissionPolicy.executeWithPermission(
         player,
         { 
             if (voteCreationMode) {
-                PermissionCheck.canAccessCouncil(player, community)
+                CommunityPermissionPolicy.canAccessCouncil(player, community)
             } else {
-                val adminCheck = PermissionCheck.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ADVANCEMENT)
+                val adminCheck = CommunityPermissionPolicy.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ADVANCEMENT)
                 if (!adminCheck.isAllowed()) return@executeWithPermission adminCheck
-                PermissionCheck.canExecuteOperationInProto(player, community, AdministrationPermission.MANAGE_ADVANCEMENT)
+                CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdministrationPermission.MANAGE_ADVANCEMENT)
             }
         }
     ) {
@@ -106,18 +106,18 @@ fun runAdmRegion(
         else -> null
     }
 
-    PermissionCheck.executeWithPermission(
+    CommunityPermissionPolicy.executeWithPermission(
         player,
         { 
             if (voteCreationMode) {
-                PermissionCheck.canAccessCouncil(player, community)
+                CommunityPermissionPolicy.canAccessCouncil(player, community)
             } else {
-                val adminCheck = PermissionCheck.canExecuteAdministration(player, community, permission)
+                val adminCheck = CommunityPermissionPolicy.canExecuteAdministration(player, community, permission)
                 if (!adminCheck.isAllowed()) return@executeWithPermission adminCheck
                 if (permission != null) {
-                    PermissionCheck.canExecuteOperationInProto(player, community, permission)
+                    CommunityPermissionPolicy.canExecuteOperationInProto(player, community, permission)
                 } else {
-                    PermissionCheck.PermissionResult.Allowed
+                    CommunityPermissionPolicy.PermissionResult.Allowed
                 }
             }
         }
@@ -144,9 +144,9 @@ fun runAdmChangeJoinPolicy(player: ServerPlayerEntity, community: Community, pol
             player, community, newPolicy, runBack
         )
     } else {
-        PermissionCheck.executeWithPermission(
+        CommunityPermissionPolicy.executeWithPermission(
             player,
-            { PermissionCheck.canChangeJoinPolicy(player, community) }
+            { CommunityPermissionPolicy.canChangeJoinPolicy(player, community) }
         ) {
             val oldPolicy = community.joinPolicy
             community.joinPolicy = when (policy) {
@@ -172,9 +172,9 @@ fun runAdmChangeJoinPolicy(player: ServerPlayerEntity, community: Community, pol
 }
 
 fun runAdmToggleCouncil(player: ServerPlayerEntity, community: Community, runBack: (ServerPlayerEntity) -> Unit, voteCreationMode: Boolean = false) {
-    PermissionCheck.executeWithPermission(
+    CommunityPermissionPolicy.executeWithPermission(
         player,
-        { PermissionCheck.canToggleCouncil(player, community) }
+        { CommunityPermissionPolicy.canToggleCouncil(player, community) }
     ) {
         community.council.enabled = !community.council.enabled
         
