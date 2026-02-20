@@ -305,5 +305,75 @@ class CommunityConfig : HokiConfig("Community.conf") {
         ) { obj, path ->
             obj.getLong(path)
         }
+
+        @JvmField
+        @ConfigOption
+        val TELEPORT_POINT_SECOND_POINT_BASE_COST = Option(
+            "economy.teleport_point_second_point_base_cost",
+            200000L,
+            "the base cost for creating the second active teleport point in a community."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val TELEPORT_POINT_MODIFY_COST = Option(
+            "economy.teleport_point_modify_cost",
+            300000L,
+            "the fixed cost for modifying an existing teleport point."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val TELEPORT_FREE_USES_FORMAL_MEMBER = Option(
+            "teleport.free_uses_formal_member_per_day",
+            10,
+            "free teleport uses per day in the same community for owner/admin/member."
+        ) { obj, path ->
+            obj.getInt(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val TELEPORT_FREE_USES_NON_FORMAL = Option(
+            "teleport.free_uses_non_formal_per_day",
+            1,
+            "free teleport uses per day in the same community for non-formal players."
+        ) { obj, path ->
+            obj.getInt(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val TELEPORT_PAID_BASE_COST = Option(
+            "economy.teleport_paid_base_cost",
+            1000L,
+            "base teleport fee after free uses are exhausted."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val TELEPORT_PAID_BASE_DELAY_SECONDS = Option(
+            "teleport.paid_base_delay_seconds",
+            2,
+            "base teleport delay in seconds after free uses are exhausted."
+        ) { obj, path ->
+            obj.getInt(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val TELEPORT_POST_EFFECT_TICKS = Option(
+            "teleport.post_effect_ticks",
+            40,
+            "status effect duration in ticks after teleport completes."
+        ) { obj, path ->
+            obj.getInt(path)
+        }
     }
 }

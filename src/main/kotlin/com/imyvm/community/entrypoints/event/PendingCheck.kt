@@ -1,6 +1,7 @@
 package com.imyvm.community.entrypoints.event
 
 import com.imyvm.community.application.event.checkPendingOperations
+import com.imyvm.community.application.interaction.screen.inner_community.processPendingTeleportExecutions
 import com.imyvm.community.infra.CommunityConfig
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 
@@ -11,6 +12,7 @@ fun registerExpireCheck() {
         tickCounter++
         if (tickCounter >= CommunityConfig.PENDING_CHECK_INTERVAL_SECONDS.value * 20) {
             tickCounter = 0
+            processPendingTeleportExecutions()
             checkPendingOperations(server)
         }
     }

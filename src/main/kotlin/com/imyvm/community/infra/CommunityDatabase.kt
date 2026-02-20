@@ -2,7 +2,6 @@ package com.imyvm.community.infra
 
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.MemberAccount
-import com.imyvm.community.domain.model.PendingOperation
 import com.imyvm.community.domain.model.Turnover
 import com.imyvm.community.domain.model.community.*
 import com.imyvm.community.domain.model.community.council.CouncilVote
@@ -25,7 +24,6 @@ object CommunityDatabase {
     fun save() {
         val file = this.getDatabasePath()
         DataOutputStream(file.toFile().outputStream()).use { stream ->
-            // 保存Communities
             stream.writeInt(communities.size)
             for (community in communities) {
                 saveCommunityRegionNumberId(stream,community)
@@ -39,8 +37,7 @@ object CommunityDatabase {
                 saveCommunityMessages(stream, community)
                 stream.writeLong(community.creationCost)
             }
-            
-            // 保存PendingOperations
+
             savePendingOperations(stream)
         }
     }
@@ -482,22 +479,19 @@ object CommunityDatabase {
             stream.writeInt(regionId)
             stream.writeLong(operation.expireAt)
             stream.writeInt(operation.type.value)
-            
-            // 保存inviterUUID
+
             val hasInviter = operation.inviterUUID != null
             stream.writeBoolean(hasInviter)
             if (hasInviter) {
                 stream.writeUTF(operation.inviterUUID.toString())
             }
-            
-            // 保存inviteeUUID
+
             val hasInvitee = operation.inviteeUUID != null
             stream.writeBoolean(hasInvitee)
             if (hasInvitee) {
                 stream.writeUTF(operation.inviteeUUID.toString())
             }
-            
-            // 保存creationData
+
             val hasCreationData = operation.creationData != null
             stream.writeBoolean(hasCreationData)
             if (hasCreationData) {
@@ -509,6 +503,7 @@ object CommunityDatabase {
                 stream.writeUTF(data.creatorUUID.toString())
                 stream.writeLong(data.totalCost)
             }
+
         }
     }
     
@@ -521,24 +516,21 @@ object CommunityDatabase {
                 val regionId = stream.readInt()
                 val expireAt = stream.readLong()
                 val type = com.imyvm.community.domain.model.PendingOperationType.fromValue(stream.readInt())
-                
-                // 加载inviterUUID
+
                 val hasInviter = stream.readBoolean()
                 val inviterUUID = if (hasInviter) {
                     UUID.fromString(stream.readUTF())
                 } else {
                     null
                 }
-                
-                // 加载inviteeUUID
+
                 val hasInvitee = stream.readBoolean()
                 val inviteeUUID = if (hasInvitee) {
                     UUID.fromString(stream.readUTF())
                 } else {
                     null
                 }
-                
-                // 加载creationData
+
                 val hasCreationData = stream.readBoolean()
                 val creationData = if (hasCreationData) {
                     val communityName = stream.readUTF()
@@ -558,7 +550,7 @@ object CommunityDatabase {
                 } else {
                     null
                 }
-                
+
                 val operation = com.imyvm.community.domain.model.PendingOperation(
                     expireAt = expireAt,
                     type = type,

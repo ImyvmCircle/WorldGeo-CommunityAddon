@@ -7,6 +7,7 @@ import com.imyvm.community.application.interaction.common.helper.generateScopeAd
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.application.interaction.screen.inner_community.canUseCommunityTeleport
 import com.imyvm.community.application.interaction.screen.inner_community.runTeleportCommunity
+import com.imyvm.community.application.interaction.screen.inner_community.startCommunityTeleportExecution
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.GeographicFunctionType
 import com.imyvm.community.domain.model.PendingOperationType
@@ -51,6 +52,22 @@ fun runExecuteRegion(
                 playerExecutor = playerExecutor,
                 community = community,
                 playerObject = playerObject
+            ) { runBackRegionScopeMenu(playerExecutor, community, geographicFunctionType, runBackGrandfatherMenu) }
+        }
+    } else if (geographicFunctionType == GeographicFunctionType.TELEPORT_POINT_LOCATING) {
+        val region = community.getRegion()
+        val mainScope = region?.geometryScope?.firstOrNull()
+        if (mainScope == null) {
+            playerExecutor.closeHandledScreen()
+            playerExecutor.sendMessage(Translator.tr("ui.community.button.interaction.teleport.execution.error.no_scope"))
+            return
+        }
+        CommunityMenuOpener.open(playerExecutor) { syncId ->
+            AdministrationTeleportPointMenu(
+                syncId = syncId,
+                playerExecutor = playerExecutor,
+                community = community,
+                scope = mainScope
             ) { runBackRegionScopeMenu(playerExecutor, community, geographicFunctionType, runBackGrandfatherMenu) }
         }
     } else if (geographicFunctionType == GeographicFunctionType.TELEPORT_POINT_EXECUTION) {
@@ -300,19 +317,13 @@ fun runExecuteScope(
             }
         }
         GeographicFunctionType.TELEPORT_POINT_EXECUTION -> {
-            val communityRegion = community.getRegion()
-            if (communityRegion == null) {
-                playerExecutor.closeHandledScreen()
-                playerExecutor.sendMessage(Translator.tr("ui.community.button.interaction.teleport.execution.error.no_region"))
-                return
-            }
             if (!canUseCommunityTeleport(playerExecutor, community, scope)) {
                 playerExecutor.closeHandledScreen()
                 playerExecutor.sendMessage(Translator.tr("ui.community.button.interaction.teleport.execution.error.not_public"))
                 return
             }
-            PlayerInteractionApi.teleportPlayerToScope(playerExecutor, communityRegion, scope)
             playerExecutor.closeHandledScreen()
+            startCommunityTeleportExecution(playerExecutor, community, scope)
         }
     }
 }

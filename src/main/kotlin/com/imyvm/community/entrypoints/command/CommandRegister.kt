@@ -284,6 +284,26 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                             )
                     )
             )
+            .then(
+                literal("confirm_teleport_point_set")
+                    .then(
+                        argument("regionId", IntegerArgumentType.integer())
+                            .then(
+                                argument("scopeName", StringArgumentType.greedyString())
+                                    .executes { runConfirmTeleportPointSetting(it) }
+                            )
+                    )
+            )
+            .then(
+                literal("cancel_teleport_point_set")
+                    .then(
+                        argument("regionId", IntegerArgumentType.integer())
+                            .then(
+                                argument("scopeName", StringArgumentType.greedyString())
+                                    .executes { runCancelTeleportPointSetting(it) }
+                            )
+                    )
+            )
     )
 }
 
@@ -357,6 +377,20 @@ private fun runCancelScopeModification(context: CommandContext<ServerCommandSour
     val regionId = IntegerArgumentType.getInteger(context, "regionId")
     val scopeName = StringArgumentType.getString(context, "scopeName")
     return onCancelScopeModification(player, regionId, scopeName)
+}
+
+private fun runConfirmTeleportPointSetting(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val regionId = IntegerArgumentType.getInteger(context, "regionId")
+    val scopeName = StringArgumentType.getString(context, "scopeName")
+    return com.imyvm.community.application.interaction.screen.inner_community.administration_only.onConfirmTeleportPointSetting(player, regionId, scopeName)
+}
+
+private fun runCancelTeleportPointSetting(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val regionId = IntegerArgumentType.getInteger(context, "regionId")
+    val scopeName = StringArgumentType.getString(context, "scopeName")
+    return com.imyvm.community.application.interaction.screen.inner_community.administration_only.onCancelTeleportPointSetting(player, regionId, scopeName)
 }
 
 private fun runForceDeleteCommunity(context: CommandContext<ServerCommandSource>): Int {
@@ -508,4 +542,3 @@ private fun runToggleChatChannel(context: CommandContext<ServerCommandSource>): 
         1
     }
 }
-

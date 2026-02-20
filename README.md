@@ -451,10 +451,20 @@ Members may interact with their community through the **Community Menu**, access
 - **Members** - Browse the complete member list;
 - **Assets** - View and manage community resources and donations;
 - **Settings** - Adjust personal community preferences through the **Community Setting Menu**;
-- **Teleport to Community** - Instant teleportation to the community's main location;
+- **Teleport to Community** - Teleportation to the community's main scope point with dynamic delay/fee after daily free uses;
 - **Teleportation Scope** - Select specific teleportation destinations within the community;
 
-Teleport point accessibility now means **public visibility for non-formal players** only. Formal members (Owner/Admin/Member) can use community teleport points regardless of public/private state, while non-formal players can only use teleport points marked as public.
+Teleport point accessibility means **public visibility for non-formal players** only. Formal members (Owner/Admin/Member) can use community teleport points regardless of public/private state, while non-formal players can only use teleport points marked as public.
+
+Teleport point setup now uses a confirmation flow with pricing:
+- first active teleport point in a community is free;
+- creating the second active point costs 2000, and each additional active point doubles that setup cost; and
+- modifying an already-set teleport point costs 3000.
+
+Teleport execution now uses daily per-player/per-community escalation:
+- formal members have 10 free uses per day; non-formal players have 1 free use per day;
+- after free uses, teleport starts at fee 10 and delay 2 seconds, both doubling per additional use that day; and
+- moving or taking damage during delay cancels teleport, and insufficient balance at execution time also cancels teleport.
 
 From the public community list, non-members can open a teleport scope list and use any public teleport point directly.
 - **Community Chat** *()* - Access community messaging system;
