@@ -1,5 +1,8 @@
 package com.imyvm.community.entrypoints.screen.outer_community
 
+import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
+import com.imyvm.community.domain.model.GeographicFunctionType
+import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.CommunityRegionScopeMenu
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.entrypoints.screen.AbstractMenu
 import com.imyvm.community.util.Translator
@@ -20,6 +23,7 @@ class NonMemberCommunityMenu(
 ) {
     init {
         addCommunityInfo()
+        addTeleportButton()
         addJoinButton()
     }
 
@@ -35,6 +39,24 @@ class NonMemberCommunityMenu(
             name = Translator.tr("ui.non_member.info")?.string ?: "Community Information",
             item = Items.BOOKSHELF
         ) { community.sendCommunityRegionDescription(player) }
+    }
+
+    private fun addTeleportButton() {
+        addButton(
+            slot = 30,
+            name = Translator.tr("ui.non_member.button.teleport")?.string ?: "Teleport Scope",
+            item = Items.COMPASS
+        ) {
+            CommunityMenuOpener.open(player) { newSyncId ->
+                CommunityRegionScopeMenu(
+                    syncId = newSyncId,
+                    playerExecutor = player,
+                    community = community,
+                    geographicFunctionType = GeographicFunctionType.TELEPORT_POINT_EXECUTION,
+                    runBack = runBack
+                )
+            }
+        }
     }
 
     private fun addJoinButton() {

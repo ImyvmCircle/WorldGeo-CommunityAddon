@@ -28,10 +28,17 @@ class AdministrationTeleportPointMenu(
             itemStack = getTeleportPointInformationItemStack(Items.COMMAND_BLOCK, scope)
         ) { runInquiryTeleportPoint(playerExecutor, community, scope) }
 
+        val isPublic = RegionDataApi.inquireTeleportPointAccessibility(scope)
+        val accessState = if (isPublic) {
+            Translator.tr("ui.community.administration.teleport_point.state.public")?.string ?: "Public"
+        } else {
+            Translator.tr("ui.community.administration.teleport_point.state.private")?.string ?: "Private"
+        }
         addButton(
             slot = 12,
-            name = Translator.tr("ui.community.administration.teleport_point.button.toggle")?.string ?: "Toggle teleport point accessibility",
-            item = if(RegionDataApi.inquireTeleportPointAccessibility(scope)) {
+            name = (Translator.tr("ui.community.administration.teleport_point.button.toggle")?.string
+                ?: "Teleport Accessibility") + ": " + accessState,
+            item = if (isPublic) {
                 Items.GREEN_WOOL
             } else {
                 Items.RED_WOOL

@@ -7,6 +7,7 @@ import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.inter.api.PlayerInteractionApi
+import com.imyvm.iwg.inter.api.RegionDataApi
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
@@ -79,10 +80,15 @@ fun onConfirmScopeModification(player: ServerPlayerEntity, regionNumberId: Int, 
 
         val shapeName = modificationData.shapeName ?: "RECTANGLE"
         PlayerInteractionApi.addScope(player, communityRegion, scopeName, shapeName)
-        val isCreated = communityRegion.geometryScope.any { it.scopeName.equals(scopeName, ignoreCase = true) }
-        if (!isCreated) {
+        val createdScope = communityRegion.geometryScope.firstOrNull { it.scopeName.equals(scopeName, ignoreCase = true) }
+        if (createdScope == null) {
             player.sendMessage(Translator.tr("community.scope_add.error.creation_failed", scopeName))
             return 0
+        }
+
+        PlayerInteractionApi.resetTeleportPoint(player, communityRegion, createdScope)
+        if (RegionDataApi.inquireTeleportPointAccessibility(createdScope)) {
+            PlayerInteractionApi.toggleTeleportPointAccessibility(createdScope)
         }
 
         if (modificationData.cost > 0) {

@@ -42,10 +42,21 @@ class CommunityRegionScopeMenu(
     }
 
     private fun addGlobalButton() {
+        val globalName = when (geographicFunctionType) {
+            GeographicFunctionType.TELEPORT_POINT_EXECUTION,
+            GeographicFunctionType.TELEPORT_POINT_LOCATING ->
+                Translator.tr("ui.community.administration.region.teleport_point.global.main")?.string ?: "Main Teleport Point"
+            else -> Translator.tr("ui.community.administration.region.global")?.string ?: "Region Global"
+        }
+        val globalItem = when (geographicFunctionType) {
+            GeographicFunctionType.TELEPORT_POINT_EXECUTION,
+            GeographicFunctionType.TELEPORT_POINT_LOCATING -> Items.ENDER_PEARL
+            else -> Items.ELYTRA
+        }
         addButton(
             slot = 10,
-            name = Translator.tr("ui.community.administration.region.global")?.string ?: "Region Global",
-            item = Items.ELYTRA
+            name = globalName,
+            item = globalItem
         ) { runExecuteRegion(playerExecutor, community, geographicFunctionType, playerObject, runBack) }
     }
 

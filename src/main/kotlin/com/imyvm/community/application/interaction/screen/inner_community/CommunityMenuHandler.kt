@@ -1,26 +1,29 @@
 package com.imyvm.community.application.interaction.screen.inner_community
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
-import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.GeographicFunctionType
+import com.imyvm.community.domain.model.community.MemberRoleType
+import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.entrypoints.screen.ConfirmMenu
 import com.imyvm.community.entrypoints.screen.component.ConfirmTaskType
 import com.imyvm.community.entrypoints.screen.inner_community.CommunityAdministrationMenu
 import com.imyvm.community.entrypoints.screen.inner_community.CommunityMenu
 import com.imyvm.community.entrypoints.screen.inner_community.affairs.CommunitySettingMenu
-import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.CommunityMemberListMenu
 import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.CommunityRegionScopeMenu
+import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.CommunityMemberListMenu
+import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.inter.api.PlayerInteractionApi
+import com.imyvm.iwg.inter.api.RegionDataApi
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.network.ServerPlayerEntity
 
 fun runOpenOperationMenu(player: ServerPlayerEntity, community: Community, runBackGrandfather : ((ServerPlayerEntity) -> Unit)) {
     CommunityMenuOpener.open(player) { syncId ->
         CommunityAdministrationMenu(
-            syncId, 
-            community, 
-            player, 
+            syncId,
+            community,
+            player,
             runBack = {
                 runBackToCommunityMenu(
                     player,
@@ -56,6 +59,13 @@ fun runOpenSettingMenu(player: ServerPlayerEntity, community: Community, runBack
     }
 }
 
+fun canUseCommunityTeleport(player: ServerPlayerEntity, community: Community, scope: GeoScope): Boolean {
+    val role = community.getMemberRole(player.uuid)
+    val isFormalMember = role == MemberRoleType.OWNER || role == MemberRoleType.ADMIN || role == MemberRoleType.MEMBER
+    if (isFormalMember) return true
+    return RegionDataApi.inquireTeleportPointAccessibility(scope)
+}
+
 fun runTeleportCommunity(player: ServerPlayerEntity, community: Community) {
     player.closeHandledScreen()
 
@@ -68,6 +78,11 @@ fun runTeleportCommunity(player: ServerPlayerEntity, community: Community) {
     val mainScope = region.geometryScope.firstOrNull()
     if (mainScope == null) {
         player.sendMessage(Translator.tr("ui.community.button.interaction.teleport.execution.error.no_scope"),)
+        return
+    }
+
+    if (!canUseCommunityTeleport(player, community, mainScope)) {
+        player.sendMessage(Translator.tr("ui.community.button.interaction.teleport.execution.error.not_public"))
         return
     }
 
@@ -91,13 +106,13 @@ fun runShowLeaveConfirmMenu(player: ServerPlayerEntity, community: Community, ru
         permissionResult.sendFeedback(player)
         return
     }
-    
+
     val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
     val cautions = listOf(
-        com.imyvm.community.util.Translator.tr("ui.confirm.leave.caution", communityName)?.string 
+        com.imyvm.community.util.Translator.tr("ui.confirm.leave.caution", communityName)?.string
             ?: "Leave $communityName? You cannot undo this action."
     )
-    
+
     CommunityMenuOpener.open(player) { syncId ->
         ConfirmMenu(
             syncId = syncId,

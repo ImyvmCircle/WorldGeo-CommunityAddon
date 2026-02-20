@@ -453,6 +453,10 @@ Members may interact with their community through the **Community Menu**, access
 - **Settings** - Adjust personal community preferences through the **Community Setting Menu**;
 - **Teleport to Community** - Instant teleportation to the community's main location;
 - **Teleportation Scope** - Select specific teleportation destinations within the community;
+
+Teleport point accessibility now means **public visibility for non-formal players** only. Formal members (Owner/Admin/Member) can use community teleport points regardless of public/private state, while non-formal players can only use teleport points marked as public.
+
+From the public community list, non-members can open a teleport scope list and use any public teleport point directly.
 - **Community Chat** *()* - Access community messaging system;
 - **Advancement** *()* - View community achievements;
 - **Donate to Community** - Contribute currency to the community (opens the Assets menu);

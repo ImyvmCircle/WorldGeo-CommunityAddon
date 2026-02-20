@@ -5,6 +5,7 @@ import com.imyvm.community.application.interaction.common.helper.calculateModifi
 import com.imyvm.community.application.interaction.common.helper.generateModificationConfirmationMessage
 import com.imyvm.community.application.interaction.common.helper.generateScopeAdditionConfirmationMessage
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
+import com.imyvm.community.application.interaction.screen.inner_community.canUseCommunityTeleport
 import com.imyvm.community.application.interaction.screen.inner_community.runTeleportCommunity
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.GeographicFunctionType
@@ -300,7 +301,17 @@ fun runExecuteScope(
         }
         GeographicFunctionType.TELEPORT_POINT_EXECUTION -> {
             val communityRegion = community.getRegion()
-            communityRegion?.let { PlayerInteractionApi.teleportPlayerToScope(playerExecutor, it, scope) }
+            if (communityRegion == null) {
+                playerExecutor.closeHandledScreen()
+                playerExecutor.sendMessage(Translator.tr("ui.community.button.interaction.teleport.execution.error.no_region"))
+                return
+            }
+            if (!canUseCommunityTeleport(playerExecutor, community, scope)) {
+                playerExecutor.closeHandledScreen()
+                playerExecutor.sendMessage(Translator.tr("ui.community.button.interaction.teleport.execution.error.not_public"))
+                return
+            }
+            PlayerInteractionApi.teleportPlayerToScope(playerExecutor, communityRegion, scope)
             playerExecutor.closeHandledScreen()
         }
     }

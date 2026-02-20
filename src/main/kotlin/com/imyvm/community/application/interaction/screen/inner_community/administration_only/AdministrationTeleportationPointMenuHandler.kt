@@ -69,6 +69,16 @@ fun runToggleTeleportPointAccessibility(
         val region = community.getRegion()
         if (region != null) {
             PlayerInteractionApi.toggleTeleportPointAccessibility(scope)
+            val isPublic = com.imyvm.iwg.inter.api.RegionDataApi.inquireTeleportPointAccessibility(scope)
+            val stateKey = if (isPublic) {
+                "ui.community.administration.teleport_point.state.public"
+            } else {
+                "ui.community.administration.teleport_point.state.private"
+            }
+            playerExecutor.sendMessage(Translator.tr(
+                "ui.community.administration.teleport_point.toggle.result",
+                Translator.tr(stateKey)?.string ?: if (isPublic) "Public" else "Private"
+            ))
             CommunityMenuOpener.open(playerExecutor) { syncId ->
                 AdministrationTeleportPointMenu(
                     syncId = syncId,
