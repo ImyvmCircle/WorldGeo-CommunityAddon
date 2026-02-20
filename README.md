@@ -228,11 +228,26 @@ Community administrators may alter the geographical boundaries of their territor
 To modify a territorial scope:
 
 1. Access the **Community Region Scope Menu** through the **Region Geometry** administration function;
-2. Select the administrative district you wish to modify;
-3. Choose the `GEOMETRY_MODIFICATION` operation;
+2. Open **Global Modification** for district-level global operations;
+3. Select **Add Administrative District** to create a new district, or choose an existing district for shape modification;
 4. Use the point selection system (same as region creation) to define the new boundaries;
 5. Review the detailed Land Deed Statement showing area changes and costs;
 6. Confirm the modification to execute the change.
+
+##### Administrative District Addition
+
+Adding a new administrative district now uses a dedicated creation panel with district naming and shape toggle controls.
+
+- Creation cost = **fixed district fee** + **area-based fee**;
+- Fixed fee defaults: **Manor 5,000.00**, **Realm 2,500.00** (configurable);
+- Area-based fee follows the same pricing model as area expansion;
+- Confirmation is required through a pending command-based confirmation flow;
+- Final execution checks:
+  - community assets;
+  - district limit (`floor(formal_members / 2)`);
+  - geometry validity and overlap constraints.
+
+On success, assets are deducted and a notification mail is sent to all formal members (owner/admin/member).
 
 ##### Pricing System
 

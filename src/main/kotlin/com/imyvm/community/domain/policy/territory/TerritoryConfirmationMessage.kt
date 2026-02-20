@@ -187,4 +187,55 @@ object TerritoryConfirmationMessage {
         
         return messages
     }
+
+    fun generateScopeAdditionConfirmation(
+        scopeName: String,
+        shapeType: GeoShapeType,
+        area: Double,
+        fixedCost: Long,
+        areaCost: Long,
+        totalCost: Long,
+        isManor: Boolean,
+        currentAssets: Long
+    ): List<Text> {
+        val messages = mutableListOf<Text>()
+
+        val territoryType = if (isManor) {
+            Translator.tr("community.region.territory.manor")?.string ?: "manor territory"
+        } else {
+            Translator.tr("community.region.territory.realm")?.string ?: "realm territory"
+        }
+
+        val shapeText = when (shapeType) {
+            GeoShapeType.CIRCLE -> Translator.tr("community.shape.circle")?.string ?: "circle"
+            GeoShapeType.RECTANGLE -> Translator.tr("community.shape.rectangle")?.string ?: "rectangle"
+            GeoShapeType.POLYGON -> Translator.tr("community.shape.polygon")?.string ?: "polygon"
+            else -> Translator.tr("community.shape.unknown")?.string ?: "unknown"
+        }
+
+        val fixedDisplay = String.format("%.2f", fixedCost / 100.0)
+        val areaDisplay = String.format("%.2f", area)
+        val areaCostDisplay = String.format("%.2f", areaCost / 100.0)
+        val totalDisplay = String.format("%.2f", totalCost / 100.0)
+        val assetsDisplay = String.format("%.2f", currentAssets / 100.0)
+        val assetsAfterDisplay = String.format("%.2f", (currentAssets - totalCost) / 100.0)
+
+        messages.add(Translator.tr("community.scope_add.confirm.header") ?: Text.literal("====== SCOPE CREATION CONFIRMATION ======"))
+        messages.add(Translator.tr("community.scope_add.confirm.scope", scopeName) ?: Text.literal("Administrative District: $scopeName"))
+        messages.add(Translator.tr("community.scope_add.confirm.shape", shapeText) ?: Text.literal("Shape: $shapeText"))
+        messages.add(Translator.tr("community.scope_add.confirm.territory", territoryType) ?: Text.literal("Territory: $territoryType"))
+        messages.add(Translator.tr("community.scope_add.confirm.area", areaDisplay) ?: Text.literal("Area: $areaDisplay m²"))
+        messages.add(Translator.tr("community.scope_add.confirm.base_cost", fixedDisplay) ?: Text.literal("Base Cost: $fixedDisplay"))
+        messages.add(Translator.tr("community.scope_add.confirm.area_cost", areaCostDisplay) ?: Text.literal("Area Cost: $areaCostDisplay"))
+        messages.add(Translator.tr("community.scope_add.confirm.total_cost", totalDisplay) ?: Text.literal("TOTAL COST: $totalDisplay"))
+        messages.add(Translator.tr("community.scope_add.confirm.assets", assetsDisplay, assetsAfterDisplay) ?: Text.literal("Community Assets: $assetsDisplay -> $assetsAfterDisplay"))
+
+        if (currentAssets < totalCost) {
+            messages.add(Translator.tr("community.scope_add.confirm.insufficient_assets") ?: Text.literal("Insufficient assets"))
+        }
+
+        messages.add(Translator.tr("community.scope_add.confirm.prompt") ?: Text.literal("Please confirm to proceed with scope creation."))
+        return messages
+    }
+
 }

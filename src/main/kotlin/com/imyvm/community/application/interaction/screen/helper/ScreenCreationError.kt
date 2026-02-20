@@ -14,61 +14,72 @@ fun generateCreationError(
     isCurrentCommunityTypeManor: Boolean,
     playerEntity: ServerPlayerEntity
 ): String {
-    val errors = mutableListOf<String>()
-    if (currentName.isBlank()) {
-        errors.add(Translator.tr("ui.create.error.name_empty")?.string ?: "NameEmpty")
-    } else if (CommunityDatabase.communities.any { it.getRegion()?.name == currentName }) {
-        errors.add(Translator.tr("ui.create.error.name_duplicated")?.string ?: "NameDuplicated")
-    } else if (currentShape == GeoShapeType.UNKNOWN) {
-        errors.add(Translator.tr("ui.create.error.shape_unknown")?.string ?: "ShapeUnknown")
+    val errors = validateBasicInfo(currentName, currentShape, playerEntity) { name ->
+        CommunityDatabase.communities.any { it.getRegion()?.name == name }
     }
 
-    if (currentShape == GeoShapeType.POLYGON) {
-        val points = ImyvmWorldGeo.pointSelectingPlayers[playerEntity.uuid]
-        if (points == null || points.size < 3) {
-            errors.add(
-                Translator.tr("ui.create.error.shape_polygon")?.string
-                    ?: "PolygonNeed3Points+Selected"
-            )
-        }
-    } else if (currentShape == GeoShapeType.CIRCLE || currentShape == GeoShapeType.RECTANGLE) {
-        val points = ImyvmWorldGeo.pointSelectingPlayers[playerEntity.uuid]
-        if (points == null || points.size < 2) {
-            errors.add(
-                Translator.tr("ui.create.error.shape_not_enough")?.string
-                    ?: "Need2Points+Selected"
-            )
-        }
+    val typeStr = if (isCurrentCommunityTypeManor) "manor" else "realm"
+    val price = if (isCurrentCommunityTypeManor)
+        com.imyvm.community.infra.CommunityConfig.PRICE_MANOR.value
+    else
+        com.imyvm.community.infra.CommunityConfig.PRICE_REALM.value
+
+    if (EconomyMod.data.getOrCreate(playerEntity).money < price) {
+        errors.add(Translator.tr("ui.create.error.money_$typeStr")?.string ?: "NotEnoughMoney${typeStr.replaceFirstChar { it.uppercase() }}")
     }
 
-    if (isCurrentCommunityTypeManor) {
-        if (EconomyMod.data.getOrCreate(playerEntity).money < com.imyvm.community.infra.CommunityConfig.PRICE_MANOR.value){
-            errors.add(
-                Translator.tr("ui.create.error.money_manor")?.string
-                    ?: "NotEnoughMoneyManor")
-        }
-
-        if (checkPlayerMembershipCreation(playerEntity, "manor").not()) {
-            errors.add(
-                Translator.tr("ui.create.error.already_in_community_manor")?.string
-                    ?: "AlreadyInCommunityManor"
-            )
-        }
-
-    } else {
-        if (EconomyMod.data.getOrCreate(playerEntity).money < com.imyvm.community.infra.CommunityConfig.PRICE_REALM.value) {
-            errors.add(
-                Translator.tr("ui.create.error.money_realm")?.string
-                    ?: "NotEnoughMoneyRealm"
-            )
-        }
-        if (checkPlayerMembershipCreation(playerEntity, "realm").not()) {
-            errors.add(
-                Translator.tr("ui.create.error.already_in_community_realm")?.string
-                    ?: "AlreadyInCommunityRealm"
-            )
-        }
+    if (!checkPlayerMembershipCreation(playerEntity, typeStr)) {
+        errors.add(Translator.tr("ui.create.error.already_in_community_$typeStr")?.string ?: "AlreadyInCommunity${typeStr.replaceFirstChar { it.uppercase() }}")
     }
 
     return if (errors.isEmpty()) "" else " ERRORS:" + errors.joinToString(";")
+}
+
+fun generateScopeCreationError(
+    currentName: String,
+    currentShape: GeoShapeType,
+    playerEntity: ServerPlayerEntity,
+    existingScopeNames: Set<String>
+): String {
+    val errors = validateBasicInfo(currentName, currentShape, playerEntity) { name ->
+        existingScopeNames.any { it.equals(name, ignoreCase = true) }
+    }
+
+    return if (errors.isEmpty()) "" else " ERRORS:" + errors.joinToString(";")
+}
+
+private fun validateBasicInfo(
+    currentName: String,
+    currentShape: GeoShapeType,
+    playerEntity: ServerPlayerEntity,
+    isNameDuplicate: (String) -> Boolean
+): MutableList<String> {
+    val errors = mutableListOf<String>()
+
+    if (currentName.isBlank()) {
+        errors.add(Translator.tr("ui.create.error.name_empty")?.string ?: "NameEmpty")
+    } else if (isNameDuplicate(currentName)) {
+        errors.add(Translator.tr("ui.create.error.name_duplicated")?.string ?: "NameDuplicated")
+    }
+
+    if (currentShape == GeoShapeType.UNKNOWN) {
+        errors.add(Translator.tr("ui.create.error.shape_unknown")?.string ?: "ShapeUnknown")
+    }
+
+    val points = ImyvmWorldGeo.pointSelectingPlayers[playerEntity.uuid]
+    when (currentShape) {
+        GeoShapeType.POLYGON -> {
+            if (points == null || points.size < 3) {
+                errors.add(Translator.tr("ui.create.error.shape_polygon")?.string ?: "PolygonNeed3Points+Selected")
+            }
+        }
+        GeoShapeType.CIRCLE, GeoShapeType.RECTANGLE -> {
+            if (points == null || points.size < 2) {
+                errors.add(Translator.tr("ui.create.error.shape_not_enough")?.string ?: "Need2Points+Selected")
+            }
+        }
+        else -> {}
+    }
+
+    return errors
 }

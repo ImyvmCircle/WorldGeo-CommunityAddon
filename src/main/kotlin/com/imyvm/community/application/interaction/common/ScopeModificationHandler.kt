@@ -2,9 +2,12 @@ package com.imyvm.community.application.interaction.common
 
 import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.domain.model.PendingOperationType
+import com.imyvm.community.domain.model.Turnover
+import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.inter.api.PlayerInteractionApi
+import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
 
@@ -58,10 +61,71 @@ fun onConfirmScopeModification(player: ServerPlayerEntity, regionNumberId: Int, 
         return 0
     }
 
+    if (modificationData.isScopeCreation) {
+        val formalMemberCount = community.member.count {
+            it.value.basicRoleType != MemberRoleType.APPLICANT && it.value.basicRoleType != MemberRoleType.REFUSED
+        }
+        val maxScopesAllowed = formalMemberCount / 2
+        val existingScopeCount = communityRegion.geometryScope.size
+        if (existingScopeCount + 1 > maxScopesAllowed) {
+            player.sendMessage(Translator.tr(
+                "community.scope_add.error.scope_limit_exceeded",
+                maxScopesAllowed.toString(),
+                formalMemberCount.toString(),
+                existingScopeCount.toString()
+            ))
+            return 0
+        }
+
+        val shapeName = modificationData.shapeName ?: "RECTANGLE"
+        PlayerInteractionApi.addScope(player, communityRegion, scopeName, shapeName)
+        val isCreated = communityRegion.geometryScope.any { it.scopeName.equals(scopeName, ignoreCase = true) }
+        if (!isCreated) {
+            player.sendMessage(Translator.tr("community.scope_add.error.creation_failed", scopeName))
+            return 0
+        }
+
+        if (modificationData.cost > 0) {
+            community.expenditures.add(Turnover(
+                amount = modificationData.cost,
+                timestamp = System.currentTimeMillis()
+            ))
+        }
+
+        WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        CommunityDatabase.save()
+
+        val costDisplay = String.format("%.2f", modificationData.cost / 100.0)
+        val shapeText = when (shapeName.uppercase()) {
+            "CIRCLE" -> Translator.tr("community.shape.circle")?.string ?: "circle"
+            "POLYGON" -> Translator.tr("community.shape.polygon")?.string ?: "polygon"
+            else -> Translator.tr("community.shape.rectangle")?.string ?: "rectangle"
+        }
+        player.sendMessage(Translator.tr("community.scope_add.success", scopeName, shapeText, costDisplay))
+
+        val territoryType = if (community.isManor()) {
+            Translator.tr("community.region.territory.manor")?.string ?: "manor territory"
+        } else {
+            Translator.tr("community.region.territory.realm")?.string ?: "realm territory"
+        }
+        val communityName = communityRegion.name
+        val notification = Translator.tr(
+            "community.notification.scope_added",
+            scopeName,
+            shapeText,
+            territoryType,
+            communityName,
+            player.name.string,
+            costDisplay
+        ) ?: Text.literal("Administrative district $scopeName was added in $communityName by ${player.name.string}")
+        notifyFormalMembers(community, player.server, notification)
+        return 1
+    }
+
     PlayerInteractionApi.modifyScope(player, communityRegion, scopeName)
 
     if (modificationData.cost > 0) {
-        community.expenditures.add(com.imyvm.community.domain.model.Turnover(
+        community.expenditures.add(Turnover(
             amount = modificationData.cost,
             timestamp = System.currentTimeMillis()
         ))
@@ -70,7 +134,7 @@ fun onConfirmScopeModification(player: ServerPlayerEntity, regionNumberId: Int, 
         val ownerUUID = community.getOwnerUUID()
         if (ownerUUID != null) {
             val ownerAccount = community.member[ownerUUID]
-            ownerAccount?.turnover?.add(com.imyvm.community.domain.model.Turnover(
+            ownerAccount?.turnover?.add(Turnover(
                 amount = refundAmount,
                 timestamp = System.currentTimeMillis()
             ))
@@ -117,4 +181,19 @@ fun onCancelScopeModification(player: ServerPlayerEntity, regionNumberId: Int, s
     WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
     player.sendMessage(Translator.tr("community.modification.confirmation.cancelled", scopeName))
     return 1
+}
+
+
+private fun notifyFormalMembers(
+    community: com.imyvm.community.domain.model.Community,
+    server: MinecraftServer,
+    message: Text
+) {
+    community.member.forEach { (memberUUID, memberAccount) ->
+        if (memberAccount.basicRoleType == MemberRoleType.APPLICANT || memberAccount.basicRoleType == MemberRoleType.REFUSED) {
+            return@forEach
+        }
+        server.playerManager.getPlayer(memberUUID)?.sendMessage(message)
+        memberAccount.mail.add(message)
+    }
 }

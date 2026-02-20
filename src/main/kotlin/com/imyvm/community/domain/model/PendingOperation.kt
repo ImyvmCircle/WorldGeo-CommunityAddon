@@ -24,7 +24,9 @@ data class ScopeModificationConfirmationData(
     val regionNumberId: Int,
     val scopeName: String,
     val executorUUID: UUID,
-    val cost: Long
+    val cost: Long,
+    val isScopeCreation: Boolean = false,
+    val shapeName: String? = null
 )
 
 enum class PendingOperationType(val value: Int) {

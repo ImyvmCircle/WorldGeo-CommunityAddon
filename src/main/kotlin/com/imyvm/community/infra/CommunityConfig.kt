@@ -285,5 +285,25 @@ class CommunityConfig : HokiConfig("Community.conf") {
         ) { obj, path ->
             obj.getDouble(path)
         }
+
+        @JvmField
+        @ConfigOption
+        val SCOPE_ADDITION_BASE_COST_MANOR = Option(
+            "economy.scope_addition_base_cost_manor",
+            500000L,
+            "the fixed base cost to add a new scope in a manor community."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val SCOPE_ADDITION_BASE_COST_REALM = Option(
+            "economy.scope_addition_base_cost_realm",
+            250000L,
+            "the fixed base cost to add a new scope in a realm community."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
     }
 }
