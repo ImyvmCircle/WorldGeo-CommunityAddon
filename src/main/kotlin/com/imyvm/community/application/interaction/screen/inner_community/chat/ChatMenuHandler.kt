@@ -2,7 +2,7 @@ package com.imyvm.community.application.interaction.screen.inner_community.chat
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.model.Community
-import com.imyvm.community.entrypoints.screen.inner_community.ChatRoomMenu
+import com.imyvm.community.entrypoint.screen.inner_community.ChatRoomMenu
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
 

@@ -3,8 +3,8 @@ package com.imyvm.community.application.interaction.screen.inner_community
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.GeographicFunctionType
-import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.CommunityMemberListMenu
-import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.CommunityRegionScopeMenu
+import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityMemberListMenu
+import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityRegionScopeMenu
 import net.minecraft.server.network.ServerPlayerEntity
 
 fun runOpenSettingRegional(playerExecutor: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit) {

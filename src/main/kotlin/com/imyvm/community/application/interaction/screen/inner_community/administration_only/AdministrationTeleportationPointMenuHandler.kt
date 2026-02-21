@@ -8,8 +8,8 @@ import com.imyvm.community.domain.model.PendingOperationType
 import com.imyvm.community.domain.model.TeleportPointConfirmationData
 import com.imyvm.community.domain.model.Turnover
 import com.imyvm.community.domain.model.community.MemberRoleType
-import com.imyvm.community.entrypoints.screen.component.getLoreButton
-import com.imyvm.community.entrypoints.screen.inner_community.administration_only.AdministrationTeleportPointMenu
+import com.imyvm.community.entrypoint.screen.component.getLoreButton
+import com.imyvm.community.entrypoint.screen.inner_community.administration_only.AdministrationTeleportPointMenu
 import com.imyvm.community.infra.CommunityConfig
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.Translator

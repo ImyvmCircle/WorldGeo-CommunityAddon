@@ -6,12 +6,12 @@ import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.GeographicFunctionType
 import com.imyvm.community.domain.policy.permission.AdministrationPermission
 import com.imyvm.community.domain.model.community.CommunityJoinPolicy
-import com.imyvm.community.entrypoints.screen.inner_community.CommunityAdministrationMenu
-import com.imyvm.community.entrypoints.screen.inner_community.administration_only.AdministrationAdvancementMenu
-import com.imyvm.community.entrypoints.screen.inner_community.administration_only.AdministrationAuditListMenu
-import com.imyvm.community.entrypoints.screen.inner_community.administration_only.AdministrationRenameMenuAnvil
-import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.CommunityMemberListMenu
-import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.CommunityRegionScopeMenu
+import com.imyvm.community.entrypoint.screen.inner_community.CommunityAdministrationMenu
+import com.imyvm.community.entrypoint.screen.inner_community.administration_only.AdministrationAdvancementMenu
+import com.imyvm.community.entrypoint.screen.inner_community.administration_only.AdministrationAuditListMenu
+import com.imyvm.community.entrypoint.screen.inner_community.administration_only.AdministrationRenameMenuAnvil
+import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityMemberListMenu
+import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityRegionScopeMenu
 import net.minecraft.server.network.ServerPlayerEntity
 
 fun runAdmRenameCommunity(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit, voteCreationMode: Boolean = false){

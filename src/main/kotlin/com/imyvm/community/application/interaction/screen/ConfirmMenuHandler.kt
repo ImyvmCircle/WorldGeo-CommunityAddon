@@ -4,8 +4,7 @@ import com.imyvm.community.application.interaction.common.onCreateCommunityReque
 import com.imyvm.community.application.interaction.common.onJoinCommunityDirectly
 import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.domain.model.Community
-import com.imyvm.community.domain.model.Turnover
-import com.imyvm.community.entrypoints.screen.component.ConfirmTaskType
+import com.imyvm.community.entrypoint.screen.component.ConfirmTaskType
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.Translator
 import net.minecraft.server.network.ServerPlayerEntity

@@ -11,8 +11,8 @@ import com.imyvm.community.domain.model.PendingOperationType
 import com.imyvm.community.domain.model.community.CommunityJoinPolicy
 import com.imyvm.community.domain.model.community.CommunityStatus
 import com.imyvm.community.domain.model.community.MemberRoleType
-import com.imyvm.community.entrypoints.screen.ConfirmMenu
-import com.imyvm.community.entrypoints.screen.component.ConfirmTaskType
+import com.imyvm.community.entrypoint.screen.ConfirmMenu
+import com.imyvm.community.entrypoint.screen.component.ConfirmTaskType
 import com.imyvm.community.infra.CommunityConfig
 import com.imyvm.community.util.Translator
 import com.imyvm.economy.EconomyMod

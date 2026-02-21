@@ -6,11 +6,11 @@ import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.policy.permission.AdministrationPermission
 import com.imyvm.community.domain.model.community.Announcement
-import com.imyvm.community.entrypoints.screen.inner_community.administration_only.annoucement.AdministrationAnnouncementDetailsMenu
-import com.imyvm.community.entrypoints.screen.inner_community.administration_only.annoucement.AdministrationAnnouncementInputMenuAnvil
-import com.imyvm.community.entrypoints.screen.inner_community.administration_only.annoucement.AdministrationAnnouncementListMenu
-import com.imyvm.community.entrypoints.screen.inner_community.affairs.annoucement.MemberAnnouncementDetailsMenu
-import com.imyvm.community.entrypoints.screen.inner_community.affairs.annoucement.MemberAnnouncementListMenu
+import com.imyvm.community.entrypoint.screen.inner_community.administration_only.annoucement.AdministrationAnnouncementDetailsMenu
+import com.imyvm.community.entrypoint.screen.inner_community.administration_only.annoucement.AdministrationAnnouncementInputMenuAnvil
+import com.imyvm.community.entrypoint.screen.inner_community.administration_only.annoucement.AdministrationAnnouncementListMenu
+import com.imyvm.community.entrypoint.screen.inner_community.affairs.annoucement.MemberAnnouncementDetailsMenu
+import com.imyvm.community.entrypoint.screen.inner_community.affairs.annoucement.MemberAnnouncementListMenu
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.TextParser
 import com.imyvm.community.util.Translator

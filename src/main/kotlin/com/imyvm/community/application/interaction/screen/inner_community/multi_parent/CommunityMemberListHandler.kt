@@ -2,8 +2,8 @@ package com.imyvm.community.application.interaction.screen.inner_community.multi
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.model.Community
-import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.CommunityMemberListMenu
-import com.imyvm.community.entrypoints.screen.inner_community.multi_parent.element.CommunityMemberMenu
+import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityMemberListMenu
+import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.element.CommunityMemberMenu
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.inter.api.UtilApi
 import net.minecraft.server.network.ServerPlayerEntity

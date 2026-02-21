@@ -6,9 +6,9 @@ import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.policy.permission.AdministrationPermission
 import com.imyvm.community.domain.model.community.council.CouncilVote
 import com.imyvm.community.domain.model.community.council.VoteExecutionData
-import com.imyvm.community.entrypoints.screen.inner_community.council.CouncilMenu
-import com.imyvm.community.entrypoints.screen.inner_community.council.VoteDetailsMenu
-import com.imyvm.community.entrypoints.screen.inner_community.council.VoteListMenu
+import com.imyvm.community.entrypoint.screen.inner_community.council.CouncilMenu
+import com.imyvm.community.entrypoint.screen.inner_community.council.VoteDetailsMenu
+import com.imyvm.community.entrypoint.screen.inner_community.council.VoteListMenu
 import com.imyvm.community.infra.CommunityConfig
 import com.imyvm.community.util.Translator
 import net.minecraft.server.network.ServerPlayerEntity

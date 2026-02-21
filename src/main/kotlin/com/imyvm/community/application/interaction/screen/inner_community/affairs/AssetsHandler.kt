@@ -4,10 +4,10 @@ import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.Turnover
-import com.imyvm.community.entrypoints.screen.inner_community.affairs.assets.CommunityAssetsMenu
-import com.imyvm.community.entrypoints.screen.inner_community.affairs.assets.DonationMenu
-import com.imyvm.community.entrypoints.screen.inner_community.affairs.assets.DonorDetailsMenu
-import com.imyvm.community.entrypoints.screen.inner_community.affairs.assets.DonorListMenu
+import com.imyvm.community.entrypoint.screen.inner_community.affairs.assets.CommunityAssetsMenu
+import com.imyvm.community.entrypoint.screen.inner_community.affairs.assets.DonationMenu
+import com.imyvm.community.entrypoint.screen.inner_community.affairs.assets.DonorDetailsMenu
+import com.imyvm.community.entrypoint.screen.inner_community.affairs.assets.DonorListMenu
 import com.imyvm.community.util.Translator
 import com.imyvm.economy.EconomyMod
 import net.minecraft.server.network.ServerPlayerEntity
