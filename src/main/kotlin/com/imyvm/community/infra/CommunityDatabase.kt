@@ -4,7 +4,6 @@ import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.MemberAccount
 import com.imyvm.community.domain.model.Turnover
 import com.imyvm.community.domain.model.community.*
-import com.imyvm.community.domain.model.community.council.CouncilVote
 import com.imyvm.community.domain.policy.permission.AdministrationPermission
 import com.imyvm.community.domain.policy.permission.AdministrationPermissions
 import net.fabricmc.loader.api.FabricLoader
@@ -30,7 +29,6 @@ object CommunityDatabase {
                 saveCommunityMember(stream,community)
                 stream.writeInt(community.joinPolicy.value)
                 stream.writeInt(community.status.value)
-                saveCommunityCouncil(stream, community)
                 saveCommunityAnnouncements(stream, community)
                 saveCommunityAdministrationPermissions(stream, community)
                 saveCommunityExpenditures(stream, community)
@@ -59,7 +57,6 @@ object CommunityDatabase {
                 val memberMap = loadMemberMap(stream, memberCount)
                 val joinPolicy = CommunityJoinPolicy.fromValue(stream.readInt())
                 val status = CommunityStatus.fromValue(stream.readInt())
-                val council = loadCommunityCouncil(stream)
                 val announcements = loadCommunityAnnouncements(stream)
                 val administrationPermissions = loadCommunityAdministrationPermissions(stream)
                 val expenditures = loadCommunityExpenditures(stream)
@@ -80,7 +77,6 @@ object CommunityDatabase {
                     member = memberMap,
                     joinPolicy = joinPolicy,
                     status = status,
-                    council = council,
                     announcements = announcements,
                     administrationPermissions = administrationPermissions,
                     expenditures = expenditures,
@@ -130,7 +126,6 @@ object CommunityDatabase {
 
             stream.writeLong(memberAccount.joinedTime)
             stream.writeInt(memberAccount.basicRoleType.value)
-            stream.writeBoolean(memberAccount.isCouncilMember)
             stream.writeInt(memberAccount.governorship)
 
             stream.writeInt(memberAccount.mail.size)
@@ -164,7 +159,6 @@ object CommunityDatabase {
 
             val joinedTime = stream.readLong()
             val role = MemberRoleType.fromValue(stream.readInt())
-            val isCouncilMember = stream.readBoolean()
             val governorship = stream.readInt()
 
             val mailSize = stream.readInt()
@@ -197,7 +191,6 @@ object CommunityDatabase {
             memberMap[uuid] = MemberAccount(
                 joinedTime = joinedTime,
                 basicRoleType = role,
-                isCouncilMember = isCouncilMember,
                 governorship = governorship,
                 mail = communityMail,
                 turnover = turnoverList,
@@ -206,101 +199,6 @@ object CommunityDatabase {
             )
         }
         return memberMap
-    }
-
-    private fun saveCommunityCouncil(stream: DataOutputStream, community: Community) {
-        stream.writeBoolean(community.council.enabled)
-        stream.writeInt(community.council.voteSet.size)
-        
-        for (vote in community.council.voteSet) {
-            if (vote.permission == null) {
-                stream.writeBoolean(false)
-            } else {
-                stream.writeBoolean(true)
-                stream.writeInt(vote.permission.ordinal)
-            }
-            stream.writeLong(vote.proposeTime)
-
-            if (vote.proposerUUID == null) {
-                stream.writeBoolean(false)
-            } else {
-                stream.writeBoolean(true)
-                stream.writeUTF(vote.proposerUUID.toString())
-            }
-
-            stream.writeInt(vote.yeaVotes.size)
-            for (yea in vote.yeaVotes) {
-                stream.writeUTF(yea.toString())
-            }
-
-            stream.writeInt(vote.nayVotes.size)
-            for (nay in vote.nayVotes) {
-                stream.writeUTF(nay.toString())
-            }
-
-            if (vote.isEnacted == null) {
-                stream.writeBoolean(false)
-                stream.writeBoolean(false)
-            } else {
-                stream.writeBoolean(true)
-                stream.writeBoolean(vote.isEnacted!!)
-            }
-        }
-    }
-
-    private fun loadCommunityCouncil(stream: DataInputStream): Council {
-        val enabled = stream.readBoolean()
-        val voteSetSize = stream.readInt()
-        val voteSet = mutableSetOf<CouncilVote>()
-        
-        for (i in 0 until voteSetSize) {
-            val permission = if (stream.readBoolean()) {
-                AdministrationPermission.entries[stream.readInt()]
-            } else {
-                null
-            }
-            val proposeTime = stream.readLong()
-
-            val proposerUUID = if (stream.readBoolean()) {
-                UUID.fromString(stream.readUTF())
-            } else {
-                null
-            }
-
-            val yeaSize = stream.readInt()
-            val yeaVotes = mutableListOf<UUID>()
-            for (j in 0 until yeaSize) {
-                yeaVotes.add(UUID.fromString(stream.readUTF()))
-            }
-
-            val naySize = stream.readInt()
-            val nayVotes = mutableListOf<UUID>()
-            for (j in 0 until naySize) {
-                nayVotes.add(UUID.fromString(stream.readUTF()))
-            }
-
-            val hasEnacted = stream.readBoolean()
-            val isEnacted = if (hasEnacted) {
-                stream.readBoolean()
-            } else {
-                stream.readBoolean()
-                null
-            }
-            
-            voteSet.add(CouncilVote(
-                permission = permission,
-                proposeTime = proposeTime,
-                proposerUUID = proposerUUID,
-                yeaVotes = yeaVotes,
-                nayVotes = nayVotes,
-                isEnacted = isEnacted
-            ))
-        }
-        
-        return Council(
-            enabled = enabled,
-            voteSet = voteSet
-        )
     }
 
     private fun saveCommunityAnnouncements(stream: DataOutputStream, community: Community) {
@@ -359,12 +257,6 @@ object CommunityDatabase {
         for (permission in adminPermissions) {
             stream.writeInt(permission.ordinal)
         }
-
-        val councilPermissions = community.administrationPermissions.getEnabledForCouncil()
-        stream.writeInt(councilPermissions.size)
-        for (permission in councilPermissions) {
-            stream.writeInt(permission.ordinal)
-        }
     }
 
     private fun loadCommunityAdministrationPermissions(stream: DataInputStream): AdministrationPermissions {
@@ -374,13 +266,7 @@ object CommunityDatabase {
             adminPermissions.add(AdministrationPermission.entries[stream.readInt()])
         }
 
-        val councilPermissionsSize = stream.readInt()
-        val councilPermissions = mutableSetOf<AdministrationPermission>()
-        for (i in 0 until councilPermissionsSize) {
-            councilPermissions.add(AdministrationPermission.entries[stream.readInt()])
-        }
-
-        return AdministrationPermissions(adminPermissions, councilPermissions)
+        return AdministrationPermissions(adminPermissions)
     }
 
     private fun saveCommunityExpenditures(stream: DataOutputStream, community: Community) {

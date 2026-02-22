@@ -71,21 +71,6 @@ object CommunityPermissionPolicy {
         return PermissionResult.Allowed
     }
 
-    fun canToggleCouncil(executor: ServerPlayerEntity, community: Community): PermissionResult {
-        if (isCommunityRevoked(community)) {
-            return PermissionResult.Denied("community.permission.error.revoked")
-        }
-
-        val executorRole = community.getMemberRole(executor.uuid)
-            ?: return PermissionResult.Denied("community.permission.error.not_member")
-
-        return if (executorRole == MemberRoleType.OWNER) {
-            PermissionResult.Allowed
-        } else {
-            PermissionResult.Denied("community.permission.error.owner_only")
-        }
-    }
-
     fun canTogglePermissions(executor: ServerPlayerEntity, community: Community): PermissionResult {
         if (isCommunityRevoked(community)) {
             return PermissionResult.Denied("community.permission.error.revoked")
@@ -179,32 +164,6 @@ object CommunityPermissionPolicy {
                 PermissionResult.Denied("community.permission.error.proto_restricted")
             }
         }
-    }
-
-    fun canAccessCouncil(executor: ServerPlayerEntity, community: Community): PermissionResult {
-        if (isCommunityRevoked(community)) {
-            return PermissionResult.Denied("community.permission.error.revoked")
-        }
-
-        if (!isCommunityActive(community)) {
-            return PermissionResult.Denied("community.permission.error.not_active")
-        }
-
-        val executorRole = community.getMemberRole(executor.uuid)
-            ?: return PermissionResult.Denied("community.permission.error.not_member")
-
-        val memberAccount = community.member[executor.uuid]
-            ?: return PermissionResult.Denied("community.permission.error.not_member")
-
-        if (!community.council.enabled) {
-            return PermissionResult.Denied("community.permission.error.council_disabled")
-        }
-
-        if (!memberAccount.isCouncilMember) {
-            return PermissionResult.Denied("community.permission.error.not_council_member")
-        }
-
-        return PermissionResult.Allowed
     }
 
     fun canManageMember(
@@ -445,7 +404,7 @@ object CommunityPermissionPolicy {
 
         if (executorRole == MemberRoleType.ADMIN) {
             val targetAccount = community.member[targetUUID] ?: return false
-            return !targetAccount.isCouncilMember && targetAccount.governorship == -1
+            return targetAccount.governorship == -1
         }
 
         return false

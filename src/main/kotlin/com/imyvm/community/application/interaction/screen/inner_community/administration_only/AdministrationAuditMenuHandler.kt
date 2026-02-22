@@ -101,8 +101,7 @@ fun runAccept(
 private fun notifyOfficials(community: Community, server: net.minecraft.server.MinecraftServer, message: net.minecraft.text.Text, executor: ServerPlayerEntity? = null) {
     for ((memberUUID, memberAccount) in community.member) {
         val isOfficial = memberAccount.basicRoleType == com.imyvm.community.domain.model.community.MemberRoleType.OWNER ||
-                        memberAccount.basicRoleType == com.imyvm.community.domain.model.community.MemberRoleType.ADMIN ||
-                        memberAccount.isCouncilMember
+                        memberAccount.basicRoleType == com.imyvm.community.domain.model.community.MemberRoleType.ADMIN
         
         if (isOfficial && (executor == null || memberUUID != executor.uuid)) {
             val officialPlayer = server.playerManager.getPlayer(memberUUID)

@@ -16,7 +16,6 @@ class Community(
     var member: HashMap<UUID, MemberAccount>,
     var joinPolicy: CommunityJoinPolicy,
     var status: CommunityStatus,
-    var council: Council = Council(),
     var announcements: MutableList<Announcement> = mutableListOf(),
     var administrationPermissions: AdministrationPermissions = AdministrationPermissions(),
     var expenditures: ArrayList<Turnover> = arrayListOf(),

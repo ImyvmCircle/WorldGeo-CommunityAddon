@@ -39,8 +39,7 @@ fun runOpenOperationMenu(player: ServerPlayerEntity, community: Community, runBa
                     community,
                     runBackGrandfather
                 )
-            },
-            voteCreationMode = false
+            }
         )
     }
 }

@@ -177,18 +177,6 @@ class PricingConfig : HokiConfig("Pricing.conf") {
             obj.getLong(path)
         }
 
-        // Council operations
-
-        @JvmField
-        @ConfigOption
-        val COUNCIL_VOTE_CREATION_COST = Option(
-            "council.vote_creation_cost",
-            20000L,
-            "the cost in community assets to create a council vote."
-        ) { obj, path ->
-            obj.getLong(path)
-        }
-
         // Permission settings
 
         @JvmField

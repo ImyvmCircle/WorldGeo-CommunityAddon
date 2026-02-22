@@ -233,66 +233,6 @@ private fun handleGovernorshipUpdate(
     }
 }
 
-fun runToggleCouncilorStatus(
-    community: Community,
-    playerExecutor: ServerPlayerEntity,
-    playerObject: GameProfile,
-    runBack: (ServerPlayerEntity) -> Unit
-) {
-    CommunityPermissionPolicy.executeWithPermission(
-        playerExecutor,
-        { CommunityPermissionPolicy.canTransferOwnership(playerExecutor, community, playerObject.id) }
-    ) {
-        val memberValue = community.member[playerObject.id]
-        if (memberValue != null) {
-            val newAccount = com.imyvm.community.domain.model.MemberAccount(
-                joinedTime = memberValue.joinedTime,
-                basicRoleType = memberValue.basicRoleType,
-                isCouncilMember = !memberValue.isCouncilMember,
-                governorship = memberValue.governorship,
-                mail = memberValue.mail,
-                turnover = memberValue.turnover,
-                isInvited = memberValue.isInvited,
-                chatHistoryEnabled = memberValue.chatHistoryEnabled
-            )
-            community.member[playerObject.id] = newAccount
-            
-            val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
-            val action = if (newAccount.isCouncilMember) "appointed as Councilor" else "removed from Councilor"
-            
-            val targetNotification = com.imyvm.community.util.Translator.tr(
-                "community.notification.target.councilor_changed",
-                action,
-                communityName,
-                playerExecutor.name.string
-            ) ?: net.minecraft.text.Text.literal("You were $action in $communityName by ${playerExecutor.name.string}")
-            com.imyvm.community.application.interaction.common.notifyTargetPlayer(
-                playerExecutor.server, playerObject.id, targetNotification, community
-            )
-            
-            val status = if (newAccount.isCouncilMember) "appointed as" else "removed from"
-            trMenu(
-                playerExecutor,
-                "community.member_management.councilor.success",
-                playerObject.name,
-                status
-            )
-            
-            val notification = com.imyvm.community.util.Translator.tr(
-                "community.notification.councilor_changed",
-                playerObject.name,
-                action,
-                playerExecutor.name.string,
-                communityName
-            ) ?: net.minecraft.text.Text.literal("${playerObject.name} was $action in $communityName by ${playerExecutor.name.string}")
-            com.imyvm.community.application.interaction.common.notifyOfficials(community, playerExecutor.server, notification, playerExecutor)
-            
-            com.imyvm.community.infra.CommunityDatabase.save()
-        }
-        runBackToMemberMenu(playerExecutor, community, playerObject, runBack)
-    }
-}
-
 private fun runBackToMemberMenu(
     playerExecutor: ServerPlayerEntity,
     community: Community,

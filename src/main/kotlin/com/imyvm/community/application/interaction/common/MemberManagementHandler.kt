@@ -28,8 +28,7 @@ private fun getInvitationKey(inviteeUUID: UUID): Int {
 fun notifyOfficials(community: Community, server: net.minecraft.server.MinecraftServer, message: Text, executor: ServerPlayerEntity? = null) {
     for ((memberUUID, memberAccount) in community.member) {
         val isOfficial = memberAccount.basicRoleType == MemberRoleType.OWNER ||
-                        memberAccount.basicRoleType == MemberRoleType.ADMIN ||
-                        memberAccount.isCouncilMember
+                        memberAccount.basicRoleType == MemberRoleType.ADMIN
         
         if (isOfficial) {
             val officialPlayer = server.playerManager.getPlayer(memberUUID)

@@ -44,18 +44,6 @@ class CommunityMenu(
                 item = Items.ANVIL
             ) { runOpenOperationMenu(player, community, runBack) }
         }
-
-        if (community.council.enabled && CommunityPermissionPolicy.canAccessCouncil(player, community).isAllowed()) {
-            addButton(
-                slot = 13,
-                name = Translator.tr("ui.community.button.interaction.council")?.string ?: "Council",
-                item = Items.LECTERN
-            ) { 
-                com.imyvm.community.application.interaction.screen.inner_community.council.runOpenCouncilMenu(
-                    player, community, runBack
-                )
-            }
-        }
     }
 
     private fun addDescriptionButton(){
