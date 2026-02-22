@@ -14,6 +14,7 @@ import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.entrypoint.screen.ConfirmMenu
 import com.imyvm.community.entrypoint.screen.component.ConfirmTaskType
 import com.imyvm.community.infra.CommunityConfig
+import com.imyvm.community.infra.PricingConfig
 import com.imyvm.community.util.Translator
 import com.imyvm.economy.EconomyMod
 import net.minecraft.server.network.ServerPlayerEntity
@@ -87,7 +88,7 @@ private fun showLeaveConfirmMenu(player: ServerPlayerEntity, targetCommunity: Co
 
 private fun checkPlayerHasEnoughCurrency(player: ServerPlayerEntity, targetCommunity: Community): Boolean {
     val totalAssets = EconomyMod.data.getOrCreate(player).money
-    val cost = if(targetCommunity.isManor()) CommunityConfig.COMMUNITY_JOIN_COST_MANOR.value else CommunityConfig.COMMUNITY_JOIN_COST_REALM.value
+    val cost = if(targetCommunity.isManor()) PricingConfig.COMMUNITY_JOIN_COST_MANOR.value else PricingConfig.COMMUNITY_JOIN_COST_REALM.value
 
     if (totalAssets < cost) {
         player.sendMessage(
@@ -101,7 +102,7 @@ private fun checkPlayerHasEnoughCurrency(player: ServerPlayerEntity, targetCommu
 
 private fun showJoinConfirmMenu(player: ServerPlayerEntity, targetCommunity: Community) {
     val communityName = targetCommunity.getRegion()?.name ?: "Community #${targetCommunity.regionNumberId}"
-    val cost = ((if(targetCommunity.isManor()) CommunityConfig.COMMUNITY_JOIN_COST_MANOR.value else CommunityConfig.COMMUNITY_JOIN_COST_REALM.value)/100.00).toString()
+    val cost = ((if(targetCommunity.isManor()) PricingConfig.COMMUNITY_JOIN_COST_MANOR.value else PricingConfig.COMMUNITY_JOIN_COST_REALM.value)/100.00).toString()
     val cautions = listOf(
         Translator.tr("ui.confirm.join.caution", communityName, cost)?.string
             ?: "Join $communityName for $cost assets?"
@@ -148,7 +149,7 @@ fun tryJoinByPolicy(player: ServerPlayerEntity, targetCommunity: Community): Int
 }
 
 private fun joinUnderOpenPolicy(player: ServerPlayerEntity, targetCommunity: Community): Int {
-    val cost = if(targetCommunity.isManor()) CommunityConfig.COMMUNITY_JOIN_COST_MANOR.value else CommunityConfig.COMMUNITY_JOIN_COST_REALM.value
+    val cost = if(targetCommunity.isManor()) PricingConfig.COMMUNITY_JOIN_COST_MANOR.value else PricingConfig.COMMUNITY_JOIN_COST_REALM.value
     
     val playerData = EconomyMod.data.getOrCreate(player)
     if (playerData.money < cost) {
@@ -190,7 +191,7 @@ private fun joinUnderApplicationPolicy(player: ServerPlayerEntity, targetCommuni
         return 0
     }
     
-    val cost = if(targetCommunity.isManor()) CommunityConfig.COMMUNITY_JOIN_COST_MANOR.value else CommunityConfig.COMMUNITY_JOIN_COST_REALM.value
+    val cost = if(targetCommunity.isManor()) PricingConfig.COMMUNITY_JOIN_COST_MANOR.value else PricingConfig.COMMUNITY_JOIN_COST_REALM.value
     
     val playerData = EconomyMod.data.getOrCreate(player)
     if (playerData.money < cost) {
@@ -232,7 +233,7 @@ fun validateInvitationSender(inviter: ServerPlayerEntity, community: Community):
         return false
     }
     
-    val cost = if (community.isManor()) CommunityConfig.COMMUNITY_JOIN_COST_MANOR.value else CommunityConfig.COMMUNITY_JOIN_COST_REALM.value
+    val cost = if (community.isManor()) PricingConfig.COMMUNITY_JOIN_COST_MANOR.value else PricingConfig.COMMUNITY_JOIN_COST_REALM.value
     if (community.getTotalAssets() < cost) {
         inviter.sendMessage(Translator.tr("community.invite.error.insufficient_assets", (cost / 100.0).toString()))
         return false

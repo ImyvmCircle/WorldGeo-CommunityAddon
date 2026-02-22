@@ -5,6 +5,7 @@ import com.imyvm.community.application.interaction.screen.inner_community.counci
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.entrypoint.screen.AbstractMenu
 import com.imyvm.community.infra.CommunityConfig
+import com.imyvm.community.infra.PricingConfig
 import com.imyvm.community.util.Translator
 import net.minecraft.component.DataComponentTypes
 import net.minecraft.item.ItemStack
@@ -34,7 +35,7 @@ class CouncilMenu(
 
         val createVoteStack = ItemStack(Items.WRITABLE_BOOK)
         createVoteStack.set(DataComponentTypes.LORE, net.minecraft.component.type.LoreComponent(listOf(
-            Text.of("Cost: ${CommunityConfig.COUNCIL_VOTE_CREATION_COST.value} assets"),
+            Text.of("Cost: ${PricingConfig.COUNCIL_VOTE_CREATION_COST.value} assets"),
             Text.of("Remaining Today: $remainingVotes")
         )))
         addButton(
@@ -76,7 +77,7 @@ class CouncilMenu(
             Text.of("Remaining Votes Today: $remainingVotes"),
             Text.of("Council Members: $councilMemberCount"),
             Text.of("Vote Duration: ${CommunityConfig.COUNCIL_VOTE_DURATION_HOURS.value}h"),
-            Text.of("Vote Cost: ${CommunityConfig.COUNCIL_VOTE_CREATION_COST.value} assets")
+            Text.of("Vote Cost: ${PricingConfig.COUNCIL_VOTE_CREATION_COST.value} assets")
         )))
         addButton(
             slot = 13,

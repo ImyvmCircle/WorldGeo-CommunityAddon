@@ -9,7 +9,7 @@ import com.imyvm.community.domain.model.community.council.VoteExecutionData
 import com.imyvm.community.entrypoint.screen.inner_community.council.CouncilMenu
 import com.imyvm.community.entrypoint.screen.inner_community.council.VoteDetailsMenu
 import com.imyvm.community.entrypoint.screen.inner_community.council.VoteListMenu
-import com.imyvm.community.infra.CommunityConfig
+import com.imyvm.community.infra.PricingConfig
 import com.imyvm.community.util.Translator
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
@@ -111,7 +111,7 @@ fun runCreateVoteProposal(
             return@executeWithPermission
         }
 
-        val cost = CommunityConfig.COUNCIL_VOTE_CREATION_COST.value
+        val cost = PricingConfig.COUNCIL_VOTE_CREATION_COST.value
         val totalAssets = community.getTotalAssets()
         if (totalAssets < cost) {
             player.sendMessage(

@@ -2,6 +2,7 @@ package com.imyvm.community.application.interaction.screen.helper
 
 import com.imyvm.community.application.interaction.common.helper.checkPlayerMembershipCreation
 import com.imyvm.community.infra.CommunityDatabase
+import com.imyvm.community.infra.PricingConfig
 import com.imyvm.community.util.Translator
 import com.imyvm.economy.EconomyMod
 import com.imyvm.iwg.ImyvmWorldGeo
@@ -20,9 +21,9 @@ fun generateCreationError(
 
     val typeStr = if (isCurrentCommunityTypeManor) "manor" else "realm"
     val price = if (isCurrentCommunityTypeManor)
-        com.imyvm.community.infra.CommunityConfig.PRICE_MANOR.value
+        PricingConfig.PRICE_MANOR.value
     else
-        com.imyvm.community.infra.CommunityConfig.PRICE_REALM.value
+        PricingConfig.PRICE_REALM.value
 
     if (EconomyMod.data.getOrCreate(playerEntity).money < price) {
         errors.add(Translator.tr("ui.create.error.money_$typeStr")?.string ?: "NotEnoughMoney${typeStr.replaceFirstChar { it.uppercase() }}")

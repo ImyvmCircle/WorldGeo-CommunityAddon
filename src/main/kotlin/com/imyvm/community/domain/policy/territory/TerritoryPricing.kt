@@ -1,7 +1,6 @@
 package com.imyvm.community.domain.policy.territory
 
-import com.imyvm.community.infra.CommunityConfig
-import com.imyvm.community.infra.CommunityPricingConfig
+import com.imyvm.community.infra.PricingConfig
 import com.imyvm.iwg.domain.component.PermissionKey
 
 data class PricingConfiguration(
@@ -30,15 +29,15 @@ object TerritoryPricing {
     
     fun getPricingConfig(isManor: Boolean): PricingConfiguration {
         return PricingConfiguration(
-            freeArea = if (isManor) CommunityConfig.MANOR_FREE_AREA.value else CommunityConfig.REALM_FREE_AREA.value,
-            pricePerUnit = if (isManor) CommunityConfig.MANOR_AREA_PRICE_PER_UNIT.value else CommunityConfig.REALM_AREA_PRICE_PER_UNIT.value,
-            unitSize = if (isManor) CommunityConfig.MANOR_AREA_UNIT_SIZE.value else CommunityConfig.REALM_AREA_UNIT_SIZE.value,
-            refundRate = CommunityConfig.AREA_REFUND_RATE.value
+            freeArea = if (isManor) PricingConfig.MANOR_FREE_AREA.value else PricingConfig.REALM_FREE_AREA.value,
+            pricePerUnit = if (isManor) PricingConfig.MANOR_AREA_PRICE_PER_UNIT.value else PricingConfig.REALM_AREA_PRICE_PER_UNIT.value,
+            unitSize = if (isManor) PricingConfig.MANOR_AREA_UNIT_SIZE.value else PricingConfig.REALM_AREA_UNIT_SIZE.value,
+            refundRate = PricingConfig.AREA_REFUND_RATE.value
         )
     }
     
     fun calculateCreationCost(area: Double, isManor: Boolean): CreationCostResult {
-        val baseCost = if (isManor) CommunityConfig.PRICE_MANOR.value else CommunityConfig.PRICE_REALM.value
+        val baseCost = if (isManor) PricingConfig.PRICE_MANOR.value else PricingConfig.PRICE_REALM.value
         val config = getPricingConfig(isManor)
         
         val areaCost: Long = if (area <= config.freeArea) {
@@ -96,21 +95,21 @@ object TerritoryPricing {
         isPlayerTarget: Boolean
     ): Long {
         val baseCost = when {
-            isManor && !isScope -> CommunityPricingConfig.PERMISSION_BASE_COST_MANOR_REGION.value
-            !isManor && !isScope -> CommunityPricingConfig.PERMISSION_BASE_COST_REALM_REGION.value
-            isManor -> CommunityPricingConfig.PERMISSION_BASE_COST_MANOR_SCOPE.value
-            else -> CommunityPricingConfig.PERMISSION_BASE_COST_REALM_SCOPE.value
+            isManor && !isScope -> PricingConfig.PERMISSION_BASE_COST_MANOR_REGION.value
+            !isManor && !isScope -> PricingConfig.PERMISSION_BASE_COST_REALM_REGION.value
+            isManor -> PricingConfig.PERMISSION_BASE_COST_MANOR_SCOPE.value
+            else -> PricingConfig.PERMISSION_BASE_COST_REALM_SCOPE.value
         }
 
         val coefficientPerUnit = when (permissionKey) {
-            PermissionKey.BUILD_BREAK -> CommunityPricingConfig.PERMISSION_BUILD_BREAK_COEFFICIENT_PER_UNIT.value
-            PermissionKey.CONTAINER -> CommunityPricingConfig.PERMISSION_CONTAINER_COEFFICIENT_PER_UNIT.value
+            PermissionKey.BUILD_BREAK -> PricingConfig.PERMISSION_BUILD_BREAK_COEFFICIENT_PER_UNIT.value
+            PermissionKey.CONTAINER -> PricingConfig.PERMISSION_CONTAINER_COEFFICIENT_PER_UNIT.value
             else -> 0L
         }
 
-        val unitSize = CommunityPricingConfig.PERMISSION_COEFFICIENT_UNIT_SIZE.value
+        val unitSize = PricingConfig.PERMISSION_COEFFICIENT_UNIT_SIZE.value
         val areaCost = (area / unitSize * coefficientPerUnit).toLong()
-        val targetedAreaCost = if (isPlayerTarget) areaCost / CommunityPricingConfig.PERMISSION_TARGET_PLAYER_DENOMINATOR.value else areaCost
+        val targetedAreaCost = if (isPlayerTarget) areaCost / PricingConfig.PERMISSION_TARGET_PLAYER_DENOMINATOR.value else areaCost
         return baseCost + targetedAreaCost
     }
 }

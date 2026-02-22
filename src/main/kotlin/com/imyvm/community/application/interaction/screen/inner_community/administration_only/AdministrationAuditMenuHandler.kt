@@ -1,6 +1,7 @@
 package com.imyvm.community.application.interaction.screen.inner_community.administration_only
 
 import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
+import com.imyvm.community.infra.PricingConfig
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.util.Translator.trMenu
@@ -26,8 +27,8 @@ fun runAccept(
         if (objectAccount != null) {
             if (objectAccount.isInvited) {
                 val cost = if (community.isManor()) 
-                    com.imyvm.community.infra.CommunityConfig.COMMUNITY_JOIN_COST_MANOR.value 
-                    else com.imyvm.community.infra.CommunityConfig.COMMUNITY_JOIN_COST_REALM.value
+                    PricingConfig.COMMUNITY_JOIN_COST_MANOR.value 
+                    else PricingConfig.COMMUNITY_JOIN_COST_REALM.value
                 
                 if (community.getTotalAssets() < cost) {
                     playerExecutor.sendMessage(
@@ -141,8 +142,8 @@ fun runRefuse(
                 }
             } else {
                 val cost = if (community.isManor()) 
-                    com.imyvm.community.infra.CommunityConfig.COMMUNITY_JOIN_COST_MANOR.value 
-                    else com.imyvm.community.infra.CommunityConfig.COMMUNITY_JOIN_COST_REALM.value
+                    PricingConfig.COMMUNITY_JOIN_COST_MANOR.value 
+                    else PricingConfig.COMMUNITY_JOIN_COST_REALM.value
                 
                 val applicantPlayer = playerExecutor.server.playerManager.getPlayer(playerObject.id)
                 if (applicantPlayer != null) {

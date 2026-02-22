@@ -13,6 +13,7 @@ import com.imyvm.community.entrypoint.screen.inner_community.affairs.CommunitySe
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityRegionScopeMenu
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityMemberListMenu
 import com.imyvm.community.infra.CommunityConfig
+import com.imyvm.community.infra.PricingConfig
 import com.imyvm.economy.EconomyMod
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.inter.api.PlayerInteractionApi
@@ -124,7 +125,7 @@ fun startCommunityTeleportExecution(player: ServerPlayerEntity, community: Commu
     val cost = if (usedTimes < freeUses) {
         0L
     } else {
-        CommunityConfig.TELEPORT_PAID_BASE_COST.value * multiplier
+        PricingConfig.TELEPORT_PAID_BASE_COST.value * multiplier
     }
     val delaySeconds = if (usedTimes < freeUses) {
         0

@@ -38,26 +38,6 @@ class CommunityConfig : HokiConfig("Community.conf") {
 
         @JvmField
         @ConfigOption
-        val PRICE_MANOR = Option(
-            "economy.price_manor",
-            1500000L,
-            "the price to create a manor."
-        ) { obj, path ->
-            obj.getLong(path)
-        }
-
-        @JvmField
-        @ConfigOption
-        val PRICE_REALM = Option(
-            "economy.price_realm",
-            3000000L,
-            "the price to create a realm."
-        ) { obj, path ->
-            obj.getLong(path)
-        }
-
-        @JvmField
-        @ConfigOption
         val IS_CHECKING_REGION_AREA = Option(
             "region.is_checking_area",
             true,
@@ -158,16 +138,6 @@ class CommunityConfig : HokiConfig("Community.conf") {
 
         @JvmField
         @ConfigOption
-        val COUNCIL_VOTE_CREATION_COST = Option(
-            "council.vote_creation_cost",
-            20000L,
-            "the cost in community assets to create a council vote."
-        ) { obj, path ->
-            obj.getLong(path)
-        }
-
-        @JvmField
-        @ConfigOption
         val COUNCIL_VOTE_DURATION_HOURS = Option(
             "council.vote_duration_hours",
             48,
@@ -188,142 +158,12 @@ class CommunityConfig : HokiConfig("Community.conf") {
 
         @JvmField
         @ConfigOption
-        val COMMUNITY_JOIN_COST_REALM = Option(
-            "economy.community_join_cost",
-            50000L,
-            "the cost in community assets to join a community."
-        ) { obj, path ->
-            obj.getLong(path)
-        }
-
-        @JvmField
-        @ConfigOption
-        val COMMUNITY_JOIN_COST_MANOR = Option(
-            "economy.community_join_cost_manor",
-            150000L,
-            "the cost in community assets to join a manor community."
-        ) { obj, path ->
-            obj.getLong(path)
-        }
-
-        @JvmField
-        @ConfigOption
         val INVITATION_RESPONSE_TIMEOUT_MINUTES = Option(
             "community.invitation_response_timeout_minutes",
             5,
             "the time limit in minutes for a player to respond to a community invitation."
         ) { obj, path ->
             obj.getInt(path)
-        }
-
-        @JvmField
-        @ConfigOption
-        val MANOR_FREE_AREA = Option(
-            "economy.manor_free_area",
-            10000.0,
-            "the free area for manor (m²) that does not incur additional cost."
-        ) { obj, path ->
-            obj.getDouble(path)
-        }
-
-        @JvmField
-        @ConfigOption
-        val MANOR_AREA_PRICE_PER_UNIT = Option(
-            "economy.manor_area_price_per_unit",
-            1000L,
-            "the price per unit area for manor above free area."
-        ) { obj, path ->
-            obj.getLong(path)
-        }
-
-        @JvmField
-        @ConfigOption
-        val MANOR_AREA_UNIT_SIZE = Option(
-            "economy.manor_area_unit_size",
-            10000.0,
-            "the unit size (m²) for manor area pricing."
-        ) { obj, path ->
-            obj.getDouble(path)
-        }
-
-        @JvmField
-        @ConfigOption
-        val REALM_FREE_AREA = Option(
-            "economy.realm_free_area",
-            40000.0,
-            "the free area for realm (m²) that does not incur additional cost."
-        ) { obj, path ->
-            obj.getDouble(path)
-        }
-
-        @JvmField
-        @ConfigOption
-        val REALM_AREA_PRICE_PER_UNIT = Option(
-            "economy.realm_area_price_per_unit",
-            3000L,
-            "the price per unit area for realm above free area."
-        ) { obj, path ->
-            obj.getLong(path)
-        }
-
-        @JvmField
-        @ConfigOption
-        val REALM_AREA_UNIT_SIZE = Option(
-            "economy.realm_area_unit_size",
-            40000.0,
-            "the unit size (m²) for realm area pricing."
-        ) { obj, path ->
-            obj.getDouble(path)
-        }
-
-        @JvmField
-        @ConfigOption
-        val AREA_REFUND_RATE = Option(
-            "economy.area_refund_rate",
-            0.5,
-            "the refund rate (0.0 - 1.0) when reducing community area."
-        ) { obj, path ->
-            obj.getDouble(path)
-        }
-
-        @JvmField
-        @ConfigOption
-        val SCOPE_ADDITION_BASE_COST_MANOR = Option(
-            "economy.scope_addition_base_cost_manor",
-            500000L,
-            "the fixed base cost to add a new scope in a manor community."
-        ) { obj, path ->
-            obj.getLong(path)
-        }
-
-        @JvmField
-        @ConfigOption
-        val SCOPE_ADDITION_BASE_COST_REALM = Option(
-            "economy.scope_addition_base_cost_realm",
-            250000L,
-            "the fixed base cost to add a new scope in a realm community."
-        ) { obj, path ->
-            obj.getLong(path)
-        }
-
-        @JvmField
-        @ConfigOption
-        val TELEPORT_POINT_SECOND_POINT_BASE_COST = Option(
-            "economy.teleport_point_second_point_base_cost",
-            200000L,
-            "the base cost for creating the second active teleport point in a community."
-        ) { obj, path ->
-            obj.getLong(path)
-        }
-
-        @JvmField
-        @ConfigOption
-        val TELEPORT_POINT_MODIFY_COST = Option(
-            "economy.teleport_point_modify_cost",
-            300000L,
-            "the fixed cost for modifying an existing teleport point."
-        ) { obj, path ->
-            obj.getLong(path)
         }
 
         @JvmField
@@ -344,16 +184,6 @@ class CommunityConfig : HokiConfig("Community.conf") {
             "free teleport uses per day in the same community for non-formal players."
         ) { obj, path ->
             obj.getInt(path)
-        }
-
-        @JvmField
-        @ConfigOption
-        val TELEPORT_PAID_BASE_COST = Option(
-            "economy.teleport_paid_base_cost",
-            1000L,
-            "base teleport fee after free uses are exhausted."
-        ) { obj, path ->
-            obj.getLong(path)
         }
 
         @JvmField

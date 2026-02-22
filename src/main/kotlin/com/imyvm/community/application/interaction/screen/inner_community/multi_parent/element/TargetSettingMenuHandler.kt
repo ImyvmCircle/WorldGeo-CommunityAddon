@@ -11,7 +11,7 @@ import com.imyvm.community.domain.policy.territory.TerritoryPricing
 import com.imyvm.community.entrypoint.screen.component.getLoreButton
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.element.TargetSettingMenu
 import com.imyvm.community.infra.CommunityDatabase
-import com.imyvm.community.infra.CommunityPricingConfig
+import com.imyvm.community.infra.PricingConfig
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.GeoScope
@@ -334,19 +334,19 @@ private fun sendSettingOrderSummary(
         val isManor = community.isManor()
         val isPlayerTarget = playerObject != null
         val baseCostBeforeDiv = when {
-            isManor && scope == null -> CommunityPricingConfig.PERMISSION_BASE_COST_MANOR_REGION.value
-            !isManor && scope == null -> CommunityPricingConfig.PERMISSION_BASE_COST_REALM_REGION.value
-            isManor -> CommunityPricingConfig.PERMISSION_BASE_COST_MANOR_SCOPE.value
-            else -> CommunityPricingConfig.PERMISSION_BASE_COST_REALM_SCOPE.value
+            isManor && scope == null -> PricingConfig.PERMISSION_BASE_COST_MANOR_REGION.value
+            !isManor && scope == null -> PricingConfig.PERMISSION_BASE_COST_REALM_REGION.value
+            isManor -> PricingConfig.PERMISSION_BASE_COST_MANOR_SCOPE.value
+            else -> PricingConfig.PERMISSION_BASE_COST_REALM_SCOPE.value
         }
         val coefficientPerUnit = when (permissionKey) {
-            PermissionKey.BUILD_BREAK -> CommunityPricingConfig.PERMISSION_BUILD_BREAK_COEFFICIENT_PER_UNIT.value
-            PermissionKey.CONTAINER -> CommunityPricingConfig.PERMISSION_CONTAINER_COEFFICIENT_PER_UNIT.value
+            PermissionKey.BUILD_BREAK -> PricingConfig.PERMISSION_BUILD_BREAK_COEFFICIENT_PER_UNIT.value
+            PermissionKey.CONTAINER -> PricingConfig.PERMISSION_CONTAINER_COEFFICIENT_PER_UNIT.value
             else -> 0L
         }
-        val unitSize = CommunityPricingConfig.PERMISSION_COEFFICIENT_UNIT_SIZE.value
+        val unitSize = PricingConfig.PERMISSION_COEFFICIENT_UNIT_SIZE.value
         val areaCostBeforeDiv = (area / unitSize * coefficientPerUnit).toLong()
-        val denominator = if (isPlayerTarget) CommunityPricingConfig.PERMISSION_TARGET_PLAYER_DENOMINATOR.value else 1L
+        val denominator = if (isPlayerTarget) PricingConfig.PERMISSION_TARGET_PLAYER_DENOMINATOR.value else 1L
         player.sendMessage(
             Translator.tr("community.setting.confirmation.base_cost", String.format("%.2f", baseCostBeforeDiv / 100.0))
                 ?: Text.literal("§7  Base: §f${String.format("%.2f", baseCostBeforeDiv / 100.0)}")

@@ -19,7 +19,7 @@ import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.Commun
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityScopeCreationMenu
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityScopeCreationRenameMenuAnvil
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.element.TargetSettingMenu
-import com.imyvm.community.infra.CommunityConfig
+import com.imyvm.community.infra.PricingConfig
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.domain.AreaEstimationResult
 import com.imyvm.iwg.domain.CreationError
@@ -173,9 +173,9 @@ private fun onCreateScopeRequest(
     val isManor = community.isManor()
     val variableCost = calculateModificationCost(newScopeArea, currentTotalArea, isManor).cost
     val fixedCost = if (isManor) {
-        CommunityConfig.SCOPE_ADDITION_BASE_COST_MANOR.value
+        PricingConfig.SCOPE_ADDITION_BASE_COST_MANOR.value
     } else {
-        CommunityConfig.SCOPE_ADDITION_BASE_COST_REALM.value
+        PricingConfig.SCOPE_ADDITION_BASE_COST_REALM.value
     }
     val totalCost = fixedCost + variableCost
     val currentAssets = community.getTotalAssets()

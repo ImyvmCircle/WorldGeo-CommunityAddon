@@ -10,7 +10,7 @@ import com.imyvm.community.domain.model.Turnover
 import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.entrypoint.screen.component.getLoreButton
 import com.imyvm.community.entrypoint.screen.inner_community.administration_only.AdministrationTeleportPointMenu
-import com.imyvm.community.infra.CommunityConfig
+import com.imyvm.community.infra.PricingConfig
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.domain.Region
@@ -297,7 +297,7 @@ fun runTeleportToPoint(playerExecutor: ServerPlayerEntity, community: Community,
 private fun calculateTeleportPointSettingCost(region: Region, scope: GeoScope): Pair<Long, String> {
     val currentPoint = PlayerInteractionApi.getTeleportPoint(scope)
     if (currentPoint != null) {
-        return CommunityConfig.TELEPORT_POINT_MODIFY_COST.value to "community.teleport_point.cost_reason.modify_existing"
+        return PricingConfig.TELEPORT_POINT_MODIFY_COST.value to "community.teleport_point.cost_reason.modify_existing"
     }
 
     val activeCount = region.geometryScope.count { PlayerInteractionApi.getTeleportPoint(it) != null }
@@ -307,7 +307,7 @@ private fun calculateTeleportPointSettingCost(region: Region, scope: GeoScope): 
 
     val exponent = (activeCount - 1).coerceAtMost(20)
     val multiplier = 1L shl exponent
-    return CommunityConfig.TELEPORT_POINT_SECOND_POINT_BASE_COST.value * multiplier to "community.teleport_point.cost_reason.new_additional"
+    return PricingConfig.TELEPORT_POINT_SECOND_POINT_BASE_COST.value * multiplier to "community.teleport_point.cost_reason.new_additional"
 }
 
 private fun sendInteractiveTeleportPointConfirmation(player: ServerPlayerEntity, regionNumberId: Int, scopeName: String) {
