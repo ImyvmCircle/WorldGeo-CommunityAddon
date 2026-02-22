@@ -58,6 +58,13 @@ private fun handleExpiredOperation(
                     ?.sendMessage(Translator.tr("community.teleport_point.confirmation.expired"))
             }
         }
+        PendingOperationType.SETTING_CONFIRMATION -> {
+            iterator.remove()
+            operation.inviterUUID?.let { executorUUID ->
+                server.playerManager.getPlayer(executorUUID)
+                    ?.sendMessage(Translator.tr("community.setting.confirmation.expired"))
+            }
+        }
         else -> {
             WorldGeoCommunityAddon.logger.info(
                 "Unhandled expired operation type: ${operation.type} for key $key"
@@ -208,7 +215,8 @@ fun addPendingOperation(
     inviteeUUID: UUID? = null,
     creationData: com.imyvm.community.domain.model.CreationConfirmationData? = null,
     modificationData: com.imyvm.community.domain.model.ScopeModificationConfirmationData? = null,
-    teleportPointData: com.imyvm.community.domain.model.TeleportPointConfirmationData? = null
+    teleportPointData: com.imyvm.community.domain.model.TeleportPointConfirmationData? = null,
+    settingData: com.imyvm.community.domain.model.SettingConfirmationData? = null
 ) {
     val expireTime = when {
         expireHours != null -> System.currentTimeMillis() + expireHours * 3600 * 1000L
@@ -223,7 +231,8 @@ fun addPendingOperation(
         inviteeUUID = inviteeUUID,
         creationData = creationData,
         modificationData = modificationData,
-        teleportPointData = teleportPointData
+        teleportPointData = teleportPointData,
+        settingData = settingData
     )
     WorldGeoCommunityAddon.logger.info("Added pending operation: type=$type, regionId=$regionId, expireAt=$expireTime")
 }

@@ -55,7 +55,8 @@ fun runRemoveMember(
         )
         
         community.member.remove(playerObject.id)
-        
+        com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.revokeGrantedPermissions(playerObject.id, community)
+
         trMenu(
             playerExecutor,
             "community.member_management.remove.success",

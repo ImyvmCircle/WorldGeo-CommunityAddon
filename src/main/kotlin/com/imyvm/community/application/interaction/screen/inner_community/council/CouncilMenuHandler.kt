@@ -188,6 +188,7 @@ private fun executeVote(community: Community, vote: CouncilVote) {
                         member.basicRoleType = com.imyvm.community.domain.model.community.MemberRoleType.MEMBER
                     }
                     VoteExecutionData.ManageMember.MemberAction.REMOVE -> {
+                        com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.revokeGrantedPermissions(data.targetUUID, community)
                         community.member.remove(data.targetUUID)
                     }
                 }

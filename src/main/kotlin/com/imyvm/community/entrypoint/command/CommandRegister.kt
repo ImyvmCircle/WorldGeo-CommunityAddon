@@ -295,13 +295,17 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     )
             )
             .then(
-                literal("cancel_teleport_point_set")
+                literal("confirm_setting")
                     .then(
                         argument("regionId", IntegerArgumentType.integer())
-                            .then(
-                                argument("scopeName", StringArgumentType.greedyString())
-                                    .executes { runCancelTeleportPointSetting(it) }
-                            )
+                            .executes { runConfirmSettingChange(it) }
+                    )
+            )
+            .then(
+                literal("cancel_setting")
+                    .then(
+                        argument("regionId", IntegerArgumentType.integer())
+                            .executes { runCancelSettingChange(it) }
                     )
             )
     )
@@ -541,4 +545,16 @@ private fun runToggleChatChannel(context: CommandContext<ServerCommandSource>): 
         com.imyvm.community.application.interaction.common.ChatRoomHandler.toggleChatChannel(player, targetCommunity)
         1
     }
+}
+
+private fun runConfirmSettingChange(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val regionId = IntegerArgumentType.getInteger(context, "regionId")
+    return com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.onConfirmSettingChange(player, regionId)
+}
+
+private fun runCancelSettingChange(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val regionId = IntegerArgumentType.getInteger(context, "regionId")
+    return com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.onCancelSettingChange(player, regionId)
 }

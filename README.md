@@ -219,6 +219,38 @@ The **Community Region Scope Menu** provides tools for managing geographical asp
 
 Communities support both **global** settings that apply to the entire region, and **local** settings for named sub-scopes within the community (managed through the `geometryScope` list). Each scope is represented visually in the menu interface with distinct items such as armor trim templates and item frames.
 
+#### Permission Settings
+
+Administrators can configure **permission settings** to control what actions players can perform within the community's region or its sub-scopes. Two permission types are currently supported:
+
+- **Build/Break** - Controls whether players can place or break blocks;
+- **Container Access** - Controls whether players can open chests, furnaces, and other containers.
+
+Settings can be applied **globally** (affecting all members) or **per-player** (overriding only for a specific member). When a setting differs from the game's default behavior, a fee is charged based on the affected area and permission type.
+
+##### Setting Modification Process
+
+1. Navigate to **Region Settings** via the administration menu, then select a scope or the region-wide option;
+2. Choose whether to apply settings globally or for a specific player;
+3. Click the permission toggle button to see the change, cost breakdown, and area;
+4. Review the **Setting Modification Confirmation** showing the exact cost calculation;
+5. Confirm to apply the change or cancel to abort. The operation expires in 5 minutes.
+
+##### Pricing
+
+Setting modifications are charged from community assets:
+
+- **Base fee** varies by community type (Manor/Realm) and setting layer (Region/Scope);
+- **Area fee** is calculated by multiplying the affected area by a per-permission coefficient (configurable);
+- **Player-specific** settings cost 20% of the global rate;
+- **Restoring a permission to its default value** is always free.
+
+Upon successful modification, all formal members (owner, admins, and members) are notified.
+
+##### Auto-Grant on Member Join
+
+When a new member joins or is accepted into a community that has global permission restrictions (settings differing from default), the system automatically grants that member a player-specific permission entry with the default value, ensuring they are not unintentionally affected by blanket restrictions intended for the general public. This only applies at the Region level and only if no player-specific setting already exists for that member.
+
 #### Territory Modification
 
 Community administrators may alter the geographical boundaries of their territory's administrative districts (scopes) through the **Region Geometry** function. This allows communities to expand, contract, or reshape their territorial claims after initial creation.

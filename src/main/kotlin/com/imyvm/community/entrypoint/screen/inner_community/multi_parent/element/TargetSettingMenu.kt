@@ -50,12 +50,6 @@ class TargetSettingMenu(
         ) { if (isManageable) runTogglingPermissionSetting(playerExecutor, community, scope, playerObject, PermissionKey.BUILD_BREAK, runBack) }
 
         addButton(
-            slot = 13,
-            name = Translator.tr("ui.community.administration.region.setting.list.permission.fly")?.string ?: "Fly Permission",
-            itemStack = getPermissionButtonItemStack(Items.ELYTRA, community, scope, playerObject, PermissionKey.FLY)
-        ) { if (isManageable) runTogglingPermissionSetting(playerExecutor, community, scope, playerObject, PermissionKey.FLY, runBack)  }
-
-        addButton(
             slot = 14,
             name = Translator.tr("ui.community.administration.region.setting.list.permission.container")?.string ?: "Container Permission",
             itemStack = getPermissionButtonItemStack(Items.CHEST, community, scope, playerObject, PermissionKey.CONTAINER)

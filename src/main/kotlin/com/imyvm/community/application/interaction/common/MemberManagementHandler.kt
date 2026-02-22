@@ -173,6 +173,10 @@ private fun joinUnderOpenPolicy(player: ServerPlayerEntity, targetCommunity: Com
         ?: net.minecraft.text.Text.literal("${player.name.string} has joined $communityName")
     notifyOfficials(targetCommunity, player.server, notification, player)
     
+    com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.autoGrantDefaultPermissions(
+        player.uuid, player, targetCommunity
+    )
+    
     com.imyvm.community.infra.CommunityDatabase.save()
     
     com.imyvm.community.application.event.checkAndPromoteRecruitingRealm(targetCommunity)

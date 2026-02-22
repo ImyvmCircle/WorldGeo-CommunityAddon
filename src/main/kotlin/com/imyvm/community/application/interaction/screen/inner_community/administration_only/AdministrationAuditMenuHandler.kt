@@ -56,6 +56,10 @@ fun runAccept(
             
             val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
             
+            com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.autoGrantDefaultPermissions(
+                playerObject.id, playerExecutor, community
+            )
+            
             val targetNotificationKey = if (wasInvited) {
                 "community.notification.target.invitation_accepted"
             } else {

@@ -73,6 +73,7 @@ private fun runCommunityLeave(
         val communityName = targetCommunity.getRegion()?.name ?: "Community #${targetCommunity.regionNumberId}"
         
         targetCommunity.member.remove(playerExecutor.uuid)
+        com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.revokeGrantedPermissions(playerExecutor.uuid, targetCommunity)
         CommunityDatabase.save()
         
         playerExecutor.sendMessage(
