@@ -57,7 +57,7 @@ class CommunityMenu(
             slot = 20,
             name = Translator.tr("ui.community.button.description.announcement")?.string ?: "Announcement",
             item = Items.MAP
-        ) { runOpenMemberAnnouncementListMenu(player, community, runBack) }
+        ) { runOpenMemberAnnouncementListMenu(player, community) { runBackToCommunityMenu(player, community, runBack) } }
 
 
         addButton(
@@ -96,7 +96,7 @@ class CommunityMenu(
             slot = 28,
             name = Translator.tr("ui.community.button.interaction.chat")?.string ?: "Community Chat",
             item = Items.WRITABLE_BOOK
-        ) { com.imyvm.community.application.interaction.screen.inner_community.chat.runOpenChatRoomMenu(player, community, runBack) }
+        ) { com.imyvm.community.application.interaction.screen.inner_community.chat.runOpenChatRoomMenu(player, community) { runBackToCommunityMenu(player, community, runBack) } }
 
         addButton(
             slot = 29,
@@ -126,7 +126,7 @@ class CommunityMenu(
             slot = 34,
             name = Translator.tr ("ui.community.button.interaction.invite")?.string ?: "Invite Member",
             item = Items.VILLAGER_SPAWN_EGG
-        ) { runOpenInviteMemberMenu(player, community, runBack) }
+        ) { runOpenInviteMemberMenu(player, community) { runBackToCommunityMenu(player, community, runBack) } }
     }
 }
 

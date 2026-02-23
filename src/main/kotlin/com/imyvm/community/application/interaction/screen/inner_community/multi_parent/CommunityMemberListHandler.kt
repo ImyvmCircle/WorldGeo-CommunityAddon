@@ -38,6 +38,6 @@ private fun runBackToMemberListMenu(
     runBackGrandfatherMenu: (ServerPlayerEntity) -> Unit
 ) {
     CommunityMenuOpener.open(playerExecutor) { syncId ->
-        CommunityMemberListMenu(syncId, community, playerExecutor) { runBackGrandfatherMenu }
+        CommunityMemberListMenu(syncId, community, playerExecutor, runBack = runBackGrandfatherMenu)
     }
 }

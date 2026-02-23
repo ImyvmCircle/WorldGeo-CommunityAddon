@@ -60,7 +60,7 @@ class CommunityAdministrationMenu(
                 slot = 13,
                 name = Translator.tr("ui.community.administration.button.announcement")?.string ?: "Announcement",
                 item = Items.PAPER
-            ) { runOpenAnnouncementListMenu(player, community, runBack) }
+            ) { runOpenAnnouncementListMenu(player, community) { runBackToCommunityAdministrationMenu(player, community, runBack) } }
         }
 
         if (CommunityPermissionPolicy.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ADVANCEMENT).isAllowed()) {
@@ -76,7 +76,7 @@ class CommunityAdministrationMenu(
                 slot = 15,
                 name = Translator.tr("ui.community.administration.button.assets")?.string ?: "Assets",
                 item = Items.EMERALD_ORE
-            ) { runOpenAssetsMenu(player, community, runBack) }
+            ) { runOpenAssetsMenu(player, community) { runBackToCommunityAdministrationMenu(player, community, runBack) } }
         }
 
         if (CommunityPermissionPolicy.canExecuteAdministration(player, community, AdministrationPermission.MODIFY_REGION_GEOMETRY).isAllowed()) {

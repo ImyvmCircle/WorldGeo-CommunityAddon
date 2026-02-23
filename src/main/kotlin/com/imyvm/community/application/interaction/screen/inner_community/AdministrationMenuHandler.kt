@@ -23,7 +23,7 @@ fun runAdmRenameCommunity(player: ServerPlayerEntity, community: Community, runB
             CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdministrationPermission.RENAME_COMMUNITY)
         }
     ) {
-        AdministrationRenameMenuAnvil(player, community = community, runBackGrandfather).open()
+        AdministrationRenameMenuAnvil(player, community = community, runBackGrandfather = { p -> runBackToCommunityAdministrationMenu(p, community, runBackGrandfather) }).open()
     }
 }
 
@@ -72,7 +72,7 @@ fun runAdmAdvancement(player: ServerPlayerEntity, community: Community, runBackG
         }
     ) {
         CommunityMenuOpener.open(player) { syncId ->
-            AdministrationAdvancementMenu(syncId, community, player, runBackGrandfather)
+            AdministrationAdvancementMenu(syncId, community, player) { runBackToCommunityAdministrationMenu(player, community, runBackGrandfather) }
         }
     }
 }
@@ -140,7 +140,7 @@ fun runAdmChangeJoinPolicy(player: ServerPlayerEntity, community: Community, pol
     }
 }
 
-private fun runBackToCommunityAdministrationMenu(player: ServerPlayerEntity, community: Community, runBack: (ServerPlayerEntity) -> Unit) {
+fun runBackToCommunityAdministrationMenu(player: ServerPlayerEntity, community: Community, runBack: (ServerPlayerEntity) -> Unit) {
     CommunityMenuOpener.open(player) { syncId ->
         CommunityAdministrationMenu(syncId, community, player, runBack)
     }

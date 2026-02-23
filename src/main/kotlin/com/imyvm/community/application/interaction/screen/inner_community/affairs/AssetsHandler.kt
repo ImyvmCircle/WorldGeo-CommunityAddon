@@ -8,6 +8,7 @@ import com.imyvm.community.entrypoint.screen.inner_community.affairs.assets.Comm
 import com.imyvm.community.entrypoint.screen.inner_community.affairs.assets.DonationMenu
 import com.imyvm.community.entrypoint.screen.inner_community.affairs.assets.DonorDetailsMenu
 import com.imyvm.community.entrypoint.screen.inner_community.affairs.assets.DonorListMenu
+import com.imyvm.community.entrypoint.screen.inner_community.CommunityMenu
 import com.imyvm.community.util.Translator
 import com.imyvm.economy.EconomyMod
 import net.minecraft.server.network.ServerPlayerEntity
@@ -73,5 +74,7 @@ fun onDonateConfirm(player: ServerPlayerEntity, community: Community, amount: Lo
 }
 
 private fun runBackToCommunityMenu(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit) {
-    runBackGrandfather(player)
+    CommunityMenuOpener.open(player) { syncId ->
+        CommunityMenu(syncId, player, community, runBackGrandfather)
+    }
 }

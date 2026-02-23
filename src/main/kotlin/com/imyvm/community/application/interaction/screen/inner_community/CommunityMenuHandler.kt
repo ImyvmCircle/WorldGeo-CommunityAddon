@@ -320,7 +320,7 @@ fun runShowLeaveConfirmMenu(player: ServerPlayerEntity, community: Community, ru
     }
 }
 
-private fun runBackToCommunityMenu(player: ServerPlayerEntity, community: Community, runBackGrandfather : ((ServerPlayerEntity) -> Unit)) {
+fun runBackToCommunityMenu(player: ServerPlayerEntity, community: Community, runBackGrandfather : ((ServerPlayerEntity) -> Unit)) {
     CommunityMenuOpener.open(player) { syncId ->
         CommunityMenu(
             syncId = syncId,

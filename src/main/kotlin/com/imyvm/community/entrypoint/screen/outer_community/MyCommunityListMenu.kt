@@ -36,7 +36,11 @@ class MyCommunityListMenu(
                         syncId = newSyncId,
                         player = player,
                         community = community,
-                        runBack = runBack
+                        runBack = {
+                            CommunityMenuOpener.open(player) { returnSyncId ->
+                                MyCommunityListMenu(returnSyncId, joinedCommunities, page, runBack)
+                            }
+                        }
                     )
                 }
             }
