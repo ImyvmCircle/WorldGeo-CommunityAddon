@@ -126,7 +126,6 @@ object CommunityDatabase {
 
             stream.writeLong(memberAccount.joinedTime)
             stream.writeInt(memberAccount.basicRoleType.value)
-            stream.writeInt(memberAccount.governorship)
 
             stream.writeInt(memberAccount.mail.size)
             for (mailItem in memberAccount.mail) {
@@ -159,7 +158,6 @@ object CommunityDatabase {
 
             val joinedTime = stream.readLong()
             val role = MemberRoleType.fromValue(stream.readInt())
-            val governorship = stream.readInt()
 
             val mailSize = stream.readInt()
             val communityMail = ArrayList<Text>(mailSize)
@@ -191,7 +189,6 @@ object CommunityDatabase {
             memberMap[uuid] = MemberAccount(
                 joinedTime = joinedTime,
                 basicRoleType = role,
-                governorship = governorship,
                 mail = communityMail,
                 turnover = turnoverList,
                 isInvited = isInvited,

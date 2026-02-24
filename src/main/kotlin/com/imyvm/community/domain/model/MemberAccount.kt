@@ -6,7 +6,6 @@ import net.minecraft.text.Text
 data class MemberAccount (
     var joinedTime: Long,
     var basicRoleType: MemberRoleType,
-    var governorship: Int = -1,
     var mail: ArrayList<Text> = arrayListOf(),
     var turnover: ArrayList<Turnover> = arrayListOf(),
     var isInvited: Boolean = false,

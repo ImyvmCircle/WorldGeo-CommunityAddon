@@ -193,10 +193,6 @@ object CommunityPermissionPolicy {
             return PermissionResult.Denied("community.permission.error.cannot_manage_role")
         }
 
-        if (!canManageByPrivilege(executor, community, targetUUID, executorRole)) {
-            return PermissionResult.Denied("community.permission.error.cannot_manage_privileged")
-        }
-
         return PermissionResult.Allowed
     }
 
@@ -392,22 +388,6 @@ object CommunityPermissionPolicy {
             MemberRoleType.ADMIN -> targetRole == MemberRoleType.MEMBER
             else -> false
         }
-    }
-
-    private fun canManageByPrivilege(
-        executor: ServerPlayerEntity,
-        community: Community,
-        targetUUID: UUID,
-        executorRole: MemberRoleType
-    ): Boolean {
-        if (executorRole == MemberRoleType.OWNER) return true
-
-        if (executorRole == MemberRoleType.ADMIN) {
-            val targetAccount = community.member[targetUUID] ?: return false
-            return targetAccount.governorship == -1
-        }
-
-        return false
     }
 
     private fun isProtoCommunity(community: Community): Boolean {

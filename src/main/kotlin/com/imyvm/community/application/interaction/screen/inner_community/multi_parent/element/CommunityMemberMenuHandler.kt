@@ -98,15 +98,10 @@ fun runPromoteMember(
     community: Community,
     playerExecutor: ServerPlayerEntity,
     playerObject: GameProfile,
-    governorship: Int = -1,
     isPromote: Boolean = true
 ) {
     if (isPromote) {
-        if (governorship == -1) {
-            handleRolePromotion(community, playerExecutor, playerObject)
-        } else {
-            handleGovernorshipUpdate(community, playerExecutor, playerObject, governorship)
-        }
+        handleRolePromotion(community, playerExecutor, playerObject)
     } else {
         handleRoleDemotion(community, playerExecutor, playerObject)
     }
@@ -191,41 +186,6 @@ private fun handleRoleDemotion(
                 playerExecutor.name.string,
                 communityName
             ) ?: net.minecraft.text.Text.literal("${playerObject.name} was demoted to Member in $communityName by ${playerExecutor.name.string}")
-            com.imyvm.community.application.interaction.common.notifyOfficials(community, playerExecutor.server, notification, playerExecutor)
-            
-            com.imyvm.community.infra.CommunityDatabase.save()
-        }
-    }
-}
-
-private fun handleGovernorshipUpdate(
-    community: Community,
-    playerExecutor: ServerPlayerEntity,
-    playerObject: GameProfile,
-    governorship: Int
-) {
-    CommunityPermissionPolicy.executeWithPermission(
-        playerExecutor,
-        { CommunityPermissionPolicy.canManageMember(playerExecutor, community, playerObject.id) }
-    ) {
-        val memberValue = community.member[playerObject.id]
-        if (memberValue != null) {
-            memberValue.governorship = governorship
-            trMenu(
-                playerExecutor,
-                "community.member_management.governorship.success",
-                playerObject.name,
-                governorship
-            )
-            
-            val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
-            val notification = com.imyvm.community.util.Translator.tr(
-                "community.notification.governorship_changed",
-                playerObject.name,
-                governorship,
-                playerExecutor.name.string,
-                communityName
-            ) ?: net.minecraft.text.Text.literal("${playerObject.name}'s governorship was set to $governorship in $communityName by ${playerExecutor.name.string}")
             com.imyvm.community.application.interaction.common.notifyOfficials(community, playerExecutor.server, notification, playerExecutor)
             
             com.imyvm.community.infra.CommunityDatabase.save()
