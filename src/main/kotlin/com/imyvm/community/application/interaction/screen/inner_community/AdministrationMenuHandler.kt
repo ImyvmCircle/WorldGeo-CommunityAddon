@@ -2,9 +2,10 @@ package com.imyvm.community.application.interaction.screen.inner_community
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
+import com.imyvm.community.domain.policy.permission.PermissionResult
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.GeographicFunctionType
-import com.imyvm.community.domain.policy.permission.AdministrationPermission
+import com.imyvm.community.domain.policy.permission.AdminPrivilege
 import com.imyvm.community.domain.model.community.CommunityJoinPolicy
 import com.imyvm.community.entrypoint.screen.inner_community.CommunityAdministrationMenu
 import com.imyvm.community.entrypoint.screen.inner_community.administration_only.AdministrationAdvancementMenu
@@ -17,10 +18,10 @@ import net.minecraft.server.network.ServerPlayerEntity
 fun runAdmRenameCommunity(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit){
     CommunityPermissionPolicy.executeWithPermission(
         player,
-        { 
-            val renameCheck = CommunityPermissionPolicy.canRenameCommunity(player, community)
-            if (!renameCheck.isAllowed()) return@executeWithPermission renameCheck
-            CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdministrationPermission.RENAME_COMMUNITY)
+        {
+            val check = CommunityPermissionPolicy.canRenameCommunity(player, community)
+            if (!check.isAllowed()) return@executeWithPermission check
+            CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdminPrivilege.RENAME_COMMUNITY)
         }
     ) {
         AdministrationRenameMenuAnvil(player, community = community, runBackGrandfather = { p -> runBackToCommunityAdministrationMenu(p, community, runBackGrandfather) }).open()
@@ -31,9 +32,9 @@ fun runAdmManageMembers(player: ServerPlayerEntity, community: Community, runBac
     CommunityPermissionPolicy.executeWithPermission(
         player,
         { 
-            val adminCheck = CommunityPermissionPolicy.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_MEMBERS)
+            val adminCheck = CommunityPermissionPolicy.canExecuteAdministration(player, community, AdminPrivilege.MANAGE_MEMBERS)
             if (!adminCheck.isAllowed()) return@executeWithPermission adminCheck
-            CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdministrationPermission.MANAGE_MEMBERS)
+            CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdminPrivilege.MANAGE_MEMBERS)
         }
     ) {
         CommunityMenuOpener.open(player) { syncId ->
@@ -66,9 +67,9 @@ fun runAdmAdvancement(player: ServerPlayerEntity, community: Community, runBackG
     CommunityPermissionPolicy.executeWithPermission(
         player,
         { 
-            val adminCheck = CommunityPermissionPolicy.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ADVANCEMENT)
+            val adminCheck = CommunityPermissionPolicy.canExecuteAdministration(player, community, AdminPrivilege.MANAGE_ADVANCEMENT)
             if (!adminCheck.isAllowed()) return@executeWithPermission adminCheck
-            CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdministrationPermission.MANAGE_ADVANCEMENT)
+            CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdminPrivilege.MANAGE_ADVANCEMENT)
         }
     ) {
         CommunityMenuOpener.open(player) { syncId ->
@@ -84,9 +85,9 @@ fun runAdmRegion(
     runBackGrandfather: (ServerPlayerEntity) -> Unit
 ) {
     val permission = when (geographicFunctionType) {
-        GeographicFunctionType.GEOMETRY_MODIFICATION -> AdministrationPermission.MODIFY_REGION_GEOMETRY
-        GeographicFunctionType.SETTING_ADJUSTMENT -> AdministrationPermission.MODIFY_REGION_SETTINGS
-        GeographicFunctionType.TELEPORT_POINT_LOCATING -> AdministrationPermission.MANAGE_TELEPORT_POINTS
+        GeographicFunctionType.GEOMETRY_MODIFICATION -> AdminPrivilege.MODIFY_REGION_GEOMETRY
+        GeographicFunctionType.SETTING_ADJUSTMENT -> AdminPrivilege.MODIFY_REGION_SETTINGS
+        GeographicFunctionType.TELEPORT_POINT_LOCATING -> AdminPrivilege.MANAGE_TELEPORT_POINTS
         else -> null
     }
 
@@ -98,7 +99,7 @@ fun runAdmRegion(
             if (permission != null) {
                 CommunityPermissionPolicy.canExecuteOperationInProto(player, community, permission)
             } else {
-                CommunityPermissionPolicy.PermissionResult.Allowed
+                PermissionResult.Allowed
             }
         }
     ) {

@@ -4,8 +4,8 @@ import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.MemberAccount
 import com.imyvm.community.domain.model.Turnover
 import com.imyvm.community.domain.model.community.*
-import com.imyvm.community.domain.policy.permission.AdministrationPermission
-import com.imyvm.community.domain.policy.permission.AdministrationPermissions
+import com.imyvm.community.domain.policy.permission.AdminPrivilege
+import com.imyvm.community.domain.policy.permission.AdminPrivileges
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.text.Text
 import java.io.DataInputStream
@@ -30,7 +30,6 @@ object CommunityDatabase {
                 stream.writeInt(community.joinPolicy.value)
                 stream.writeInt(community.status.value)
                 saveCommunityAnnouncements(stream, community)
-                saveCommunityAdministrationPermissions(stream, community)
                 saveCommunityExpenditures(stream, community)
                 saveCommunityMessages(stream, community)
                 stream.writeLong(community.creationCost)
@@ -58,7 +57,6 @@ object CommunityDatabase {
                 val joinPolicy = CommunityJoinPolicy.fromValue(stream.readInt())
                 val status = CommunityStatus.fromValue(stream.readInt())
                 val announcements = loadCommunityAnnouncements(stream)
-                val administrationPermissions = loadCommunityAdministrationPermissions(stream)
                 val expenditures = loadCommunityExpenditures(stream)
                 val messages = loadCommunityMessages(stream)
                 
@@ -78,7 +76,6 @@ object CommunityDatabase {
                     joinPolicy = joinPolicy,
                     status = status,
                     announcements = announcements,
-                    administrationPermissions = administrationPermissions,
                     expenditures = expenditures,
                     messages = messages,
                     creationCost = creationCost
@@ -140,6 +137,16 @@ object CommunityDatabase {
             
             stream.writeBoolean(memberAccount.isInvited)
             stream.writeBoolean(memberAccount.chatHistoryEnabled)
+
+            val privileges = memberAccount.adminPrivileges
+            stream.writeBoolean(privileges != null)
+            if (privileges != null) {
+                val enabled = privileges.getEnabled()
+                stream.writeInt(enabled.size)
+                for (privilege in enabled) {
+                    stream.writeInt(privilege.ordinal)
+                }
+            }
         }
     }
 
@@ -186,9 +193,24 @@ object CommunityDatabase {
                 true
             }
 
+            val adminPrivileges = try {
+                if (stream.readBoolean()) {
+                    val count = stream.readInt()
+                    val set = mutableSetOf<AdminPrivilege>()
+                    for (k in 0 until count) {
+                        val ordinal = stream.readInt()
+                        if (ordinal < AdminPrivilege.entries.size) set.add(AdminPrivilege.entries[ordinal])
+                    }
+                    AdminPrivileges(set.toMutableSet())
+                } else null
+            } catch (e: Exception) {
+                null
+            }
+
             memberMap[uuid] = MemberAccount(
                 joinedTime = joinedTime,
                 basicRoleType = role,
+                adminPrivileges = adminPrivileges,
                 mail = communityMail,
                 turnover = turnoverList,
                 isInvited = isInvited,
@@ -248,23 +270,6 @@ object CommunityDatabase {
         return announcements
     }
 
-    private fun saveCommunityAdministrationPermissions(stream: DataOutputStream, community: Community) {
-        val adminPermissions = community.administrationPermissions.getEnabledForAdmin()
-        stream.writeInt(adminPermissions.size)
-        for (permission in adminPermissions) {
-            stream.writeInt(permission.ordinal)
-        }
-    }
-
-    private fun loadCommunityAdministrationPermissions(stream: DataInputStream): AdministrationPermissions {
-        val adminPermissionsSize = stream.readInt()
-        val adminPermissions = mutableSetOf<AdministrationPermission>()
-        for (i in 0 until adminPermissionsSize) {
-            adminPermissions.add(AdministrationPermission.entries[stream.readInt()])
-        }
-
-        return AdministrationPermissions(adminPermissions)
-    }
 
     private fun saveCommunityExpenditures(stream: DataOutputStream, community: Community) {
         stream.writeInt(community.expenditures.size)

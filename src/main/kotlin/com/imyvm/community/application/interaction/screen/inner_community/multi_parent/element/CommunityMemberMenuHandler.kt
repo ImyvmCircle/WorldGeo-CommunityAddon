@@ -10,6 +10,7 @@ import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.elemen
 import com.imyvm.community.util.Translator
 import com.imyvm.community.util.Translator.trMenu
 import com.mojang.authlib.GameProfile
+import com.imyvm.community.domain.policy.permission.AdminPrivileges
 import net.minecraft.server.network.ServerPlayerEntity
 
 fun runOpenPlayerRegionScopeChoice(
@@ -119,6 +120,7 @@ private fun handleRolePromotion(
         val memberValue = community.member[playerObject.id]
         if (memberValue != null) {
             memberValue.basicRoleType = com.imyvm.community.domain.model.community.MemberRoleType.ADMIN
+            memberValue.adminPrivileges = AdminPrivileges()
             
             val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
             
@@ -162,6 +164,7 @@ private fun handleRoleDemotion(
         val memberValue = community.member[playerObject.id]
         if (memberValue != null) {
             memberValue.basicRoleType = com.imyvm.community.domain.model.community.MemberRoleType.MEMBER
+            memberValue.adminPrivileges = null
             
             val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
             

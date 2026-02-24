@@ -69,7 +69,7 @@ fun runTogglingPermissionSetting(
     permissionKey: PermissionKey,
     runBack: (ServerPlayerEntity) -> Unit
 ) {
-    val permission = com.imyvm.community.domain.policy.permission.AdministrationPermission.MODIFY_REGION_SETTINGS
+    val permission = com.imyvm.community.domain.policy.permission.AdminPrivilege.MODIFY_REGION_SETTINGS
     com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.executeWithPermission(
         playerExecutor,
         { com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.canExecuteAdministration(playerExecutor, community, permission) }

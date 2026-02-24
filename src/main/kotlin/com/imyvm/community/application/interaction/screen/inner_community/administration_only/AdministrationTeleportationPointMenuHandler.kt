@@ -71,7 +71,7 @@ fun runToggleTeleportPointAccessibility(
     scope: GeoScope,
     runBack: (ServerPlayerEntity) -> Unit
 ) {
-    val permission = com.imyvm.community.domain.policy.permission.AdministrationPermission.MANAGE_TELEPORT_POINTS
+    val permission = com.imyvm.community.domain.policy.permission.AdminPrivilege.MANAGE_TELEPORT_POINTS
     com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.executeWithPermission(
         playerExecutor,
         { com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.canExecuteAdministration(playerExecutor, community, permission) }
@@ -108,7 +108,7 @@ fun runToggleTeleportPointAccessibility(
 }
 
 fun runSettingTeleportPoint(playerExecutor: ServerPlayerEntity, community: Community, scope: GeoScope) {
-    val permission = com.imyvm.community.domain.policy.permission.AdministrationPermission.MANAGE_TELEPORT_POINTS
+    val permission = com.imyvm.community.domain.policy.permission.AdminPrivilege.MANAGE_TELEPORT_POINTS
     com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.executeWithPermission(
         playerExecutor,
         { com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.canExecuteAdministration(playerExecutor, community, permission) }
@@ -258,7 +258,7 @@ fun onCancelTeleportPointSetting(playerExecutor: ServerPlayerEntity, regionNumbe
 }
 
 fun runResetTeleportPoint(playerExecutor: ServerPlayerEntity, community: Community, scope: GeoScope) {
-    val permission = com.imyvm.community.domain.policy.permission.AdministrationPermission.MANAGE_TELEPORT_POINTS
+    val permission = com.imyvm.community.domain.policy.permission.AdminPrivilege.MANAGE_TELEPORT_POINTS
     com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.executeWithPermission(
         playerExecutor,
         { com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.canExecuteAdministration(playerExecutor, community, permission) }

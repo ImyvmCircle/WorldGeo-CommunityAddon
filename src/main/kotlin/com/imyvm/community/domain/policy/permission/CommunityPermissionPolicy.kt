@@ -1,114 +1,41 @@
 package com.imyvm.community.domain.policy.permission
 
 import com.imyvm.community.domain.model.Community
-import com.imyvm.community.domain.model.community.CommunityStatus
 import com.imyvm.community.domain.model.community.MemberRoleType
-import com.imyvm.community.util.Translator
 import net.minecraft.server.network.ServerPlayerEntity
 import java.util.*
 
 object CommunityPermissionPolicy {
-
-    sealed class PermissionResult {
-        object Allowed : PermissionResult()
-        data class Denied(val reasonKey: String, val args: Array<out Any> = emptyArray()) : PermissionResult() {
-            override fun equals(other: Any?): Boolean {
-                if (this === other) return true
-                if (javaClass != other?.javaClass) return false
-
-                other as Denied
-
-                if (reasonKey != other.reasonKey) return false
-                if (!args.contentEquals(other.args)) return false
-
-                return true
-            }
-
-            override fun hashCode(): Int {
-                var result = reasonKey.hashCode()
-                result = 31 * result + args.contentHashCode()
-                return result
-            }
-        }
-
-        fun isAllowed(): Boolean = this is Allowed
-        fun isDenied(): Boolean = this is Denied
-
-        fun sendFeedback(player: ServerPlayerEntity) {
-            if (this is Denied) {
-                player.sendMessage(Translator.tr(reasonKey, *args))
-            }
-        }
-    }
 
     fun canTransferOwnership(
         executor: ServerPlayerEntity,
         community: Community,
         targetUUID: UUID
     ): PermissionResult {
-        if (isCommunityRevoked(community)) {
-            return PermissionResult.Denied("community.permission.error.revoked")
-        }
+        if (isRevokedCommunity(community)) return PermissionResult.Denied("community.permission.error.revoked")
 
         val executorRole = community.getMemberRole(executor.uuid)
             ?: return PermissionResult.Denied("community.permission.error.not_member")
-
-        if (executorRole != MemberRoleType.OWNER) {
-            return PermissionResult.Denied("community.permission.error.owner_only")
-        }
-
-        if (executor.uuid == targetUUID) {
-            return PermissionResult.Denied("community.permission.error.owner_self")
-        }
+        if (executorRole != MemberRoleType.OWNER) return PermissionResult.Denied("community.permission.error.owner_only")
+        if (executor.uuid == targetUUID) return PermissionResult.Denied("community.permission.error.owner_self")
 
         val targetRole = community.getMemberRole(targetUUID)
             ?: return PermissionResult.Denied("community.permission.error.target_not_member")
-
-        if (targetRole == MemberRoleType.APPLICANT || targetRole == MemberRoleType.REFUSED) {
+        if (targetRole == MemberRoleType.APPLICANT || targetRole == MemberRoleType.REFUSED)
             return PermissionResult.Denied("community.permission.error.invalid_target_role")
-        }
 
         return PermissionResult.Allowed
     }
 
-    fun canTogglePermissions(executor: ServerPlayerEntity, community: Community): PermissionResult {
-        if (isCommunityRevoked(community)) {
-            return PermissionResult.Denied("community.permission.error.revoked")
-        }
-
-        val executorRole = community.getMemberRole(executor.uuid)
-            ?: return PermissionResult.Denied("community.permission.error.not_member")
-
-        return if (executorRole == MemberRoleType.OWNER) {
-            PermissionResult.Allowed
-        } else {
-            PermissionResult.Denied("community.permission.error.owner_only")
-        }
-    }
-
-    fun canRenameCommunity(executor: ServerPlayerEntity, community: Community): PermissionResult {
-        if (isCommunityRevoked(community)) {
-            return PermissionResult.Denied("community.permission.error.revoked")
-        }
-
-        val executorRole = community.getMemberRole(executor.uuid)
-            ?: return PermissionResult.Denied("community.permission.error.not_member")
-
-        return if (executorRole == MemberRoleType.OWNER) {
-            PermissionResult.Allowed
-        } else {
-            PermissionResult.Denied("community.permission.error.owner_only")
-        }
-    }
+    fun canRenameCommunity(executor: ServerPlayerEntity, community: Community): PermissionResult =
+        canExecuteAdministration(executor, community, AdminPrivilege.RENAME_COMMUNITY)
 
     fun canExecuteAdministration(
         executor: ServerPlayerEntity,
         community: Community,
-        permission: AdministrationPermission? = null
+        privilege: AdminPrivilege? = null
     ): PermissionResult {
-        if (isCommunityRevoked(community)) {
-            return PermissionResult.Denied("community.permission.error.revoked")
-        }
+        if (isRevokedCommunity(community)) return PermissionResult.Denied("community.permission.error.revoked")
 
         val executorRole = community.getMemberRole(executor.uuid)
             ?: return PermissionResult.Denied("community.permission.error.not_member")
@@ -117,52 +44,38 @@ object CommunityPermissionPolicy {
             MemberRoleType.OWNER -> PermissionResult.Allowed
 
             MemberRoleType.ADMIN -> {
-                if (!isCommunityActive(community)) {
+                if (!isActiveCommunity(community))
                     return PermissionResult.Denied("community.permission.error.not_active")
-                }
-                if (permission != null && !community.administrationPermissions.isEnabledForAdmin(permission)) {
-                    return PermissionResult.Denied("community.permission.error.permission_disabled", arrayOf(permission.displayKey))
+                if (privilege != null) {
+                    val adminPrivileges = community.member[executor.uuid]?.adminPrivileges
+                        ?: return PermissionResult.Denied("community.permission.error.permission_disabled", arrayOf(privilege.displayKey))
+                    if (!adminPrivileges.isEnabled(privilege))
+                        return PermissionResult.Denied("community.permission.error.permission_disabled", arrayOf(privilege.displayKey))
                 }
                 PermissionResult.Allowed
             }
 
-            MemberRoleType.MEMBER -> PermissionResult.Denied("community.permission.error.insufficient")
+            MemberRoleType.MEMBER    -> PermissionResult.Denied("community.permission.error.insufficient")
             MemberRoleType.APPLICANT -> PermissionResult.Denied("community.permission.error.applicant")
-            MemberRoleType.REFUSED -> PermissionResult.Denied("community.permission.error.refused")
+            MemberRoleType.REFUSED   -> PermissionResult.Denied("community.permission.error.refused")
         }
     }
 
     fun canExecuteOperationInProto(
         executor: ServerPlayerEntity,
         community: Community,
-        permission: AdministrationPermission
+        privilege: AdminPrivilege
     ): PermissionResult {
-        if (!isProtoCommunity(community)) {
-            return PermissionResult.Allowed
-        }
+        if (!isProtoCommunity(community)) return PermissionResult.Allowed
 
         val executorRole = community.getMemberRole(executor.uuid)
             ?: return PermissionResult.Denied("community.permission.error.not_member")
 
-        return when (permission) {
-            AdministrationPermission.MANAGE_MEMBERS -> {
-                if (executorRole == MemberRoleType.OWNER) {
-                    PermissionResult.Allowed
-                } else {
-                    PermissionResult.Denied("community.permission.error.proto_owner_only")
-                }
-            }
-            AdministrationPermission.RENAME_COMMUNITY,
-            AdministrationPermission.MANAGE_ANNOUNCEMENTS,
-            AdministrationPermission.MANAGE_ADVANCEMENT,
-            AdministrationPermission.MODIFY_REGION_GEOMETRY,
-            AdministrationPermission.MODIFY_REGION_SETTINGS,
-            AdministrationPermission.MANAGE_TELEPORT_POINTS -> {
-                PermissionResult.Denied("community.permission.error.proto_restricted")
-            }
-            else -> {
-                PermissionResult.Denied("community.permission.error.proto_restricted")
-            }
+        return when (privilege) {
+            AdminPrivilege.MANAGE_MEMBERS ->
+                if (executorRole == MemberRoleType.OWNER) PermissionResult.Allowed
+                else PermissionResult.Denied("community.permission.error.proto_owner_only")
+            else -> PermissionResult.Denied("community.permission.error.proto_restricted")
         }
     }
 
@@ -171,27 +84,19 @@ object CommunityPermissionPolicy {
         community: Community,
         targetUUID: UUID
     ): PermissionResult {
-        if (isCommunityRevoked(community)) {
-            return PermissionResult.Denied("community.permission.error.revoked")
-        }
-
-        if (!isCommunityActive(community)) {
-            return PermissionResult.Denied("community.permission.error.not_active")
-        }
+        if (isRevokedCommunity(community)) return PermissionResult.Denied("community.permission.error.revoked")
+        if (!isActiveCommunity(community)) return PermissionResult.Denied("community.permission.error.not_active")
 
         val executorRole = community.getMemberRole(executor.uuid)
             ?: return PermissionResult.Denied("community.permission.error.not_member")
-
         val targetRole = community.getMemberRole(targetUUID)
             ?: return PermissionResult.Denied("community.permission.error.target_not_member")
 
-        if (executor.uuid == targetUUID && executorRole != MemberRoleType.OWNER) {
+        if (executor.uuid == targetUUID && executorRole != MemberRoleType.OWNER)
             return PermissionResult.Denied("community.permission.error.cannot_manage_self")
-        }
 
-        if (!canManageByRole(executorRole, targetRole)) {
+        if (!canManageByRole(executorRole, targetRole))
             return PermissionResult.Denied("community.permission.error.cannot_manage_role")
-        }
 
         return PermissionResult.Allowed
     }
@@ -205,9 +110,8 @@ object CommunityPermissionPolicy {
         if (manageResult.isDenied()) return manageResult
 
         val targetRole = community.getMemberRole(targetUUID)!!
-        if (targetRole != MemberRoleType.MEMBER) {
+        if (targetRole != MemberRoleType.MEMBER)
             return PermissionResult.Denied("community.permission.error.already_promoted")
-        }
 
         return PermissionResult.Allowed
     }
@@ -221,9 +125,8 @@ object CommunityPermissionPolicy {
         if (manageResult.isDenied()) return manageResult
 
         val targetRole = community.getMemberRole(targetUUID)!!
-        if (targetRole != MemberRoleType.ADMIN) {
+        if (targetRole != MemberRoleType.ADMIN)
             return PermissionResult.Denied("community.permission.error.not_admin")
-        }
 
         return PermissionResult.Allowed
     }
@@ -237,40 +140,37 @@ object CommunityPermissionPolicy {
         if (manageResult.isDenied()) return manageResult
 
         val executorRole = community.getMemberRole(executor.uuid)!!
-        if (executorRole == MemberRoleType.OWNER && executor.uuid == targetUUID) {
+        if (executorRole == MemberRoleType.OWNER && executor.uuid == targetUUID)
             return PermissionResult.Denied("community.permission.error.owner_cannot_remove_self")
-        }
 
         return PermissionResult.Allowed
     }
 
     fun canAuditApplications(executor: ServerPlayerEntity, community: Community): PermissionResult {
-        if (isCommunityRevoked(community)) {
-            return PermissionResult.Denied("community.permission.error.revoked")
-        }
+        if (isRevokedCommunity(community)) return PermissionResult.Denied("community.permission.error.revoked")
 
         val executorRole = community.getMemberRole(executor.uuid)
             ?: return PermissionResult.Denied("community.permission.error.not_member")
 
         if (isProtoCommunity(community)) {
-            return if (executorRole == MemberRoleType.OWNER || executorRole == MemberRoleType.ADMIN) {
+            return if (executorRole == MemberRoleType.OWNER || executorRole == MemberRoleType.ADMIN)
                 PermissionResult.Allowed
-            } else {
+            else
                 PermissionResult.Denied("community.permission.error.proto_only_owner_admin")
-            }
         }
 
         return when (executorRole) {
             MemberRoleType.OWNER -> PermissionResult.Allowed
             MemberRoleType.ADMIN -> {
-                if (isCommunityActive(community) &&
-                    community.administrationPermissions.isEnabledForAdmin(AdministrationPermission.AUDIT_APPLICATIONS)
-                ) {
-                    PermissionResult.Allowed
-                } else {
-                    PermissionResult.Denied("community.permission.error.permission_disabled", 
-                        arrayOf(AdministrationPermission.AUDIT_APPLICATIONS.displayKey))
-                }
+                if (!isActiveCommunity(community))
+                    return PermissionResult.Denied("community.permission.error.not_active")
+                val adminPrivileges = community.member[executor.uuid]?.adminPrivileges
+                    ?: return PermissionResult.Denied("community.permission.error.permission_disabled",
+                        arrayOf(AdminPrivilege.AUDIT_APPLICATIONS.displayKey))
+                if (!adminPrivileges.isEnabled(AdminPrivilege.AUDIT_APPLICATIONS))
+                    return PermissionResult.Denied("community.permission.error.permission_disabled",
+                        arrayOf(AdminPrivilege.AUDIT_APPLICATIONS.displayKey))
+                PermissionResult.Allowed
             }
             else -> PermissionResult.Denied("community.permission.error.insufficient")
         }
@@ -286,10 +186,8 @@ object CommunityPermissionPolicy {
 
         val targetRole = community.getMemberRole(targetUUID)
             ?: return PermissionResult.Denied("community.permission.error.target_not_member")
-
-        if (targetRole != MemberRoleType.APPLICANT) {
+        if (targetRole != MemberRoleType.APPLICANT)
             return PermissionResult.Denied("community.permission.error.not_applicant")
-        }
 
         return PermissionResult.Allowed
     }
@@ -298,113 +196,82 @@ object CommunityPermissionPolicy {
         executor: ServerPlayerEntity,
         community: Community,
         targetUUID: UUID
-    ): PermissionResult {
-        return canAcceptApplicant(executor, community, targetUUID)
-    }
+    ): PermissionResult = canAcceptApplicant(executor, community, targetUUID)
 
     fun canChangeJoinPolicy(executor: ServerPlayerEntity, community: Community): PermissionResult {
-        if (isCommunityRevoked(community)) {
-            return PermissionResult.Denied("community.permission.error.revoked")
-        }
+        if (isRevokedCommunity(community)) return PermissionResult.Denied("community.permission.error.revoked")
 
         val executorRole = community.getMemberRole(executor.uuid)
             ?: return PermissionResult.Denied("community.permission.error.not_member")
 
         if (isProtoCommunity(community)) {
-            return if (executorRole == MemberRoleType.OWNER || executorRole == MemberRoleType.ADMIN) {
+            return if (executorRole == MemberRoleType.OWNER || executorRole == MemberRoleType.ADMIN)
                 PermissionResult.Allowed
-            } else {
+            else
                 PermissionResult.Denied("community.permission.error.proto_only_owner_admin")
-            }
         }
 
-        return canExecuteAdministration(executor, community, AdministrationPermission.CHANGE_JOIN_POLICY)
+        return canExecuteAdministration(executor, community, AdminPrivilege.CHANGE_JOIN_POLICY)
     }
 
     fun canQuitCommunity(executor: ServerPlayerEntity, community: Community): PermissionResult {
-        if (isCommunityRevoked(community)) {
-            return PermissionResult.Denied("community.permission.error.revoked")
-        }
+        if (isRevokedCommunity(community)) return PermissionResult.Denied("community.permission.error.revoked")
 
-        if (!isProtoCommunity(community) && !isCommunityActive(community)) {
+        if (!isProtoCommunity(community) && !isActiveCommunity(community))
             return PermissionResult.Denied("community.permission.error.cannot_quit_status")
-        }
 
         val executorRole = community.getMemberRole(executor.uuid)
             ?: return PermissionResult.Denied("community.permission.error.not_member")
 
-        if (executorRole == MemberRoleType.OWNER) {
+        if (executorRole == MemberRoleType.OWNER)
             return PermissionResult.Denied("community.permission.error.owner_cannot_quit")
-        }
-
-        if (executorRole == MemberRoleType.APPLICANT || executorRole == MemberRoleType.REFUSED) {
+        if (executorRole == MemberRoleType.APPLICANT || executorRole == MemberRoleType.REFUSED)
             return PermissionResult.Denied("community.permission.error.applicant_refused_cannot_quit")
-        }
 
         return PermissionResult.Allowed
     }
 
     fun canViewCommunity(executor: ServerPlayerEntity, community: Community): PermissionResult {
-        if (isCommunityRevoked(community)) {
-            return PermissionResult.Denied("community.permission.error.revoked")
-        }
+        if (isRevokedCommunity(community)) return PermissionResult.Denied("community.permission.error.revoked")
 
         val executorRole = community.getMemberRole(executor.uuid)
             ?: return PermissionResult.Denied("community.permission.error.not_member")
 
-        if (executorRole == MemberRoleType.APPLICANT) {
-            return PermissionResult.Denied("community.permission.error.applicant")
-        }
-
-        if (executorRole == MemberRoleType.REFUSED) {
-            return PermissionResult.Denied("community.permission.error.refused")
-        }
+        if (executorRole == MemberRoleType.APPLICANT) return PermissionResult.Denied("community.permission.error.applicant")
+        if (executorRole == MemberRoleType.REFUSED) return PermissionResult.Denied("community.permission.error.refused")
 
         return PermissionResult.Allowed
     }
 
     fun canDonate(executor: ServerPlayerEntity, community: Community): PermissionResult {
-        if (isCommunityRevoked(community)) {
-            return PermissionResult.Denied("community.permission.error.revoked")
-        }
+        if (isRevokedCommunity(community)) return PermissionResult.Denied("community.permission.error.revoked")
 
         val executorRole = community.getMemberRole(executor.uuid)
             ?: return PermissionResult.Denied("community.permission.error.not_member")
 
-        if (executorRole == MemberRoleType.APPLICANT || executorRole == MemberRoleType.REFUSED) {
+        if (executorRole == MemberRoleType.APPLICANT || executorRole == MemberRoleType.REFUSED)
             return PermissionResult.Denied("community.permission.error.cannot_donate")
-        }
-
-        if (!isCommunityActive(community)) {
-            return PermissionResult.Denied("community.permission.error.not_active")
-        }
+        if (!isActiveCommunity(community)) return PermissionResult.Denied("community.permission.error.not_active")
 
         return PermissionResult.Allowed
     }
 
-    private fun canManageByRole(executorRole: MemberRoleType, targetRole: MemberRoleType): Boolean {
-        return when (executorRole) {
+    fun canManageAdminPrivileges(executor: ServerPlayerEntity, community: Community): PermissionResult {
+        if (isRevokedCommunity(community)) return PermissionResult.Denied("community.permission.error.revoked")
+
+        val executorRole = community.getMemberRole(executor.uuid)
+            ?: return PermissionResult.Denied("community.permission.error.not_member")
+
+        return if (executorRole == MemberRoleType.OWNER) PermissionResult.Allowed
+        else PermissionResult.Denied("community.permission.error.owner_only")
+    }
+
+    private fun canManageByRole(executorRole: MemberRoleType, targetRole: MemberRoleType): Boolean =
+        when (executorRole) {
             MemberRoleType.OWNER -> true
             MemberRoleType.ADMIN -> targetRole == MemberRoleType.MEMBER
             else -> false
         }
-    }
-
-    private fun isProtoCommunity(community: Community): Boolean {
-        return community.status == CommunityStatus.RECRUITING_REALM ||
-                community.status == CommunityStatus.PENDING_MANOR ||
-                community.status == CommunityStatus.PENDING_REALM
-    }
-
-    private fun isCommunityActive(community: Community): Boolean {
-        return community.status == CommunityStatus.ACTIVE_MANOR ||
-                community.status == CommunityStatus.ACTIVE_REALM
-    }
-
-    private fun isCommunityRevoked(community: Community): Boolean {
-        return community.status == CommunityStatus.REVOKED_MANOR ||
-                community.status == CommunityStatus.REVOKED_REALM
-    }
 
     inline fun <T> executeWithPermission(
         executor: ServerPlayerEntity,
@@ -415,6 +282,7 @@ object CommunityPermissionPolicy {
         return if (result.isAllowed()) {
             action()
         } else {
+            executor.closeHandledScreen()
             result.sendFeedback(executor)
             null
         }

@@ -12,7 +12,7 @@ import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.GeographicFunctionType
 import com.imyvm.community.domain.model.PendingOperationType
 import com.imyvm.community.domain.model.ScopeModificationConfirmationData
-import com.imyvm.community.domain.policy.permission.AdministrationPermission
+import com.imyvm.community.domain.policy.permission.AdminPrivilege
 import com.imyvm.community.entrypoint.screen.inner_community.administration_only.AdministrationTeleportPointMenu
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityRegionGlobalGeometryMenu
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityRegionScopeMenu
@@ -220,7 +220,7 @@ fun runExecuteScope(
 ) {
     when (geographicFunctionType){
         GeographicFunctionType.GEOMETRY_MODIFICATION -> {
-            val permission = AdministrationPermission.MODIFY_REGION_GEOMETRY
+            val permission = AdminPrivilege.MODIFY_REGION_GEOMETRY
             com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.executeWithPermission(
                 playerExecutor,
                 { com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.canExecuteAdministration(playerExecutor, community, permission) }

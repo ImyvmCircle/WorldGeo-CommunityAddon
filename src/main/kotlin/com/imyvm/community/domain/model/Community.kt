@@ -1,7 +1,6 @@
 package com.imyvm.community.domain.model
 
 import com.imyvm.community.domain.model.community.*
-import com.imyvm.community.domain.policy.permission.AdministrationPermissions
 import com.imyvm.community.util.Translator
 import com.imyvm.community.util.getFormattedMillsHour
 import com.imyvm.iwg.domain.Region
@@ -17,7 +16,6 @@ class Community(
     var joinPolicy: CommunityJoinPolicy,
     var status: CommunityStatus,
     var announcements: MutableList<Announcement> = mutableListOf(),
-    var administrationPermissions: AdministrationPermissions = AdministrationPermissions(),
     var expenditures: ArrayList<Turnover> = arrayListOf(),
     var messages: MutableList<CommunityMessage> = mutableListOf(),
     var creationCost: Long = 0L

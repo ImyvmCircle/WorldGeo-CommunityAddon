@@ -2,7 +2,7 @@ package com.imyvm.community.application.interaction.command
 
 import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.domain.model.Community
-import com.imyvm.community.domain.policy.permission.AdministrationPermission
+import com.imyvm.community.domain.policy.permission.AdminPrivilege
 import com.imyvm.community.domain.model.community.Announcement
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.TextParser
@@ -119,7 +119,7 @@ private fun parseUUID(player: ServerPlayerEntity, idString: String): UUID? {
 }
 
 private fun canManage(player: ServerPlayerEntity, community: Community): Boolean {
-    if (CommunityPermissionPolicy.canExecuteAdministration(player, community, AdministrationPermission.MANAGE_ANNOUNCEMENTS).isAllowed()) {
+    if (CommunityPermissionPolicy.canExecuteAdministration(player, community, AdminPrivilege.MANAGE_ANNOUNCEMENTS).isAllowed()) {
         return true
     }
     player.sendMessage(Translator.tr("community.announcement.error.no_permission"))

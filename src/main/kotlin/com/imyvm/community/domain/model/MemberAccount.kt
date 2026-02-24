@@ -1,11 +1,13 @@
 package com.imyvm.community.domain.model
 
 import com.imyvm.community.domain.model.community.MemberRoleType
+import com.imyvm.community.domain.policy.permission.AdminPrivileges
 import net.minecraft.text.Text
 
 data class MemberAccount (
     var joinedTime: Long,
     var basicRoleType: MemberRoleType,
+    var adminPrivileges: AdminPrivileges? = null,
     var mail: ArrayList<Text> = arrayListOf(),
     var turnover: ArrayList<Turnover> = arrayListOf(),
     var isInvited: Boolean = false,

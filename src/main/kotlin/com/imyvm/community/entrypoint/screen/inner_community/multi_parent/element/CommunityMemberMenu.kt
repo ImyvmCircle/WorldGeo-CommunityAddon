@@ -4,6 +4,7 @@ import com.imyvm.community.application.interaction.screen.inner_community.multi_
 import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.runOpenPlayerRegionScopeChoice
 import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.runPromoteMember
 import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.runRemoveMember
+import com.imyvm.community.application.interaction.screen.inner_community.administration_only.runOpenAdminPrivilegeMenu
 import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.community.MemberRoleType
@@ -69,11 +70,20 @@ class CommunityMemberMenu(
         ) { runNotifyMember(community, playerExecutor, playerObject) }
 
         if (community.getMemberRole(playerExecutor.uuid) == MemberRoleType.OWNER) {
-            addButton(
-                slot = 25,
-                name = Translator.tr("ui.community.administration.member.member_page.button.promote.admin")?.string ?: "Promote to Admin",
-                item = Items.COMMAND_BLOCK
-            ) { runPromoteMember(community, playerExecutor, playerObject) }
+            if (community.getMemberRole(playerObject.id) == MemberRoleType.MEMBER) {
+                addButton(
+                    slot = 25,
+                    name = Translator.tr("ui.community.administration.member.member_page.button.promote.admin")?.string ?: "Promote to Admin",
+                    item = Items.COMMAND_BLOCK
+                ) { runPromoteMember(community, playerExecutor, playerObject) }
+            }
+            if (community.getMemberRole(playerObject.id) == MemberRoleType.ADMIN) {
+                addButton(
+                    slot = 25,
+                    name = Translator.tr("ui.community.administration.member.member_page.button.manage_privileges")?.string ?: "Manage Privileges",
+                    item = Items.COMMAND_BLOCK
+                ) { runOpenAdminPrivilegeMenu(playerExecutor, community, playerObject.id, runBack) }
+            }
         }
     }
 

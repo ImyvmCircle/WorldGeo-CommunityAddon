@@ -93,8 +93,7 @@ A community's owner and administrators possess extensive management capabilities
 - **Manage Members** - Access comprehensive member management tools;
 - **Community Audit** - Review and process membership applications when join policy requires approval;
 - **Announcement** - Post announcements to all members;
-- **Advancement** *()* - Manage community achievements and progression systems;
-- **Assets** - Administer community resources and treasury;
+- **Advancement** *(planned)* - Manage community achievements and progression systems;
 - **Region Geometry** - Modify the community's geographical boundaries and shape;
 - **Region Settings** - Adjust properties and rules for the community's region;
 - **Teleport Points** - Create and manage teleportation destinations within the region; and
@@ -108,9 +107,8 @@ The community implements a comprehensive permission system that governs what ope
 
 **OWNER (Full Authority)**
 - Possesses unrestricted access to all administration functions regardless of permission settings;
-- Can transfer ownership to another member (excluding APPLICANT or REFUSED);
-- Can enable or disable the council system;
-- Can toggle specific administration permissions for administrators and council;
+- Can transfer ownership to another member (excluding APPLICANT or REFUSED) *(planned)*;
+- Can toggle each administrator's individual privileges through the member management menu;
 - **Cannot** promote, demote, or remove themselves;
 - **Cannot** quit the community.
 
@@ -171,20 +169,19 @@ The community implements a comprehensive permission system that governs what ope
 
 ##### Owner Permission Toggles
 
-Owners may individually enable or disable administration operations for **administrators** and **council** through permission management menus:
+Owners may individually enable or disable administration operations **per administrator** through the **Manage Privileges** button in each administrator's member page:
 
 - `RENAME_COMMUNITY` - Modify community name;
 - `MANAGE_MEMBERS` - Promote, demote, remove members;
 - `AUDIT_APPLICATIONS` - Review membership applications;
 - `MANAGE_ANNOUNCEMENTS` - Create and delete announcements;
-- `MANAGE_ADVANCEMENT` - Administer achievement systems;
-- `MANAGE_ASSETS` - Control community treasury;
+- `MANAGE_ADVANCEMENT` - Administer achievement systems *(planned)*;
 - `MODIFY_REGION_GEOMETRY` - Alter community boundaries;
 - `MODIFY_REGION_SETTINGS` - Adjust region properties;
 - `MANAGE_TELEPORT_POINTS` - Create teleportation destinations;
 - `CHANGE_JOIN_POLICY` - Toggle join policy settings.
 
-By default, all permissions are enabled. Owners may selectively disable specific operations to restrict administrator and council authority while maintaining their own full access.
+By default, all privileges are enabled for each administrator. Owners may selectively disable specific operations per administrator, maintaining their own full access at all times.
 
 ##### Administrative Notifications
 
@@ -604,8 +601,7 @@ Communities maintain a treasury that tracks all member donations. Any player who
 Members may donate through the **Community Assets Menu**, accessible via:
 
 - The **Assets** button in the Community Menu (description section); or
-- The **Donate to Community** button in the Community Menu (interaction section); or
-- The **Assets** button in the Community Administration Menu (for administrators).
+- The **Donate to Community** button in the Community Menu (interaction section).
 
 The donation menu presents six predefined amounts: **1.00**, **5.00**, **10.00**, **50.00**, **100.00**, and **500.00** (displayed as currency values divided by 100). When a member selects an amount:
 
