@@ -402,6 +402,7 @@
   "community.notification.join_policy_changed": "§e§l[POLICY CHANGE]§r §eJoin policy changed from §6§l{0}§r §eto §a§l{1}§r §ein §f§l{3}§r §eby §b{2}",
   "community.notification.renamed": "§b§l[RENAME]§r §bCommunity renamed from §e§l'{0}'§r §bto §a§l'{1}'§r §bby §d{2}",
   "community.notification.setting_changed": "§e§l[SETTING]§r §eSetting §6§l'{0}'§r §echanged from §c§l{1}§r §eto §a§l{2}§r §7{3} {4}§r §ein §f§l{6}§r §eby §b{5}",
+  "community.notification.auto_grant": "§6§l[AUTO EXEMPTION]§r §eYour §6§l{0}§r §epermission has been automatically set to §a§l{1}§r §ein §f§l{2}§r §eto preserve your access.",
   "community.notification.teleport_point_set": "§d§l[TELEPORT]§r §dTeleport point for scope §e§l{0}§r §dset to §b§l({1}, {2}, {3})§r §din §f§l{5}§r §dby §b{4}§d. Fee: §6{6}§d, Reason: §7{7}",
   "community.notification.teleport_point_reset": "§c§l[TELEPORT RESET]§r §cTeleport point for scope §e§l'{0}'§r §cwas §4§lreset§r §cin §f§l{2}§r §cby §b{1}",
   "community.notification.target.removed": "§c§l[REMOVED]§r §cYou were §4§lremoved§r §cfrom §f§l{0}§r §cby §6{1}",

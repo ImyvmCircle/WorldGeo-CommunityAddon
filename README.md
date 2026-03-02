@@ -243,6 +243,8 @@ Administrators can configure **permission settings** to control what actions pla
 
 Settings can be applied **globally** (affecting all members) or **per-player** (overriding only for a specific member). When a setting differs from the game's default behavior, a fee is charged based on the affected area and permission type.
 
+When a global region-level permission setting is applied that deviates from the game default, the system automatically grants each current formal member a personal exemption restoring the default value — preserving their existing access. The same exemption is also granted to new members joining a community whose settings already deviate from the default. This automatic exemption does not apply to PvP or fly permissions.
+
 #### Rule Settings
 
 Administrators can configure **rule settings** that affect game mechanics within the community's region or its sub-scopes. Rule settings are always global and cannot be applied per-player:

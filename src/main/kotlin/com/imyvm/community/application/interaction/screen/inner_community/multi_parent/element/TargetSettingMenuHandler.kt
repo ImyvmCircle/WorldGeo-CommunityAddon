@@ -382,6 +382,14 @@ fun onConfirmSettingChange(playerExecutor: ServerPlayerEntity, regionNumberId: I
     ) ?: Text.literal("Setting changed")
     notifyFormalMembers(community, playerExecutor.server, notification)
 
+    if (scope == null && request.targetPlayerUUID == null &&
+        permissionKey != PermissionKey.PVP && permissionKey != PermissionKey.FLY) {
+        val defaultValue = RegionDataApi.getPermissionValueRegion(null, null, null, permissionKey)
+        if (request.newValue != defaultValue) {
+            autoGrantExistingMembersOnSettingChange(permissionKey, defaultValue, playerExecutor, community, region)
+        }
+    }
+
     return 1
 }
 
@@ -409,6 +417,7 @@ fun autoGrantDefaultPermissions(newMemberUUID: UUID, executorPlayer: ServerPlaye
     val region = community.getRegion() ?: return
 
     for (permissionKey in PermissionKey.entries) {
+        if (permissionKey == PermissionKey.PVP || permissionKey == PermissionKey.FLY) continue
         val defaultValue = RegionDataApi.getPermissionValueRegion(null, null, null, permissionKey)
 
         val globalSetting = RegionDataApi.getRegionGlobalSettings(region)
@@ -441,6 +450,45 @@ fun revokeGrantedPermissions(memberUUID: UUID, community: Community) {
     region.settings.removeIf { it is PermissionSetting && it.isPersonal && it.playerUUID == memberUUID }
     region.geometryScope.forEach { scope ->
         scope.settings.removeIf { it is PermissionSetting && it.isPersonal && it.playerUUID == memberUUID }
+    }
+}
+
+private fun autoGrantExistingMembersOnSettingChange(
+    permissionKey: PermissionKey,
+    defaultValue: Boolean,
+    executorPlayer: ServerPlayerEntity,
+    community: Community,
+    region: Region
+) {
+    community.member.forEach { (memberUUID, memberAccount) ->
+        if (memberAccount.basicRoleType == MemberRoleType.APPLICANT ||
+            memberAccount.basicRoleType == MemberRoleType.REFUSED) return@forEach
+
+        val alreadyHasPersonalSetting = RegionDataApi.getRegionPersonalSettings(region, memberUUID)
+            .filterIsInstance<PermissionSetting>()
+            .any { it.key == permissionKey }
+
+        if (alreadyHasPersonalSetting) return@forEach
+
+        val memberName = UtilApi.getPlayerName(executorPlayer.server, memberUUID)
+        if (memberName == memberUUID.toString()) return@forEach
+
+        PlayerInteractionApi.addSettingRegion(
+            executorPlayer,
+            region,
+            permissionKey.toString(),
+            defaultValue.toString(),
+            memberName
+        )
+
+        val notification = Translator.tr(
+            "community.notification.auto_grant",
+            getPermissionKeyDisplayName(permissionKey),
+            defaultValue.toString(),
+            region.name
+        ) ?: Text.literal("Your ${permissionKey.toString().lowercase()} permission was auto-adjusted in ${region.name}")
+        executorPlayer.server.playerManager.getPlayer(memberUUID)?.sendMessage(notification)
+        memberAccount.mail.add(notification)
     }
 }
 
