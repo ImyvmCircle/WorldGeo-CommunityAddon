@@ -3,7 +3,6 @@ package com.imyvm.community.domain.policy.territory
 import com.imyvm.community.infra.PricingConfig
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.domain.component.RuleKey
-import kotlin.math.ln
 
 data class PricingConfiguration(
     val freeArea: Double,
@@ -16,9 +15,7 @@ data class CreationCostResult(
     val baseCost: Long,
     val areaCost: Long,
     val totalCost: Long,
-    val area: Double,
-    val tierIndex: Int,
-    val tierMultiplier: Long
+    val area: Double
 )
 
 data class ModificationCostResult(
@@ -26,11 +23,7 @@ data class ModificationCostResult(
     val areaBefore: Double,
     val areaAfter: Double,
     val cost: Long,
-    val isIncrease: Boolean,
-    val tierBefore: Int,
-    val tierAfter: Int,
-    val tierMultiplierBefore: Long,
-    val tierMultiplierAfter: Long
+    val isIncrease: Boolean
 )
 
 data class SettingItemCostChange(
@@ -44,24 +37,61 @@ data class SettingItemCostChange(
 
 object TerritoryPricing {
 
-    fun getLandTierIndex(area: Double, freeArea: Double): Int {
-        if (area <= freeArea) return 0
-        return (ln(area / freeArea) / ln(4.0)).toInt()
+    fun forEachLandBracket(
+        fromArea: Double,
+        toArea: Double,
+        isManor: Boolean,
+        action: (tierNum: Int, bracketLow: Double, bracketHigh: Double, areaInBracket: Double, multiplier: Long, cost: Long) -> Unit
+    ) {
+        val config = getPricingConfig(isManor)
+        val x = config.freeArea
+        val n = config.pricePerUnit.toDouble() / config.unitSize
+        val lo = maxOf(fromArea, x)
+        val hi = maxOf(toArea, x)
+        if (lo >= hi) return
+        var tierLow = x
+        var mult = 1L
+        var tierNum = 1
+        while (tierLow * 4.0 <= lo) { tierLow *= 4.0; mult = mult shl 1; tierNum++ }
+        while (tierLow < hi) {
+            val tierHigh = tierLow * 4.0
+            val bracketFrom = maxOf(lo, tierLow)
+            val bracketTo = minOf(hi, tierHigh)
+            val areaInBracket = bracketTo - bracketFrom
+            if (areaInBracket > 0) action(tierNum, tierLow, tierHigh, areaInBracket, mult, (areaInBracket * n * mult).toLong())
+            tierLow = tierHigh; mult = mult shl 1; tierNum++
+        }
     }
 
-    fun getLandTierMultiplier(tierIndex: Int): Long = (1L shl tierIndex)
+    fun forEachSettingBracket(
+        fromArea: Double,
+        toArea: Double,
+        coefficientPerUnit: Long,
+        unitSize: Double,
+        freeArea: Double,
+        action: (tierNum: Int, bracketLow: Double, bracketHigh: Double, areaInBracket: Double, multiplier: Long, cost: Long) -> Unit
+    ) {
+        if (fromArea >= toArea || coefficientPerUnit == 0L) return
+        val x = freeArea
+        val n = coefficientPerUnit.toDouble() / unitSize
+        var tierLow = 0.0
+        var tierHigh = x
+        var mult = 1L
+        var tierNum = 1
+        while (tierHigh <= fromArea) { tierLow = tierHigh; tierHigh = tierLow * 4.0; mult++; tierNum++ }
+        while (tierLow < toArea) {
+            val bracketFrom = maxOf(fromArea, tierLow)
+            val bracketTo = minOf(toArea, tierHigh)
+            val areaInBracket = bracketTo - bracketFrom
+            if (areaInBracket > 0) action(tierNum, tierLow, tierHigh, areaInBracket, mult, (areaInBracket * n * mult).toLong())
+            tierLow = tierHigh; tierHigh = tierLow * 4.0; mult++; tierNum++
+        }
+    }
 
     fun calculateLandCostTotal(area: Double, isManor: Boolean): Long {
-        val config = getPricingConfig(isManor)
-        if (area <= config.freeArea) return 0L
-        val tier = getLandTierIndex(area, config.freeArea)
-        val multiplier = getLandTierMultiplier(tier)
-        return (multiplier * config.pricePerUnit * (area - config.freeArea) / config.unitSize).toLong()
-    }
-
-    fun getSettingTierMultiplier(area: Double, freeArea: Double): Int {
-        if (area < freeArea) return 1
-        return (ln(area / freeArea) / ln(4.0)).toInt() + 2
+        var total = 0L
+        forEachLandBracket(0.0, area, isManor) { _, _, _, _, _, cost -> total += cost }
+        return total
     }
 
     fun calculateSettingCostTotal(
@@ -72,9 +102,10 @@ object TerritoryPricing {
         freeArea: Double
     ): Long {
         if (area <= 0.0 || coefficientPerUnit == 0L) return 0L
-        val multiplier = getSettingTierMultiplier(area, freeArea)
+        var total = 0L
+        forEachSettingBracket(0.0, area, coefficientPerUnit, unitSize, freeArea) { _, _, _, _, _, cost -> total += cost }
         val denominator = if (isPlayerTarget) PricingConfig.PERMISSION_TARGET_PLAYER_DENOMINATOR.value else 1L
-        return (multiplier * coefficientPerUnit * area / unitSize / denominator).toLong()
+        return total / denominator
     }
 
     fun calculateSettingCostChange(
@@ -107,15 +138,11 @@ object TerritoryPricing {
     fun calculateCreationCost(area: Double, isManor: Boolean): CreationCostResult {
         val baseCost = if (isManor) PricingConfig.PRICE_MANOR.value else PricingConfig.PRICE_REALM.value
         val areaCost = calculateLandCostTotal(area, isManor)
-        val config = getPricingConfig(isManor)
-        val tier = getLandTierIndex(area, config.freeArea)
         return CreationCostResult(
             baseCost = baseCost,
             areaCost = areaCost,
             totalCost = baseCost + areaCost,
-            area = area,
-            tierIndex = tier,
-            tierMultiplier = getLandTierMultiplier(tier)
+            area = area
         )
     }
     
@@ -130,18 +157,12 @@ object TerritoryPricing {
         } else {
             -((costOld - costNew) * config.refundRate).toLong()
         }
-        val tierBefore = getLandTierIndex(currentTotalArea, config.freeArea)
-        val tierAfter = getLandTierIndex(newTotalArea, config.freeArea)
         return ModificationCostResult(
             areaChange = areaChange,
             areaBefore = currentTotalArea,
             areaAfter = newTotalArea,
             cost = cost,
-            isIncrease = isIncrease,
-            tierBefore = tierBefore,
-            tierAfter = tierAfter,
-            tierMultiplierBefore = getLandTierMultiplier(tierBefore),
-            tierMultiplierAfter = getLandTierMultiplier(tierAfter)
+            isIncrease = isIncrease
         )
     }
 

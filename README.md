@@ -65,13 +65,15 @@ A **community creation request** may be initialized spontaneously by any player 
     * **Base Cost**:
         * that a `MANOR` is charged 5000 by default; and
         * that a `REALM` is charged 8000 by default.
-    * **Area-Based Fee** (charged proportionally based on region size):
-        * **Manor**: 1000 per 10,000 m² (first 10,000 m² free)
-            * Formula: `baseCost + max(0, (area - 10000) / 10000 * 1000)`
-            * Example: A 25,000 m² manor costs 5000 + 1500 = 6500 (65.00)
-        * **Realm**: 3000 per 40,000 m² (first 40,000 m² free)
-            * Formula: `baseCost + max(0, (area - 40000) / 40000 * 3000)`
-            * Example: An 80,000 m² realm costs 8000 + 3000 = 11000 (110.00)
+    * **Area-Based Fee** — uses **tiered bracket pricing** (progressive, like a tax bracket system):
+        * Each tier covers a range 4× wider than the previous; the multiplier doubles each tier (×1, ×2, ×4, …);
+        * Only the area **within each bracket** is charged at that bracket's rate — reaching a higher tier does not retroactively affect lower tiers;
+        * **Manor** (first 10,000 m² free, base rate 1,000 per 10,000 m²):
+            * Tier 1: \[10,000, 40,000\) m² at ×1 rate;
+            * Tier 2: \[40,000, 160,000\) m² at ×2 rate; and so on;
+        * **Realm** (first 40,000 m² free, base rate 3,000 per 40,000 m²):
+            * Tier 1: \[40,000, 160,000\) m² at ×1 rate;
+            * Tier 2: \[160,000, 640,000\) m² at ×2 rate; and so on;
 
 When criteria above are achieved, a player may **initialize the creation request**, and the player
 
@@ -269,12 +271,12 @@ Effect settings (applying potion effects to players within the territory) are pl
 
 ##### Pricing
 
-Setting modifications are charged from community assets:
+Setting modifications are charged from community assets using **tiered bracket pricing**:
 
-- **Base fee** varies by community type (Manor/Realm) and setting layer (Region/Scope);
-- **Area fee** is calculated by multiplying the affected area by a per-setting coefficient (configurable);
+- **Area-based fee** uses progressive brackets; each tier has a linear multiplier (×1, ×2, ×3, …) applied only to the area within that bracket;
+- Tier boundaries are based on the community's free area threshold (manor: 10,000 m², realm: 40,000 m²): Tier 1 covers \[0, free area\), Tier 2 covers \[free area, 4×free area\), and so on;
 - **Player-specific** settings cost 20% of the global rate;
-- **Restoring a setting to its default value** is always free.
+- **Restoring a setting to its default value** is refunded at 50% of the original cost.
 
 Upon successful modification, all formal members (owner, admins, and members) are notified.
 
@@ -314,31 +316,19 @@ On success, assets are deducted and a notification mail is sent to all formal me
 
 ##### Pricing System
 
-Territory modifications incur costs or provide refunds based on area changes:
+Territory modifications incur costs or provide refunds based on area changes, using the same **tiered bracket pricing** as creation:
 
 **Expansion Costs**
-- Area increases are charged at full price using the same rates as initial creation;
-- **Manor**: 1,000 per 10,000 m² unit;
-- **Realm**: 3,000 per 40,000 m² unit;
-- Example: Expanding a manor by 15,000 m² costs 1,500.00.
+- Only the *incremental area* between old and new total is priced bracket-by-bracket;
+- **Manor**: base rate 1,000 per 10,000 m², geometric tier multipliers (×1, ×2, ×4, …);
+- **Realm**: base rate 3,000 per 40,000 m², same bracket structure;
 
 **Contraction Refunds**
-- Area decreases are refunded at 50% of the original price (default rate);
-- Refund calculation considers your community's free area allowance:
-  - **Full refund**: If your total area after reduction remains above the free area limit (10,000 m² for manors, 40,000 m² for realms), all decreased area is refunded at the 50% rate;
-  - **Partial refund**: If total area after reduction falls below the free area limit, only the portion that was above the limit is refunded;
-  - **No refund**: If your community's area is already within the free area allowance, no refund is issued.
+- The *reduced area* is refunded at 50% of its equivalent expansion cost, bracket-by-bracket;
+- Area within the free area threshold (10,000 m² for manors, 40,000 m² for realms) has no charge and no refund value.
 
-##### Confirmation Display
-
-Before execution, you will see a **Land Deed Statement** displaying:
-
-- Administrative district name being modified;
-- Current area, new area, and net change;
-- Cost (for expansion) or refund amount (for contraction);
-- Detailed calculation showing how the price was determined;
-- Current community assets and projected balance after modification;
-- Warning if assets are insufficient (expansion only).
+**Confirmation Display**
+Before execution, a bracket-by-bracket breakdown is shown for each tier involved, including the tier number, bracket range, area within that bracket, multiplier, and partial cost (or refund).
 
 ##### Requirements
 

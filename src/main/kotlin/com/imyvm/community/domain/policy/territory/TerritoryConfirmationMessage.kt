@@ -36,17 +36,13 @@ object TerritoryConfirmationMessage {
             ?: Text.literal("Area: ${String.format("%.2f", costResult.area)} m²"))
 
         if (costResult.areaCost > 0) {
-            val config = TerritoryPricing.getPricingConfig(isManor)
-            messages.add(Translator.tr(
-                "community.create.confirm.area_tier",
-                (costResult.tierIndex + 1).toString(),
-                costResult.tierMultiplier.toString(),
-                String.format("%.2f", config.pricePerUnit / 100.0),
-                String.format("%.0f", config.unitSize),
-                String.format("%.2f", costResult.area),
-                String.format("%.2f", config.freeArea),
-                String.format("%.2f", costResult.areaCost / 100.0)
-            ) ?: Text.literal("Land fee Tier ${costResult.tierIndex + 1}: ${costResult.tierMultiplier} × ${String.format("%.2f", config.pricePerUnit / 100.0)}/${String.format("%.0f", config.unitSize)}m² × (${String.format("%.2f", costResult.area)} - ${String.format("%.2f", config.freeArea)}) = ${String.format("%.2f", costResult.areaCost / 100.0)}"))
+            messages.add(Translator.tr("community.create.confirm.land_brackets") ?: Text.literal("Land Fee (tiered):"))
+            TerritoryPricing.forEachLandBracket(0.0, costResult.area, isManor) { tierNum, low, high, areaIn, mult, cost ->
+                messages.add(Translator.tr("community.pricing.bracket_line",
+                    tierNum.toString(), String.format("%.2f", low), String.format("%.2f", high),
+                    String.format("%.2f", areaIn), mult.toString(), String.format("%.2f", cost / 100.0)
+                ) ?: Text.literal("  Tier $tierNum (${String.format("%.2f", low)} ~ ${String.format("%.2f", high)} m²): ${String.format("%.2f", areaIn)} m² × ×$mult = ${String.format("%.2f", cost / 100.0)}"))
+            }
         } else {
             messages.add(Translator.tr("community.create.confirm.area_free") ?: Text.literal("Land fee: Free (within free area)"))
         }
@@ -83,29 +79,26 @@ object TerritoryConfirmationMessage {
 
         val landCostAbs = Math.abs(costResult.cost)
         if (costResult.isIncrease) {
-            messages.add(Translator.tr(
-                "community.modification.confirm.land_tier",
-                (costResult.tierAfter + 1).toString(),
-                costResult.tierMultiplierAfter.toString(),
-                String.format("%.2f", config.pricePerUnit / 100.0),
-                String.format("%.0f", config.unitSize),
-                String.format("%.2f", costResult.areaAfter),
-                String.format("%.2f", config.freeArea),
-                String.format("%.2f", TerritoryPricing.calculateLandCostTotal(costResult.areaAfter, isManor) / 100.0),
-                String.format("%.2f", TerritoryPricing.calculateLandCostTotal(costResult.areaBefore, isManor) / 100.0),
-                String.format("%.2f", costResult.cost / 100.0)
-            ) ?: Text.literal("Land Tier ${costResult.tierAfter + 1}: ${costResult.tierMultiplierAfter}x rate, f(after) - f(before) = ${String.format("%.2f", costResult.cost / 100.0)}"))
+            messages.add(Translator.tr("community.pricing.land.increase_header", String.format("%.2f", costResult.areaChange))
+                ?: Text.literal("Land Fee (+${String.format("%.2f", costResult.areaChange)} m²):"))
+            TerritoryPricing.forEachLandBracket(costResult.areaBefore, costResult.areaAfter, isManor) { tierNum, low, high, areaIn, mult, cost ->
+                messages.add(Translator.tr("community.pricing.bracket_line",
+                    tierNum.toString(), String.format("%.2f", low), String.format("%.2f", high),
+                    String.format("%.2f", areaIn), mult.toString(), String.format("%.2f", cost / 100.0)
+                ) ?: Text.literal("  Tier $tierNum (${String.format("%.2f", low)} ~ ${String.format("%.2f", high)} m²): ${String.format("%.2f", areaIn)} m² × ×$mult = ${String.format("%.2f", cost / 100.0)}"))
+            }
         } else {
             val refundRate = (config.refundRate * 100).toInt()
-            messages.add(Translator.tr(
-                "community.modification.confirm.land_refund_tier",
-                (costResult.tierBefore + 1).toString(),
-                costResult.tierMultiplierBefore.toString(),
-                String.format("%.2f", TerritoryPricing.calculateLandCostTotal(costResult.areaBefore, isManor) / 100.0),
-                String.format("%.2f", TerritoryPricing.calculateLandCostTotal(costResult.areaAfter, isManor) / 100.0),
-                refundRate.toString(),
-                String.format("%.2f", landCostAbs / 100.0)
-            ) ?: Text.literal("Land Tier ${costResult.tierBefore + 1}: refund = [f(before) - f(after)] × $refundRate% = ${String.format("%.2f", landCostAbs / 100.0)}"))
+            messages.add(Translator.tr("community.pricing.land.decrease_header", String.format("%.2f", -costResult.areaChange))
+                ?: Text.literal("Land Refund (-${String.format("%.2f", -costResult.areaChange)} m²):"))
+            TerritoryPricing.forEachLandBracket(costResult.areaAfter, costResult.areaBefore, isManor) { tierNum, low, high, areaIn, mult, cost ->
+                messages.add(Translator.tr("community.pricing.bracket_line",
+                    tierNum.toString(), String.format("%.2f", low), String.format("%.2f", high),
+                    String.format("%.2f", areaIn), mult.toString(), String.format("%.2f", cost / 100.0)
+                ) ?: Text.literal("  Tier $tierNum (${String.format("%.2f", low)} ~ ${String.format("%.2f", high)} m²): ${String.format("%.2f", areaIn)} m² × ×$mult = ${String.format("%.2f", cost / 100.0)}"))
+            }
+            messages.add(Translator.tr("community.pricing.refund_summary", refundRate.toString(), String.format("%.2f", landCostAbs / 100.0))
+                ?: Text.literal("  × $refundRate% refund = ${String.format("%.2f", landCostAbs / 100.0)}"))
         }
 
         var totalCost = costResult.cost
@@ -161,7 +154,6 @@ object TerritoryConfirmationMessage {
         currentTotalArea: Double
     ): List<Text> {
         val messages = mutableListOf<Text>()
-        val config = TerritoryPricing.getPricingConfig(isManor)
 
         val shapeText = when (shapeType) {
             GeoShapeType.CIRCLE -> Translator.tr("community.shape.circle")?.string ?: "circle"
@@ -169,8 +161,6 @@ object TerritoryConfirmationMessage {
             GeoShapeType.POLYGON -> Translator.tr("community.shape.polygon")?.string ?: "polygon"
             else -> Translator.tr("community.shape.unknown")?.string ?: "unknown"
         }
-        val tierAfterIndex = TerritoryPricing.getLandTierIndex(currentTotalArea + area, config.freeArea)
-        val tierAfterMultiplier = TerritoryPricing.getLandTierMultiplier(tierAfterIndex)
         var totalCost = fixedCost + landCostChange + settingChanges.sumOf { it.costChange }
 
         messages.add(Translator.tr("community.scope_add.confirm.header") ?: Text.literal("====== SCOPE CREATION CONFIRMATION ======"))
@@ -180,18 +170,14 @@ object TerritoryConfirmationMessage {
         messages.add(Translator.tr("community.scope_add.confirm.base_cost", String.format("%.2f", fixedCost / 100.0)) ?: Text.literal("Base Cost: ${String.format("%.2f", fixedCost / 100.0)}"))
 
         if (landCostChange > 0) {
-            messages.add(Translator.tr(
-                "community.scope_add.confirm.land_tier",
-                (tierAfterIndex + 1).toString(),
-                tierAfterMultiplier.toString(),
-                String.format("%.2f", config.pricePerUnit / 100.0),
-                String.format("%.0f", config.unitSize),
-                String.format("%.2f", currentTotalArea + area),
-                String.format("%.2f", config.freeArea),
-                String.format("%.2f", TerritoryPricing.calculateLandCostTotal(currentTotalArea + area, isManor) / 100.0),
-                String.format("%.2f", TerritoryPricing.calculateLandCostTotal(currentTotalArea, isManor) / 100.0),
-                String.format("%.2f", landCostChange / 100.0)
-            ) ?: Text.literal("Land Tier ${tierAfterIndex + 1}: ${tierAfterMultiplier}x rate, f(after) - f(before) = ${String.format("%.2f", landCostChange / 100.0)}"))
+            messages.add(Translator.tr("community.pricing.land.increase_header", String.format("%.2f", area))
+                ?: Text.literal("Land Fee (+${String.format("%.2f", area)} m²):"))
+            TerritoryPricing.forEachLandBracket(currentTotalArea, currentTotalArea + area, isManor) { tierNum, low, high, areaIn, mult, cost ->
+                messages.add(Translator.tr("community.pricing.bracket_line",
+                    tierNum.toString(), String.format("%.2f", low), String.format("%.2f", high),
+                    String.format("%.2f", areaIn), mult.toString(), String.format("%.2f", cost / 100.0)
+                ) ?: Text.literal("  Tier $tierNum (${String.format("%.2f", low)} ~ ${String.format("%.2f", high)} m²): ${String.format("%.2f", areaIn)} m² × ×$mult = ${String.format("%.2f", cost / 100.0)}"))
+            }
         } else {
             messages.add(Translator.tr("community.scope_add.confirm.land_free") ?: Text.literal("Land fee: Free (within free area)"))
         }
