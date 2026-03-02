@@ -67,17 +67,6 @@ class Community(
         return member[playerUuid]?.basicRoleType
     }
 
-    @Deprecated("Use CommunityPermissionPolicy.canManageMember instead", ReplaceWith("CommunityPermissionPolicy.canManageMember(playerExecutor, this, targetPlayerUuid)"))
-    fun isManageable(playerExecutor: ServerPlayerEntity, targetPlayerUuid: UUID): Boolean {
-        return com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
-            .canManageMember(playerExecutor, this, targetPlayerUuid).isAllowed()
-    }
-
-    @Deprecated("Use CommunityPermissionPolicy.canExecuteAdministration instead", ReplaceWith("CommunityPermissionPolicy.canExecuteAdministration(playerExecutor, this)"))
-    fun isManageable(playerExecutor: ServerPlayerEntity): Boolean {
-        return com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
-            .canExecuteAdministration(playerExecutor, this).isAllowed()
-    }
 
     fun getTotalAssets(): Long {
         val totalIncome = member.values.sumOf { it.getTotalDonation() }

@@ -218,18 +218,50 @@ Communities support both **global** settings that apply to the entire region, an
 
 #### Permission Settings
 
-Administrators can configure **permission settings** to control what actions players can perform within the community's region or its sub-scopes. Two permission types are currently supported:
+Administrators can configure **permission settings** to control what actions players can perform within the community's region or its sub-scopes. The following permission types are supported:
 
 - **Build/Break** - Controls whether players can place or break blocks;
-- **Container Access** - Controls whether players can open chests, furnaces, and other containers.
+- **Building** - Controls block placement specifically;
+- **Breaking** - Controls block breaking specifically;
+- **Bucket Placement** - Controls bucket liquid placement;
+- **Bucket Scooping** - Controls bucket liquid scooping;
+- **Interaction** - Controls general block and entity interaction;
+- **Container Access** - Controls whether players can open chests, furnaces, and other containers;
+- **Redstone** - Controls redstone component interaction;
+- **Villager Trading** - Controls whether players can trade with villagers;
+- **PvP Combat** - Controls player-vs-player combat;
+- **Animal Killing** - Controls killing of passive animals;
+- **Villager Killing** - Controls killing of villagers;
+- **Throwable Use** - Controls use of throwable items;
+- **Egg Throwing** - Controls throwing eggs;
+- **Snowball Throwing** - Controls throwing snowballs;
+- **Potion Throwing** - Controls throwing potions;
+- **Farming** - Controls crop harvesting and replanting;
+- **Igniting** - Controls use of flint and steel and fire charges;
+- **Armor Stand Use** - Controls interaction with armor stands;
+- **Item Frame Use** - Controls interaction with item frames.
 
 Settings can be applied **globally** (affecting all members) or **per-player** (overriding only for a specific member). When a setting differs from the game's default behavior, a fee is charged based on the affected area and permission type.
+
+#### Rule Settings
+
+Administrators can configure **rule settings** that affect game mechanics within the community's region or its sub-scopes. Rule settings are always global and cannot be applied per-player:
+
+- **Monster Spawning** - Controls whether monsters spawn in the territory;
+- **Phantom Spawning** - Controls whether phantoms spawn in the territory;
+- **TNT Block Protection** - Controls whether TNT can destroy blocks in the territory.
+
+Rule modifications follow the same confirmation and cost structure as permission settings, but the cost never includes a per-player factor.
+
+#### Effect Settings
+
+Effect settings (applying potion effects to players within the territory) are planned for a future update.
 
 ##### Setting Modification Process
 
 1. Navigate to **Region Settings** via the administration menu, then select a scope or the region-wide option;
-2. Choose whether to apply settings globally or for a specific player;
-3. Click the permission toggle button to see the change, cost breakdown, and area;
+2. Choose whether to apply settings globally or for a specific player (player-specific mode only shows permission settings);
+3. Click the setting toggle button to see the change, cost breakdown, and area;
 4. Review the **Setting Modification Confirmation** showing the exact cost calculation;
 5. Confirm to apply the change or cancel to abort. The operation expires in 5 minutes.
 
@@ -238,9 +270,9 @@ Settings can be applied **globally** (affecting all members) or **per-player** (
 Setting modifications are charged from community assets:
 
 - **Base fee** varies by community type (Manor/Realm) and setting layer (Region/Scope);
-- **Area fee** is calculated by multiplying the affected area by a per-permission coefficient (configurable);
+- **Area fee** is calculated by multiplying the affected area by a per-setting coefficient (configurable);
 - **Player-specific** settings cost 20% of the global rate;
-- **Restoring a permission to its default value** is always free.
+- **Restoring a setting to its default value** is always free.
 
 Upon successful modification, all formal members (owner, admins, and members) are notified.
 

@@ -46,7 +46,8 @@ data class SettingConfirmationData(
     val permissionKeyStr: String,
     val newValue: Boolean,
     val targetPlayerUUID: UUID?,
-    val cost: Long
+    val cost: Long,
+    val isRuleSetting: Boolean = false
 )
 
 enum class PendingOperationType(val value: Int) {
