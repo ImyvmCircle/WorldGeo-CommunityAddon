@@ -181,46 +181,6 @@ class PricingConfig : HokiConfig("Pricing.conf") {
 
         @JvmField
         @ConfigOption
-        val PERMISSION_BASE_COST_MANOR_REGION = Option(
-            "economy.permission.base_cost.manor.region",
-            20000L,
-            "base cost for a Region-level permission change in a Manor community."
-        ) { obj, path ->
-            obj.getLong(path)
-        }
-
-        @JvmField
-        @ConfigOption
-        val PERMISSION_BASE_COST_REALM_REGION = Option(
-            "economy.permission.base_cost.realm.region",
-            10000L,
-            "base cost for a Region-level permission change in a Realm community."
-        ) { obj, path ->
-            obj.getLong(path)
-        }
-
-        @JvmField
-        @ConfigOption
-        val PERMISSION_BASE_COST_MANOR_SCOPE = Option(
-            "economy.permission.base_cost.manor.scope",
-            10000L,
-            "base cost for a Scope-level permission change in a Manor community."
-        ) { obj, path ->
-            obj.getLong(path)
-        }
-
-        @JvmField
-        @ConfigOption
-        val PERMISSION_BASE_COST_REALM_SCOPE = Option(
-            "economy.permission.base_cost.realm.scope",
-            5000L,
-            "base cost for a Scope-level permission change in a Realm community."
-        ) { obj, path ->
-            obj.getLong(path)
-        }
-
-        @JvmField
-        @ConfigOption
         val PERMISSION_BUILD_BREAK_COEFFICIENT_PER_UNIT = Option(
             "economy.permission.build_break.coefficient_per_unit",
             40000L,

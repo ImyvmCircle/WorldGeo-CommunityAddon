@@ -3,6 +3,7 @@ package com.imyvm.community.domain.policy.territory
 import com.imyvm.community.infra.PricingConfig
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.domain.component.RuleKey
+import kotlin.math.ln
 
 data class PricingConfiguration(
     val freeArea: Double,
@@ -15,7 +16,9 @@ data class CreationCostResult(
     val baseCost: Long,
     val areaCost: Long,
     val totalCost: Long,
-    val area: Double
+    val area: Double,
+    val tierIndex: Int,
+    val tierMultiplier: Long
 )
 
 data class ModificationCostResult(
@@ -23,11 +26,75 @@ data class ModificationCostResult(
     val areaBefore: Double,
     val areaAfter: Double,
     val cost: Long,
-    val isIncrease: Boolean
+    val isIncrease: Boolean,
+    val tierBefore: Int,
+    val tierAfter: Int,
+    val tierMultiplierBefore: Long,
+    val tierMultiplierAfter: Long
+)
+
+data class SettingItemCostChange(
+    val settingKeyName: String,
+    val scopeName: String?,
+    val playerName: String?,
+    val areaOld: Double,
+    val areaNew: Double,
+    val costChange: Long
 )
 
 object TerritoryPricing {
-    
+
+    fun getLandTierIndex(area: Double, freeArea: Double): Int {
+        if (area <= freeArea) return 0
+        return (ln(area / freeArea) / ln(4.0)).toInt()
+    }
+
+    fun getLandTierMultiplier(tierIndex: Int): Long = (1L shl tierIndex)
+
+    fun calculateLandCostTotal(area: Double, isManor: Boolean): Long {
+        val config = getPricingConfig(isManor)
+        if (area <= config.freeArea) return 0L
+        val tier = getLandTierIndex(area, config.freeArea)
+        val multiplier = getLandTierMultiplier(tier)
+        return (multiplier * config.pricePerUnit * (area - config.freeArea) / config.unitSize).toLong()
+    }
+
+    fun getSettingTierMultiplier(area: Double, freeArea: Double): Int {
+        if (area < freeArea) return 1
+        return (ln(area / freeArea) / ln(4.0)).toInt() + 2
+    }
+
+    fun calculateSettingCostTotal(
+        area: Double,
+        coefficientPerUnit: Long,
+        unitSize: Double,
+        isPlayerTarget: Boolean,
+        freeArea: Double
+    ): Long {
+        if (area <= 0.0 || coefficientPerUnit == 0L) return 0L
+        val multiplier = getSettingTierMultiplier(area, freeArea)
+        val denominator = if (isPlayerTarget) PricingConfig.PERMISSION_TARGET_PLAYER_DENOMINATOR.value else 1L
+        return (multiplier * coefficientPerUnit * area / unitSize / denominator).toLong()
+    }
+
+    fun calculateSettingCostChange(
+        areaOld: Double,
+        areaNew: Double,
+        coefficientPerUnit: Long,
+        unitSize: Double,
+        isPlayerTarget: Boolean,
+        freeArea: Double,
+        refundRate: Double
+    ): Long {
+        val costOld = calculateSettingCostTotal(areaOld, coefficientPerUnit, unitSize, isPlayerTarget, freeArea)
+        val costNew = calculateSettingCostTotal(areaNew, coefficientPerUnit, unitSize, isPlayerTarget, freeArea)
+        return if (areaNew >= areaOld) {
+            costNew - costOld
+        } else {
+            ((costOld - costNew) * refundRate * -1).toLong()
+        }
+    }
+
     fun getPricingConfig(isManor: Boolean): PricingConfiguration {
         return PricingConfiguration(
             freeArea = if (isManor) PricingConfig.MANOR_FREE_AREA.value else PricingConfig.REALM_FREE_AREA.value,
@@ -39,52 +106,42 @@ object TerritoryPricing {
     
     fun calculateCreationCost(area: Double, isManor: Boolean): CreationCostResult {
         val baseCost = if (isManor) PricingConfig.PRICE_MANOR.value else PricingConfig.PRICE_REALM.value
+        val areaCost = calculateLandCostTotal(area, isManor)
         val config = getPricingConfig(isManor)
-        
-        val areaCost: Long = if (area <= config.freeArea) {
-            0L
-        } else {
-            ((area - config.freeArea) / config.unitSize * config.pricePerUnit).toLong()
-        }
-        
+        val tier = getLandTierIndex(area, config.freeArea)
         return CreationCostResult(
             baseCost = baseCost,
             areaCost = areaCost,
             totalCost = baseCost + areaCost,
-            area = area
+            area = area,
+            tierIndex = tier,
+            tierMultiplier = getLandTierMultiplier(tier)
         )
     }
     
     fun calculateModificationCost(areaChange: Double, currentTotalArea: Double, isManor: Boolean): ModificationCostResult {
         val config = getPricingConfig(isManor)
-        
         val isIncrease = areaChange > 0
         val newTotalArea = currentTotalArea + areaChange
-        
+        val costOld = calculateLandCostTotal(currentTotalArea, isManor)
+        val costNew = calculateLandCostTotal(newTotalArea, isManor)
         val cost: Long = if (isIncrease) {
-            (areaChange / config.unitSize * config.pricePerUnit).toLong()
+            costNew - costOld
         } else {
-            val areaDecreased = -areaChange
-            val areaAfterDecrease = currentTotalArea - areaDecreased
-            
-            if (areaAfterDecrease >= config.freeArea) {
-                (areaDecreased / config.unitSize * config.pricePerUnit * config.refundRate).toLong()
-            } else {
-                val refundableArea = if (currentTotalArea > config.freeArea) {
-                    currentTotalArea - config.freeArea
-                } else {
-                    0.0
-                }
-                (refundableArea / config.unitSize * config.pricePerUnit * config.refundRate).toLong()
-            }
+            -((costOld - costNew) * config.refundRate).toLong()
         }
-        
+        val tierBefore = getLandTierIndex(currentTotalArea, config.freeArea)
+        val tierAfter = getLandTierIndex(newTotalArea, config.freeArea)
         return ModificationCostResult(
             areaChange = areaChange,
             areaBefore = currentTotalArea,
             areaAfter = newTotalArea,
-            cost = if (isIncrease) cost else -cost,
-            isIncrease = isIncrease
+            cost = cost,
+            isIncrease = isIncrease,
+            tierBefore = tierBefore,
+            tierAfter = tierAfter,
+            tierMultiplierBefore = getLandTierMultiplier(tierBefore),
+            tierMultiplierAfter = getLandTierMultiplier(tierAfter)
         )
     }
 
@@ -93,21 +150,18 @@ object TerritoryPricing {
         permissionKey: PermissionKey,
         isManor: Boolean,
         isScope: Boolean,
-        isPlayerTarget: Boolean
+        isPlayerTarget: Boolean,
+        isRestoringDefault: Boolean = false
     ): Long {
-        val baseCost = when {
-            isManor && !isScope -> PricingConfig.PERMISSION_BASE_COST_MANOR_REGION.value
-            !isManor && !isScope -> PricingConfig.PERMISSION_BASE_COST_REALM_REGION.value
-            isManor -> PricingConfig.PERMISSION_BASE_COST_MANOR_SCOPE.value
-            else -> PricingConfig.PERMISSION_BASE_COST_REALM_SCOPE.value
-        }
-
         val coefficientPerUnit = getPermissionCoefficientPerUnit(permissionKey)
-
-        val unitSize = PricingConfig.PERMISSION_COEFFICIENT_UNIT_SIZE.value
-        val areaCost = (area / unitSize * coefficientPerUnit).toLong()
-        val targetedAreaCost = if (isPlayerTarget) areaCost / PricingConfig.PERMISSION_TARGET_PLAYER_DENOMINATOR.value else areaCost
-        return baseCost + targetedAreaCost
+        val unitSize = PricingConfig.PERMISSION_COEFFICIENT_UNIT_SIZE.value.toDouble()
+        val freeArea = if (isManor) PricingConfig.MANOR_FREE_AREA.value else PricingConfig.REALM_FREE_AREA.value
+        val refundRate = PricingConfig.AREA_REFUND_RATE.value
+        return if (isRestoringDefault) {
+            -(calculateSettingCostTotal(area, coefficientPerUnit, unitSize, isPlayerTarget, freeArea) * refundRate).toLong()
+        } else {
+            calculateSettingCostTotal(area, coefficientPerUnit, unitSize, isPlayerTarget, freeArea)
+        }
     }
 
     fun getPermissionCoefficientPerUnit(permissionKey: PermissionKey): Long {
@@ -140,19 +194,18 @@ object TerritoryPricing {
         area: Double,
         ruleKey: RuleKey,
         isManor: Boolean,
-        isScope: Boolean
+        isScope: Boolean,
+        isRestoringDefault: Boolean = false
     ): Long {
-        val baseCost = when {
-            isManor && !isScope -> PricingConfig.PERMISSION_BASE_COST_MANOR_REGION.value
-            !isManor && !isScope -> PricingConfig.PERMISSION_BASE_COST_REALM_REGION.value
-            isManor -> PricingConfig.PERMISSION_BASE_COST_MANOR_SCOPE.value
-            else -> PricingConfig.PERMISSION_BASE_COST_REALM_SCOPE.value
-        }
-
         val coefficientPerUnit = getRuleCoefficientPerUnit(ruleKey)
-        val unitSize = PricingConfig.PERMISSION_COEFFICIENT_UNIT_SIZE.value
-        val areaCost = (area / unitSize * coefficientPerUnit).toLong()
-        return baseCost + areaCost
+        val unitSize = PricingConfig.PERMISSION_COEFFICIENT_UNIT_SIZE.value.toDouble()
+        val freeArea = if (isManor) PricingConfig.MANOR_FREE_AREA.value else PricingConfig.REALM_FREE_AREA.value
+        val refundRate = PricingConfig.AREA_REFUND_RATE.value
+        return if (isRestoringDefault) {
+            -(calculateSettingCostTotal(area, coefficientPerUnit, unitSize, false, freeArea) * refundRate).toLong()
+        } else {
+            calculateSettingCostTotal(area, coefficientPerUnit, unitSize, false, freeArea)
+        }
     }
 
     fun getRuleCoefficientPerUnit(ruleKey: RuleKey): Long {

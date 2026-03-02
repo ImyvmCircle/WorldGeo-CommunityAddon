@@ -13,6 +13,8 @@ import com.imyvm.community.domain.model.GeographicFunctionType
 import com.imyvm.community.domain.model.PendingOperationType
 import com.imyvm.community.domain.model.ScopeModificationConfirmationData
 import com.imyvm.community.domain.policy.permission.AdminPrivilege
+import com.imyvm.community.domain.policy.territory.SettingItemCostChange
+import com.imyvm.community.domain.policy.territory.TerritoryPricing
 import com.imyvm.community.entrypoint.screen.inner_community.administration_only.AdministrationTeleportPointMenu
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityRegionGlobalGeometryMenu
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityRegionScopeMenu
@@ -23,9 +25,14 @@ import com.imyvm.community.infra.PricingConfig
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.domain.AreaEstimationResult
 import com.imyvm.iwg.domain.CreationError
+import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShapeType
+import com.imyvm.iwg.domain.component.PermissionKey
+import com.imyvm.iwg.domain.component.PermissionSetting
+import com.imyvm.iwg.domain.component.RuleKey
 import com.imyvm.iwg.inter.api.PlayerInteractionApi
+import com.imyvm.iwg.inter.api.RegionDataApi
 import com.mojang.authlib.GameProfile
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
@@ -171,13 +178,14 @@ private fun onCreateScopeRequest(
 
     val currentTotalArea = communityRegion.calculateTotalArea()
     val isManor = community.isManor()
-    val variableCost = calculateModificationCost(newScopeArea, currentTotalArea, isManor).cost
+    val landCostChange = calculateModificationCost(newScopeArea, currentTotalArea, isManor).cost
     val fixedCost = if (isManor) {
         PricingConfig.SCOPE_ADDITION_BASE_COST_MANOR.value
     } else {
         PricingConfig.SCOPE_ADDITION_BASE_COST_REALM.value
     }
-    val totalCost = fixedCost + variableCost
+    val settingChanges = calculateRegionSettingsCostChanges(communityRegion, newScopeArea, isManor)
+    val totalCost = fixedCost + landCostChange + settingChanges.sumOf { it.costChange }
     val currentAssets = community.getTotalAssets()
 
     val confirmationMessages = generateScopeAdditionConfirmationMessage(
@@ -185,10 +193,11 @@ private fun onCreateScopeRequest(
         shapeType = geoShapeType,
         area = newScopeArea,
         fixedCost = fixedCost,
-        areaCost = variableCost,
-        totalCost = totalCost,
+        landCostChange = landCostChange,
+        settingChanges = settingChanges,
         isManor = isManor,
-        currentAssets = currentAssets
+        currentAssets = currentAssets,
+        currentTotalArea = currentTotalArea
     )
     confirmationMessages.forEach { msg -> player.sendMessage(msg) }
 
@@ -254,13 +263,17 @@ fun runExecuteScope(
                         val isManor = community.isManor()
 
                         val costResult = calculateModificationCost(areaChange, currentTotalArea, isManor)
+                        val regionSettingChanges = calculateRegionSettingsCostChanges(communityRegion, areaChange, isManor)
+                        val scopeSettingChanges = calculateScopeSettingsCostChanges(communityRegion, scope, areaChange, isManor)
+                        val allSettingChanges = regionSettingChanges + scopeSettingChanges
+                        val totalCost = costResult.cost + allSettingChanges.sumOf { it.costChange }
                         val currentAssets = community.getTotalAssets()
 
-                        if (costResult.cost > 0 && currentAssets < costResult.cost) {
+                        if (totalCost > 0 && currentAssets < totalCost) {
                             playerExecutor.sendMessage(Translator.tr("community.modification.error.insufficient_assets",
-                                String.format("%.2f", costResult.cost / 100.0),
+                                String.format("%.2f", totalCost / 100.0),
                                 String.format("%.2f", currentAssets / 100.0)
-                            ) ?: Text.literal("Insufficient assets: need ${costResult.cost / 100.0}, have ${currentAssets / 100.0}"))
+                            ) ?: Text.literal("Insufficient assets: need ${totalCost / 100.0}, have ${currentAssets / 100.0}"))
                             playerExecutor.closeHandledScreen()
                             return@executeWithPermission
                         }
@@ -271,7 +284,8 @@ fun runExecuteScope(
                             scopeName = scope.scopeName,
                             costResult = costResult,
                             isManor = isManor,
-                            currentAssets = currentAssets
+                            currentAssets = currentAssets,
+                            settingChanges = allSettingChanges
                         )
 
                         confirmationMessages.forEach { msg ->
@@ -286,7 +300,7 @@ fun runExecuteScope(
                                 regionNumberId = community.regionNumberId!!,
                                 scopeName = scope.scopeName,
                                 executorUUID = playerExecutor.uuid,
-                                cost = costResult.cost
+                                cost = totalCost
                             )
                         )
 
@@ -377,4 +391,112 @@ private fun sendInteractiveScopeModificationConfirmation(player: ServerPlayerEnt
         .append(cancelButton)
 
     player.sendMessage(promptMessage)
+}
+
+private fun calculateRegionSettingsCostChanges(
+    communityRegion: Region,
+    areaChange: Double,
+    isManor: Boolean
+): List<SettingItemCostChange> {
+    val currentTotalArea = communityRegion.calculateTotalArea()
+    val newTotalArea = currentTotalArea + areaChange
+    val freeArea = if (isManor) PricingConfig.MANOR_FREE_AREA.value else PricingConfig.REALM_FREE_AREA.value
+    val refundRate = PricingConfig.AREA_REFUND_RATE.value
+
+    return communityRegion.settings.mapNotNull { setting ->
+        val key = setting.key
+        val isDefault = when (key) {
+            is PermissionKey -> {
+                val default = RegionDataApi.getPermissionValueRegion(null, null, null, key)
+                setting.value == default
+            }
+            is RuleKey -> {
+                val default = RegionDataApi.getRuleValueForRegion(null, null, key)
+                setting.value == default
+            }
+            else -> true
+        }
+        if (isDefault) return@mapNotNull null
+
+        val isPlayerTarget = setting is PermissionSetting && setting.playerUUID != null
+        val coefficientPerUnit = when (key) {
+            is PermissionKey -> TerritoryPricing.getPermissionCoefficientPerUnit(key)
+            is RuleKey -> TerritoryPricing.getRuleCoefficientPerUnit(key)
+            else -> return@mapNotNull null
+        }
+        val unitSize = PricingConfig.PERMISSION_COEFFICIENT_UNIT_SIZE.value.toDouble()
+
+        val costChange = TerritoryPricing.calculateSettingCostChange(
+            areaOld = currentTotalArea,
+            areaNew = newTotalArea,
+            coefficientPerUnit = coefficientPerUnit,
+            unitSize = unitSize,
+            isPlayerTarget = isPlayerTarget,
+            freeArea = freeArea,
+            refundRate = refundRate
+        )
+        SettingItemCostChange(
+            settingKeyName = key.toString(),
+            scopeName = null,
+            playerName = null,
+            areaOld = currentTotalArea,
+            areaNew = newTotalArea,
+            costChange = costChange
+        )
+    }
+}
+
+private fun calculateScopeSettingsCostChanges(
+    communityRegion: Region,
+    scope: GeoScope,
+    areaChange: Double,
+    isManor: Boolean
+): List<SettingItemCostChange> {
+    val freeArea = if (isManor) PricingConfig.MANOR_FREE_AREA.value else PricingConfig.REALM_FREE_AREA.value
+    val refundRate = PricingConfig.AREA_REFUND_RATE.value
+
+    return scope.settings.mapNotNull { setting ->
+        val key = setting.key
+        val isDefault = when (key) {
+            is PermissionKey -> {
+                val default = RegionDataApi.getPermissionValueRegion(null, null, null, key)
+                setting.value == default
+            }
+            is RuleKey -> {
+                val default = RegionDataApi.getRuleValueForRegion(null, null, key)
+                setting.value == default
+            }
+            else -> true
+        }
+        if (isDefault) return@mapNotNull null
+
+        val isPlayerTarget = setting is PermissionSetting && setting.playerUUID != null
+        val coefficientPerUnit = when (key) {
+            is PermissionKey -> TerritoryPricing.getPermissionCoefficientPerUnit(key)
+            is RuleKey -> TerritoryPricing.getRuleCoefficientPerUnit(key)
+            else -> return@mapNotNull null
+        }
+        val unitSize = PricingConfig.PERMISSION_COEFFICIENT_UNIT_SIZE.value.toDouble()
+
+        val currentScopeArea = RegionDataApi.getScopeArea(scope) ?: 0.0
+        val newScopeArea = currentScopeArea + areaChange
+
+        val costChange = TerritoryPricing.calculateSettingCostChange(
+            areaOld = currentScopeArea,
+            areaNew = newScopeArea,
+            coefficientPerUnit = coefficientPerUnit,
+            unitSize = unitSize,
+            isPlayerTarget = isPlayerTarget,
+            freeArea = freeArea,
+            refundRate = refundRate
+        )
+        SettingItemCostChange(
+            settingKeyName = key.toString(),
+            scopeName = scope.scopeName,
+            playerName = null,
+            areaOld = currentScopeArea,
+            areaNew = newScopeArea,
+            costChange = costChange
+        )
+    }
 }
