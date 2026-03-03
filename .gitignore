@@ -45,4 +45,4 @@ replay_*.log
 
 # github
 
-.github/agents
+.github/agents/prompts
