@@ -36,7 +36,7 @@ fun getTeleportPointInformationItemStack(
         loreLines.add(Text.of("y=" + blockPos.y))
         loreLines.add(Text.of("z=" + blockPos.z))
     } else {
-        loreLines.add(Translator.tr("ui.community.administration.teleport_point.inquiry.lore.no_point")!!)
+        loreLines.add(Translator.tr("ui.admin.teleport_point.inquiry.lore.no_point")!!)
     }
 
     return getLoreButton(itemStack, loreLines)
@@ -51,14 +51,14 @@ fun runInquiryTeleportPoint(playerExecutor: ServerPlayerEntity, community: Commu
         if (blockPos != null) {
             playerExecutor.sendMessage(
                 Translator.tr(
-                    "ui.community.administration.teleport_point.inquiry.success.result",
+                    "ui.admin.teleport_point.inquiry.success.result",
                     blockPos.x,
                     blockPos.y,
                     blockPos.z
                 )
             )
         } else {
-            playerExecutor.sendMessage(Translator.tr("ui.community.administration.teleport_point.inquiry.success.no_point"))
+            playerExecutor.sendMessage(Translator.tr("ui.admin.teleport_point.inquiry.success.no_point"))
         }
     } else {
         playerExecutor.sendMessage(Translator.tr("community.not_found.region"))
@@ -81,13 +81,13 @@ fun runToggleTeleportPointAccessibility(
             PlayerInteractionApi.toggleTeleportPointAccessibility(scope)
             val isPublic = com.imyvm.iwg.inter.api.RegionDataApi.inquireTeleportPointAccessibility(scope)
             val stateKey = if (isPublic) {
-                "ui.community.administration.teleport_point.state.public"
+                "ui.admin.teleport_point.state.public"
             } else {
-                "ui.community.administration.teleport_point.state.private"
+                "ui.admin.teleport_point.state.private"
             }
             playerExecutor.sendMessage(
                 Translator.tr(
-                    "ui.community.administration.teleport_point.toggle.result",
+                    "ui.admin.teleport_point.toggle.result",
                     Translator.tr(stateKey)?.string ?: if (isPublic) "Public" else "Private"
                 )
             )

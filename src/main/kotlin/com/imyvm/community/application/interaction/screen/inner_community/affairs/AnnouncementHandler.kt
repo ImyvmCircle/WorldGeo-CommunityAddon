@@ -83,7 +83,7 @@ fun onCreateAnnouncementConfirm(
         }
     ) {
         if (content.isBlank()) {
-            player.sendMessage(Translator.tr("ui.community.administration.announcement.error.empty"))
+            player.sendMessage(Translator.tr("ui.admin.announcement.error.empty"))
             player.closeHandledScreen()
             return@executeWithPermission
         }
@@ -99,7 +99,7 @@ fun onCreateAnnouncementConfirm(
 
         notifyMembersOfNewAnnouncement(community, announcement)
 
-        player.sendMessage(Translator.tr("ui.community.administration.announcement.created"))
+        player.sendMessage(Translator.tr("ui.admin.announcement.created"))
         runBack(player)
     } ?: player.closeHandledScreen()
 }
@@ -120,9 +120,9 @@ fun onDeleteAnnouncement(
     ) {
         if (community.softDeleteAnnouncement(announcementId)) {
             CommunityDatabase.save()
-            player.sendMessage(Translator.tr("ui.community.administration.announcement.deleted"))
+            player.sendMessage(Translator.tr("ui.admin.announcement.deleted"))
         } else {
-            player.sendMessage(Translator.tr("ui.community.administration.announcement.error.not_found"))
+            player.sendMessage(Translator.tr("ui.admin.announcement.error.not_found"))
         }
         runBack(player)
     }
@@ -161,9 +161,9 @@ fun onViewAnnouncementContent(
     player: ServerPlayerEntity,
     announcement: Announcement
 ) {
-    player.sendMessage(Translator.tr("ui.community.administration.announcement_details.header"))
+    player.sendMessage(Translator.tr("ui.admin.announcement_details.header"))
     player.sendMessage(announcement.content)
-    player.sendMessage(Translator.tr("ui.community.administration.announcement_details.footer"))
+    player.sendMessage(Translator.tr("ui.admin.announcement_details.footer"))
     player.closeHandledScreen()
 }
 

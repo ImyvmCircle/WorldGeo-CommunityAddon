@@ -24,18 +24,18 @@ class AdministrationAuditMenu(
     init {
         addButton(
             slot = 21,
-            name = Translator.tr("ui.community.administration.audit.button.accept") ?.string ?: "Accept",
+            name = Translator.tr("ui.admin.audit.button.accept") ?.string ?: "Accept",
             item = Items.GREEN_WOOL
         ) { runAccept(community, playerExecutor, playerObject) }
 
         addButton(
             slot = 26,
-            name = Translator.tr("ui.community.administration.audit.button.refuse") ?.string ?: "Refuse",
+            name = Translator.tr("ui.admin.audit.button.refuse") ?.string ?: "Refuse",
             item = Items.BARRIER
         ) { runRefuse(community, playerExecutor, playerObject) }
     }
     companion object {
         fun generateAdministrationAuditMenuTitle(playerObject: GameProfile): Text =
-            Text.of((Translator.tr("ui.community.administration.audit.title")?.string ?: "Audit") + playerObject.name)
+            Text.of((Translator.tr("ui.admin.audit.title")?.string ?: "Audit") + playerObject.name)
     }
 }

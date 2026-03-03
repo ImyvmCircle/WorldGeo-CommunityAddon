@@ -18,7 +18,7 @@ class CommunityRegionGlobalGeometryMenu(
     syncId = syncId,
     menuTitle = Text.of(
         community.generateCommunityMark() + " - " +
-            (Translator.tr("ui.community.administration.region.geometry.global.title")?.string
+            (Translator.tr("ui.admin.region.geometry.global.title")?.string
                 ?: "Global Geometry Operations")
     ),
     runBack = runBack
@@ -26,19 +26,19 @@ class CommunityRegionGlobalGeometryMenu(
     init {
         addButton(
             slot = 21,
-            name = Translator.tr("ui.community.administration.region.global.add")?.string ?: "Add Administrative District",
+            name = Translator.tr("ui.admin.region.global.add")?.string ?: "Add Administrative District",
             item = Items.LIME_WOOL
         ) { runOpenScopeCreationMenu(it, community, runBack) }
 
         addButton(
             slot = 22,
-            name = Translator.tr("ui.community.administration.region.global.delete")?.string ?: "Delete Administrative District",
+            name = Translator.tr("ui.admin.region.global.delete")?.string ?: "Delete Administrative District",
             item = Items.RED_WOOL
         ) { runUnimplementedGeometryGlobalAction(it) }
 
         addButton(
             slot = 23,
-            name = Translator.tr("ui.community.administration.region.global.transfer")?.string ?: "Transfer Administrative District",
+            name = Translator.tr("ui.admin.region.global.transfer")?.string ?: "Transfer Administrative District",
             item = Items.YELLOW_WOOL
         ) { runUnimplementedGeometryGlobalAction(it) }
     }

@@ -46,7 +46,7 @@ class CommunityMemberMenu(
     private fun addManageButtons() {
         addButton(
             slot = 19,
-            name = Translator.tr("ui.community.administration.member.member_page.button.setting")?.string ?: "Setting",
+            name = Translator.tr("ui.admin.member.button.setting")?.string ?: "Setting",
             item = Items.MAP
         ) {
             runOpenPlayerRegionScopeChoice(
@@ -59,13 +59,13 @@ class CommunityMemberMenu(
 
         addButton(
             slot = 21,
-            name = Translator.tr("ui.community.administration.member.member_page.button.remove")?.string ?: "Remove Member",
+            name = Translator.tr("ui.admin.member.button.remove")?.string ?: "Remove Member",
             item = Items.ZOMBIE_VILLAGER_SPAWN_EGG
         ) { runRemoveMember(community, playerExecutor, playerObject) }
 
         addButton(
             slot = 23,
-            name = Translator.tr("ui.community.administration.member.member_page.button.message")?.string ?: "Send Message",
+            name = Translator.tr("ui.admin.member.button.message")?.string ?: "Send Message",
             item = Items.PAPER
         ) { runNotifyMember(community, playerExecutor, playerObject) }
 
@@ -73,14 +73,14 @@ class CommunityMemberMenu(
             if (community.getMemberRole(playerObject.id) == MemberRoleType.MEMBER) {
                 addButton(
                     slot = 25,
-                    name = Translator.tr("ui.community.administration.member.member_page.button.promote.admin")?.string ?: "Promote to Admin",
+                    name = Translator.tr("ui.admin.member.button.promote_admin")?.string ?: "Promote to Admin",
                     item = Items.COMMAND_BLOCK
                 ) { runPromoteMember(community, playerExecutor, playerObject) }
             }
             if (community.getMemberRole(playerObject.id) == MemberRoleType.ADMIN) {
                 addButton(
                     slot = 25,
-                    name = Translator.tr("ui.community.administration.member.member_page.button.manage_privileges")?.string ?: "Manage Privileges",
+                    name = Translator.tr("ui.admin.member.button.manage_privileges")?.string ?: "Manage Privileges",
                     item = Items.COMMAND_BLOCK
                 ) { runOpenAdminPrivilegeMenu(playerExecutor, community, playerObject.id, runBack) }
             }
@@ -93,7 +93,7 @@ class CommunityMemberMenu(
             return Text.of(
                 "${community.getRegion()?.name}" +
                         " - ${playerObject.name} " +
-                        Translator.tr("ui.community.administration.member.title.component")!!.string
+                        Translator.tr("ui.admin.member.title")!!.string
             )
         }
     }

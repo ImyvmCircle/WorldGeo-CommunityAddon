@@ -72,7 +72,7 @@ class TargetSettingMenu(
         // Permission header at row 1 col 1 (slot 10), gap at slot 11
         addButton(
             slot = 10,
-            name = Translator.tr("ui.community.administration.region.setting.list.permission.header")?.string ?: "Permissions",
+            name = Translator.tr("ui.admin.region.setting.permission.header")?.string ?: "Permissions",
             item = Items.SHIELD
         ) {}
 
@@ -104,7 +104,7 @@ class TargetSettingMenu(
 
         permissionKeys.forEachIndexed { index, (key, item) ->
             val slot = permissionSlots[index]
-            val nameKey = "ui.community.administration.region.setting.list.permission.${key.toString().lowercase()}"
+            val nameKey = "ui.admin.region.setting.permission.${key.toString().lowercase()}"
             addButton(
                 slot = slot,
                 name = Translator.tr(nameKey)?.string ?: key.toString().lowercase().replace("_", " "),
@@ -117,7 +117,7 @@ class TargetSettingMenu(
         // Rule header at row 1 col 1 (slot 10), gap at slot 11, items at slots 12-14
         addButton(
             slot = 10,
-            name = Translator.tr("ui.community.administration.region.setting.list.rule.header")?.string ?: "Rules",
+            name = Translator.tr("ui.admin.region.setting.rule.header")?.string ?: "Rules",
             item = Items.WRITABLE_BOOK
         ) {}
 
@@ -129,7 +129,7 @@ class TargetSettingMenu(
 
         ruleEntries.forEachIndexed { index, (key, item) ->
             val slot = 12 + index
-            val nameKey = "ui.community.administration.region.setting.list.rule.${key.toString().lowercase()}"
+            val nameKey = "ui.admin.region.setting.rule.${key.toString().lowercase()}"
             addButton(
                 slot = slot,
                 name = Translator.tr(nameKey)?.string ?: key.toString().lowercase().replace("_", " "),
@@ -143,7 +143,7 @@ class TargetSettingMenu(
         // Effect header at row 3 col 1 (slot 28), gap at slot 29, items at slots 30-34 (5) + 37-39 (3) = 8 total
         addButton(
             slot = 28,
-            name = Translator.tr("ui.community.administration.region.setting.list.effect.header")?.string ?: "Effects",
+            name = Translator.tr("ui.admin.region.setting.effect.header")?.string ?: "Effects",
             item = Items.BEACON
         ) {}
 
@@ -163,7 +163,7 @@ class TargetSettingMenu(
 
         effectEntries.forEachIndexed { index, (key, item) ->
             val slot = effectSlots[index]
-            val nameKey = "ui.community.administration.region.setting.list.effect.${key.toString().lowercase()}"
+            val nameKey = "ui.admin.region.setting.effect.${key.toString().lowercase()}"
             addButton(
                 slot = slot,
                 name = Translator.tr(nameKey)?.string ?: key.toString().lowercase().replace("_", " "),
@@ -181,8 +181,8 @@ class TargetSettingMenu(
             scope: GeoScope? = null,
             playerProfile: GameProfile? = null
         ): Text {
-            val nullTag = Translator.tr("ui.community.administration.region.setting.list.title.unknown")?.string ?: "Unknown"
-            val settingTag = Translator.tr("ui.community.administration.region.setting.list.title.setting")?.string ?: "Region Settings"
+            val nullTag = Translator.tr("ui.admin.region.setting.title.unknown")?.string ?: "Unknown"
+            val settingTag = Translator.tr("ui.admin.region.setting.title.setting")?.string ?: "Region Settings"
             var menuTitle = (community.getRegion()?.name ?: nullTag) + settingTag
             if (scope != null) menuTitle += " - ${scope.scopeName}"
             if (playerProfile != null) menuTitle += " - ${playerProfile.name}"

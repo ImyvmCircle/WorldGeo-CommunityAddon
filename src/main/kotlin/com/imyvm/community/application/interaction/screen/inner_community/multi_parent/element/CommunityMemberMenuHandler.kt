@@ -87,7 +87,7 @@ fun runNotifyMember(
     ) {
         val handler = NotificationMenuAnvil(
             playerExecutor,
-            initialName = Translator.tr("ui.community.administration.member.notify.to_edit")?.string ?: "(Edit your notification here)",
+            initialName = Translator.tr("ui.admin.member.notify.to_edit")?.string ?: "(Edit your notification here)",
             playerObject = playerObject,
             community = community
         )

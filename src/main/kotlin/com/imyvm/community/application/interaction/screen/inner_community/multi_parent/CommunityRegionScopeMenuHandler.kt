@@ -138,7 +138,7 @@ fun runConfirmScopeCreation(
 
 fun runUnimplementedGeometryGlobalAction(player: ServerPlayerEntity) {
     player.closeHandledScreen()
-    player.sendMessage(Translator.tr("ui.community.administration.region.global.unimplemented"))
+    player.sendMessage(Translator.tr("ui.admin.region.global.unimplemented"))
 }
 
 private fun onCreateScopeRequest(

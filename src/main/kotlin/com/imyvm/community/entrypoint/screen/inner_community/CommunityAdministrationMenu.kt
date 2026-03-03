@@ -29,37 +29,37 @@ class CommunityAdministrationMenu(
     private fun addStaticButtons(player: ServerPlayerEntity, community: Community) {
         addButton(
             slot = 10,
-            name = Translator.tr("ui.community.administration.button.name")?.string ?: "Community Name",
+            name = Translator.tr("ui.admin.button.name")?.string ?: "Community Name",
             item = Items.NAME_TAG
         ) { runAdmRenameCommunity(player, community, runBack) }
 
         addButton(
             slot = 11,
-            name = Translator.tr("ui.community.administration.button.members")?.string ?: "Manage Members",
+            name = Translator.tr("ui.admin.button.members")?.string ?: "Manage Members",
             item = Items.PLAYER_HEAD
         ) { runAdmManageMembers(player, community, runBack) }
 
         addButton(
             slot = 12,
-            name = Translator.tr("ui.community.administration.button.audit")?.string ?: "Community Audit",
+            name = Translator.tr("ui.admin.button.audit")?.string ?: "Community Audit",
             item = Items.REDSTONE_TORCH
         ) { runAdmAuditRequests(player, community, runBack) }
 
         addButton(
             slot = 13,
-            name = Translator.tr("ui.community.administration.button.announcement")?.string ?: "Announcement",
+            name = Translator.tr("ui.admin.button.announcement")?.string ?: "Announcement",
             item = Items.PAPER
         ) { runOpenAnnouncementListMenu(player, community) { runBackToCommunityAdministrationMenu(player, community, runBack) } }
 
         addButton(
             slot = 14,
-            name = Translator.tr("ui.community.administration.button.advancement")?.string ?: "Advancement",
+            name = Translator.tr("ui.admin.button.advancement")?.string ?: "Advancement",
             item = Items.ITEM_FRAME
         ) { runAdmAdvancement(player, community, runBack) }
 
         addButton(
             slot = 19,
-            name = Translator.tr("ui.community.administration.button.region.geometry")?.string ?: "Region Geometry",
+            name = Translator.tr("ui.admin.button.region.geometry")?.string ?: "Region Geometry",
             item = Items.MAP
         ) {
             runAdmRegion(
@@ -72,7 +72,7 @@ class CommunityAdministrationMenu(
 
         addButton(
             slot = 20,
-            name = Translator.tr("ui.community.administration.button.region.setting")?.string ?: "Region Settings",
+            name = Translator.tr("ui.admin.button.region.setting")?.string ?: "Region Settings",
             item = Items.HEART_OF_THE_SEA
         ) {
             runAdmRegion(
@@ -85,7 +85,7 @@ class CommunityAdministrationMenu(
 
         addButton(
             slot = 21,
-            name = Translator.tr("ui.community.administration.button.teleport")?.string ?: "Teleport Points",
+            name = Translator.tr("ui.admin.button.teleport")?.string ?: "Teleport Points",
             item = Items.ENDER_PEARL
         ) {
             runAdmRegion(
@@ -100,7 +100,7 @@ class CommunityAdministrationMenu(
     private fun addChangeableButtons(player: ServerPlayerEntity, community: Community) {
         addButton(
             slot = 28,
-            name = (Translator.tr("ui.community.administration.button.join_policy")?.string
+            name = (Translator.tr("ui.admin.button.join_policy")?.string
                 ?: "Join Policy: ") + community.joinPolicy.toString(),
             item = when (community.joinPolicy) {
                 CommunityJoinPolicy.OPEN -> Items.GREEN_WOOL
@@ -117,7 +117,7 @@ class CommunityAdministrationMenu(
         ): Text {
             return Text.of(
                 community.generateCommunityMark()
-                        + " - " + Translator.tr("ui.community.administration.title")?.string
+                        + " - " + Translator.tr("ui.admin.title")?.string
                         + ":" + playerExecutor.name.string
             )
         }

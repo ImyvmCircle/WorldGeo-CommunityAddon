@@ -12,7 +12,7 @@ fun onCommunityRegionInteraction(
 ): Int {
     val region = community.getRegion()
     return if (region == null) {
-        player.sendMessage(Translator.tr("community.not_found.region", community.generateCommunityMark()))
+        player.sendMessage(Translator.tr("community.not_found.region"))
         0
     } else {
         onInteract(player, community, region)

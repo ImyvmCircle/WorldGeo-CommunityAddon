@@ -17,7 +17,7 @@ fun onAnnouncementCreateCommand(context: CommandContext<ServerCommandSource>, co
     if (!canManage(player, community)) return 0
 
     if (content.isBlank()) {
-        player.sendMessage(Translator.tr("ui.community.administration.announcement.error.empty"))
+        player.sendMessage(Translator.tr("ui.admin.announcement.error.empty"))
         return 0
     }
 
@@ -30,7 +30,7 @@ fun onAnnouncementCreateCommand(context: CommandContext<ServerCommandSource>, co
         member.sendMessage(announcement.content)
     }
 
-    player.sendMessage(Translator.tr("ui.community.administration.announcement.created"))
+    player.sendMessage(Translator.tr("ui.admin.announcement.created"))
     return 1
 }
 
@@ -73,7 +73,7 @@ fun onAnnouncementViewCommand(context: CommandContext<ServerCommandSource>, comm
 
     val announcement = community.getAnnouncementById(uuid)?.takeIf { !it.isDeleted }
         ?: run {
-            player.sendMessage(Translator.tr("ui.community.administration.announcement.error.not_found"))
+            player.sendMessage(Translator.tr("ui.admin.announcement.error.not_found"))
             return 0
         }
 
@@ -137,10 +137,10 @@ private fun isMember(player: ServerPlayerEntity, community: Community): Boolean 
 private fun performDelete(player: ServerPlayerEntity, community: Community, uuid: UUID): Int {
     return if (community.softDeleteAnnouncement(uuid)) {
         CommunityDatabase.save()
-        player.sendMessage(Translator.tr("ui.community.administration.announcement.deleted"))
+        player.sendMessage(Translator.tr("ui.admin.announcement.deleted"))
         1
     } else {
-        player.sendMessage(Translator.tr("ui.community.administration.announcement.error.not_found"))
+        player.sendMessage(Translator.tr("ui.admin.announcement.error.not_found"))
         0
     }
 }

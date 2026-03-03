@@ -45,8 +45,8 @@ class CommunityRegionScopeMenu(
         val globalName = when (geographicFunctionType) {
             GeographicFunctionType.TELEPORT_POINT_EXECUTION,
             GeographicFunctionType.TELEPORT_POINT_LOCATING ->
-                Translator.tr("ui.community.administration.region.teleport_point.global.main")?.string ?: "Main Teleport Point"
-            else -> Translator.tr("ui.community.administration.region.global")?.string ?: "Region Global"
+                Translator.tr("ui.admin.region.teleport.global_main")?.string ?: "Main Teleport Point"
+            else -> Translator.tr("ui.admin.region.global")?.string ?: "Region Global"
         }
         val globalItem = when (geographicFunctionType) {
             GeographicFunctionType.TELEPORT_POINT_EXECUTION,
@@ -128,19 +128,19 @@ class CommunityRegionScopeMenu(
             val baseTitle = community.generateCommunityMark() + " - "
             val specificTitle = when (geographicFunctionType) {
                 GeographicFunctionType.GEOMETRY_MODIFICATION -> {
-                    Translator.tr("ui.community.administration.region.geometry.title.component")?.string
+                    Translator.tr("ui.admin.region.geometry.title")?.string
                         ?: "Choose scale modifying geographic shape"
                 }
                 GeographicFunctionType.SETTING_ADJUSTMENT -> {
-                    Translator.tr("ui.community.administration.region.setting.manage.title.component")?.string
+                    Translator.tr("ui.admin.region.setting.manage.title")?.string
                         ?: "Choose scale modifying region settings"
                 }
                 GeographicFunctionType.TELEPORT_POINT_LOCATING -> {
-                    Translator.tr("ui.community.administration.region.teleport_point.component")?.string
+                    Translator.tr("ui.admin.region.teleport.title")?.string
                         ?: "Choose scale managing teleport point"
                 }
                 GeographicFunctionType.TELEPORT_POINT_EXECUTION -> {
-                    Translator.tr("ui.community.administration.region.teleport_point.execution.title.component")?.string
+                    Translator.tr("ui.admin.region.teleport.execution.title")?.string
                         ?: "Choose scale teleporting to"
                 }
             }

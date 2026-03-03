@@ -31,8 +31,8 @@ class AdminPrivilegeMenu(
             addButton(
                 slot = slot,
                 name = (Translator.tr(privilege.displayKey)?.string ?: privilege.name) +
-                    ": " + (Translator.tr(if (enabled) "ui.community.admin_privilege.state.enabled"
-                                          else "ui.community.admin_privilege.state.disabled")?.string
+                    ": " + (Translator.tr(if (enabled) "ui.admin.privilege.state.enabled"
+                                          else "ui.admin.privilege.state.disabled")?.string
                             ?: if (enabled) "Enabled" else "Disabled"),
                 item = if (enabled) Items.LIME_CONCRETE else Items.RED_CONCRETE
             ) {
@@ -55,7 +55,7 @@ class AdminPrivilegeMenu(
             return Text.of(
                 community.generateCommunityMark() +
                 " - " + name + " " +
-                (Translator.tr("ui.community.admin_privilege.title.component")?.string ?: "- Privileges")
+                (Translator.tr("ui.admin.privilege.title")?.string ?: "- Privileges")
             )
         }
     }

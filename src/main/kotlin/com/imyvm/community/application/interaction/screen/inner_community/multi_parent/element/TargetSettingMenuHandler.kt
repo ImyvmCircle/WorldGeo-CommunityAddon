@@ -51,17 +51,17 @@ fun getPermissionButtonItemStack(
         )
     }
     if (hasPermission != null) {
-        loreLines.add(Translator.tr("ui.community.administration.member.setting.lore.permission", hasPermission.toString()) ?: Text.literal("Permission: $hasPermission"))
+        loreLines.add(Translator.tr("ui.admin.member.setting.lore.permission", hasPermission.toString()) ?: Text.literal("Permission: $hasPermission"))
         scope?.let {
-            loreLines.add(Translator.tr("ui.community.administration.member.setting.lore.scope", scope.scopeName) ?: Text.literal("Scope: ${scope.scopeName}"))
+            loreLines.add(Translator.tr("ui.admin.member.setting.lore.scope", scope.scopeName) ?: Text.literal("Scope: ${scope.scopeName}"))
         }
         playerObject?.let {
-            loreLines.add(Translator.tr("ui.community.administration.member.setting.lore.player", playerObject.name) ?: Text.literal("Player: ${playerObject.name}"))
+            loreLines.add(Translator.tr("ui.admin.member.setting.lore.player", playerObject.name) ?: Text.literal("Player: ${playerObject.name}"))
         }
     }
     val unitPrice = TerritoryPricing.getPermissionCoefficientPerUnit(permissionKey)
     if (unitPrice > 0) {
-        loreLines.add(Translator.tr("ui.community.administration.region.setting.lore.unit_price", String.format("%.2f", unitPrice / 100.0)) ?: Text.literal("Unit price: ${String.format("%.2f", unitPrice / 100.0)} per 10000m²"))
+        loreLines.add(Translator.tr("ui.admin.region.setting.lore.unit_price", String.format("%.2f", unitPrice / 100.0)) ?: Text.literal("Unit price: ${String.format("%.2f", unitPrice / 100.0)} per 10000m²"))
     }
 
     return getLoreButton(itemStack, loreLines)
@@ -142,13 +142,13 @@ fun getRuleButtonItemStack(
         RegionDataApi.getRuleValueForRegion(it, scope, ruleKey)
     }
     if (currentValue != null) {
-        loreLines.add(Translator.tr("ui.community.administration.member.setting.lore.permission", currentValue.toString()) ?: Text.literal("Permission: $currentValue"))
+        loreLines.add(Translator.tr("ui.admin.member.setting.lore.permission", currentValue.toString()) ?: Text.literal("Permission: $currentValue"))
         scope?.let {
-            loreLines.add(Translator.tr("ui.community.administration.member.setting.lore.scope", scope.scopeName) ?: Text.literal("Scope: ${scope.scopeName}"))
+            loreLines.add(Translator.tr("ui.admin.member.setting.lore.scope", scope.scopeName) ?: Text.literal("Scope: ${scope.scopeName}"))
         }
     }
     val unitPrice = TerritoryPricing.getRuleCoefficientPerUnit(ruleKey)
-    loreLines.add(Translator.tr("ui.community.administration.region.setting.lore.unit_price", String.format("%.2f", unitPrice / 100.0)) ?: Text.literal("Unit price: ${String.format("%.2f", unitPrice / 100.0)} per 10000m²"))
+    loreLines.add(Translator.tr("ui.admin.region.setting.lore.unit_price", String.format("%.2f", unitPrice / 100.0)) ?: Text.literal("Unit price: ${String.format("%.2f", unitPrice / 100.0)} per 10000m²"))
     return getLoreButton(itemStack, loreLines)
 }
 

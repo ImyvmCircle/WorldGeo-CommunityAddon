@@ -24,19 +24,19 @@ class AdministrationTeleportPointMenu(
     init {
         addButton(
             slot = 10,
-            name = Translator.tr("ui.community.administration.teleport_point.button.inquiry")?.string ?: "Inquiry Teleport Point",
+            name = Translator.tr("ui.admin.teleport_point.button.inquiry")?.string ?: "Inquiry Teleport Point",
             itemStack = getTeleportPointInformationItemStack(Items.COMMAND_BLOCK, scope)
         ) { runInquiryTeleportPoint(playerExecutor, community, scope) }
 
         val isPublic = RegionDataApi.inquireTeleportPointAccessibility(scope)
         val accessState = if (isPublic) {
-            Translator.tr("ui.community.administration.teleport_point.state.public")?.string ?: "Public"
+            Translator.tr("ui.admin.teleport_point.state.public")?.string ?: "Public"
         } else {
-            Translator.tr("ui.community.administration.teleport_point.state.private")?.string ?: "Private"
+            Translator.tr("ui.admin.teleport_point.state.private")?.string ?: "Private"
         }
         addButton(
             slot = 12,
-            name = (Translator.tr("ui.community.administration.teleport_point.button.toggle")?.string
+            name = (Translator.tr("ui.admin.teleport_point.button.toggle")?.string
                 ?: "Teleport Accessibility") + ": " + accessState,
             item = if (isPublic) {
                 Items.GREEN_WOOL
@@ -47,26 +47,26 @@ class AdministrationTeleportPointMenu(
 
         addButton(
             slot = 19,
-            name = Translator.tr("ui.community.administration.teleport_point.button.set")?.string ?: "Set Location of Current Feet as Teleport Point",
+            name = Translator.tr("ui.admin.teleport_point.button.set")?.string ?: "Set Location of Current Feet as Teleport Point",
             item = Items.COMPASS
         ) { runSettingTeleportPoint(playerExecutor, community, scope) }
 
         addButton(
             slot = 21,
-            name = Translator.tr("ui.community.administration.teleport_point.button.reset")?.string ?: "Reset current teleport point to null",
+            name = Translator.tr("ui.admin.teleport_point.button.reset")?.string ?: "Reset current teleport point to null",
             item = Items.BARRIER
         ) { runResetTeleportPoint(playerExecutor, community, scope) }
 
         addButton(
             slot = 23,
-            name = Translator.tr("ui.community.administration.teleport_point.button.teleport")?.string ?: "Teleport to the teleport point of this scope",
+            name = Translator.tr("ui.admin.teleport_point.button.teleport")?.string ?: "Teleport to the teleport point of this scope",
             item = Items.ENDER_PEARL
         ) { runTeleportToPoint(playerExecutor, community, scope) }
     }
     companion object {
         private fun generateTeleportPointManagingMenuTitle(community: Community, scope: GeoScope): Text {
             return Text.of(
-                Translator.tr("ui.community.administration.teleport_point.title",
+                Translator.tr("ui.admin.teleport_point.title",
                     community,
                     scope
                 ))

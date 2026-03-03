@@ -15,7 +15,7 @@ import net.minecraft.text.Text
 class CommunityScopeCreationMenu(
     syncId: Int,
     private val community: Community,
-    private val currentName: String = Translator.tr("ui.community.administration.region.global.add.default_name")?.string
+    private val currentName: String = Translator.tr("ui.admin.region.global.add.default_name")?.string
         ?: "New-District",
     private val currentShape: GeoShapeType = GeoShapeType.RECTANGLE,
     private val playerExecutor: ServerPlayerEntity,
@@ -45,7 +45,7 @@ class CommunityScopeCreationMenu(
 
         addButton(
             slot = 35,
-            name = Translator.tr("ui.community.administration.region.global.add.confirm")?.string ?: "Confirm District Creation",
+            name = Translator.tr("ui.admin.region.global.add.confirm")?.string ?: "Confirm District Creation",
             item = Items.EMERALD_BLOCK
         ) { runConfirmScopeCreation(it, community, currentName, currentShape) }
     }
@@ -59,7 +59,7 @@ class CommunityScopeCreationMenu(
         ): Text {
             val existingScopeNames = community.getRegion()?.geometryScope?.map { it.scopeName }?.toSet() ?: emptySet()
             val error = generateScopeCreationError(currentName, currentShape, playerEntity, existingScopeNames)
-            val prefix = Translator.tr("ui.community.administration.region.global.add.title")?.string ?: "Add Administrative District"
+            val prefix = Translator.tr("ui.admin.region.global.add.title")?.string ?: "Add Administrative District"
             return Text.of(prefix + ": " + currentName + if (error.isNotEmpty()) " ($error)" else "")
         }
     }

@@ -40,7 +40,7 @@ class AdministrationRenameMenuAnvil(
     }
 
     override fun getMenuTitle(): Text{
-        return Translator.tr("ui.community.administration.rename.title") ?: Text.of("Rename Community")
+        return Translator.tr("ui.admin.rename.title") ?: Text.of("Rename Community")
     }
 
     private fun renameCommunity(player: ServerPlayerEntity, community: Community, newName: String): Int {

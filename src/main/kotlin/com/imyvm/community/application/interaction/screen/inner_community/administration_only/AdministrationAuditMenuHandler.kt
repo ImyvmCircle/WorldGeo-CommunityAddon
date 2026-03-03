@@ -79,11 +79,11 @@ fun runAccept(
                 objectAccount.mail,
                 playerExecutor,
                 community,
-                "ui.community.administration.audit.message.accept.mail"
+                "ui.admin.audit.message.accept.mail"
             )
             trMenu(
                 playerExecutor,
-                "ui.community.administration.audit.message.accept.success",
+                "ui.admin.audit.message.accept.success",
                 playerObject.name
             )
             
@@ -172,12 +172,12 @@ fun runRefuse(
                     objectAccount.mail,
                     playerExecutor,
                     community,
-                    "ui.community.administration.audit.message.refuse.mail"
+                    "ui.admin.audit.message.refuse.mail"
                 )
             }
             trMenu(
                 playerExecutor,
-                "ui.community.administration.audit.message.refuse.success",
+                "ui.admin.audit.message.refuse.success",
                 playerObject.name
             )
             

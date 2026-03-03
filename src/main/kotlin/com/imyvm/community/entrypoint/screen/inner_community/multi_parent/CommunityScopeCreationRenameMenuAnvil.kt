@@ -25,7 +25,7 @@ class CommunityScopeCreationRenameMenuAnvil(
     }
 
     override fun getMenuTitle(): Text {
-        return Translator.tr("ui.community.administration.region.global.add.rename.title")
+        return Translator.tr("ui.admin.region.global.add.rename.title")
             ?: Text.of("Rename Administrative District")
     }
 }

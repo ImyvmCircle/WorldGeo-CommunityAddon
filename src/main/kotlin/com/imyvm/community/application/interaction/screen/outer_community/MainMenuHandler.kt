@@ -118,7 +118,7 @@ private fun checkPointSelectingCreating(player: ServerPlayerEntity): Boolean {
 
 private fun generateNewCommunityTitle(): String {
     val index = CommunityDatabase.communities.size + 1
-    val defaultTitle = Translator.tr("ui.create.title", index)?.string ?: "New-Community"
+    val defaultTitle = Translator.tr("ui.create.title")?.string ?: "New-Community"
     return generateSequence(index) { it + 1 }
         .map { "$defaultTitle$it" }
         .first { title -> CommunityDatabase.communities.none { it.getRegion()?.name == title } }
