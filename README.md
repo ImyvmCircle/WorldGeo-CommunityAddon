@@ -655,7 +655,7 @@ Members may donate through the **Community Assets Menu**, accessible via:
 - The **Assets** button in the Community Menu (description section); or
 - The **Donate to Community** button in the Community Menu (interaction section).
 
-The donation menu presents six predefined amounts: **1.00**, **5.00**, **10.00**, **50.00**, **100.00**, and **500.00** (displayed as currency values divided by 100). When a member selects an amount:
+The donation menu presents ten predefined amounts: **1.00**, **5.00**, **10.00**, **50.00**, **100.00**, **500.00**, **1,000.00**, **2,000.00**, **5,000.00**, and **10,000.00** (displayed as currency values divided by 100). When a member selects an amount:
 
 - The system verifies the member has sufficient currency;
 - The currency is deducted from the member's account;
