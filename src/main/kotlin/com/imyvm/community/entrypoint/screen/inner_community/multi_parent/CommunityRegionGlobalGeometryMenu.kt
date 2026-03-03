@@ -19,7 +19,7 @@ class CommunityRegionGlobalGeometryMenu(
     menuTitle = Text.of(
         community.generateCommunityMark() + " - " +
             (Translator.tr("ui.admin.region.geometry.global.title")?.string
-                ?: "Global Geometry Operations")
+                ?: "Global Geographic Scope Operations")
     ),
     runBack = runBack
 ) {

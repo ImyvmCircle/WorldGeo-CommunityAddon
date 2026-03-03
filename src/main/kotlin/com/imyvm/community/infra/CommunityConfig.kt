@@ -10,7 +10,7 @@ class CommunityConfig : HokiConfig("Community.conf") {
         @ConfigOption
         val LANGUAGE = Option(
             "language",
-            "en_us",
+            "zh_cn",
             "the language of the mod."
         ) { obj, path ->
             obj.getString(path)

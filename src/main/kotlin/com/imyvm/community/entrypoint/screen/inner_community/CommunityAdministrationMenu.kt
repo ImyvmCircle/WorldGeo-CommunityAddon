@@ -59,7 +59,7 @@ class CommunityAdministrationMenu(
 
         addButton(
             slot = 19,
-            name = Translator.tr("ui.admin.button.region.geometry")?.string ?: "Region Geometry",
+            name = Translator.tr("ui.admin.button.region.geometry")?.string ?: "Region Geographic Scope",
             item = Items.MAP
         ) {
             runAdmRegion(
