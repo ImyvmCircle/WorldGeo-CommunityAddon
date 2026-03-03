@@ -12,7 +12,7 @@
   "community.create.error.already_in_community": "§c§l[已加入领域]§r §c您已经在一个 §e§l{0}§r §c类型的领域中。",
   "community.create.request.initial.success": "§a§l[成功]§r §a领域申请（名称 §f§l{0}§r，ID §b§l{1}§r）已成功初始化！",
   "community.create.request.sent": "§e§l[待审核]§r §e等待管理员 §6§l审批§r§e。",
-  "community.create.request.recruitment": "§6§l[招募中]§r §6现正招募 §e§l{0}名成员§r §6以初始化领地！",
+  "community.create.request.recruitment": "§6§l[招募中]§r §6现正招募 §e§l{0}名原始股玩家§r §6以初始化领域！",
   "community.create.confirmation.pending": "§e§l[待处理]§r §e您已有一个 §6待处理的创建申请§e。请先确认或取消。",
   "community.create.confirmation.prompt": "§a§l[需要确认]§r §a请在 §e§l5分钟§r§a 内确认创建。使用 §f§l/community create confirm {0}§r §a继续，或 §c§l/community create cancel {0}§r §c取消。",
   "community.create.confirmation.not_found": "§c§l[未找到]§r §c未找到此地块的待处理创建申请。",

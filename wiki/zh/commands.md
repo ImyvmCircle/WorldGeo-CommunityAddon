@@ -1,0 +1,107 @@
+# 命令
+
+> **导航：** [目录](index.md) | [主菜单](main-menu.md) | [领域菜单](community-menu.md) | [内政管理](administration.md) | [辖区](region.md) | [经济](economy.md) | [传送](teleport.md) | [内部频道](chat.md) | [命令](commands.md)
+
+---
+
+所有领域命令均使用根命令 `/community`。GUI 菜单是主要界面；命令提供了触发相同操作的替代或补充途径。
+
+`<communityIdentifier>` 可使用领域的**名称**或其**数字 ID**。
+
+## 通用命令
+
+| 命令 | 说明 | 对应菜单 |
+|---|---|---|
+| `/community` | 打开社群主菜单 | — |
+| `/community help` | 在聊天框中显示帮助信息 | — |
+| `/community list [type]` | 按类型筛选列出领域 | 浏览领域 |
+| `/community query <communityIdentifier>` | 显示领域的地块信息 | 领域菜单 → 地块信息 |
+
+**列表类型：** `all`（全部）· `joinable`（可加入）· `recruiting`（招募中）· `auditing`（审核中）· `active`（活跃）· `revoked`（已撤销）
+
+---
+
+## 圈地命令
+
+| 命令 | 说明 | 对应菜单 |
+|---|---|---|
+| `/community select start` | 启用圈地模式 | 主菜单 → 圈地模式按钮 |
+| `/community select stop` | 禁用圈地模式 | 主菜单 → 圈地模式按钮 |
+| `/community select reset` | 清除所有已选点位 | 主菜单 → 重置圈地选择按钮 |
+
+---
+
+## 创建领域
+
+| 命令 | 说明 | 对应菜单 |
+|---|---|---|
+| `/community create <shapeType> <communityType> <name>` | 初始化领域创建请求 | 主菜单 → 创建领域 |
+| `/community confirm_creation <regionId>` | 确认并完成创建 | 聊天提示 [确认] 按钮 |
+| `/community cancel_creation <regionId>` | 取消待处理的创建请求 | 聊天提示 [取消] 按钮 |
+
+**形状类型：** `RECTANGLE`（矩形）· `CIRCLE`（圆形）· `POLYGON`（多边形）  
+**领域类型：** `manor`（庄园）· `realm`（领地）
+
+---
+
+## 加入与退出
+
+| 命令 | 说明 | 对应菜单 |
+|---|---|---|
+| `/community join <communityIdentifier>` | 加入领域（或按政策提交申请） | 浏览领域 → 点击 → 加入 |
+| `/community leave <communityIdentifier>` | 退出领域 | 领域菜单 → 退出领域 |
+| `/community accept_invitation <communityIdentifier>` | 接受待处理的邀请 | 聊天邀请 [接受] 按钮 |
+| `/community reject_invitation <communityIdentifier>` | 拒绝待处理的邀请 | 聊天邀请 [拒绝] 按钮 |
+
+---
+
+## 内部频道
+
+| 命令 | 说明 | 对应菜单 |
+|---|---|---|
+| `/community chat <communityIdentifier> <message>` | 向领域频道发送消息 | — |
+| `/community chat_channel <communityIdentifier>` | 切换该领域为活跃聊天频道 | 聊天室菜单 → 切换频道 |
+
+---
+
+## 内政公告
+
+| 命令 | 说明 | 所需角色 |
+|---|---|---|
+| `/community announcement create <id> <content>` | 创建新公告 | 行政助理 / 所有者 |
+| `/community announcement delete <id> <announcementId>` | 删除公告 | 行政助理 / 所有者 |
+| `/community announcement list <id>` | 列出所有有效公告 | 任意成员 |
+| `/community announcement view <id> <announcementId>` | 查看指定公告 | 任意成员 |
+
+---
+
+## 地理确认
+
+这些命令由系统自动在聊天框中生成为可点击的提示，通常不需要手动输入。
+
+| 命令 | 说明 |
+|---|---|
+| `/community confirm_modification <regionId> <scopeName>` | 确认几何修改 |
+| `/community cancel_modification <regionId> <scopeName>` | 取消几何修改 |
+| `/community confirm_setting <regionId>` | 确认地块设置修改 |
+| `/community cancel_setting <regionId>` | 取消地块设置修改 |
+| `/community confirm_teleport_point_set <regionId> <scopeName>` | 确认设置传送点 |
+
+---
+
+## 服务器管理员命令
+
+> **需要权限等级 2。**
+
+| 命令 | 说明 |
+|---|---|
+| `/community audit <approve\|deny> <communityIdentifier>` | 批准或拒绝领域创建请求 |
+| `/community force_active <communityIdentifier>` | 强制激活领域 |
+| `/community force_revoke <communityIdentifier>` | 强制撤销领域 |
+| `/community force_delete <communityIdentifier>` | 永久删除领域 |
+| `/community announcement op list` | 列出所有领域的所有公告 |
+| `/community announcement op delete <id> <announcementId>` | 强制删除任意公告 |
+
+---
+
+> **参见：** [目录](index.md) · [主菜单](main-menu.md)

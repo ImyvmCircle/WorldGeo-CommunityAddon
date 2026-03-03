@@ -30,11 +30,11 @@ Every community, whether a modest **Manor** or a sprawling **Realm**, exists in 
 
 `RECRUITING` is a unique status to realms, during which a realm may gather sufficient members to enter into the next stage, or it will be revoked. At this stage, only limited administration is allowed: the owner may appoint administrators and adjust the join policy, while both owner and administrators may review membership applications. Members who joined the community may also leave it.
 
-`PENDING` is a status where the community request meets the automatic requirements and waits for a Server operator to audit it. The administrative power of a pending community is the same as that of a recruiting community.
+`PENDING` is a status where the community request meets the automatic requirements and waits for an OP to audit it. The administrative power of a pending community is the same as that of a recruiting community.
 
 In `ACTIVE` status, all available administration power of a community is unlocked, and may be exercised freely. A council may be called by the owner to act as an agent.
 
-If a community is in `REVOKED` status, however, its owner and members is restricted from all actions, including leave it. Server operators may adopt an approach to handle it in time, whether making it an eligible community again or delete it.
+If a community is in `REVOKED` status, however, its owner and members is restricted from all actions, including leave it. OPs may adopt an approach to handle it in time, whether making it an eligible community again or delete it.
 
 Technically, types and status are combined as one parameter of a community.
 
@@ -85,7 +85,7 @@ When criteria above are achieved, a player may **initialize the creation request
 
 Once the request is sent, it will undergo the automatic inspections certificating conditions mentioned in order. Violations of these conditions may be reported by a message sending to the player. And if the request passed the inspections,  the player executing the process is charged, and a **proto-community** is created. Whether the proto-community becomes a **pending community** immediately is also decide by the community type. Whereas a realm stays in the recruiting status until it reaches the minimum requirement of realm population, which is, by default, 4 players, a manor becomes a **pending manor** directly. And a realm needs to recruit sufficient player in 48 hours(in reality) after executing the community request initialization, or it will become a revoked community, and the creation fee will be refunded, Once a realm reaches the population requirement, it also becomes a **pending realm**.
 
-Server operators possess the permission **auditing the proto-communities**. If not passes, a community is revoked. Conversely, it becomes an **active community**.
+OPs possess the permission **auditing the proto-communities**. If not passes, a community is revoked. Conversely, it becomes an **active community**.
 
 ### Community Administration
 
@@ -781,7 +781,7 @@ The announcement system implements a dual notification strategy:
 
 #### Operator Functions
 
-Server operators possess elevated privileges for cross-community announcement management:
+OPs possess elevated privileges for cross-community announcement management:
 
 - `/community announcement op list` - Lists all announcements across all communities with counts per community;
 - `/community announcement op delete <communityId> <announcementId>` - Permanently force delete any announcement, bypassing administrator permissions;
@@ -816,6 +816,17 @@ Players may discover and join communities through the **Community List Menu**, a
 - `REVOKED` - Communities whose status has been revoked.
 
 Players may browse their own memberships through the **My Communities** button in the main menu.
+
+## Wiki
+
+Comprehensive player guides are available in two languages:
+
+- **English:** [wiki/en/index.md](wiki/en/index.md)
+- **中文：** [wiki/zh/index.md](wiki/zh/index.md)
+
+Each wiki covers the full GUI menu system (primary) and command reference (supplementary), including community types, member roles, region/territory management, economy, teleport points, and the chat channel.
+
+---
 
 ## Acknowledgements
 

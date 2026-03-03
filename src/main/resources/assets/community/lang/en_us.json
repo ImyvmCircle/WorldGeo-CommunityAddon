@@ -12,7 +12,7 @@
   "community.create.error.already_in_community": "§c§l[ALREADY IN COMMUNITY]§r §cYou are already in a §e§l{0}§r §ctype community.",
   "community.create.request.initial.success": "§a§l[SUCCESS]§r §aCommunity request with name §f§l{0}§r §aand ID §b§l{1}§r §ainitialized successfully!",
   "community.create.request.sent": "§e§l[PENDING]§r §eWaiting for §6§lapproval§r §efrom an admin.",
-  "community.create.request.recruitment": "§6§l[RECRUITING]§r §6Now recruiting §e§l{0} members§r §6to initialize a realm!",
+  "community.create.request.recruitment": "§6§l[RECRUITING]§r §6Now recruiting §e§l{0} founding players§r §6to initialize a realm!",
   "community.create.confirmation.pending": "§e§l[PENDING]§r §eYou already have a §6pending creation request§e. Please confirm or cancel it first.",
   "community.create.confirmation.prompt": "§a§l[CONFIRMATION REQUIRED]§r §aPlease confirm creation within §e§l5 minutes§r§a. Use §f§l/community create confirm {0}§r §ato proceed, or §c§l/community create cancel {0}§r §cto cancel.",
   "community.create.confirmation.not_found": "§c§l[NOT FOUND]§r §cNo pending creation request found for this region.",
