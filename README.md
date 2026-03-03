@@ -16,7 +16,7 @@ Players can establish two types of communities, manors (small-scale) or realms (
 
 **Manors** are small-scale communities with:
 - Lower creation costs and requirements;
-- **Member capacity limit** (default: 5 members, configurable);
+- **Member capacity limit** (default: 4 members, configurable);
 - Suitable for small groups and focused cooperation.
 
 **Realms** are large-scale communities with:
@@ -399,7 +399,7 @@ Selecting an individual member opens the **Community Member Menu**, which provid
 
 When the join policy is set to `APPLICATION`, membership requests must be reviewed through the **Administration Audit List Menu**, accessible via **Community Audit** in the administration menu. For each pending applicant, administrators may view the applicant's profile and request details in the **Administration Audit Menu**, then choose to either **Accept** the application to grant membership or **Refuse** it to set their status to `REFUSED`.
 
-**Manor Capacity Enforcement:** When approving an application for a manor community, the system checks whether the community has reached its member capacity (default: 5 members, configurable). If the manor is at capacity, the approval is blocked and the administrator receives a notification indicating the limit has been reached. The applicant's status remains unchanged as `APPLICANT`, ensuring the member limit is never exceeded during the audit process.
+**Manor Capacity Enforcement:** When approving an application for a manor community, the system checks whether the community has reached its member capacity (default: 4 members, configurable). If the manor is at capacity, the approval is blocked and the administrator receives a notification indicating the limit has been reached. The applicant's status remains unchanged as `APPLICANT`, ensuring the member limit is never exceeded during the audit process.
 
 #### Invitation System
 
@@ -419,7 +419,7 @@ Members with sufficient permissions may invite online players through:
   - Manor join cost: 1,500.00 (configurable);
   - Realm join cost: 500.00 (configurable);
 - Target player must meet all standard joining conditions (not already a member, passes membership checks);
-- **Manor capacity check**: Manor communities must not be at member capacity (default: 5 members). If the manor is at capacity, the invitation cannot be sent and the inviter is notified.
+- **Manor capacity check**: Manor communities must not be at member capacity (default: 4 members). If the manor is at capacity, the invitation cannot be sent and the inviter is notified.
 
 ##### Receiving Invitations
 
