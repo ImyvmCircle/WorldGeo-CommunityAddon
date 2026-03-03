@@ -63,8 +63,8 @@ A **community creation request** may be initialized spontaneously by any player 
     * a set of **rules** executed to check whether the combination of points and type is valid when initiating the creation request, and their details are provided by IMYVMWorldGeo; and
 * that the player **possesses sufficient in-game currency** to cover the **community creation fee** for the specified *community type*, which consists of:
     * **Base Cost**:
-        * that a `MANOR` is charged 5000 by default; and
-        * that a `REALM` is charged 8000 by default.
+        * that a `MANOR` is charged 5,000.00 by default; and
+        * that a `REALM` is charged 10,000.00 by default.
     * **Area-Based Fee** — uses **tiered bracket pricing** (progressive, like a tax bracket system):
         * Each tier covers a range 4× wider than the previous; the multiplier doubles each tier (×1, ×2, ×4, …);
         * Only the area **within each bracket** is charged at that bracket's rate — reaching a higher tier does not retroactively affect lower tiers;
@@ -278,6 +278,34 @@ Setting modifications are charged from community assets using **tiered bracket p
 - **Player-specific** settings cost 20% of the global rate;
 - **Restoring a setting to its default value** is refunded at 50% of the original cost.
 
+The base rate per 10,000 m² for each setting type:
+
+| Setting | Base Rate |
+|---|---|
+| Build+Break | 200.00 |
+| Interaction | 150.00 |
+| Build | 125.00 |
+| Break | 125.00 |
+| PvP | 125.00 |
+| Container | 100.00 |
+| Redstone | 100.00 |
+| Villager Killing | 100.00 |
+| Animal Killing | 70.00 |
+| Monster Spawning (rule) | 450.00 |
+| Phantom Spawning (rule) | 70.00 |
+| TNT Block Protection (rule) | 70.00 |
+| Farming | 35.00 |
+| Armor Stand | 35.00 |
+| Item Frame | 35.00 |
+| Trade | 30.00 |
+| Bucket Build | 20.00 |
+| Bucket Scoop | 20.00 |
+| Throwable | 20.00 |
+| Ignite | 20.00 |
+| Potion Use | 10.00 |
+| Egg Use | 5.00 |
+| Snowball Use | 5.00 |
+
 Upon successful modification, all formal members (owner, admins, and members) are notified.
 
 ##### Auto-Grant on Member Join
@@ -304,7 +332,7 @@ To modify a territorial scope:
 Adding a new administrative district now uses a dedicated creation panel with district naming and shape toggle controls.
 
 - Creation cost = **fixed district fee** + **area-based fee**;
-- Fixed fee defaults: **Manor 5,000.00**, **Realm 2,500.00** (configurable);
+- Fixed fee defaults: **Manor 500.00**, **Realm 1,000.00** (configurable);
 - Area-based fee follows the same pricing model as area expansion;
 - Confirmation is required through a pending command-based confirmation flow;
 - Final execution checks:

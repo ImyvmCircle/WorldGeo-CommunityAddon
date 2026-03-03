@@ -13,7 +13,7 @@ class PricingConfig : HokiConfig("Pricing.conf") {
         @ConfigOption
         val PRICE_MANOR = Option(
             "economy.price_manor",
-            1500000L,
+            500000L,
             "the price to create a manor."
         ) { obj, path ->
             obj.getLong(path)
@@ -23,7 +23,7 @@ class PricingConfig : HokiConfig("Pricing.conf") {
         @ConfigOption
         val PRICE_REALM = Option(
             "economy.price_realm",
-            3000000L,
+            1000000L,
             "the price to create a realm."
         ) { obj, path ->
             obj.getLong(path)
@@ -129,7 +129,7 @@ class PricingConfig : HokiConfig("Pricing.conf") {
         @ConfigOption
         val SCOPE_ADDITION_BASE_COST_MANOR = Option(
             "economy.scope_addition_base_cost_manor",
-            500000L,
+            50000L,
             "the fixed base cost to add a new scope in a manor community."
         ) { obj, path ->
             obj.getLong(path)
@@ -139,7 +139,7 @@ class PricingConfig : HokiConfig("Pricing.conf") {
         @ConfigOption
         val SCOPE_ADDITION_BASE_COST_REALM = Option(
             "economy.scope_addition_base_cost_realm",
-            250000L,
+            100000L,
             "the fixed base cost to add a new scope in a realm community."
         ) { obj, path ->
             obj.getLong(path)
@@ -183,7 +183,7 @@ class PricingConfig : HokiConfig("Pricing.conf") {
         @ConfigOption
         val PERMISSION_BUILD_BREAK_COEFFICIENT_PER_UNIT = Option(
             "economy.permission.build_break.coefficient_per_unit",
-            40000L,
+            20000L,
             "the pricing coefficient for BUILD_BREAK permission per unit area (Long, = display price * 100 per unit)."
         ) { obj, path ->
             obj.getLong(path)
@@ -193,7 +193,7 @@ class PricingConfig : HokiConfig("Pricing.conf") {
         @ConfigOption
         val PERMISSION_CONTAINER_COEFFICIENT_PER_UNIT = Option(
             "economy.permission.container.coefficient_per_unit",
-            20000L,
+            10000L,
             "the pricing coefficient for CONTAINER permission per unit area (Long, = display price * 100 per unit)."
         ) { obj, path ->
             obj.getLong(path)
@@ -203,7 +203,7 @@ class PricingConfig : HokiConfig("Pricing.conf") {
         @ConfigOption
         val PERMISSION_BUILD_COEFFICIENT_PER_UNIT = Option(
             "economy.permission.build.coefficient_per_unit",
-            25000L,
+            12500L,
             "the pricing coefficient for BUILD permission per unit area."
         ) { obj, path ->
             obj.getLong(path)
@@ -213,7 +213,7 @@ class PricingConfig : HokiConfig("Pricing.conf") {
         @ConfigOption
         val PERMISSION_BREAK_COEFFICIENT_PER_UNIT = Option(
             "economy.permission.break.coefficient_per_unit",
-            25000L,
+            12500L,
             "the pricing coefficient for BREAK permission per unit area."
         ) { obj, path ->
             obj.getLong(path)
@@ -243,7 +243,7 @@ class PricingConfig : HokiConfig("Pricing.conf") {
         @ConfigOption
         val PERMISSION_INTERACTION_COEFFICIENT_PER_UNIT = Option(
             "economy.permission.interaction.coefficient_per_unit",
-            30000L,
+            15000L,
             "the pricing coefficient for INTERACTION permission per unit area."
         ) { obj, path ->
             obj.getLong(path)
@@ -253,7 +253,7 @@ class PricingConfig : HokiConfig("Pricing.conf") {
         @ConfigOption
         val PERMISSION_REDSTONE_COEFFICIENT_PER_UNIT = Option(
             "economy.permission.redstone.coefficient_per_unit",
-            20000L,
+            10000L,
             "the pricing coefficient for REDSTONE permission per unit area."
         ) { obj, path ->
             obj.getLong(path)
@@ -273,7 +273,7 @@ class PricingConfig : HokiConfig("Pricing.conf") {
         @ConfigOption
         val PERMISSION_PVP_COEFFICIENT_PER_UNIT = Option(
             "economy.permission.pvp.coefficient_per_unit",
-            25000L,
+            12500L,
             "the pricing coefficient for PVP permission per unit area."
         ) { obj, path ->
             obj.getLong(path)
@@ -283,7 +283,7 @@ class PricingConfig : HokiConfig("Pricing.conf") {
         @ConfigOption
         val PERMISSION_ANIMAL_KILLING_COEFFICIENT_PER_UNIT = Option(
             "economy.permission.animal_killing.coefficient_per_unit",
-            10000L,
+            7000L,
             "the pricing coefficient for ANIMAL_KILLING permission per unit area."
         ) { obj, path ->
             obj.getLong(path)
@@ -293,7 +293,7 @@ class PricingConfig : HokiConfig("Pricing.conf") {
         @ConfigOption
         val PERMISSION_VILLAGER_KILLING_COEFFICIENT_PER_UNIT = Option(
             "economy.permission.villager_killing.coefficient_per_unit",
-            20000L,
+            10000L,
             "the pricing coefficient for VILLAGER_KILLING permission per unit area."
         ) { obj, path ->
             obj.getLong(path)
@@ -343,7 +343,7 @@ class PricingConfig : HokiConfig("Pricing.conf") {
         @ConfigOption
         val PERMISSION_FARMING_COEFFICIENT_PER_UNIT = Option(
             "economy.permission.farming.coefficient_per_unit",
-            5000L,
+            3500L,
             "the pricing coefficient for FARMING permission per unit area."
         ) { obj, path ->
             obj.getLong(path)
@@ -363,7 +363,7 @@ class PricingConfig : HokiConfig("Pricing.conf") {
         @ConfigOption
         val PERMISSION_ARMOR_STAND_COEFFICIENT_PER_UNIT = Option(
             "economy.permission.armor_stand.coefficient_per_unit",
-            5000L,
+            3500L,
             "the pricing coefficient for ARMOR_STAND permission per unit area."
         ) { obj, path ->
             obj.getLong(path)
@@ -373,7 +373,7 @@ class PricingConfig : HokiConfig("Pricing.conf") {
         @ConfigOption
         val PERMISSION_ITEM_FRAME_COEFFICIENT_PER_UNIT = Option(
             "economy.permission.item_frame.coefficient_per_unit",
-            5000L,
+            3500L,
             "the pricing coefficient for ITEM_FRAME permission per unit area."
         ) { obj, path ->
             obj.getLong(path)
@@ -383,7 +383,7 @@ class PricingConfig : HokiConfig("Pricing.conf") {
         @ConfigOption
         val RULE_SPAWN_MONSTERS_COEFFICIENT_PER_UNIT = Option(
             "economy.rule.spawn_monsters.coefficient_per_unit",
-            90000L,
+            45000L,
             "the pricing coefficient for SPAWN_MONSTERS rule per unit area."
         ) { obj, path ->
             obj.getLong(path)
@@ -393,7 +393,7 @@ class PricingConfig : HokiConfig("Pricing.conf") {
         @ConfigOption
         val RULE_SPAWN_PHANTOMS_COEFFICIENT_PER_UNIT = Option(
             "economy.rule.spawn_phantoms.coefficient_per_unit",
-            10000L,
+            7000L,
             "the pricing coefficient for SPAWN_PHANTOMS rule per unit area."
         ) { obj, path ->
             obj.getLong(path)
@@ -403,7 +403,7 @@ class PricingConfig : HokiConfig("Pricing.conf") {
         @ConfigOption
         val RULE_TNT_BLOCK_PROTECTION_COEFFICIENT_PER_UNIT = Option(
             "economy.rule.tnt_block_protection.coefficient_per_unit",
-            10000L,
+            7000L,
             "the pricing coefficient for TNT_BLOCK_PROTECTION rule per unit area."
         ) { obj, path ->
             obj.getLong(path)
