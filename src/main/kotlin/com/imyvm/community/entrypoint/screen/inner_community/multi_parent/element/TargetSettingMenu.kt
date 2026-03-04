@@ -37,7 +37,6 @@ class TargetSettingMenu(
     private val isGlobal = playerObject == null
 
     init {
-        // Pagination buttons at edge slots 0 (prev) and 8 (next)
         if (page > 0) {
             addButton(
                 slot = 0,
@@ -69,7 +68,6 @@ class TargetSettingMenu(
     }
 
     private fun addPermissionSettingButtons() {
-        // Permission header at row 1 col 1 (slot 10), gap at slot 11
         addButton(
             slot = 10,
             name = Translator.tr("ui.admin.region.setting.permission.header")?.string ?: "Permissions",
@@ -96,11 +94,11 @@ class TargetSettingMenu(
             PermissionKey.FARMING to Items.WHEAT,
             PermissionKey.IGNITE to Items.FLINT_AND_STEEL,
             PermissionKey.ARMOR_STAND to Items.ARMOR_STAND,
-            PermissionKey.ITEM_FRAME to Items.ITEM_FRAME
+            PermissionKey.ITEM_FRAME to Items.ITEM_FRAME,
+            PermissionKey.WIND_CHARGE_USE to Items.WIND_CHARGE
         )
 
-        // Slot 10: header, slot 11: gap, slots 12-16 (5), 19-25 (7), 28-34 (7), 37 (1) = 20 items
-        val permissionSlots = (12..16).toList() + (19..25).toList() + (28..34).toList() + listOf(37)
+        val permissionSlots = (12..16).toList() + (19..25).toList() + (28..34).toList() + listOf(37, 38)
 
         permissionKeys.forEachIndexed { index, (key, item) ->
             val slot = permissionSlots[index]
@@ -114,7 +112,6 @@ class TargetSettingMenu(
     }
 
     private fun addRuleSettingButtons() {
-        // Rule header at row 1 col 1 (slot 10), gap at slot 11, items at slots 12-14
         addButton(
             slot = 10,
             name = Translator.tr("ui.admin.region.setting.rule.header")?.string ?: "Rules",
@@ -124,11 +121,18 @@ class TargetSettingMenu(
         val ruleEntries = listOf(
             RuleKey.SPAWN_MONSTERS to Items.ZOMBIE_SPAWN_EGG,
             RuleKey.SPAWN_PHANTOMS to Items.PHANTOM_MEMBRANE,
-            RuleKey.TNT_BLOCK_PROTECTION to Items.TNT
+            RuleKey.TNT_BLOCK_PROTECTION to Items.TNT,
+            RuleKey.ENDERMAN_BLOCK_PICKUP to Items.ENDER_EYE,
+            RuleKey.SCULK_SPREAD to Items.SCULK_CATALYST,
+            RuleKey.SNOW_GOLEM_TRAIL to Items.SNOW,
+            RuleKey.DISPENSER to Items.DISPENSER,
+            RuleKey.PRESSURE_PLATE to Items.OAK_PRESSURE_PLATE,
+            RuleKey.PISTON to Items.PISTON
         )
 
+        val ruleSlots = (12..16).toList() + (19..22).toList()
         ruleEntries.forEachIndexed { index, (key, item) ->
-            val slot = 12 + index
+            val slot = ruleSlots[index]
             val nameKey = "ui.admin.region.setting.rule.${key.toString().lowercase()}"
             addButton(
                 slot = slot,
@@ -139,8 +143,6 @@ class TargetSettingMenu(
     }
 
     private fun addEffectSettingButtons() {
-        // Row 2 (slots 19-25): empty gap row between rules and effects
-        // Effect header at row 3 col 1 (slot 28), gap at slot 29, items at slots 30-34 (5) + 37-39 (3) = 8 total
         addButton(
             slot = 28,
             name = Translator.tr("ui.admin.region.setting.effect.header")?.string ?: "Effects",
@@ -158,7 +160,6 @@ class TargetSettingMenu(
             EffectKey.LUCK to Items.NETHER_STAR
         )
 
-        // Slots 30-34 (5 items) + 37-39 (3 items) = 8 items total
         val effectSlots = (30..34).toList() + (37..39).toList()
 
         effectEntries.forEachIndexed { index, (key, item) ->

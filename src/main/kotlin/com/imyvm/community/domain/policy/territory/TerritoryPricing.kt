@@ -207,6 +207,7 @@ object TerritoryPricing {
             PermissionKey.IGNITE -> PricingConfig.PERMISSION_IGNITE_COEFFICIENT_PER_UNIT.value
             PermissionKey.ARMOR_STAND -> PricingConfig.PERMISSION_ARMOR_STAND_COEFFICIENT_PER_UNIT.value
             PermissionKey.ITEM_FRAME -> PricingConfig.PERMISSION_ITEM_FRAME_COEFFICIENT_PER_UNIT.value
+            PermissionKey.WIND_CHARGE_USE -> PricingConfig.PERMISSION_WIND_CHARGE_USE_COEFFICIENT_PER_UNIT.value
             else -> 0L
         }
     }
@@ -234,6 +235,12 @@ object TerritoryPricing {
             RuleKey.SPAWN_MONSTERS -> PricingConfig.RULE_SPAWN_MONSTERS_COEFFICIENT_PER_UNIT.value
             RuleKey.SPAWN_PHANTOMS -> PricingConfig.RULE_SPAWN_PHANTOMS_COEFFICIENT_PER_UNIT.value
             RuleKey.TNT_BLOCK_PROTECTION -> PricingConfig.RULE_TNT_BLOCK_PROTECTION_COEFFICIENT_PER_UNIT.value
+            RuleKey.ENDERMAN_BLOCK_PICKUP -> PricingConfig.RULE_ENDERMAN_BLOCK_PICKUP_COEFFICIENT_PER_UNIT.value
+            RuleKey.SCULK_SPREAD -> PricingConfig.RULE_SCULK_SPREAD_COEFFICIENT_PER_UNIT.value
+            RuleKey.SNOW_GOLEM_TRAIL -> PricingConfig.RULE_SNOW_GOLEM_TRAIL_COEFFICIENT_PER_UNIT.value
+            RuleKey.DISPENSER -> PricingConfig.RULE_DISPENSER_COEFFICIENT_PER_UNIT.value
+            RuleKey.PRESSURE_PLATE -> PricingConfig.RULE_PRESSURE_PLATE_COEFFICIENT_PER_UNIT.value
+            RuleKey.PISTON -> PricingConfig.RULE_PISTON_COEFFICIENT_PER_UNIT.value
         }
     }
 }

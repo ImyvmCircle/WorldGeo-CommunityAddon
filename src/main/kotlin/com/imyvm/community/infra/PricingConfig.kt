@@ -45,7 +45,7 @@ class PricingConfig : HokiConfig("Pricing.conf") {
         @ConfigOption
         val COMMUNITY_JOIN_COST_MANOR = Option(
             "economy.community_join_cost_manor",
-            150000L,
+            45000L,
             "the cost to join a manor community."
         ) { obj, path ->
             obj.getLong(path)
@@ -161,7 +161,7 @@ class PricingConfig : HokiConfig("Pricing.conf") {
         @ConfigOption
         val TELEPORT_POINT_MODIFY_COST = Option(
             "economy.teleport_point_modify_cost",
-            300000L,
+            100000L,
             "the fixed cost for modifying an existing teleport point."
         ) { obj, path ->
             obj.getLong(path)
@@ -381,6 +381,16 @@ class PricingConfig : HokiConfig("Pricing.conf") {
 
         @JvmField
         @ConfigOption
+        val PERMISSION_WIND_CHARGE_USE_COEFFICIENT_PER_UNIT = Option(
+            "economy.permission.wind_charge_use.coefficient_per_unit",
+            800L,
+            "the pricing coefficient for WIND_CHARGE_USE permission per unit area."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
+
+        @JvmField
+        @ConfigOption
         val RULE_SPAWN_MONSTERS_COEFFICIENT_PER_UNIT = Option(
             "economy.rule.spawn_monsters.coefficient_per_unit",
             45000L,
@@ -405,6 +415,66 @@ class PricingConfig : HokiConfig("Pricing.conf") {
             "economy.rule.tnt_block_protection.coefficient_per_unit",
             7000L,
             "the pricing coefficient for TNT_BLOCK_PROTECTION rule per unit area."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val RULE_ENDERMAN_BLOCK_PICKUP_COEFFICIENT_PER_UNIT = Option(
+            "economy.rule.enderman_block_pickup.coefficient_per_unit",
+            7000L,
+            "the pricing coefficient for ENDERMAN_BLOCK_PICKUP rule per unit area."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val RULE_SCULK_SPREAD_COEFFICIENT_PER_UNIT = Option(
+            "economy.rule.sculk_spread.coefficient_per_unit",
+            7000L,
+            "the pricing coefficient for SCULK_SPREAD rule per unit area."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val RULE_SNOW_GOLEM_TRAIL_COEFFICIENT_PER_UNIT = Option(
+            "economy.rule.snow_golem_trail.coefficient_per_unit",
+            7000L,
+            "the pricing coefficient for SNOW_GOLEM_TRAIL rule per unit area."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val RULE_DISPENSER_COEFFICIENT_PER_UNIT = Option(
+            "economy.rule.dispenser.coefficient_per_unit",
+            7000L,
+            "the pricing coefficient for DISPENSER rule per unit area."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val RULE_PRESSURE_PLATE_COEFFICIENT_PER_UNIT = Option(
+            "economy.rule.pressure_plate.coefficient_per_unit",
+            7000L,
+            "the pricing coefficient for PRESSURE_PLATE rule per unit area."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val RULE_PISTON_COEFFICIENT_PER_UNIT = Option(
+            "economy.rule.piston.coefficient_per_unit",
+            7000L,
+            "the pricing coefficient for PISTON rule per unit area."
         ) { obj, path ->
             obj.getLong(path)
         }
