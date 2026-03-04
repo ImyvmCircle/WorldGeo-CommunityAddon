@@ -4,6 +4,10 @@
 
 This Project is designed to constitute a comprehensive framework for players' **communities** in Minecraft servers. It is built on the IMYVMWorldGeo as an extension, which provides mechanics centered around **Region**, performing a Minecraft geography element, and is intended to offer an administration simulation system granting players the ability to self-govern their in-game regions in the form of a player community.
 
+## Major version 1.0.x
+
+This major version is a perfection of current game system.
+
 ## Features
 
 ### Community
