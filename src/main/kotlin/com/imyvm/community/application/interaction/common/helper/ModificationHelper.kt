@@ -28,19 +28,21 @@ fun generateScopeAdditionConfirmationMessage(
     scopeName: String,
     shapeType: GeoShapeType,
     area: Double,
-    fixedCost: Long,
+    fixedCostBase: Long,
     landCostChange: Long,
     settingChanges: List<SettingItemCostChange>,
     isManor: Boolean,
     currentAssets: Long,
     currentTotalArea: Double,
+    rawTotal: Long = 0L,
+    adjustedTotal: Long = 0L,
     excessCount: Int = 0,
     maxScopesAllowed: Int = 0,
     formalMemberCount: Int = 0,
-    fixedCostBase: Long = 0L
+    multiplier: Double = 1.5
 ): List<Text> {
     return TerritoryConfirmationMessage.generateScopeAdditionConfirmation(
-        scopeName, shapeType, area, fixedCost, landCostChange, settingChanges, isManor, currentAssets, currentTotalArea,
-        excessCount, maxScopesAllowed, formalMemberCount, fixedCostBase
+        scopeName, shapeType, area, fixedCostBase, landCostChange, settingChanges, isManor, currentAssets,
+        currentTotalArea, rawTotal, adjustedTotal, excessCount, maxScopesAllowed, formalMemberCount, multiplier
     )
 }

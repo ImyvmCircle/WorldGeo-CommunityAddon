@@ -146,16 +146,18 @@ object TerritoryConfirmationMessage {
         scopeName: String,
         shapeType: GeoShapeType,
         area: Double,
-        fixedCost: Long,
+        fixedCostBase: Long,
         landCostChange: Long,
         settingChanges: List<SettingItemCostChange>,
         isManor: Boolean,
         currentAssets: Long,
         currentTotalArea: Double,
+        rawTotal: Long = 0L,
+        adjustedTotal: Long = 0L,
         excessCount: Int = 0,
         maxScopesAllowed: Int = 0,
         formalMemberCount: Int = 0,
-        fixedCostBase: Long = 0L
+        multiplier: Double = 1.5
     ): List<Text> {
         val messages = mutableListOf<Text>()
 
@@ -165,24 +167,13 @@ object TerritoryConfirmationMessage {
             GeoShapeType.POLYGON -> Translator.tr("community.shape.polygon")?.string ?: "polygon"
             else -> Translator.tr("community.shape.unknown")?.string ?: "unknown"
         }
-        var totalCost = fixedCost + landCostChange + settingChanges.sumOf { it.costChange }
+        val totalCost = if (excessCount > 0) adjustedTotal else rawTotal
 
         messages.add(Translator.tr("community.scope_add.confirm.header") ?: Text.literal("====== SCOPE CREATION CONFIRMATION ======"))
         messages.add(Translator.tr("community.scope_add.confirm.scope", scopeName) ?: Text.literal("Administrative District: $scopeName"))
         messages.add(Translator.tr("community.scope_add.confirm.shape", shapeText) ?: Text.literal("Shape: $shapeText"))
         messages.add(Translator.tr("community.scope_add.confirm.area", String.format("%.2f", area)) ?: Text.literal("Area: ${String.format("%.2f", area)} m²"))
-        if (excessCount > 0) {
-            messages.add(Translator.tr(
-                "community.scope_add.confirm.base_cost_adjusted",
-                excessCount.toString(),
-                maxScopesAllowed.toString(),
-                formalMemberCount.toString(),
-                String.format("%.2f", fixedCost / 100.0),
-                String.format("%.2f", fixedCostBase / 100.0)
-            ) ?: Text.literal("Base Cost (Soft Limit Surcharge ×$excessCount, limit $maxScopesAllowed/$formalMemberCount members): ${String.format("%.2f", fixedCost / 100.0)} (original ${String.format("%.2f", fixedCostBase / 100.0)})"))
-        } else {
-            messages.add(Translator.tr("community.scope_add.confirm.base_cost", String.format("%.2f", fixedCost / 100.0)) ?: Text.literal("Base Cost: ${String.format("%.2f", fixedCost / 100.0)}"))
-        }
+        messages.add(Translator.tr("community.scope_add.confirm.base_cost", String.format("%.2f", fixedCostBase / 100.0)) ?: Text.literal("Base Cost: ${String.format("%.2f", fixedCostBase / 100.0)}"))
 
         if (landCostChange > 0) {
             messages.add(Translator.tr("community.pricing.land.increase_header", String.format("%.2f", area))
@@ -211,6 +202,19 @@ object TerritoryConfirmationMessage {
                     "$sign${String.format("%.2f", change.costChange / 100.0)}"
                 ) ?: Text.literal("  ${change.settingKeyName} [$target]: ${String.format("%.2f", change.areaOld)}→${String.format("%.2f", change.areaNew)} m², $sign${String.format("%.2f", change.costChange / 100.0)}"))
             }
+        }
+
+        if (excessCount > 0) {
+            val multiplierStr = String.format("%.1f", multiplier)
+            messages.add(Translator.tr(
+                "community.scope_add.confirm.surcharge_formula",
+                String.format("%.2f", rawTotal / 100.0),
+                multiplierStr,
+                excessCount.toString(),
+                String.format("%.2f", adjustedTotal / 100.0),
+                maxScopesAllowed.toString(),
+                formalMemberCount.toString()
+            ) ?: Text.literal("Soft Limit Surcharge (limit $maxScopesAllowed/$formalMemberCount, $excessCount excess): ${String.format("%.2f", rawTotal/100.0)} × ${multiplierStr}^$excessCount = ${String.format("%.2f", adjustedTotal/100.0)}"))
         }
 
         messages.add(Translator.tr("community.scope_add.confirm.total_cost", String.format("%.2f", totalCost / 100.0)) ?: Text.literal("TOTAL COST: ${String.format("%.2f", totalCost / 100.0)}"))

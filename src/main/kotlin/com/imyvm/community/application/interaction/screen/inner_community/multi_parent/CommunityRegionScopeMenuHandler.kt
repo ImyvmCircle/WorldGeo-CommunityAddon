@@ -180,20 +180,25 @@ private fun onCreateScopeRequest(
         PricingConfig.SCOPE_ADDITION_BASE_COST_REALM.value
     }
 
+    val settingChanges = calculateRegionSettingsCostChanges(communityRegion, newScopeArea, isManor)
+    val settingTotal = settingChanges.sumOf { it.costChange }
+
     val formalMemberCount = community.member.count {
         it.value.basicRoleType != MemberRoleType.APPLICANT && it.value.basicRoleType != MemberRoleType.REFUSED
     }
-    val maxScopesAllowed = formalMemberCount / 2
+    // Ceiling division: ceil(members / 2)
+    val maxScopesAllowed = (formalMemberCount + 1) / 2
     val existingScopeCount = communityRegion.geometryScope.size
     val excessCount = maxOf(0, existingScopeCount + 1 - maxScopesAllowed)
-    val fixedCost = if (excessCount > 0) {
-        (fixedCostBase * Math.pow(PricingConfig.SCOPE_ADDITION_SOFT_LIMIT_MULTIPLIER.value, excessCount.toDouble())).toLong()
-    } else {
-        fixedCostBase
-    }
+    val multiplier = PricingConfig.SCOPE_ADDITION_SOFT_LIMIT_MULTIPLIER.value
 
-    val settingChanges = calculateRegionSettingsCostChanges(communityRegion, newScopeArea, isManor)
-    val totalCost = fixedCost + landCostChange + settingChanges.sumOf { it.costChange }
+    // Surcharge applies to the entire creation cost (base + land + settings)
+    val rawTotal = fixedCostBase + landCostChange + settingTotal
+    val adjustedTotal = if (excessCount > 0) {
+        (rawTotal * Math.pow(multiplier, excessCount.toDouble())).toLong()
+    } else rawTotal
+    val surcharge = adjustedTotal - rawTotal
+
     val currentAssets = community.getTotalAssets()
 
     if (excessCount > 0) {
@@ -202,8 +207,8 @@ private fun onCreateScopeRequest(
             excessCount.toString(),
             maxScopesAllowed.toString(),
             formalMemberCount.toString(),
-            String.format("%.2f", fixedCost / 100.0),
-            String.format("%.2f", fixedCostBase / 100.0)
+            String.format("%.2f", adjustedTotal / 100.0),
+            String.format("%.2f", rawTotal / 100.0)
         ))
     }
 
@@ -211,16 +216,18 @@ private fun onCreateScopeRequest(
         scopeName = scopeName,
         shapeType = geoShapeType,
         area = newScopeArea,
-        fixedCost = fixedCost,
+        fixedCostBase = fixedCostBase,
         landCostChange = landCostChange,
         settingChanges = settingChanges,
         isManor = isManor,
         currentAssets = currentAssets,
         currentTotalArea = currentTotalArea,
+        rawTotal = rawTotal,
+        adjustedTotal = adjustedTotal,
         excessCount = excessCount,
         maxScopesAllowed = maxScopesAllowed,
         formalMemberCount = formalMemberCount,
-        fixedCostBase = fixedCostBase
+        multiplier = multiplier
     )
     confirmationMessages.forEach { msg -> player.sendMessage(msg) }
 
@@ -232,10 +239,10 @@ private fun onCreateScopeRequest(
             regionNumberId = regionId,
             scopeName = scopeName,
             executorUUID = player.uuid,
-            cost = totalCost,
+            cost = adjustedTotal,
             isScopeCreation = true,
             shapeName = geoShapeType.toString(),
-            softLimitSurcharge = if (excessCount > 0) fixedCost - fixedCostBase else 0L
+            softLimitSurcharge = surcharge
         )
     )
 
