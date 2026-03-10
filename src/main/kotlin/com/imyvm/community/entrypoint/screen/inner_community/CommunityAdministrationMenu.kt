@@ -29,36 +29,43 @@ class CommunityAdministrationMenu(
     private fun addStaticButtons(player: ServerPlayerEntity, community: Community) {
         addButton(
             slot = 10,
-            name = Translator.tr("ui.admin.button.name")?.string ?: "Community Name",
-            item = Items.NAME_TAG
-        ) { runAdmRenameCommunity(player, community, runBack) }
-
-        addButton(
-            slot = 11,
             name = Translator.tr("ui.admin.button.members")?.string ?: "Manage Members",
             item = Items.PLAYER_HEAD
         ) { runAdmManageMembers(player, community, runBack) }
 
         addButton(
-            slot = 12,
+            slot = 11,
             name = Translator.tr("ui.admin.button.audit")?.string ?: "Community Audit",
             item = Items.REDSTONE_TORCH
         ) { runAdmAuditRequests(player, community, runBack) }
 
         addButton(
-            slot = 13,
+            slot = 12,
             name = Translator.tr("ui.admin.button.announcement")?.string ?: "Announcement",
             item = Items.PAPER
         ) { runOpenAnnouncementListMenu(player, community) { runBackToCommunityAdministrationMenu(player, community, runBack) } }
 
         addButton(
-            slot = 14,
+            slot = 13,
             name = Translator.tr("ui.admin.button.advancement")?.string ?: "Advancement",
             item = Items.ITEM_FRAME
         ) { runAdmAdvancement(player, community, runBack) }
 
         addButton(
             slot = 19,
+            name = Translator.tr("ui.admin.button.name")?.string ?: "Community Name",
+            item = Items.NAME_TAG
+        ) {
+            runAdmRegion(
+                player,
+                community,
+                geographicFunctionType = GeographicFunctionType.NAME_MODIFICATION,
+                runBack
+            )
+        }
+
+        addButton(
+            slot = 20,
             name = Translator.tr("ui.admin.button.region.geometry")?.string ?: "Region Geographic Scope",
             item = Items.MAP
         ) {
@@ -71,7 +78,7 @@ class CommunityAdministrationMenu(
         }
 
         addButton(
-            slot = 20,
+            slot = 21,
             name = Translator.tr("ui.admin.button.region.setting")?.string ?: "Region Settings",
             item = Items.HEART_OF_THE_SEA
         ) {
@@ -84,7 +91,7 @@ class CommunityAdministrationMenu(
         }
 
         addButton(
-            slot = 21,
+            slot = 22,
             name = Translator.tr("ui.admin.button.teleport")?.string ?: "Teleport Points",
             item = Items.ENDER_PEARL
         ) {

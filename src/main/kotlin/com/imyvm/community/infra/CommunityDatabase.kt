@@ -36,6 +36,7 @@ object CommunityDatabase {
             }
 
             savePendingOperations(stream)
+            saveNameChangeCooldownsSection(stream)
         }
     }
 
@@ -85,6 +86,13 @@ object CommunityDatabase {
             
             if (stream.available() > 0) {
                 loadPendingOperations(stream)
+            }
+            if (stream.available() > 0) {
+                try {
+                    loadNameChangeCooldownsSection(stream)
+                } catch (e: Exception) {
+                    com.imyvm.community.WorldGeoCommunityAddon.logger.error("Failed to load name change cooldowns: ${e.message}")
+                }
             }
         }
     }
@@ -450,6 +458,34 @@ object CommunityDatabase {
             }
         } catch (e: Exception) {
             com.imyvm.community.WorldGeoCommunityAddon.logger.error("Failed to load pending operations: ${e.message}")
+        }
+    }
+
+    private fun saveNameChangeCooldownsSection(stream: DataOutputStream) {
+        val communitiesWithCooldowns = communities.filter { it.nameChangeCooldowns.isNotEmpty() && it.regionNumberId != null }
+        stream.writeInt(communitiesWithCooldowns.size)
+        for (community in communitiesWithCooldowns) {
+            stream.writeInt(community.regionNumberId!!)
+            stream.writeInt(community.nameChangeCooldowns.size)
+            for ((key, timestamp) in community.nameChangeCooldowns) {
+                stream.writeUTF(key)
+                stream.writeLong(timestamp)
+            }
+        }
+    }
+
+    private fun loadNameChangeCooldownsSection(stream: DataInputStream) {
+        val entryCount = stream.readInt()
+        for (i in 0 until entryCount) {
+            val regionId = stream.readInt()
+            val mapSize = stream.readInt()
+            val cooldowns = HashMap<String, Long>(mapSize)
+            for (j in 0 until mapSize) {
+                val key = stream.readUTF()
+                val timestamp = stream.readLong()
+                cooldowns[key] = timestamp
+            }
+            getCommunityById(regionId)?.nameChangeCooldowns = cooldowns
         }
     }
 }

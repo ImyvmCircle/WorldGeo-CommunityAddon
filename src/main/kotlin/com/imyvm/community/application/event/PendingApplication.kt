@@ -216,7 +216,8 @@ fun addPendingOperation(
     creationData: com.imyvm.community.domain.model.CreationConfirmationData? = null,
     modificationData: com.imyvm.community.domain.model.ScopeModificationConfirmationData? = null,
     teleportPointData: com.imyvm.community.domain.model.TeleportPointConfirmationData? = null,
-    settingData: com.imyvm.community.domain.model.SettingConfirmationData? = null
+    settingData: com.imyvm.community.domain.model.SettingConfirmationData? = null,
+    renameData: com.imyvm.community.domain.model.RenameConfirmationData? = null
 ) {
     val expireTime = when {
         expireHours != null -> System.currentTimeMillis() + expireHours * 3600 * 1000L
@@ -232,7 +233,8 @@ fun addPendingOperation(
         creationData = creationData,
         modificationData = modificationData,
         teleportPointData = teleportPointData,
-        settingData = settingData
+        settingData = settingData,
+        renameData = renameData
     )
     WorldGeoCommunityAddon.logger.info("Added pending operation: type=$type, regionId=$regionId, expireAt=$expireTime")
 }

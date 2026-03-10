@@ -63,21 +63,6 @@ fun onConfirmScopeModification(player: ServerPlayerEntity, regionNumberId: Int, 
     }
 
     if (modificationData.isScopeCreation) {
-        val formalMemberCount = community.member.count {
-            it.value.basicRoleType != MemberRoleType.APPLICANT && it.value.basicRoleType != MemberRoleType.REFUSED
-        }
-        val maxScopesAllowed = formalMemberCount / 2
-        val existingScopeCount = communityRegion.geometryScope.size
-        if (existingScopeCount + 1 > maxScopesAllowed) {
-            player.sendMessage(Translator.tr(
-                "community.scope_add.error.scope_limit_exceeded",
-                maxScopesAllowed.toString(),
-                formalMemberCount.toString(),
-                existingScopeCount.toString()
-            ))
-            return 0
-        }
-
         val shapeName = modificationData.shapeName ?: "RECTANGLE"
         PlayerInteractionApi.addScope(player, communityRegion, scopeName)
         val createdScope = communityRegion.geometryScope.firstOrNull { it.scopeName.equals(scopeName, ignoreCase = true) }

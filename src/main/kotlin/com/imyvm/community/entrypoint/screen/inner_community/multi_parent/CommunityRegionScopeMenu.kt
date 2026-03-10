@@ -48,11 +48,14 @@ class CommunityRegionScopeMenu(
             GeographicFunctionType.TELEPORT_POINT_EXECUTION,
             GeographicFunctionType.TELEPORT_POINT_LOCATING ->
                 Translator.tr("ui.admin.region.teleport.global_main")?.string ?: "Main Teleport Point"
+            GeographicFunctionType.NAME_MODIFICATION ->
+                Translator.tr("ui.admin.region.name.global")?.string ?: "Community Name (Global)"
             else -> Translator.tr("ui.admin.region.global")?.string ?: "Region Global"
         }
         val globalItem = when (geographicFunctionType) {
             GeographicFunctionType.TELEPORT_POINT_EXECUTION,
             GeographicFunctionType.TELEPORT_POINT_LOCATING -> Items.ENDER_PEARL
+            GeographicFunctionType.NAME_MODIFICATION -> Items.NAME_TAG
             else -> Items.ELYTRA
         }
         addButton(
@@ -151,6 +154,10 @@ class CommunityRegionScopeMenu(
                 GeographicFunctionType.TELEPORT_POINT_EXECUTION -> {
                     Translator.tr("ui.admin.region.teleport.execution.title")?.string
                         ?: "Choose scale teleporting to"
+                }
+                GeographicFunctionType.NAME_MODIFICATION -> {
+                    Translator.tr("ui.admin.region.name.title")?.string
+                        ?: "Choose scope to rename"
                 }
             }
             return if (playerObject != null) {

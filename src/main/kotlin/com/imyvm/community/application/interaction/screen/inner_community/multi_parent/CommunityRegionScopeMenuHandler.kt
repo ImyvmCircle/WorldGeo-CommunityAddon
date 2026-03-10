@@ -11,15 +11,20 @@ import com.imyvm.community.application.interaction.screen.inner_community.startC
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.GeographicFunctionType
 import com.imyvm.community.domain.model.PendingOperationType
+import com.imyvm.community.domain.model.RenameConfirmationData
 import com.imyvm.community.domain.model.ScopeModificationConfirmationData
+import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.domain.policy.permission.AdminPrivilege
+import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.domain.policy.territory.SettingItemCostChange
 import com.imyvm.community.domain.policy.territory.TerritoryPricing
+import com.imyvm.community.entrypoint.screen.inner_community.administration_only.AdministrationRenameMenuAnvil
 import com.imyvm.community.entrypoint.screen.inner_community.administration_only.AdministrationTeleportPointMenu
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityRegionGlobalGeometryMenu
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityRegionScopeMenu
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityScopeCreationMenu
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.element.TargetSettingMenu
+import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.infra.PricingConfig
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.domain.AreaEstimationResult
@@ -78,6 +83,18 @@ fun runExecuteRegion(
         }
     } else if (geographicFunctionType == GeographicFunctionType.TELEPORT_POINT_EXECUTION) {
         runTeleportCommunity(playerExecutor, community)
+    } else if (geographicFunctionType == GeographicFunctionType.NAME_MODIFICATION) {
+        CommunityPermissionPolicy.executeWithPermission(
+            playerExecutor,
+            { CommunityPermissionPolicy.canExecuteAdministration(playerExecutor, community, AdminPrivilege.RENAME_COMMUNITY) }
+        ) {
+            AdministrationRenameMenuAnvil(
+                player = playerExecutor,
+                community = community,
+                scopeName = null,
+                runBackGrandfather = { p -> runBackRegionScopeMenu(p, community, geographicFunctionType, runBackGrandfatherMenu) }
+            ).open()
+        }
     }
 }
 
@@ -149,14 +166,38 @@ private fun onCreateScopeRequest(
     val currentTotalArea = communityRegion.calculateTotalArea()
     val isManor = community.isManor()
     val landCostChange = calculateModificationCost(newScopeArea, currentTotalArea, isManor).cost
-    val fixedCost = if (isManor) {
+    val fixedCostBase = if (isManor) {
         PricingConfig.SCOPE_ADDITION_BASE_COST_MANOR.value
     } else {
         PricingConfig.SCOPE_ADDITION_BASE_COST_REALM.value
     }
+
+    val formalMemberCount = community.member.count {
+        it.value.basicRoleType != MemberRoleType.APPLICANT && it.value.basicRoleType != MemberRoleType.REFUSED
+    }
+    val maxScopesAllowed = formalMemberCount / 2
+    val existingScopeCount = communityRegion.geometryScope.size
+    val excessCount = maxOf(0, existingScopeCount + 1 - maxScopesAllowed)
+    val fixedCost = if (excessCount > 0) {
+        (fixedCostBase * Math.pow(PricingConfig.SCOPE_ADDITION_SOFT_LIMIT_MULTIPLIER.value, excessCount.toDouble())).toLong()
+    } else {
+        fixedCostBase
+    }
+
     val settingChanges = calculateRegionSettingsCostChanges(communityRegion, newScopeArea, isManor)
     val totalCost = fixedCost + landCostChange + settingChanges.sumOf { it.costChange }
     val currentAssets = community.getTotalAssets()
+
+    if (excessCount > 0) {
+        player.sendMessage(Translator.tr(
+            "community.scope_add.warning.soft_limit_surcharge",
+            excessCount.toString(),
+            maxScopesAllowed.toString(),
+            formalMemberCount.toString(),
+            String.format("%.2f", fixedCost / 100.0),
+            String.format("%.2f", fixedCostBase / 100.0)
+        ))
+    }
 
     val confirmationMessages = generateScopeAdditionConfirmationMessage(
         scopeName = scopeName,
@@ -186,6 +227,107 @@ private fun onCreateScopeRequest(
     )
 
     sendInteractiveScopeModificationConfirmation(player, regionId, scopeName)
+    return 1
+}
+
+fun onConfirmRename(player: ServerPlayerEntity, regionNumberId: Int, nameKey: String): Int {
+    val pendingOp = com.imyvm.community.WorldGeoCommunityAddon.pendingOperations[regionNumberId]
+    if (pendingOp == null || pendingOp.type != PendingOperationType.RENAME_CONFIRMATION) {
+        player.sendMessage(Translator.tr("community.modification.confirmation.not_found"))
+        return 0
+    }
+    val renameData = pendingOp.renameData ?: return 0
+    if (renameData.executorUUID != player.uuid) {
+        player.sendMessage(Translator.tr("community.modification.confirmation.not_yours"))
+        return 0
+    }
+    if (renameData.nameKey != nameKey) {
+        player.sendMessage(Translator.tr("community.modification.confirmation.not_found"))
+        return 0
+    }
+    if (System.currentTimeMillis() > pendingOp.expireAt) {
+        player.sendMessage(Translator.tr("community.modification.confirmation.expired"))
+        com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        return 0
+    }
+
+    val community = CommunityDatabase.getCommunityById(regionNumberId)
+    if (community == null) {
+        player.sendMessage(Translator.tr("community.modification.error.community_not_found"))
+        com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        return 0
+    }
+
+    val currentAssets = community.getTotalAssets()
+    if (renameData.cost > 0 && currentAssets < renameData.cost) {
+        player.sendMessage(Translator.tr(
+            "community.modification.error.insufficient_assets",
+            String.format("%.2f", renameData.cost / 100.0),
+            String.format("%.2f", currentAssets / 100.0)
+        ))
+        return 0
+    }
+
+    val communityRegion = community.getRegion()
+    if (communityRegion == null) {
+        player.sendMessage(Translator.tr("community.modification.error.no_region"))
+        com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        return 0
+    }
+
+    if (renameData.nameKey == "global") {
+        val oldName = communityRegion.name
+        PlayerInteractionApi.renameRegion(player, communityRegion, renameData.newName)
+        community.nameChangeCooldowns["global"] = System.currentTimeMillis()
+        if (renameData.cost > 0) {
+            community.expenditures.add(com.imyvm.community.domain.model.Turnover(
+                amount = renameData.cost,
+                timestamp = System.currentTimeMillis()
+            ))
+        }
+        com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        CommunityDatabase.save()
+        player.sendMessage(Translator.tr("community.rename.success.global", oldName, renameData.newName))
+    } else {
+        val scope = communityRegion.geometryScope.firstOrNull { it.scopeName == renameData.nameKey }
+        if (scope == null) {
+            player.sendMessage(Translator.tr("community.rename.error.scope_not_found", renameData.nameKey))
+            com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+            return 0
+        }
+        val oldScopeName = scope.scopeName
+        PlayerInteractionApi.renameScope(player, communityRegion, oldScopeName, renameData.newName)
+        community.nameChangeCooldowns[renameData.nameKey] = System.currentTimeMillis()
+        if (renameData.cost > 0) {
+            community.expenditures.add(com.imyvm.community.domain.model.Turnover(
+                amount = renameData.cost,
+                timestamp = System.currentTimeMillis()
+            ))
+        }
+        com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        CommunityDatabase.save()
+        player.sendMessage(Translator.tr("community.rename.success.scope", oldScopeName, renameData.newName))
+    }
+    return 1
+}
+
+fun onCancelRename(player: ServerPlayerEntity, regionNumberId: Int, nameKey: String): Int {
+    val pendingOp = com.imyvm.community.WorldGeoCommunityAddon.pendingOperations[regionNumberId]
+    if (pendingOp == null || pendingOp.type != PendingOperationType.RENAME_CONFIRMATION) {
+        player.sendMessage(Translator.tr("community.modification.confirmation.not_found"))
+        return 0
+    }
+    val renameData = pendingOp.renameData ?: return 0
+    if (renameData.executorUUID != player.uuid) {
+        player.sendMessage(Translator.tr("community.modification.confirmation.not_yours"))
+        return 0
+    }
+    if (renameData.nameKey != nameKey) {
+        player.sendMessage(Translator.tr("community.modification.confirmation.not_found"))
+        return 0
+    }
+    com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+    player.sendMessage(Translator.tr("community.rename.cancelled"))
     return 1
 }
 
@@ -237,6 +379,19 @@ fun runExecuteScope(
             }
             playerExecutor.closeHandledScreen()
             startCommunityTeleportExecution(playerExecutor, community, scope)
+        }
+        GeographicFunctionType.NAME_MODIFICATION -> {
+            CommunityPermissionPolicy.executeWithPermission(
+                playerExecutor,
+                { CommunityPermissionPolicy.canExecuteAdministration(playerExecutor, community, AdminPrivilege.RENAME_COMMUNITY) }
+            ) {
+                AdministrationRenameMenuAnvil(
+                    player = playerExecutor,
+                    community = community,
+                    scopeName = scope.scopeName,
+                    runBackGrandfather = { p -> runBackRegionScopeMenu(p, community, geographicFunctionType, runBackGrandfatherMenu) }
+                ).open()
+            }
         }
     }
 }

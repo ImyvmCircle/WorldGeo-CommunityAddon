@@ -145,6 +145,38 @@ class PricingConfig : HokiConfig("Pricing.conf") {
             obj.getLong(path)
         }
 
+        @JvmField
+        @ConfigOption
+        val SCOPE_ADDITION_SOFT_LIMIT_MULTIPLIER = Option(
+            "economy.scope_addition_soft_limit_multiplier",
+            1.5,
+            "cost multiplier applied per excess scope above the member-based soft limit (fixedCost *= multiplier^excessCount)."
+        ) { obj, path ->
+            obj.getDouble(path)
+        }
+
+        // Community rename
+
+        @JvmField
+        @ConfigOption
+        val RENAME_GLOBAL_COST = Option(
+            "economy.rename_global_cost",
+            200000L,
+            "the cost to rename the community (global name, display price * 100)."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val RENAME_SCOPE_COST = Option(
+            "economy.rename_scope_cost",
+            10000L,
+            "the cost to rename a single geoscope (display price * 100)."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
+
         // Teleport point management
 
         @JvmField

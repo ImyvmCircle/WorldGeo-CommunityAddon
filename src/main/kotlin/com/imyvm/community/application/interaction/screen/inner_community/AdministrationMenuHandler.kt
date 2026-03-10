@@ -91,6 +91,7 @@ fun runAdmRegion(
         GeographicFunctionType.GEOMETRY_MODIFICATION -> AdminPrivilege.MODIFY_REGION_GEOMETRY
         GeographicFunctionType.SETTING_ADJUSTMENT -> AdminPrivilege.MODIFY_REGION_SETTINGS
         GeographicFunctionType.TELEPORT_POINT_LOCATING -> AdminPrivilege.MANAGE_TELEPORT_POINTS
+        GeographicFunctionType.NAME_MODIFICATION -> AdminPrivilege.RENAME_COMMUNITY
         else -> null
     }
 

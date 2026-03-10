@@ -308,6 +308,26 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                             .executes { runCancelSettingChange(it) }
                     )
             )
+            .then(
+                literal("confirm_rename")
+                    .then(
+                        argument("regionId", IntegerArgumentType.integer())
+                            .then(
+                                argument("nameKey", StringArgumentType.greedyString())
+                                    .executes { runConfirmRenameCommand(it) }
+                            )
+                    )
+            )
+            .then(
+                literal("cancel_rename")
+                    .then(
+                        argument("regionId", IntegerArgumentType.integer())
+                            .then(
+                                argument("nameKey", StringArgumentType.greedyString())
+                                    .executes { runCancelRenameCommand(it) }
+                            )
+                    )
+            )
     )
 }
 
@@ -557,4 +577,18 @@ private fun runCancelSettingChange(context: CommandContext<ServerCommandSource>)
     val player = context.source.player ?: return 0
     val regionId = IntegerArgumentType.getInteger(context, "regionId")
     return com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.onCancelSettingChange(player, regionId)
+}
+
+private fun runConfirmRenameCommand(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val regionId = IntegerArgumentType.getInteger(context, "regionId")
+    val nameKey = StringArgumentType.getString(context, "nameKey")
+    return com.imyvm.community.application.interaction.screen.inner_community.multi_parent.onConfirmRename(player, regionId, nameKey)
+}
+
+private fun runCancelRenameCommand(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val regionId = IntegerArgumentType.getInteger(context, "regionId")
+    val nameKey = StringArgumentType.getString(context, "nameKey")
+    return com.imyvm.community.application.interaction.screen.inner_community.multi_parent.onCancelRename(player, regionId, nameKey)
 }

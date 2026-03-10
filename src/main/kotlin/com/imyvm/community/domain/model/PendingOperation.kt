@@ -10,7 +10,8 @@ class PendingOperation(
     val creationData: CreationConfirmationData? = null,
     val modificationData: ScopeModificationConfirmationData? = null,
     val teleportPointData: TeleportPointConfirmationData? = null,
-    val settingData: SettingConfirmationData? = null
+    val settingData: SettingConfirmationData? = null,
+    val renameData: RenameConfirmationData? = null
 )
 
 data class CreationConfirmationData(
@@ -50,6 +51,14 @@ data class SettingConfirmationData(
     val isRuleSetting: Boolean = false
 )
 
+data class RenameConfirmationData(
+    val regionNumberId: Int,
+    val nameKey: String,
+    val newName: String,
+    val executorUUID: UUID,
+    val cost: Long
+)
+
 enum class PendingOperationType(val value: Int) {
     CREATE_COMMUNITY_REALM_REQUEST_RECRUITMENT(0),
     DELETE_COMMUNITY(1),
@@ -62,7 +71,8 @@ enum class PendingOperationType(val value: Int) {
     CREATE_COMMUNITY_CONFIRMATION(8),
     MODIFY_SCOPE_CONFIRMATION(9),
     TELEPORT_POINT_CONFIRMATION(10),
-    SETTING_CONFIRMATION(11);
+    SETTING_CONFIRMATION(11),
+    RENAME_CONFIRMATION(12);
     
     companion object {
         fun fromValue(value: Int): PendingOperationType {
