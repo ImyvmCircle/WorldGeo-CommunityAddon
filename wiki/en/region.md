@@ -66,6 +66,8 @@ Base cost for adding a new Geoscope:
 
 Area-based fees also apply proportionally to the Geoscope's footprint.
 
+**Soft scope limit:** The recommended maximum number of Geoscopes is `floor(formal_members / 2)` (formal members = owner, admin, and member roles). Exceeding this limit does **not** block creation; instead, the **fixed fee** is multiplied by **1.5 per excess scope** beyond the limit. For example, if the limit is 2 and you already have 2 Geoscopes, adding a 3rd (1 over the limit) raises the base fee to 150%; adding a 4th (2 over) raises it to 225%. Area-based fees and any refunds are unaffected. A warning is shown before the cost confirmation whenever surcharges apply.
+
 > **Note:** Only **active** communities may add new Geoscopes. Communities in RECRUITING or PENDING status cannot perform this operation.
 
 **Command equivalents:**

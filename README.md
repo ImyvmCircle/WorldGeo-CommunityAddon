@@ -50,7 +50,7 @@ To create a community, a player who desires to be the founder and the owner may 
 
 A **community creation request** may be initialized spontaneously by any player trying to inaugurate one, providing
 
-- that the player is not at the time of application, **a member of any other community of the same *community type***, which may be chosen when initiating the creation request;
+- that the player is not at the time of application, **a formal member (owner, admin, or member — applicants and refused applicants are excluded) of any other community of the same *community type***, which may be chosen when initiating the creation request. Note that communities in **REVOKED** status still count toward this restriction — a player who formally belongs to a revoked community cannot create another community of the same type until they leave;
 
 * that the player delineates a **valid region(scope) prototype**, which shall be understood as an area defined by 
     * a set of **points projected on (x,z) plane**, and these points are selected by right-click positions in the Minecraft world with a command block in hand, when the player has already entered **selection mode**, which
@@ -95,11 +95,11 @@ OPs possess the permission **auditing the proto-communities**. If not passes, a 
 
 A community's owner and administrators possess extensive management capabilities accessible through the **Community Administration** button in the community menu, which opens the **Community Administration Menu**:
 
-- **Rename Community** - Modify the community's name through an anvil interface;
 - **Manage Members** - Access comprehensive member management tools;
 - **Community Audit** - Review and process membership applications when join policy requires approval;
 - **Announcement** - Post announcements to all members;
 - **Advancement** *(planned)* - Manage community achievements and progression systems;
+- **Community Name** - Rename the community globally or rename individual Geoscopes, via an anvil interface; each name carries a 30-day cooldown and a fee ($2,000 for the global name, $100 per Geoscope name);
 - **Region Geometry** - Modify the community's geographical boundaries and shape;
 - **Region Settings** - Adjust properties and rules for the community's region;
 - **Teleport Points** - Create and manage teleportation destinations within the region; and
@@ -123,7 +123,7 @@ The community implements a comprehensive permission system that governs what ope
   - Community must be in `ACTIVE` status;
   - Specific permission must be enabled by the owner (if applicable);
 - **Cannot** execute operations disabled by the owner;
-- **Cannot** change the community name;
+- **Cannot** rename the community without the owner enabling the `RENAME_COMMUNITY` privilege;
 - **Cannot** promote, demote, or remove the owner, other administrators, or council members;
 - **Can** manage regular members (MEMBER role only);
 - **Can** quit the community.
@@ -361,12 +361,12 @@ The **Add Administrative District** button in the Administration Menu's global g
 Adding a new administrative district uses the dedicated **Scope Creation Screen** with district naming and shape toggle controls, integrated with selection mode.
 
 - Creation cost = **fixed district fee** + **area-based fee**;
-- Fixed fee defaults: **Manor 500.00**, **Realm 1,000.00** (configurable);
+- Fixed fee defaults: **Manor $500.00**, **Realm $1,000.00** (configurable);
 - Area-based fee follows the same pricing model as area expansion;
+- **Soft scope limit**: the recommended maximum number of Geoscopes is `floor(formal_members / 2)`. Exceeding this limit does **not** block creation; instead, the fixed fee is multiplied by **1.5 per excess scope** above the limit. For example, if the limit is 2 and the community already has 2 scopes, adding a 3rd (1 excess) raises the fixed fee to 150%; adding a 4th (2 excess) raises it to 225%. Area-based fees and refunds are unaffected;
 - Confirmation is required through a pending command-based confirmation flow;
 - Final execution checks:
   - community assets;
-  - district limit (`floor(formal_members / 2)`);
   - geometry validity and overlap constraints.
 
 On success, assets are deducted and a notification mail is sent to all formal members (owner/admin/member).
@@ -407,6 +407,35 @@ After a successful modification:
   - Which administrative district was modified;
   - How much the area changed;
   - The financial impact on community assets.
+
+#### Community Name Modification
+
+Administrators with the `RENAME_COMMUNITY` privilege (owners are always exempt) may rename the community's overall name or any individual Geoscope name. This is accessed via the **Community Name** button (slot 19, name tag icon) in the Administration Menu.
+
+Clicking it opens the **Scope Selector** where the player chooses either:
+- **Global** — renames the community's top-level name; or
+- A specific **Geoscope** — renames that Geoscope only.
+
+After selection, an **anvil interface** appears with the current name pre-filled. Enter the new name and take the output item to proceed.
+
+**Costs and cooldowns:**
+
+| Target | Cost | Cooldown |
+|---|---|---|
+| Global community name | $2,000.00 | 30 days (real-time) per community |
+| Individual Geoscope name | $100.00 | 30 days (real-time) per Geoscope |
+
+If a name was changed within the last 30 days, the operation is blocked and the remaining cooldown days are shown. The cooldown is tracked independently per name key (global or per-scope) and persists across server restarts.
+
+After entering the new name and confirming payment, an **interactive billing confirmation** is sent in chat:
+- `[CONFIRM]` — executes the rename and deducts assets;
+- `[CANCEL]` — aborts the operation.
+
+The confirmation prompt expires after 5 minutes.
+
+**Command equivalents:**
+- `/community confirm_rename <regionId> <nameKey>` — confirm a rename
+- `/community cancel_rename <regionId> <nameKey>` — cancel a rename
 
 #### Member Management
 

@@ -10,25 +10,46 @@ The **Community Administration Menu** is accessible from the **Administration** 
 
 | Slot | Icon | Button | Description |
 |---|---|---|---|
-| 10 | Name Tag | **Rename** | Change the community's name via an anvil interface |
-| 11 | Player Head | **Manage Members** | View and manage all formal members |
-| 12 | Redstone Torch | **Audit Applications** | Review pending join applications |
-| 13 | Paper | **Announcements** | Create and manage community announcements |
-| 14 | Item Frame | **Advancement** | *(Planned feature)* |
-| 19 | Map | **Region Geometry** | Modify the territory's geographic shape |
-| 20 | Heart of the Sea | **Region Settings** | Adjust territory permissions and rules |
-| 21 | Ender Pearl | **Teleport Points** | Set, configure, and manage teleport destinations |
+| 10 | Player Head | **Manage Members** | View and manage all formal members |
+| 11 | Redstone Torch | **Audit Applications** | Review pending join applications |
+| 12 | Paper | **Announcements** | Create and manage community announcements |
+| 13 | Item Frame | **Advancement** | *(Planned feature)* |
+| 19 | Name Tag | **Community Name** | Rename the community globally or rename individual Geoscopes |
+| 20 | Map | **Region Geometry** | Modify the territory's geographic shape |
+| 21 | Heart of the Sea | **Region Settings** | Adjust territory permissions and rules |
+| 22 | Ender Pearl | **Teleport Points** | Set, configure, and manage teleport destinations |
 | 28 | Green/Yellow/Red Wool | **Join Policy** | Cycle through Open → Application → Invite-Only |
 
 ---
 
-## Rename
+## Community Name
 
-Clicking **Rename** opens an anvil interface. Type the new name and take the output item to confirm.
+Clicking **Community Name** (slot 19, name tag icon) opens the **Scope Selector** where you choose either:
+
+- **Global** — renames the community's overall name; or
+- A specific **Geoscope** — renames that Geoscope only.
+
+After selection, an anvil interface opens with the current name pre-filled. Enter the new name and take the output item. The system sends an interactive billing confirmation in chat:
+
+- **[CONFIRM]** — executes the rename and deducts assets;
+- **[CANCEL]** — aborts the operation.
+
+The confirmation prompt expires after **5 minutes**.
+
+**Costs and cooldowns:**
+
+| Target | Cost | Cooldown |
+|---|---|---|
+| Global community name | $2,000.00 | 30 days (real-time) per community |
+| Individual Geoscope name | $100.00 | 30 days (real-time) per Geoscope |
+
+If a name was changed within the last 30 days, the operation is blocked and the remaining cooldown days are shown. Cooldowns are tracked independently per name key and persist across server restarts.
 
 > **Note:** This action requires the **Rename Community** privilege to be enabled for your Admin role (Owners are always exempt from privilege checks).
 
-**Command equivalent:** N/A (rename is menu-only)
+**Command equivalents:**
+- `/community confirm_rename <regionId> <nameKey>` — confirm a rename
+- `/community cancel_rename <regionId> <nameKey>` — cancel a rename
 
 ---
 
@@ -60,7 +81,7 @@ The **Owner** can individually toggle each privilege for any Admin. Privileges a
 
 | Privilege | Description |
 |---|---|
-| **Rename Community** | Allow admin to rename the community |
+| **Rename Community** | Allow admin to rename the community's global name and individual Geoscope names |
 | **Manage Members** | Allow admin to promote/demote/remove members |
 | **Audit Applications** | Allow admin to accept or refuse applicants |
 | **Manage Announcements** | Allow admin to create and delete announcements |
