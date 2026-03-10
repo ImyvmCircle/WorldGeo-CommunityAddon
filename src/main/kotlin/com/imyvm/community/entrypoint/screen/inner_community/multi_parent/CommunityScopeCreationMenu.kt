@@ -3,6 +3,7 @@ package com.imyvm.community.entrypoint.screen.inner_community.multi_parent
 import com.imyvm.community.application.interaction.screen.helper.generateScopeCreationError
 import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.runConfirmScopeCreationFromSelection
 import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.runRenameNewScopeFromSelection
+import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.runResetSelectionInScopeCreation
 import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.runSwitchScopeShapeInCreation
 import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.runToggleSelectionModeInScopeCreation
 import com.imyvm.community.domain.model.Community
@@ -41,6 +42,12 @@ class CommunityScopeCreationMenu(
                 name = Translator.tr("ui.create.button.selection_mode.enable")?.string ?: "Selection Mode: On",
                 item = Items.COMMAND_BLOCK
             ) { runToggleSelectionModeInScopeCreation(it, community, currentName, runBack) }
+
+            addButton(
+                slot = 19,
+                name = Translator.tr("ui.main.button.selection_mode.reset")?.string ?: "Reset Point Selection",
+                item = Items.TNT
+            ) { runResetSelectionInScopeCreation(it, community, currentName, runBack) }
 
             if (isNormalSelectionMode) {
                 addButton(
@@ -98,14 +105,20 @@ class CommunityScopeCreationMenu(
             val hypotheticalShape = selectionState?.hypotheticalShape
             val isNormalSelectionMode = selectionState != null && hypotheticalShape is HypotheticalShape.Normal
             val pointCount = selectionState?.points?.size ?: 0
+            val communityMark = community.generateCommunityMark()
+            val addTitle = Translator.tr("ui.admin.region.global.add.title")?.string ?: "Add"
+            if (selectionState == null) {
+                val hint = Translator.tr("ui.admin.region.global.add.hint.start")?.string ?: "→ Enable Mode"
+                return Text.of("$communityMark | $addTitle $hint")
+            }
             if (!isNormalSelectionMode || pointCount < 2) {
-                return Translator.tr("ui.admin.region.global.add.title") ?: Text.literal("Add Administrative District")
+                val hint = Translator.tr("ui.admin.region.global.add.hint.select")?.string ?: "→ Select Points"
+                return Text.of("$communityMark | $addTitle $hint")
             }
             val currentShape = (hypotheticalShape as HypotheticalShape.Normal).shapeType
             val existingScopeNames = community.getRegion()?.geometryScope?.map { it.scopeName }?.toSet() ?: emptySet()
             val error = generateScopeCreationError(currentName, currentShape, playerEntity, existingScopeNames)
-            val prefix = Translator.tr("ui.admin.region.global.add.title")?.string ?: "Add"
-            return Text.of("$prefix: $currentName" + if (error.isNotEmpty()) " ($error)" else "")
+            return Text.of("$communityMark | $currentName" + if (error.isNotEmpty()) " ($error)" else "")
         }
     }
 }

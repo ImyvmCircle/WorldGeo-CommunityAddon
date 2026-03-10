@@ -11,6 +11,19 @@ import com.imyvm.iwg.domain.component.HypotheticalShape
 import com.imyvm.iwg.inter.api.PlayerInteractionApi
 import net.minecraft.server.network.ServerPlayerEntity
 
+fun runResetSelectionInScopeCreation(
+    player: ServerPlayerEntity,
+    community: Community,
+    currentName: String,
+    runBack: (ServerPlayerEntity) -> Unit
+) {
+    PlayerInteractionApi.resetSelection(player)
+    player.sendMessage(Translator.tr("community.selection_mode.reset"))
+    CommunityMenuOpener.open(player) { syncId ->
+        CommunityScopeCreationMenu(syncId, community, currentName, player, runBack)
+    }
+}
+
 fun runToggleSelectionModeInScopeCreation(
     player: ServerPlayerEntity,
     community: Community,

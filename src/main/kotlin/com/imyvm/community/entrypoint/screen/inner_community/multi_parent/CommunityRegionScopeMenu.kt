@@ -7,6 +7,8 @@ import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.GeographicFunctionType
 import com.imyvm.community.entrypoint.screen.AbstractListMenu
 import com.imyvm.community.util.Translator
+import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.domain.component.HypotheticalShape
 import com.mojang.authlib.GameProfile
 import net.minecraft.item.Items
 import net.minecraft.server.network.ServerPlayerEntity
@@ -22,7 +24,7 @@ class CommunityRegionScopeMenu(
     val runBack: ((ServerPlayerEntity) -> Unit)
 ): AbstractListMenu(
     syncId,
-    menuTitle = generateMenuTitle(community, geographicFunctionType, playerObject),
+    menuTitle = generateMenuTitle(community, geographicFunctionType, playerObject, playerExecutor),
     page = page,
     runBack = runBack
 ) {
@@ -124,12 +126,19 @@ class CommunityRegionScopeMenu(
     }
 
     companion object {
-        fun generateMenuTitle(community: Community, geographicFunctionType: GeographicFunctionType, playerObject: GameProfile?): Text {
+        fun generateMenuTitle(community: Community, geographicFunctionType: GeographicFunctionType, playerObject: GameProfile?, playerExecutor: ServerPlayerEntity): Text {
             val baseTitle = community.generateCommunityMark() + " - "
             val specificTitle = when (geographicFunctionType) {
                 GeographicFunctionType.GEOMETRY_MODIFICATION -> {
-                    Translator.tr("ui.admin.region.geometry.title")?.string
-                        ?: "Choose scale modifying geographic shape"
+                    val hypotheticalShape = ImyvmWorldGeo.pointSelectingPlayers[playerExecutor.uuid]?.hypotheticalShape
+                    if (hypotheticalShape is HypotheticalShape.ModifyExisting) {
+                        val scopeName = hypotheticalShape.scope.scopeName
+                        val hint = Translator.tr("ui.admin.region.geometry.title.modifying")?.string ?: "Modifying"
+                        "$hint: $scopeName"
+                    } else {
+                        Translator.tr("ui.admin.region.geometry.title")?.string
+                            ?: "Choose scale modifying geographic shape"
+                    }
                 }
                 GeographicFunctionType.SETTING_ADJUSTMENT -> {
                     Translator.tr("ui.admin.region.setting.manage.title")?.string

@@ -5,6 +5,8 @@ import com.imyvm.community.application.interaction.screen.outer_community.runMod
 import com.imyvm.community.application.interaction.screen.outer_community.runOpenCommunityCreation
 import com.imyvm.community.entrypoint.screen.AbstractMenu
 import com.imyvm.community.util.Translator
+import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.domain.component.HypotheticalShape
 import net.minecraft.item.Items
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
@@ -15,7 +17,7 @@ class TerritoryMenu(
     runBack: ((ServerPlayerEntity) -> Unit)
 ) : AbstractMenu(
     syncId = syncId,
-    menuTitle = Translator.tr("ui.territory.title") ?: Text.literal("Territory"),
+    menuTitle = createMenuTitle(playerExecutor),
     runBack = runBack
 ) {
     init {
@@ -36,5 +38,22 @@ class TerritoryMenu(
             name = Translator.tr("ui.territory.button.modify")?.string ?: "Modify Territory",
             item = Items.SHEARS
         ) { runModifyScope(it, runBack) }
+    }
+
+    companion object {
+        private fun createMenuTitle(playerExecutor: ServerPlayerEntity): Text {
+            val base = Translator.tr("ui.territory.title")?.string ?: "Territory"
+            return when (val hypotheticalShape = ImyvmWorldGeo.pointSelectingPlayers[playerExecutor.uuid]?.hypotheticalShape) {
+                is HypotheticalShape.Normal -> {
+                    val hint = Translator.tr("ui.territory.title.hint.creating")?.string ?: "[Creating]"
+                    Text.of("$base $hint")
+                }
+                is HypotheticalShape.ModifyExisting -> {
+                    val prefix = Translator.tr("ui.territory.title.hint.modifying_prefix")?.string ?: "[Modifying: "
+                    Text.of("$base $prefix${hypotheticalShape.scope.scopeName}]")
+                }
+                else -> Translator.tr("ui.territory.title") ?: Text.literal("Territory")
+            }
+        }
     }
 }

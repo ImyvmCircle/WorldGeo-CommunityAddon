@@ -18,6 +18,7 @@ class MainMenu(
 
     init {
         addGeneralButtons()
+        addSelectionModeButtons()
         if (playerExecutor.hasPermissionLevel(2)) { addServerOperatorButton() }
         addActionBarToggleButton()
     }
@@ -40,6 +41,23 @@ class MainMenu(
             name = Translator.tr("ui.main.button.my")?.string ?: "My Village",
             item = Items.RED_BED
         ) { runMyCommunity(it) }
+    }
+
+    private fun addSelectionModeButtons() {
+        val isSelectionModeEnabled = ImyvmWorldGeo.pointSelectingPlayers.containsKey(playerExecutor.uuid)
+        if (!isSelectionModeEnabled) return
+
+        addButton(
+            slot = 22,
+            name = Translator.tr("ui.create.button.selection_mode.close")?.string ?: "Close Selection Mode",
+            item = Items.COMMAND_BLOCK
+        ) { runToggleSelectionMode(it) }
+
+        addButton(
+            slot = 23,
+            name = Translator.tr("ui.main.button.selection_mode.reset")?.string ?: "Reset Point Selection",
+            item = Items.TNT
+        ) { runResetSelection(it) }
     }
 
     private fun addServerOperatorButton() {

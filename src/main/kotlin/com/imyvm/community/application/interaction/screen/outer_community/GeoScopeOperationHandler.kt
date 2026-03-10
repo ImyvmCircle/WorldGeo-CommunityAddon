@@ -70,9 +70,7 @@ fun runAddScopeForCommunity(
         player.sendMessage(Translator.tr("ui.territory.add_scope.busy_modifying"))
         return
     }
-    CommunityMenuOpener.open(player) { syncId ->
-        CommunityScopeCreationMenu(syncId, community, playerExecutor = player, runBack = runBack)
-    }
+    openScopeCreationForCommunity(player, community, runBack)
 }
 
 fun runModifyScopeForCommunity(
@@ -95,15 +93,7 @@ fun runModifyScopeForCommunity(
         }
     }
 
-    CommunityMenuOpener.open(player) { syncId ->
-        CommunityRegionScopeMenu(
-            syncId = syncId,
-            playerExecutor = player,
-            community = community,
-            geographicFunctionType = GeographicFunctionType.GEOMETRY_MODIFICATION,
-            runBack = runBack
-        )
-    }
+    openScopeListForModify(player, community, runBack)
 }
 
 internal fun runExecuteScopeModification(
@@ -111,13 +101,16 @@ internal fun runExecuteScopeModification(
     community: Community,
     scope: GeoScope
 ) {
-    val permResult = CommunityPermissionPolicy.canExecuteAdministration(player, community, AdminPrivilege.MODIFY_REGION_GEOMETRY)
-    if (permResult.isDenied()) {
-        player.closeHandledScreen()
-        permResult.sendFeedback(player)
-        return
+    CommunityPermissionPolicy.executeWithPermission(
+        player,
+        {
+            val adminCheck = CommunityPermissionPolicy.canExecuteAdministration(player, community, AdminPrivilege.MODIFY_REGION_GEOMETRY)
+            if (adminCheck.isDenied()) return@executeWithPermission adminCheck
+            CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdminPrivilege.MODIFY_REGION_GEOMETRY)
+        }
+    ) {
+        executeScopeModification(player, community, scope)
     }
-    executeScopeModification(player, community, scope)
 }
 
 private fun runCommunitySelectionForScopeModify(
@@ -143,13 +136,7 @@ private fun runCommunitySelectionForScopeModify(
             title = title,
             runBack = runBack
         ) { p, community ->
-            val permResult = CommunityPermissionPolicy.canExecuteAdministration(p, community, AdminPrivilege.MODIFY_REGION_GEOMETRY)
-            if (permResult.isDenied()) {
-                p.closeHandledScreen()
-                permResult.sendFeedback(p)
-            } else {
-                openScopeListForModify(p, community, runBack)
-            }
+            openScopeListForModify(p, community, runBack)
         }
     }
 }
@@ -177,13 +164,7 @@ private fun runCommunitySelectionForScopeAdd(
             title = title,
             runBack = runBack
         ) { p, community ->
-            val permResult = CommunityPermissionPolicy.canExecuteAdministration(p, community, AdminPrivilege.MODIFY_REGION_GEOMETRY)
-            if (permResult.isDenied()) {
-                p.closeHandledScreen()
-                permResult.sendFeedback(p)
-            } else {
-                openScopeCreationForCommunity(p, community, runBack)
-            }
+            openScopeCreationForCommunity(p, community, runBack)
         }
     }
 }
@@ -193,20 +174,23 @@ private fun openScopeListForModify(
     community: Community,
     runBack: (ServerPlayerEntity) -> Unit
 ) {
-    val permResult = CommunityPermissionPolicy.canExecuteAdministration(player, community, AdminPrivilege.MODIFY_REGION_GEOMETRY)
-    if (permResult.isDenied()) {
-        player.closeHandledScreen()
-        permResult.sendFeedback(player)
-        return
-    }
-    CommunityMenuOpener.open(player) { syncId ->
-        CommunityRegionScopeMenu(
-            syncId = syncId,
-            playerExecutor = player,
-            community = community,
-            geographicFunctionType = GeographicFunctionType.GEOMETRY_MODIFICATION,
-            runBack = runBack
-        )
+    CommunityPermissionPolicy.executeWithPermission(
+        player,
+        {
+            val adminCheck = CommunityPermissionPolicy.canExecuteAdministration(player, community, AdminPrivilege.MODIFY_REGION_GEOMETRY)
+            if (adminCheck.isDenied()) return@executeWithPermission adminCheck
+            CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdminPrivilege.MODIFY_REGION_GEOMETRY)
+        }
+    ) {
+        CommunityMenuOpener.open(player) { syncId ->
+            CommunityRegionScopeMenu(
+                syncId = syncId,
+                playerExecutor = player,
+                community = community,
+                geographicFunctionType = GeographicFunctionType.GEOMETRY_MODIFICATION,
+                runBack = runBack
+            )
+        }
     }
 }
 
@@ -215,8 +199,17 @@ private fun openScopeCreationForCommunity(
     community: Community,
     runBack: (ServerPlayerEntity) -> Unit
 ) {
-    CommunityMenuOpener.open(player) { syncId ->
-        CommunityScopeCreationMenu(syncId, community, playerExecutor = player, runBack = runBack)
+    CommunityPermissionPolicy.executeWithPermission(
+        player,
+        {
+            val adminCheck = CommunityPermissionPolicy.canExecuteAdministration(player, community, AdminPrivilege.MODIFY_REGION_GEOMETRY)
+            if (adminCheck.isDenied()) return@executeWithPermission adminCheck
+            CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdminPrivilege.MODIFY_REGION_GEOMETRY)
+        }
+    ) {
+        CommunityMenuOpener.open(player) { syncId ->
+            CommunityScopeCreationMenu(syncId, community, playerExecutor = player, runBack = runBack)
+        }
     }
 }
 

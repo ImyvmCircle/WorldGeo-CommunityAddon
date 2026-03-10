@@ -338,15 +338,17 @@ The **Territory Menu** (slot 13, `圈地` button in Main Menu) provides a unifie
 
 > **Note:** If the player is in Normal (creation) selection mode when entering `修改地块`, the menu closes with a warning to exit selection mode first.
 
-> **Note:** Requires the **Region Geometry** admin privilege.
+> **Note:** Requires the **Region Geometry** admin privilege. The community must be in `ACTIVE` status; proto-communities (RECRUITING or PENDING) cannot modify scope geometry.
 
 **Adding a new scope:**
 
 1. Click `增加辖区` in the **Territory Menu**;
-2. Select a community if in multiple; permission is checked;
+2. Select a community if in multiple; permission and status are checked;
 3. The **Scope Creation Screen** opens — same design as the community creation screen with integrated selection mode toggle, shape cycle, and a confirm button (visible when ≥2 points are selected).
 
 > **Note:** If the player is in ModifyExisting selection mode when entering `增加辖区`, the menu closes with a warning to complete or cancel the modification first.
+
+> **Note:** Requires the **Region Geometry** admin privilege. The community must be in `ACTIVE` status; proto-communities (RECRUITING or PENDING) cannot add new scopes.
 
 ##### Modification Process (via Administration Menu)
 

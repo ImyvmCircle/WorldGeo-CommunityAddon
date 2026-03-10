@@ -13,6 +13,9 @@ import com.imyvm.community.entrypoint.screen.inner_community.administration_only
 import com.imyvm.community.entrypoint.screen.inner_community.administration_only.AdministrationRenameMenuAnvil
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityMemberListMenu
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityRegionScopeMenu
+import com.imyvm.community.util.Translator
+import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.domain.component.HypotheticalShape
 import net.minecraft.server.network.ServerPlayerEntity
 
 fun runAdmRenameCommunity(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit){
@@ -89,6 +92,15 @@ fun runAdmRegion(
         GeographicFunctionType.SETTING_ADJUSTMENT -> AdminPrivilege.MODIFY_REGION_SETTINGS
         GeographicFunctionType.TELEPORT_POINT_LOCATING -> AdminPrivilege.MANAGE_TELEPORT_POINTS
         else -> null
+    }
+
+    if (geographicFunctionType == GeographicFunctionType.GEOMETRY_MODIFICATION) {
+        val hypotheticalShape = ImyvmWorldGeo.pointSelectingPlayers[player.uuid]?.hypotheticalShape
+        if (hypotheticalShape is HypotheticalShape.Normal) {
+            player.closeHandledScreen()
+            player.sendMessage(Translator.tr("ui.territory.modify.busy_creating"))
+            return
+        }
     }
 
     CommunityPermissionPolicy.executeWithPermission(

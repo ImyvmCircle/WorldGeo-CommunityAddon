@@ -4,87 +4,114 @@
 
 ---
 
-Every community is tied to a **region** — a defined geographic area in the Minecraft world. A region can contain one or more **scopes**, and each scope can have independent geometry, permission settings, and teleport points.
+Every community plants its roots in the land. That land — the geographic foundation on which a community stands, asserts its presence, and enforces its rules — is called the community's **Region**. A Region is the complete territorial footprint of a community in the world.
 
-## Scopes
+But a community's territory rarely looks like a single tidy rectangle. It may be assembled from multiple distinct patches of land: a founding heartland, a later expansion, an outlying enclave, a special district. Each such individual patch is called a **Geoscope**.
 
-A **scope** is a named sub-area within a community region. The main (outermost) scope is created automatically when the community is formed. Additional scopes can be added later for more granular control.
+**A Geoscope is the building block of a Region.** The actual territory of a Region is the union of all its Geoscopes. Everything you see highlighted on the map as belonging to a community — every chunk of land under that community's flag — is defined by the Geoscopes that community has established.
 
-### Adding a Scope
+---
 
-To add a new scope, use either:
+## How a Community's Territory Is Formed
 
-- **Territory Menu** (`圈地` button in Main Menu) → **Add Scope (增加辖区)**; or
+When a community is founded, the system automatically creates its first Geoscope — the **main scope** — based on the land you selected during creation. This is the community's origin territory.
+
+As the community grows, you can **add new Geoscopes** to expand the domain: adjacent extensions, satellite outposts, special enclaves across the map. Each Geoscope has its own independently defined shape (rectangle, circle, or polygon) to match the terrain or your building plans.
+
+You can also **modify any Geoscope's boundaries** at any time to reshape that portion of the territory.
+
+All Geoscopes together form the Region — the land this community actually controls in the world.
+
+---
+
+## Selection Mode
+
+To define or modify a Geoscope's boundaries, you use **Selection Mode** to place boundary points directly in the world.
+
+- Once **Selection Mode is active**, hold a **command block** and **right-click blocks** to set boundary points.
+- Three shape types are supported:
+  - **Rectangle**: select two diagonal corner points; the system fills in the rectangle.
+  - **Circle**: select the center, then a point on the edge to set the radius.
+  - **Polygon**: select all corner points in order (must form a convex polygon).
+- You can exit the menu mid-selection and continue placing points later.
+- Consider marking boundary points with blocks in-world for future reference.
+
+> **Note:** Selection Mode comes in two forms — **New Geoscope mode** for creating a Geoscope, and **Modify mode** for reshaping an existing one. You cannot have both active at once. If you open "Modify Territory" and see a warning, you are currently in New Geoscope mode. Close Selection Mode in the scope creation menu first, then retry.
+
+---
+
+## Adding a Geoscope
+
+To add a new Geoscope to your community, use either entry point:
+
+- **Territory Menu** (Main Menu → **Territory** button) → **Add Scope**; or
 - Administration Menu → **Region Geometry** → **Global** → **Add Administrative District**.
 
-Both paths open the **Scope Creation Screen** (integrated selection mode, shape toggle, naming, and confirm button visible when ≥2 points are selected). A base fee applies:
+Both paths open the **Scope Creation Screen**. Here you can:
 
-| Type | Scope Addition Base Cost |
+1. **Enable Selection Mode** and head into the world to place boundary points.
+   - The menu title guides you through each step ("→ Enable Selection Mode First" → "→ Select Points In-World").
+   - Once you have enough points, a **name** button and a **confirm creation** button appear.
+2. **Switch the shape** (rectangle / circle / polygon).
+3. After placing points, **exit the menu** to continue in the world — or **Close Selection Mode** to cancel.
+4. To start over with fresh points, click **Reset Points**.
+5. Once named and ready, click **Confirm Creation** to generate a cost summary; confirm in chat to finalize.
+
+Base cost for adding a new Geoscope:
+
+| Community Type | Scope Addition Base Cost |
 |---|---|
 | Manor | $500.00 |
 | Realm | $1,000.00 |
 
-The scope also inherits area-based pricing for any territory it occupies. After selection, a pending confirmation is generated.
+Area-based fees also apply proportionally to the Geoscope's footprint.
+
+> **Note:** Only **active** communities may add new Geoscopes. Communities in RECRUITING or PENDING status cannot perform this operation.
 
 **Command equivalents:**
-- `/community confirm_modification <regionId> <scopeName>` — confirm a geometry change
-- `/community cancel_modification <regionId> <scopeName>` — cancel a geometry change
+- `/community confirm_modification <regionId> <scopeName>` — confirm creation
+- `/community cancel_modification <regionId> <scopeName>` — cancel creation
 
 ---
 
-## Region Geometry
+## Modifying a Geoscope's Boundaries
 
-The **Region Geometry** button (slot 19, Map icon) in the Administration Menu opens the **Scope Selection Menu**. Selecting a scope from this list now **starts ModifyExisting selection mode** for that scope and closes the menu, prompting the player to select new boundary points in the world. Once points are selected, the player re-opens the Territory Menu → **Modify Territory** to confirm.
+You can redefine the boundaries of any existing Geoscope. The system calculates the cost or refund based on the area difference between old and new shapes.
 
-Alternatively, the full modification workflow is available directly via the **Territory Menu** (`圈地` button, slot 13 in Main Menu) → **Modify Territory**.
+**Via Territory Menu (recommended):**
 
-### Modifying Boundaries
-
-**Via Territory Menu:**
-
-1. Click `修改地块` in the **Territory Menu**;
-2. If not in selection mode, select a community (if in multiple), then click a scope — this starts **ModifyExisting** mode and closes the menu;
-3. Right-click blocks in the world with a **command block** in hand to set new boundary points;
-4. Re-open Territory Menu → `修改地块` — modification executes immediately;
-5. A cost summary appears in chat with a **[CONFIRM]** / **[CANCEL]** prompt (5-minute window).
+1. Main Menu → **Territory** → **Modify Territory**;
+2. If not already in Selection Mode, choose your community (if in multiple) and click the Geoscope you want to reshape;
+3. **Modify mode** activates for that Geoscope; the menu closes and a prompt guides you to place new boundary points;
+4. Hold a command block and right-click blocks to set the new boundary;
+5. Re-open Territory Menu → **Modify Territory** to confirm;
+6. A cost summary appears in chat with a **[CONFIRM]** / **[CANCEL]** prompt (valid for 5 minutes).
 
 **Via Administration Menu:**
 
-1. Open the Administration Menu → **Region Geometry** → select a scope;
-2. ModifyExisting selection mode starts and the menu closes with a prompt;
-3. Follow steps 3–5 above.
+1. Administration Menu → **Region Geometry** → select the Geoscope you want to reshape;
+2. Modify mode activates; menu closes with a prompt;
+3. Follow steps 4–6 above.
 
-**Cost:** Expanding a scope costs the area-price difference. Shrinking refunds **50%** of the cost difference.
+**Cost rules:**
+- Expanding a Geoscope: pay the area-price difference.
+- Shrinking a Geoscope: receive a **50%** refund of the cost difference.
 
-> **Note:** Requires the **Region Geometry** admin privilege.
+> **Note:** Only **active** communities may modify Geoscope boundaries. Communities in RECRUITING or PENDING status cannot perform this operation.
 
----
-
-### Adding a Scope
-
-**Via Territory Menu:**
-
-1. Click `增加辖区` in the **Territory Menu**;
-2. Select a community (if in multiple); permission is checked;
-3. The **Scope Creation Screen** opens with integrated selection mode toggle and shape controls;
-4. Enable selection mode, select points, then name and confirm the scope.
-
-**Via Administration Menu:**
-
-1. Open Administration Menu → **Region Geometry** → **Global** → **Add Administrative District**;
-2. Same scope creation flow as above.
-
-**Cost:** Scope addition base fee + area-based fee (same pricing structure as community creation).
+> **Note:** Requires the **Region Geometry** administration privilege.
 
 ---
 
 ## Region Settings
 
-The **Region Settings** button (slot 20, Heart of the Sea icon) opens the **Scope Selection Menu**. Select a scope to open its **Setting Menu**, where you configure permissions and rules.
+Each Geoscope can have its own **permissions** and **rules**, giving you granular control over what happens within that slice of territory.
+
+Access: Administration Menu → **Region Settings** → select a Geoscope → **Settings Menu**.
 
 ### Permissions
 
-Permissions control what non-owner players may do within the scope. Each permission can be toggled scope-wide, or assigned per-player for finer control.
+Permissions govern what non-owner players may do within the Geoscope. Each permission can be toggled for the entire Geoscope, or assigned per-player for finer control.
 
 | Permission | Description |
 |---|---|
@@ -109,11 +136,11 @@ Permissions control what non-owner players may do within the scope. Each permiss
 | **Armor Stand** | Interact with armor stands |
 | **Item Frame** | Interact with item frames |
 
-Each permission has an area-based cost when activated. Restoring the default refunds **50%** of that cost. Per-player targeting costs **1/5** of the scope-wide rate.
+Each permission has an area-based cost when activated. Restoring the default refunds **50%** of that cost. Per-player targeting costs **1/5** of the Geoscope-wide rate.
 
 ### Rules
 
-Rules control automatic behaviors within the scope (not tied to specific player actions).
+Rules control automatic behaviors within the Geoscope (not tied to specific player actions).
 
 | Rule | Description |
 |---|---|
@@ -123,7 +150,7 @@ Rules control automatic behaviors within the scope (not tied to specific player 
 
 Rules also carry area-based costs when enabled.
 
-> **Note:** Requires the **Region Settings** admin privilege.
+> **Note:** Requires the **Region Settings** administration privilege.
 
 **Command equivalents:**
 - `/community confirm_setting <regionId>` — confirm a setting change
@@ -132,3 +159,4 @@ Rules also carry area-based costs when enabled.
 ---
 
 > **See also:** [Economy](economy.md#area-based-pricing) · [Administration](administration.md) · [Teleport](teleport.md)
+

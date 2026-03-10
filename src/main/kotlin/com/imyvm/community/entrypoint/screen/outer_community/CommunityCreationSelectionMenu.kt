@@ -3,6 +3,7 @@ package com.imyvm.community.entrypoint.screen.outer_community
 import com.imyvm.community.application.interaction.screen.helper.generateCreationError
 import com.imyvm.community.application.interaction.screen.outer_community.runConfirmCommunityCreationFromSelectionMenu
 import com.imyvm.community.application.interaction.screen.outer_community.runRenameNewCommunityFromSelectionMenu
+import com.imyvm.community.application.interaction.screen.outer_community.runResetSelectionInCreation
 import com.imyvm.community.application.interaction.screen.outer_community.runSwitchCommunityTypeInSelectionMenu
 import com.imyvm.community.application.interaction.screen.outer_community.runSwitchSelectionShapeInCreation
 import com.imyvm.community.application.interaction.screen.outer_community.runToggleSelectionModeInCreation
@@ -41,6 +42,12 @@ class CommunityCreationSelectionMenu(
                 name = Translator.tr("ui.create.button.selection_mode.enable")?.string ?: "Selection Mode: Enabled",
                 item = Items.COMMAND_BLOCK
             ) { runToggleSelectionModeInCreation(it, currentName, isCurrentCommunityTypeManor, runBack) }
+
+            addButton(
+                slot = 19,
+                name = Translator.tr("ui.main.button.selection_mode.reset")?.string ?: "Reset Point Selection",
+                item = Items.TNT
+            ) { runResetSelectionInCreation(it, currentName, isCurrentCommunityTypeManor, runBack) }
 
             if (isNormalSelectionMode) {
                 addButton(
@@ -105,8 +112,14 @@ class CommunityCreationSelectionMenu(
             val hypotheticalShape = selectionState?.hypotheticalShape
             val isNormalSelectionMode = selectionState != null && hypotheticalShape is HypotheticalShape.Normal
             val pointCount = selectionState?.points?.size ?: 0
+            val baseTitle = Translator.tr("ui.create.selection.title")?.string ?: "Create Community"
+            if (selectionState == null) {
+                val hint = Translator.tr("ui.admin.region.global.add.hint.start")?.string ?: "→ Enable Mode"
+                return Text.of("$baseTitle $hint")
+            }
             if (!isNormalSelectionMode || pointCount < 2) {
-                return Translator.tr("ui.create.selection.title") ?: Text.literal("Create Community")
+                val hint = Translator.tr("ui.admin.region.global.add.hint.select")?.string ?: "→ Select Points"
+                return Text.of("$baseTitle $hint")
             }
             val currentShape = (hypotheticalShape as HypotheticalShape.Normal).shapeType
             val error = generateCreationError(currentName, currentShape, isCurrentCommunityTypeManor, playerEntity)

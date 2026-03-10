@@ -9,7 +9,7 @@
 3. `CommunityDatabase`是数据库的维护类。凡是涉及改动`Communtiy`成员变量的操作，必须要看看是否涉及数据库存储的改动。
 4. `PendingOperation`涉及所有需要在一定时限内作出反应的任务，实现由`PendingApplication`做出，创建任何`PendingOperation`一定要通过`pendingApplication`中心化管理。这主要用于确认逻辑。
 5. 领域的正式成员是由`MemberRoleType`定义的，不包含`APPLICANT`和`REFUSED`。谈论是否在某个领域的时候，默认只包含`OWNER`、`ADMIN`和`MEMBER`。
-6. 涉及到领域权限的内容，必须检查修改对应操作入口是否与`AdministrationPermission(s)`和`PermissionCheck`等相关类相联系并实现了权限检查。
+6. 涉及到领域权限的内容，必须检查修改对应操作入口是否与`AdministrationPermission(s)`和`PermissionCheck`等相关类相联系并实现了权限检查。**对于任何聚落行政操作，必须同时调用`canExecuteAdministration`（检查角色和权限）和`canExecuteOperationInProto`（检查聚落状态），两者缺一不可，不允许自行决定只检查其中某一项。**参照`runAdmRegion`中的实现模式（`executeWithPermission` + 两步检查）作为标准范例。
 7. 对于`Menu`点击后要发送文本消息给玩家的情况，请记得关闭面板本身玩家才能看到文本消息。这中间，一定要合理规划流程，避免关闭使得某些后面的面板功能实质上玩家无法到达。
 8. 任何`Menu`新增一定要写好完整的`runBack`相关逻辑。
 9. 本mod有一个`AbstractListMenu`，是所有列表Menu的默认实现。
