@@ -363,7 +363,7 @@ Adding a new administrative district uses the dedicated **Scope Creation Screen*
 - Creation cost = **fixed district fee** + **area-based fee**;
 - Fixed fee defaults: **Manor $500.00**, **Realm $1,000.00** (configurable);
 - Area-based fee follows the same pricing model as area expansion;
-- **Soft scope limit**: the recommended maximum number of Geoscopes is `floor(formal_members / 2)`. Exceeding this limit does **not** block creation; instead, the fixed fee is multiplied by **1.5 per excess scope** above the limit. For example, if the limit is 2 and the community already has 2 scopes, adding a 3rd (1 excess) raises the fixed fee to 150%; adding a 4th (2 excess) raises it to 225%. Area-based fees and refunds are unaffected;
+- **Soft scope limit**: the recommended maximum number of Geoscopes is `floor(formal_members / 2)`. Exceeding this limit does **not** block creation; instead, the fixed fee is multiplied by **1.5 per excess scope** above the limit. For example, if the limit is 2 and the community already has 2 scopes, adding a 3rd (1 excess) raises the fixed fee to 150%; adding a 4th (2 excess) raises it to 225%. Area-based fees are unaffected. When a surcharge applies, it is clearly noted in both the confirmation breakdown and the final deduction message;
 - Confirmation is required through a pending command-based confirmation flow;
 - Final execution checks:
   - community assets;
@@ -425,7 +425,7 @@ After selection, an **anvil interface** appears with the current name pre-filled
 | Global community name | $2,000.00 | 30 days (real-time) per community |
 | Individual Geoscope name | $100.00 | 30 days (real-time) per Geoscope |
 
-If a name was changed within the last 30 days, the operation is blocked and the remaining cooldown days are shown. The cooldown is tracked independently per name key (global or per-scope) and persists across server restarts.
+If a name was changed within the last 30 days, the operation is blocked immediately when the rename button is clicked (before the anvil opens), and the remaining cooldown days are shown. The cooldown is tracked independently per name key (global for the community name, or the current Geoscope name after each rename) and persists across server restarts.
 
 After entering the new name and confirming payment, an **interactive billing confirmation** is sent in chat:
 - `[CONFIRM]` — executes the rename and deducts assets;

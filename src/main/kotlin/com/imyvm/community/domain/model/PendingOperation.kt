@@ -29,7 +29,8 @@ data class ScopeModificationConfirmationData(
     val executorUUID: UUID,
     val cost: Long,
     val isScopeCreation: Boolean = false,
-    val shapeName: String? = null
+    val shapeName: String? = null,
+    val softLimitSurcharge: Long = 0L
 )
 
 data class TeleportPointConfirmationData(

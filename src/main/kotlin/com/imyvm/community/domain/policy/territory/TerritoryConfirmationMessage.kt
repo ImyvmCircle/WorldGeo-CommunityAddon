@@ -151,7 +151,11 @@ object TerritoryConfirmationMessage {
         settingChanges: List<SettingItemCostChange>,
         isManor: Boolean,
         currentAssets: Long,
-        currentTotalArea: Double
+        currentTotalArea: Double,
+        excessCount: Int = 0,
+        maxScopesAllowed: Int = 0,
+        formalMemberCount: Int = 0,
+        fixedCostBase: Long = 0L
     ): List<Text> {
         val messages = mutableListOf<Text>()
 
@@ -167,7 +171,18 @@ object TerritoryConfirmationMessage {
         messages.add(Translator.tr("community.scope_add.confirm.scope", scopeName) ?: Text.literal("Administrative District: $scopeName"))
         messages.add(Translator.tr("community.scope_add.confirm.shape", shapeText) ?: Text.literal("Shape: $shapeText"))
         messages.add(Translator.tr("community.scope_add.confirm.area", String.format("%.2f", area)) ?: Text.literal("Area: ${String.format("%.2f", area)} m²"))
-        messages.add(Translator.tr("community.scope_add.confirm.base_cost", String.format("%.2f", fixedCost / 100.0)) ?: Text.literal("Base Cost: ${String.format("%.2f", fixedCost / 100.0)}"))
+        if (excessCount > 0) {
+            messages.add(Translator.tr(
+                "community.scope_add.confirm.base_cost_adjusted",
+                excessCount.toString(),
+                maxScopesAllowed.toString(),
+                formalMemberCount.toString(),
+                String.format("%.2f", fixedCost / 100.0),
+                String.format("%.2f", fixedCostBase / 100.0)
+            ) ?: Text.literal("Base Cost (Soft Limit Surcharge ×$excessCount, limit $maxScopesAllowed/$formalMemberCount members): ${String.format("%.2f", fixedCost / 100.0)} (original ${String.format("%.2f", fixedCostBase / 100.0)})"))
+        } else {
+            messages.add(Translator.tr("community.scope_add.confirm.base_cost", String.format("%.2f", fixedCost / 100.0)) ?: Text.literal("Base Cost: ${String.format("%.2f", fixedCost / 100.0)}"))
+        }
 
         if (landCostChange > 0) {
             messages.add(Translator.tr("community.pricing.land.increase_header", String.format("%.2f", area))

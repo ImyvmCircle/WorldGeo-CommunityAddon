@@ -33,9 +33,14 @@ fun generateScopeAdditionConfirmationMessage(
     settingChanges: List<SettingItemCostChange>,
     isManor: Boolean,
     currentAssets: Long,
-    currentTotalArea: Double
+    currentTotalArea: Double,
+    excessCount: Int = 0,
+    maxScopesAllowed: Int = 0,
+    formalMemberCount: Int = 0,
+    fixedCostBase: Long = 0L
 ): List<Text> {
     return TerritoryConfirmationMessage.generateScopeAdditionConfirmation(
-        scopeName, shapeType, area, fixedCost, landCostChange, settingChanges, isManor, currentAssets, currentTotalArea
+        scopeName, shapeType, area, fixedCost, landCostChange, settingChanges, isManor, currentAssets, currentTotalArea,
+        excessCount, maxScopesAllowed, formalMemberCount, fixedCostBase
     )
 }

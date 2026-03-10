@@ -88,12 +88,20 @@ fun runExecuteRegion(
             playerExecutor,
             { CommunityPermissionPolicy.canExecuteAdministration(playerExecutor, community, AdminPrivilege.RENAME_COMMUNITY) }
         ) {
-            AdministrationRenameMenuAnvil(
-                player = playerExecutor,
-                community = community,
-                scopeName = null,
-                runBackGrandfather = { p -> runBackRegionScopeMenu(p, community, geographicFunctionType, runBackGrandfatherMenu) }
-            ).open()
+            val nameKey = "global"
+            val cooldownMs = community.nameChangeCooldowns[nameKey] ?: 0L
+            val daysSince = (System.currentTimeMillis() - cooldownMs) / (1000L * 60 * 60 * 24)
+            if (daysSince < 30) {
+                playerExecutor.closeHandledScreen()
+                playerExecutor.sendMessage(Translator.tr("community.rename.error.cooldown", (30 - daysSince).toString(), nameKey))
+            } else {
+                AdministrationRenameMenuAnvil(
+                    player = playerExecutor,
+                    community = community,
+                    scopeName = null,
+                    runBackGrandfather = { p -> runBackRegionScopeMenu(p, community, geographicFunctionType, runBackGrandfatherMenu) }
+                ).open()
+            }
         }
     }
 }
@@ -208,7 +216,11 @@ private fun onCreateScopeRequest(
         settingChanges = settingChanges,
         isManor = isManor,
         currentAssets = currentAssets,
-        currentTotalArea = currentTotalArea
+        currentTotalArea = currentTotalArea,
+        excessCount = excessCount,
+        maxScopesAllowed = maxScopesAllowed,
+        formalMemberCount = formalMemberCount,
+        fixedCostBase = fixedCostBase
     )
     confirmationMessages.forEach { msg -> player.sendMessage(msg) }
 
@@ -222,7 +234,8 @@ private fun onCreateScopeRequest(
             executorUUID = player.uuid,
             cost = totalCost,
             isScopeCreation = true,
-            shapeName = geoShapeType.toString()
+            shapeName = geoShapeType.toString(),
+            softLimitSurcharge = if (excessCount > 0) fixedCost - fixedCostBase else 0L
         )
     )
 
@@ -297,7 +310,8 @@ fun onConfirmRename(player: ServerPlayerEntity, regionNumberId: Int, nameKey: St
         }
         val oldScopeName = scope.scopeName
         PlayerInteractionApi.renameScope(player, communityRegion, oldScopeName, renameData.newName)
-        community.nameChangeCooldowns[renameData.nameKey] = System.currentTimeMillis()
+        community.nameChangeCooldowns.remove(renameData.nameKey)
+        community.nameChangeCooldowns[renameData.newName] = System.currentTimeMillis()
         if (renameData.cost > 0) {
             community.expenditures.add(com.imyvm.community.domain.model.Turnover(
                 amount = renameData.cost,
@@ -385,12 +399,20 @@ fun runExecuteScope(
                 playerExecutor,
                 { CommunityPermissionPolicy.canExecuteAdministration(playerExecutor, community, AdminPrivilege.RENAME_COMMUNITY) }
             ) {
-                AdministrationRenameMenuAnvil(
-                    player = playerExecutor,
-                    community = community,
-                    scopeName = scope.scopeName,
-                    runBackGrandfather = { p -> runBackRegionScopeMenu(p, community, geographicFunctionType, runBackGrandfatherMenu) }
-                ).open()
+                val nameKey = scope.scopeName
+                val cooldownMs = community.nameChangeCooldowns[nameKey] ?: 0L
+                val daysSince = (System.currentTimeMillis() - cooldownMs) / (1000L * 60 * 60 * 24)
+                if (daysSince < 30) {
+                    playerExecutor.closeHandledScreen()
+                    playerExecutor.sendMessage(Translator.tr("community.rename.error.cooldown", (30 - daysSince).toString(), nameKey))
+                } else {
+                    AdministrationRenameMenuAnvil(
+                        player = playerExecutor,
+                        community = community,
+                        scopeName = scope.scopeName,
+                        runBackGrandfather = { p -> runBackRegionScopeMenu(p, community, geographicFunctionType, runBackGrandfatherMenu) }
+                    ).open()
+                }
             }
         }
     }

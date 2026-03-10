@@ -93,6 +93,12 @@ fun onConfirmScopeModification(player: ServerPlayerEntity, regionNumberId: Int, 
             else -> Translator.tr("community.shape.rectangle")?.string ?: "rectangle"
         }
         player.sendMessage(Translator.tr("community.scope_add.success", scopeName, shapeText, costDisplay))
+        if (modificationData.softLimitSurcharge > 0) {
+            player.sendMessage(Translator.tr(
+                "community.scope_add.success.surcharge_note",
+                String.format("%.2f", modificationData.softLimitSurcharge / 100.0)
+            ))
+        }
 
         val territoryType = if (community.isManor()) {
             Translator.tr("community.region.territory.manor")?.string ?: "manor territory"
