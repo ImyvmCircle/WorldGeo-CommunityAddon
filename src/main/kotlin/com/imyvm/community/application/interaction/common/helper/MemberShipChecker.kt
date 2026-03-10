@@ -11,8 +11,11 @@ fun checkPlayerMembershipPreCreation(player: ServerPlayerEntity): Boolean {
     if (player.hasPermissionLevel(2)) return true
     val joinedCommunities = CommunityDatabase.communities.filter {
         (it.status == CommunityStatus.ACTIVE_REALM || it.status == CommunityStatus.PENDING_REALM || it.status == CommunityStatus.RECRUITING_REALM
-                || it.status == CommunityStatus.ACTIVE_MANOR || it.status == CommunityStatus.PENDING_MANOR)
-                && it.member.containsKey(player.uuid)
+                || it.status == CommunityStatus.ACTIVE_MANOR || it.status == CommunityStatus.PENDING_MANOR
+                || it.status == CommunityStatus.REVOKED_MANOR || it.status == CommunityStatus.REVOKED_REALM)
+                && it.member[player.uuid]?.basicRoleType.let { role ->
+                    role != null && role != MemberRoleType.APPLICANT && role != MemberRoleType.REFUSED
+                }
     }.toSet()
     if (joinedCommunities.size > 2) {
         player.sendMessage(Translator.tr("community.create.error.maximum_communities"))
@@ -25,10 +28,14 @@ fun checkPlayerMembershipCreation(player: ServerPlayerEntity, communityType: Str
     if (player.hasPermissionLevel(2)) return true
     val joinedCommunity = CommunityDatabase.communities.find {
         when (communityType.lowercase()) {
-            "realm" -> (it.status == CommunityStatus.ACTIVE_REALM || it.status == CommunityStatus.PENDING_REALM || it.status == CommunityStatus.RECRUITING_REALM)
-            "manor" -> (it.status == CommunityStatus.ACTIVE_MANOR || it.status == CommunityStatus.PENDING_MANOR)
+            "realm" -> (it.status == CommunityStatus.ACTIVE_REALM || it.status == CommunityStatus.PENDING_REALM
+                    || it.status == CommunityStatus.RECRUITING_REALM || it.status == CommunityStatus.REVOKED_REALM)
+            "manor" -> (it.status == CommunityStatus.ACTIVE_MANOR || it.status == CommunityStatus.PENDING_MANOR
+                    || it.status == CommunityStatus.REVOKED_MANOR)
             else -> false
-        } && it.member.containsKey(player.uuid)
+        } && it.member[player.uuid]?.basicRoleType.let { role ->
+            role != null && role != MemberRoleType.APPLICANT && role != MemberRoleType.REFUSED
+        }
     }
     if (joinedCommunity != null) {
         player.sendMessage(Translator.tr("community.create.error.already_in_community", communityType))
@@ -63,8 +70,11 @@ private fun isJoinedTarget(player: ServerPlayerEntity, targetCommunity: Communit
 private fun isJoinedRealmTargetingRealm(player: ServerPlayerEntity, targetCommunity: Community): Boolean {
     if (targetCommunity.status == CommunityStatus.RECRUITING_REALM || targetCommunity.status == CommunityStatus.PENDING_REALM || targetCommunity.status == CommunityStatus.ACTIVE_REALM) {
         val joinedCommunity = CommunityDatabase.communities.find {
-            (it.status == CommunityStatus.ACTIVE_REALM || it.status == CommunityStatus.PENDING_REALM || it.status == CommunityStatus.RECRUITING_REALM)
-                    && (it.member.containsKey(player.uuid) && it.member[ player.uuid ]?.basicRoleType != MemberRoleType.REFUSED)
+            (it.status == CommunityStatus.ACTIVE_REALM || it.status == CommunityStatus.PENDING_REALM
+                    || it.status == CommunityStatus.RECRUITING_REALM || it.status == CommunityStatus.REVOKED_REALM)
+                    && it.member[player.uuid]?.basicRoleType.let { role ->
+                        role != null && role != MemberRoleType.APPLICANT && role != MemberRoleType.REFUSED
+                    }
         }
         if (joinedCommunity != null) {
             player.sendMessage(Translator.tr("community.join.error.already_in_realm", joinedCommunity.regionNumberId))
@@ -77,8 +87,11 @@ private fun isJoinedRealmTargetingRealm(player: ServerPlayerEntity, targetCommun
 private fun isJoinedManorTargetingManor(player: ServerPlayerEntity, targetCommunity: Community): Boolean {
     if (targetCommunity.status == CommunityStatus.ACTIVE_MANOR || targetCommunity.status == CommunityStatus.PENDING_MANOR) {
         val joinedCommunity = CommunityDatabase.communities.find {
-            (it.status == CommunityStatus.ACTIVE_MANOR || it.status == CommunityStatus.PENDING_MANOR)
-                    && (it.member.containsKey(player.uuid) && it.member[ player.uuid ]?.basicRoleType != MemberRoleType.REFUSED)
+            (it.status == CommunityStatus.ACTIVE_MANOR || it.status == CommunityStatus.PENDING_MANOR
+                    || it.status == CommunityStatus.REVOKED_MANOR)
+                    && it.member[player.uuid]?.basicRoleType.let { role ->
+                        role != null && role != MemberRoleType.APPLICANT && role != MemberRoleType.REFUSED
+                    }
         }
         if (joinedCommunity != null) {
             player.sendMessage(Translator.tr("community.join.error.already_in_manor", joinedCommunity.regionNumberId))

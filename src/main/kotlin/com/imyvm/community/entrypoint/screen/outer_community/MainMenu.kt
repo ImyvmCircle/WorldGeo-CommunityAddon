@@ -54,7 +54,7 @@ class MainMenu(
         ) { runToggleSelectionMode(it) }
 
         addButton(
-            slot = 23,
+            slot = 31,
             name = Translator.tr("ui.main.button.selection_mode.reset")?.string ?: "Reset Point Selection",
             item = Items.TNT
         ) { runResetSelection(it) }
