@@ -354,7 +354,7 @@ private fun runCreateCommunity(context: CommandContext<ServerCommandSource>): In
     val communityType = StringArgumentType.getString(context, "communityType").lowercase(Locale.getDefault())
     val name = StringArgumentType.getString(context, "name")
     val shapeName = StringArgumentType.getString(context, "shapeType").uppercase(Locale.getDefault())
-    return onCreateCommunityRequest(player, communityType, name, shapeName)
+    return onCreateCommunityRequest(player, communityType, name)
 }
 
 private fun runConfirmCommunityCreation(context: CommandContext<ServerCommandSource>): Int {

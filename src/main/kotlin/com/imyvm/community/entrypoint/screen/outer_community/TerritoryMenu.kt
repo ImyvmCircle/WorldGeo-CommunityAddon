@@ -1,0 +1,32 @@
+package com.imyvm.community.entrypoint.screen.outer_community
+
+import com.imyvm.community.application.interaction.screen.outer_community.runOpenCommunityCreation
+import com.imyvm.community.entrypoint.screen.AbstractMenu
+import com.imyvm.community.util.Translator
+import net.minecraft.item.Items
+import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.text.Text
+
+class TerritoryMenu(
+    syncId: Int,
+    playerExecutor: ServerPlayerEntity,
+    runBack: ((ServerPlayerEntity) -> Unit)
+) : AbstractMenu(
+    syncId = syncId,
+    menuTitle = Translator.tr("ui.territory.title") ?: Text.literal("Territory"),
+    runBack = runBack
+) {
+    init {
+        addButton(
+            slot = 10,
+            name = Translator.tr("ui.territory.button.create")?.string ?: "Create Community",
+            item = Items.DIAMOND_PICKAXE
+        ) { runOpenCommunityCreation(it, runBack) }
+
+        addButton(
+            slot = 16,
+            name = Translator.tr("ui.territory.button.modify")?.string ?: "Modify Territory",
+            item = Items.SHEARS
+        ) {}
+    }
+}

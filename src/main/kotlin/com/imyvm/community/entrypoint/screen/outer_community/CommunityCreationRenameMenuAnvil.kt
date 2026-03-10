@@ -20,7 +20,7 @@ class CommunityCreationRenameMenuAnvil(
 
     override fun processRenaming(finalName: String) {
         CommunityMenuOpener.open(playerExecutor) { newSyncId ->
-            CommunityCreationMenu(newSyncId, finalName, currentShape, isManor, playerExecutor, runBackGrandfather)
+            CommunityCreationSelectionMenu(newSyncId, finalName, isManor, playerExecutor, runBackGrandfather)
         }
     }
 

@@ -1,16 +1,15 @@
 package com.imyvm.community.application.interaction.screen.outer_community
 
-import com.imyvm.community.application.interaction.common.helper.checkPlayerMembershipPreCreation
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.community.CommunityListFilterType
 import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.entrypoint.screen.inner_community.CommunityMenu
-import com.imyvm.community.entrypoint.screen.outer_community.CommunityCreationMenu
 import com.imyvm.community.entrypoint.screen.outer_community.CommunityListMenu
 import com.imyvm.community.entrypoint.screen.outer_community.MainMenu
 import com.imyvm.community.entrypoint.screen.outer_community.MyCommunityListMenu
+import com.imyvm.community.entrypoint.screen.outer_community.TerritoryMenu
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.application.interaction.onToggleActionBar
@@ -28,17 +27,9 @@ fun runList(player: ServerPlayerEntity) {
     }
 }
 
-fun runCreate(player: ServerPlayerEntity){
-    if (!checkPointSelectingCreating(player)) return
-    if (!checkPlayerMembershipPreCreation(player)) return
-    val defaultTitle = generateNewCommunityTitle()
+fun runGeoOperation(player: ServerPlayerEntity) {
     CommunityMenuOpener.open(player) { syncId ->
-        CommunityCreationMenu(
-            syncId,
-            currentName = defaultTitle,
-            playerExecutor = player,
-            runBack = { runBackOrRefreshMainMenu(it) }
-        )
+        TerritoryMenu(syncId, player, runBack = { runBackOrRefreshMainMenu(it) })
     }
 }
 
@@ -105,26 +96,7 @@ fun runToggleActionBar(player: ServerPlayerEntity) {
     runBackOrRefreshMainMenu(player)
 }
 
-private fun checkPointSelectingCreating(player: ServerPlayerEntity): Boolean {
-    return if (!ImyvmWorldGeo.pointSelectingPlayers.containsKey(player.uuid)
-        || ImyvmWorldGeo.pointSelectingPlayers[player.uuid]?. size!! < 2) {
-        player.closeHandledScreen()
-        player.sendMessage(Translator.tr("ui.main.create.error.no_selection"))
-        false
-    } else {
-        true
-    }
-}
-
-private fun generateNewCommunityTitle(): String {
-    val index = CommunityDatabase.communities.size + 1
-    val defaultTitle = Translator.tr("ui.create.title")?.string ?: "New-Community"
-    return generateSequence(index) { it + 1 }
-        .map { "$defaultTitle$it" }
-        .first { title -> CommunityDatabase.communities.none { it.getRegion()?.name == title } }
-}
-
-private fun runBackOrRefreshMainMenu(player: ServerPlayerEntity) {
+internal fun runBackOrRefreshMainMenu(player: ServerPlayerEntity) {
     CommunityMenuOpener.open(player) { syncId ->
         MainMenu(
             syncId = syncId,

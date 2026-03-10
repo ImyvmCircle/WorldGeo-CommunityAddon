@@ -30,17 +30,16 @@ fun runConfirmDispatcher(
 private fun runCommunityCreation(
     playerExecutor: ServerPlayerEntity,
     communityType: String? = null,
-    communityName: String? = null ,
+    communityName: String? = null,
     shapeName: String? = null
 ) {
-    if (communityType == null || communityName == null || shapeName == null) {
+    if (communityType == null || communityName == null) {
         playerExecutor.sendMessage(Translator.tr("ui.confirm.creation.error.missing_data"))
     } else {
         onCreateCommunityRequest(
             player = playerExecutor,
             communityType = communityType,
-            communityName = communityName,
-            shapeName = shapeName
+            communityName = communityName
         )
     }
 }

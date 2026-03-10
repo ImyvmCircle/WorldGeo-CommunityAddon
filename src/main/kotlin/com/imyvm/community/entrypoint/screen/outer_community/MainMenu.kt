@@ -19,7 +19,6 @@ class MainMenu(
     init {
         addGeneralButtons()
         if (playerExecutor.hasPermissionLevel(2)) { addServerOperatorButton() }
-        addToggleSelectionModeButton()
         addActionBarToggleButton()
     }
 
@@ -32,9 +31,9 @@ class MainMenu(
 
         addButton(
             slot = 13,
-            name = Translator.tr("ui.main.button.create")?.string ?: "Create",
+            name = Translator.tr("ui.main.button.geo")?.string ?: "Territory",
             item = Items.DIAMOND_PICKAXE
-        ) { runCreate(it) }
+        ) { runGeoOperation(it) }
 
         addButton(
             slot = 16,
@@ -49,29 +48,6 @@ class MainMenu(
             name = Translator.tr("ui.main.button.op")?.string ?: "OP",
             item = Items.ANVIL
         ) {}
-    }
-
-    private fun addToggleSelectionModeButton() {
-        val isSelectionModeEnabled = ImyvmWorldGeo.pointSelectingPlayers.containsKey(playerExecutor.uuid)
-        if (isSelectionModeEnabled) {
-            addButton(
-                slot = 22,
-                name = Translator.tr("ui.main.button.selection_mode.enable")?.string ?: "Selection Mode: Enabled",
-                item = Items.COMMAND_BLOCK
-            ) { runToggleSelectionMode(playerExecutor) }
-
-            addButton(
-                slot = 31,
-                name = Translator.tr("ui.main.button.selection_mode.reset")?.string ?: "Reset Selection",
-                item = Items.BRUSH
-            ) { runResetSelection(playerExecutor) }
-        } else {
-            addButton(
-                slot = 22,
-                name = Translator.tr("ui.main.button.selection_mode.disable")?.string ?: "Selection Mode: Disabled",
-                item = Items.REDSTONE_BLOCK
-            ) { runToggleSelectionMode(playerExecutor) }
-        }
     }
 
     private fun addActionBarToggleButton() {

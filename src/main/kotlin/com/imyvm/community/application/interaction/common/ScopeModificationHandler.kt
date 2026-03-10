@@ -79,7 +79,7 @@ fun onConfirmScopeModification(player: ServerPlayerEntity, regionNumberId: Int, 
         }
 
         val shapeName = modificationData.shapeName ?: "RECTANGLE"
-        PlayerInteractionApi.addScope(player, communityRegion, scopeName, shapeName)
+        PlayerInteractionApi.addScope(player, communityRegion, scopeName)
         val createdScope = communityRegion.geometryScope.firstOrNull { it.scopeName.equals(scopeName, ignoreCase = true) }
         if (createdScope == null) {
             player.sendMessage(Translator.tr("community.scope_add.error.creation_failed", scopeName))

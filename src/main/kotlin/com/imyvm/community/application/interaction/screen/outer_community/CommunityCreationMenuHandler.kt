@@ -54,13 +54,11 @@ fun runConfirmCommunityCreation(
     isManor: Boolean
 ) {
     val communityType = if (isManor) "manor" else "realm"
-    val shapeName = geoShapeType.toString()
 
     com.imyvm.community.application.interaction.common.onCreateCommunityRequest(
         player,
         communityType,
-        communityName,
-        shapeName
+        communityName
     )
 
     player.closeHandledScreen()

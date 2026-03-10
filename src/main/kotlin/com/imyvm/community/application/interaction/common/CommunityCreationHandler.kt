@@ -16,7 +16,9 @@ import com.imyvm.community.infra.CommunityConfig
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.Translator
 import com.imyvm.economy.EconomyMod
+import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.component.GeoShapeType
+import com.imyvm.iwg.domain.component.HypotheticalShape
 import com.imyvm.iwg.inter.api.PlayerInteractionApi
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
@@ -24,8 +26,7 @@ import net.minecraft.text.Text
 fun onCreateCommunityRequest(
     player: ServerPlayerEntity,
     communityType: String,
-    communityName: String,
-    shapeName: String
+    communityName: String
 ): Int {
     if (!checkPlayerMembershipCreation(player, communityType)) return 0
 
@@ -38,7 +39,12 @@ fun onCreateCommunityRequest(
         return 0
     }
 
-    val region = PlayerInteractionApi.createAndGetRegion(player, communityName, shapeName)
+    val shapeType = when (val hs = ImyvmWorldGeo.pointSelectingPlayers[player.uuid]?.hypotheticalShape) {
+        is HypotheticalShape.Normal -> hs.shapeType
+        else -> GeoShapeType.RECTANGLE
+    }
+
+    val region = PlayerInteractionApi.createAndGetRegion(player, communityName)
     if (region == null) {
         player.sendMessage(Translator.tr("community.create.region.error"))
         return 0
@@ -56,11 +62,6 @@ fun onCreateCommunityRequest(
     }
 
     val regionNumberId = region.numberID
-    val shapeType = try {
-        GeoShapeType.valueOf(shapeName.uppercase())
-    } catch (e: Exception) {
-        GeoShapeType.RECTANGLE
-    }
 
     val confirmationMessages = generateCreationConfirmationMessage(
         communityName = communityName,
@@ -79,7 +80,7 @@ fun onCreateCommunityRequest(
         creationData = CreationConfirmationData(
             communityName = communityName,
             communityType = communityType,
-            shapeName = shapeName,
+            shapeName = shapeType.name,
             regionNumberId = regionNumberId,
             creatorUUID = player.uuid,
             totalCost = costResult.totalCost

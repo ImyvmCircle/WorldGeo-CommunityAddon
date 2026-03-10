@@ -70,12 +70,12 @@ private fun validateBasicInfo(
     val points = ImyvmWorldGeo.pointSelectingPlayers[playerEntity.uuid]
     when (currentShape) {
         GeoShapeType.POLYGON -> {
-            if (points == null || points.size < 3) {
+            if (points == null || points.points.size < 3) {
                 errors.add(Translator.tr("ui.create.error.shape_polygon")?.string ?: "PolygonNeed3Points+Selected")
             }
         }
         GeoShapeType.CIRCLE, GeoShapeType.RECTANGLE -> {
-            if (points == null || points.size < 2) {
+            if (points == null || points.points.size < 2) {
                 errors.add(Translator.tr("ui.create.error.shape_not_enough")?.string ?: "Need2Points+Selected")
             }
         }
