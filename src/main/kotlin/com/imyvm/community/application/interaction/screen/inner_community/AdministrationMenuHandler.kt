@@ -27,7 +27,7 @@ fun runAdmRenameCommunity(player: ServerPlayerEntity, community: Community, runB
             CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdminPrivilege.RENAME_COMMUNITY)
         }
     ) {
-        AdministrationRenameMenuAnvil(player, community = community, runBackGrandfather = { p -> runBackToCommunityAdministrationMenu(p, community, runBackGrandfather) }).open()
+        AdministrationRenameMenuAnvil(player, community = community, scopeName = null, runBackGrandfather = { p -> runBackToCommunityAdministrationMenu(p, community, runBackGrandfather) }).open()
     }
 }
 
