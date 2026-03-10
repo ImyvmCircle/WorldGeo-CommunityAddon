@@ -1,6 +1,6 @@
 package com.imyvm.community.entrypoint.screen.inner_community.multi_parent
 
-import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.runOpenScopeCreationMenu
+import com.imyvm.community.application.interaction.screen.outer_community.runAddScopeForCommunity
 import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.runUnimplementedGeometryGlobalAction
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.entrypoint.screen.AbstractMenu
@@ -28,7 +28,7 @@ class CommunityRegionGlobalGeometryMenu(
             slot = 21,
             name = Translator.tr("ui.admin.region.global.add")?.string ?: "Add Administrative District",
             item = Items.LIME_WOOL
-        ) { runOpenScopeCreationMenu(it, community, runBack) }
+        ) { runAddScopeForCommunity(it, community, runBack) }
 
         addButton(
             slot = 22,

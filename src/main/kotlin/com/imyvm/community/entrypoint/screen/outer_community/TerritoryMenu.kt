@@ -1,5 +1,7 @@
 package com.imyvm.community.entrypoint.screen.outer_community
 
+import com.imyvm.community.application.interaction.screen.outer_community.runAddScope
+import com.imyvm.community.application.interaction.screen.outer_community.runModifyScope
 import com.imyvm.community.application.interaction.screen.outer_community.runOpenCommunityCreation
 import com.imyvm.community.entrypoint.screen.AbstractMenu
 import com.imyvm.community.util.Translator
@@ -24,9 +26,15 @@ class TerritoryMenu(
         ) { runOpenCommunityCreation(it, runBack) }
 
         addButton(
+            slot = 13,
+            name = Translator.tr("ui.territory.button.add_scope")?.string ?: "Add Scope",
+            item = Items.GRASS_BLOCK
+        ) { runAddScope(it, runBack) }
+
+        addButton(
             slot = 16,
             name = Translator.tr("ui.territory.button.modify")?.string ?: "Modify Territory",
             item = Items.SHEARS
-        ) {}
+        ) { runModifyScope(it, runBack) }
     }
 }

@@ -12,7 +12,12 @@ A **scope** is a named sub-area within a community region. The main (outermost) 
 
 ### Adding a Scope
 
-In the **Region Geometry** flow (Administration Menu → Region Geometry), there is an option to add a new scope. A base fee applies:
+To add a new scope, use either:
+
+- **Territory Menu** (`圈地` button in Main Menu) → **Add Scope (增加辖区)**; or
+- Administration Menu → **Region Geometry** → **Global** → **Add Administrative District**.
+
+Both paths open the **Scope Creation Screen** (integrated selection mode, shape toggle, naming, and confirm button visible when ≥2 points are selected). A base fee applies:
 
 | Type | Scope Addition Base Cost |
 |---|---|
@@ -29,19 +34,47 @@ The scope also inherits area-based pricing for any territory it occupies. After 
 
 ## Region Geometry
 
-The **Region Geometry** button (slot 19, Map icon) in the Administration Menu opens the **Scope Selection Menu**. Select a scope to modify its boundaries.
+The **Region Geometry** button (slot 19, Map icon) in the Administration Menu opens the **Scope Selection Menu**. Selecting a scope from this list now **starts ModifyExisting selection mode** for that scope and closes the menu, prompting the player to select new boundary points in the world. Once points are selected, the player re-opens the Territory Menu → **Modify Territory** to confirm.
+
+Alternatively, the full modification workflow is available directly via the **Territory Menu** (`圈地` button, slot 13 in Main Menu) → **Modify Territory**.
 
 ### Modifying Boundaries
 
-1. Click **Region Geometry** → select the desired scope.
-2. The **Global Geometry Menu** opens. Use selection mode to define new boundary points.
-3. Confirm or cancel the change from the chat prompt.
+**Via Territory Menu:**
+
+1. Click `修改地块` in the **Territory Menu**;
+2. If not in selection mode, select a community (if in multiple), then click a scope — this starts **ModifyExisting** mode and closes the menu;
+3. Right-click blocks in the world with a **command block** in hand to set new boundary points;
+4. Re-open Territory Menu → `修改地块` — modification executes immediately;
+5. A cost summary appears in chat with a **[CONFIRM]** / **[CANCEL]** prompt (5-minute window).
+
+**Via Administration Menu:**
+
+1. Open the Administration Menu → **Region Geometry** → select a scope;
+2. ModifyExisting selection mode starts and the menu closes with a prompt;
+3. Follow steps 3–5 above.
 
 **Cost:** Expanding a scope costs the area-price difference. Shrinking refunds **50%** of the cost difference.
 
 > **Note:** Requires the **Region Geometry** admin privilege.
 
-> **Note:** Area-based pricing uses tiered brackets. See [Economy - Area Pricing](economy.md#area-based-pricing) for the full table.
+---
+
+### Adding a Scope
+
+**Via Territory Menu:**
+
+1. Click `增加辖区` in the **Territory Menu**;
+2. Select a community (if in multiple); permission is checked;
+3. The **Scope Creation Screen** opens with integrated selection mode toggle and shape controls;
+4. Enable selection mode, select points, then name and confirm the scope.
+
+**Via Administration Menu:**
+
+1. Open Administration Menu → **Region Geometry** → **Global** → **Add Administrative District**;
+2. Same scope creation flow as above.
+
+**Cost:** Scope addition base fee + area-based fee (same pricing structure as community creation).
 
 ---
 

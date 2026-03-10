@@ -19,7 +19,6 @@ import com.imyvm.community.entrypoint.screen.inner_community.administration_only
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityRegionGlobalGeometryMenu
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityRegionScopeMenu
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityScopeCreationMenu
-import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityScopeCreationRenameMenuAnvil
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.element.TargetSettingMenu
 import com.imyvm.community.infra.PricingConfig
 import com.imyvm.community.util.Translator
@@ -94,35 +93,6 @@ fun runOpenScopeCreationMenu(
             playerExecutor = player,
             runBack = runBack
         )
-    }
-}
-
-fun runRenameNewScope(
-    player: ServerPlayerEntity,
-    community: Community,
-    currentName: String,
-    currentShape: GeoShapeType,
-    runBackGrandfatherMenu: (ServerPlayerEntity) -> Unit
-) {
-    CommunityScopeCreationRenameMenuAnvil(player, community, currentName, currentShape, runBackGrandfatherMenu).open()
-}
-
-fun runSwitchScopeShape(
-    player: ServerPlayerEntity,
-    community: Community,
-    scopeName: String,
-    shapeType: GeoShapeType,
-    runBack: (ServerPlayerEntity) -> Unit
-) {
-    val newType = when (shapeType) {
-        GeoShapeType.CIRCLE -> GeoShapeType.RECTANGLE
-        GeoShapeType.RECTANGLE -> GeoShapeType.POLYGON
-        GeoShapeType.POLYGON -> GeoShapeType.CIRCLE
-        GeoShapeType.UNKNOWN -> GeoShapeType.RECTANGLE
-    }
-
-    CommunityMenuOpener.open(player) { syncId ->
-        CommunityScopeCreationMenu(syncId, community, scopeName, newType, player, runBack)
     }
 }
 
@@ -229,84 +199,13 @@ fun runExecuteScope(
 ) {
     when (geographicFunctionType){
         GeographicFunctionType.GEOMETRY_MODIFICATION -> {
-            val permission = AdminPrivilege.MODIFY_REGION_GEOMETRY
             com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.executeWithPermission(
                 playerExecutor,
-                { com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.canExecuteAdministration(playerExecutor, community, permission) }
+                { com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.canExecuteAdministration(playerExecutor, community, AdminPrivilege.MODIFY_REGION_GEOMETRY) }
             ) {
-                val communityRegion = community.getRegion()
-                if (communityRegion == null) {
-                    playerExecutor.sendMessage(Translator.tr("community.modification.error.no_region"))
-                    playerExecutor.closeHandledScreen()
-                    return@executeWithPermission
-                }
-
-                val areaEstimation = PlayerInteractionApi.estimateScopeAreaChange(playerExecutor, communityRegion, scope.scopeName)
-
-                when (areaEstimation) {
-                    is AreaEstimationResult.Error -> {
-                        val errorKey = when (areaEstimation.error) {
-                            is CreationError.InsufficientPoints -> "community.modification.error.insufficient_points"
-                            is CreationError.DuplicatedPoints -> "community.modification.error.duplicated_points"
-                            is CreationError.CoincidentPoints -> "community.modification.error.coincident_points"
-                            is CreationError.IntersectionBetweenScopes -> "community.modification.error.overlap_detected"
-                            else -> "community.modification.error.unknown"
-                        }
-                        val errorMessage = Translator.tr(errorKey) ?: Text.literal("Modification error")
-                        playerExecutor.sendMessage(errorMessage)
-                        playerExecutor.closeHandledScreen()
-                        return@executeWithPermission
-                    }
-                    is AreaEstimationResult.Success -> {
-                        val areaChange = areaEstimation.area
-                        val currentTotalArea = communityRegion.calculateTotalArea()
-                        val isManor = community.isManor()
-
-                        val costResult = calculateModificationCost(areaChange, currentTotalArea, isManor)
-                        val regionSettingChanges = calculateRegionSettingsCostChanges(communityRegion, areaChange, isManor)
-                        val scopeSettingChanges = calculateScopeSettingsCostChanges(communityRegion, scope, areaChange, isManor)
-                        val allSettingChanges = regionSettingChanges + scopeSettingChanges
-                        val totalCost = costResult.cost + allSettingChanges.sumOf { it.costChange }
-                        val currentAssets = community.getTotalAssets()
-
-                        if (totalCost > 0 && currentAssets < totalCost) {
-                            playerExecutor.sendMessage(Translator.tr("community.modification.error.insufficient_assets",
-                                String.format("%.2f", totalCost / 100.0),
-                                String.format("%.2f", currentAssets / 100.0)
-                            ) ?: Text.literal("Insufficient assets: need ${totalCost / 100.0}, have ${currentAssets / 100.0}"))
-                            playerExecutor.closeHandledScreen()
-                            return@executeWithPermission
-                        }
-
-                        playerExecutor.closeHandledScreen()
-
-                        val confirmationMessages = generateModificationConfirmationMessage(
-                            scopeName = scope.scopeName,
-                            costResult = costResult,
-                            isManor = isManor,
-                            currentAssets = currentAssets,
-                            settingChanges = allSettingChanges
-                        )
-
-                        confirmationMessages.forEach { msg ->
-                            playerExecutor.sendMessage(msg)
-                        }
-
-                        addPendingOperation(
-                            regionId = community.regionNumberId!!,
-                            type = PendingOperationType.MODIFY_SCOPE_CONFIRMATION,
-                            expireMinutes = 5,
-                            modificationData = ScopeModificationConfirmationData(
-                                regionNumberId = community.regionNumberId!!,
-                                scopeName = scope.scopeName,
-                                executorUUID = playerExecutor.uuid,
-                                cost = totalCost
-                            )
-                        )
-
-                        sendInteractiveScopeModificationConfirmation(playerExecutor, community.regionNumberId!!, scope.scopeName)
-                    }
-                }
+                PlayerInteractionApi.startSelectionForModify(playerExecutor, scope)
+                playerExecutor.closeHandledScreen()
+                playerExecutor.sendMessage(Translator.tr("ui.territory.modify.scope_started", scope.scopeName))
             }
         }
         GeographicFunctionType.SETTING_ADJUSTMENT -> {
@@ -498,5 +397,79 @@ private fun calculateScopeSettingsCostChanges(
             areaNew = newScopeArea,
             costChange = costChange
         )
+    }
+}
+
+internal fun executeScopeModification(
+    player: ServerPlayerEntity,
+    community: Community,
+    scope: GeoScope
+) {
+    val communityRegion = community.getRegion()
+    if (communityRegion == null) {
+        player.sendMessage(Translator.tr("community.modification.error.no_region"))
+        player.closeHandledScreen()
+        return
+    }
+
+    val areaEstimation = PlayerInteractionApi.estimateScopeAreaChange(player, communityRegion, scope.scopeName)
+
+    when (areaEstimation) {
+        is AreaEstimationResult.Error -> {
+            val errorKey = when (areaEstimation.error) {
+                is CreationError.InsufficientPoints -> "community.modification.error.insufficient_points"
+                is CreationError.DuplicatedPoints -> "community.modification.error.duplicated_points"
+                is CreationError.CoincidentPoints -> "community.modification.error.coincident_points"
+                is CreationError.IntersectionBetweenScopes -> "community.modification.error.overlap_detected"
+                else -> "community.modification.error.unknown"
+            }
+            player.sendMessage(Translator.tr(errorKey) ?: Text.literal("Modification error"))
+            player.closeHandledScreen()
+        }
+        is AreaEstimationResult.Success -> {
+            val areaChange = areaEstimation.area
+            val currentTotalArea = communityRegion.calculateTotalArea()
+            val isManor = community.isManor()
+
+            val costResult = calculateModificationCost(areaChange, currentTotalArea, isManor)
+            val regionSettingChanges = calculateRegionSettingsCostChanges(communityRegion, areaChange, isManor)
+            val scopeSettingChanges = calculateScopeSettingsCostChanges(communityRegion, scope, areaChange, isManor)
+            val allSettingChanges = regionSettingChanges + scopeSettingChanges
+            val totalCost = costResult.cost + allSettingChanges.sumOf { it.costChange }
+            val currentAssets = community.getTotalAssets()
+
+            if (totalCost > 0 && currentAssets < totalCost) {
+                player.sendMessage(Translator.tr("community.modification.error.insufficient_assets",
+                    String.format("%.2f", totalCost / 100.0),
+                    String.format("%.2f", currentAssets / 100.0)
+                ) ?: Text.literal("Insufficient assets"))
+                player.closeHandledScreen()
+                return
+            }
+
+            player.closeHandledScreen()
+
+            generateModificationConfirmationMessage(
+                scopeName = scope.scopeName,
+                costResult = costResult,
+                isManor = isManor,
+                currentAssets = currentAssets,
+                settingChanges = allSettingChanges
+            ).forEach { player.sendMessage(it) }
+
+            addPendingOperation(
+                regionId = community.regionNumberId!!,
+                type = PendingOperationType.MODIFY_SCOPE_CONFIRMATION,
+                expireMinutes = 5,
+                modificationData = ScopeModificationConfirmationData(
+                    regionNumberId = community.regionNumberId!!,
+                    scopeName = scope.scopeName,
+                    executorUUID = player.uuid,
+                    cost = totalCost
+                )
+            )
+
+            sendInteractiveScopeModificationConfirmation(player, community.regionNumberId!!, scope.scopeName)
+        }
     }
 }

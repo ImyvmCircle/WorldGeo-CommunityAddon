@@ -1,66 +1,111 @@
 package com.imyvm.community.entrypoint.screen.inner_community.multi_parent
 
 import com.imyvm.community.application.interaction.screen.helper.generateScopeCreationError
-import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.runConfirmScopeCreation
-import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.runRenameNewScope
-import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.runSwitchScopeShape
+import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.runConfirmScopeCreationFromSelection
+import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.runRenameNewScopeFromSelection
+import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.runSwitchScopeShapeInCreation
+import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.runToggleSelectionModeInScopeCreation
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.entrypoint.screen.AbstractMenu
 import com.imyvm.community.util.Translator
+import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.component.GeoShapeType
+import com.imyvm.iwg.domain.component.HypotheticalShape
 import net.minecraft.item.Items
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
 
 class CommunityScopeCreationMenu(
     syncId: Int,
-    private val community: Community,
-    private val currentName: String = Translator.tr("ui.admin.region.global.add.default_name")?.string
-        ?: "New-District",
-    private val currentShape: GeoShapeType = GeoShapeType.RECTANGLE,
-    private val playerExecutor: ServerPlayerEntity,
-    private val runBack: (ServerPlayerEntity) -> Unit
+    val community: Community,
+    val currentName: String = Translator.tr("ui.admin.region.global.add.default_name")?.string ?: "New-District",
+    val playerExecutor: ServerPlayerEntity,
+    val runBack: (ServerPlayerEntity) -> Unit
 ) : AbstractMenu(
     syncId = syncId,
-    menuTitle = createMenuTitle(community, currentName, currentShape, playerExecutor),
+    menuTitle = createMenuTitle(community, currentName, playerExecutor),
     runBack = runBack
 ) {
     init {
-        addButton(
-            slot = 10,
-            name = currentName,
-            item = Items.NAME_TAG
-        ) { runRenameNewScope(it, community, currentName, currentShape, runBack) }
+        val selectionState = ImyvmWorldGeo.pointSelectingPlayers[playerExecutor.uuid]
+        val isSelectionModeEnabled = selectionState != null
+        val hypotheticalShape = selectionState?.hypotheticalShape
+        val isNormalSelectionMode = isSelectionModeEnabled && hypotheticalShape is HypotheticalShape.Normal
+        val currentShape = if (hypotheticalShape is HypotheticalShape.Normal) hypotheticalShape.shapeType else GeoShapeType.RECTANGLE
+        val pointCount = selectionState?.points?.size ?: 0
+        val hasEnoughPoints = isNormalSelectionMode && pointCount >= 2
 
-        addButton(
-            slot = 13,
-            name = (Translator.tr("ui.create.button.shape.prefix")?.string ?: "Current Shape(Click to change):") + currentShape,
-            item = when (currentShape) {
-                GeoShapeType.CIRCLE -> Items.CLOCK
-                GeoShapeType.RECTANGLE -> Items.MAP
-                GeoShapeType.POLYGON -> Items.NETHER_STAR
-                GeoShapeType.UNKNOWN -> Items.STRUCTURE_BLOCK
+        if (isSelectionModeEnabled) {
+            addButton(
+                slot = 10,
+                name = Translator.tr("ui.create.button.selection_mode.enable")?.string ?: "Selection Mode: On",
+                item = Items.COMMAND_BLOCK
+            ) { runToggleSelectionModeInScopeCreation(it, community, currentName, runBack) }
+
+            if (isNormalSelectionMode) {
+                addButton(
+                    slot = 12,
+                    name = (Translator.tr("ui.create.button.shape.prefix")?.string ?: "Current Shape(Click to change):")
+                            + when (currentShape) {
+                                GeoShapeType.CIRCLE -> Translator.tr("community.shape.circle")?.string ?: "circle"
+                                GeoShapeType.POLYGON -> Translator.tr("community.shape.polygon")?.string ?: "polygon"
+                                else -> Translator.tr("community.shape.rectangle")?.string ?: "rectangle"
+                            },
+                    item = when (currentShape) {
+                        GeoShapeType.CIRCLE -> Items.CLOCK
+                        GeoShapeType.RECTANGLE -> Items.MAP
+                        GeoShapeType.POLYGON -> Items.NETHER_STAR
+                        GeoShapeType.UNKNOWN -> Items.STRUCTURE_BLOCK
+                    }
+                ) { runSwitchScopeShapeInCreation(it, community, currentName, runBack) }
+
+                addButton(
+                    slot = 14,
+                    name = Translator.tr("ui.create.button.exit_to_select")?.string ?: "Exit Menu to Start Selecting",
+                    item = Items.ENDER_PEARL
+                ) { p -> p.closeHandledScreen() }
             }
-        ) { runSwitchScopeShape(it, community, currentName, currentShape, runBack) }
+        } else {
+            addButton(
+                slot = 10,
+                name = Translator.tr("ui.create.button.selection_mode.disable")?.string ?: "Selection Mode: Off",
+                item = Items.REDSTONE_BLOCK
+            ) { runToggleSelectionModeInScopeCreation(it, community, currentName, runBack) }
+        }
 
-        addButton(
-            slot = 35,
-            name = Translator.tr("ui.admin.region.global.add.confirm")?.string ?: "Confirm District Creation",
-            item = Items.EMERALD_BLOCK
-        ) { runConfirmScopeCreation(it, community, currentName, currentShape) }
+        if (hasEnoughPoints) {
+            addButton(
+                slot = 28,
+                name = currentName,
+                item = Items.NAME_TAG
+            ) { runRenameNewScopeFromSelection(it, community, currentName, runBack) }
+
+            addButton(
+                slot = 34,
+                name = Translator.tr("ui.admin.region.global.add.confirm")?.string ?: "Confirm District Creation",
+                item = Items.EMERALD_BLOCK
+            ) { runConfirmScopeCreationFromSelection(it, community, currentName) }
+        }
     }
 
     companion object {
-        private fun createMenuTitle(
+        fun createMenuTitle(
             community: Community,
             currentName: String,
-            currentShape: GeoShapeType,
             playerEntity: ServerPlayerEntity
         ): Text {
+            val selectionState = ImyvmWorldGeo.pointSelectingPlayers[playerEntity.uuid]
+            val hypotheticalShape = selectionState?.hypotheticalShape
+            val isNormalSelectionMode = selectionState != null && hypotheticalShape is HypotheticalShape.Normal
+            val pointCount = selectionState?.points?.size ?: 0
+            if (!isNormalSelectionMode || pointCount < 2) {
+                return Translator.tr("ui.admin.region.global.add.title") ?: Text.literal("Add Administrative District")
+            }
+            val currentShape = (hypotheticalShape as HypotheticalShape.Normal).shapeType
             val existingScopeNames = community.getRegion()?.geometryScope?.map { it.scopeName }?.toSet() ?: emptySet()
             val error = generateScopeCreationError(currentName, currentShape, playerEntity, existingScopeNames)
-            val prefix = Translator.tr("ui.admin.region.global.add.title")?.string ?: "Add Administrative District"
-            return Text.of(prefix + ": " + currentName + if (error.isNotEmpty()) " ($error)" else "")
+            val prefix = Translator.tr("ui.admin.region.global.add.title")?.string ?: "Add"
+            return Text.of("$prefix: $currentName" + if (error.isNotEmpty()) " ($error)" else "")
         }
     }
 }

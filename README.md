@@ -56,7 +56,7 @@ A **community creation request** may be initialized spontaneously by any player 
     * a set of **points projected on (x,z) plane**, and these points are selected by right-click positions in the Minecraft world with a command block in hand, when the player has already entered **selection mode**, which
         * is defined by IMYVMWorldGeo and utilized by its API;
         * may be started for the player themselves by using the command `/community select start`, and stopped by using the command `/community select stop`; and
-        * may be toggled by left-clicking the `Point Selection Mode: {Enabled/Disabled}` button in the box-interface `Community Main Menu`;
+        * may be toggled by clicking the **Selection Mode** button in the **Community Creation** screen (reached via the **Territory Menu**); and
     * a **`GeoShapeType`**, 
         * whose value range contains `RECTANGLE`, `CIRCLE` and `POLYGON`;
         * defines the meaning of the points selected above,
@@ -83,7 +83,7 @@ When criteria above are achieved, a player may **initialize the creation request
 
 - defines the `Community Name`, `Community Type` and `GeoShapeType` in this step;
 - may use the command `/community create <geoShapeType> <communityType> [communityName]`; and
-- may left-click the `Create Community` button in the box-interface `Community Main Menu`, set the community information in this step as mentioned, and left-click `Confirm Creation` button to directly create the community (no additional confirmation step required).
+- may open the **Territory Menu** by clicking the `圈地` (Territory) button (slot 13) in the Main Menu, then click `创建聚落` (Create Community), toggle on selection mode, select points, then confirm the community name and type. The creation screen integrates point selection directly — no separate selection mode setup needed in the main menu.
 
 #### Automatic Inspection and Proto-Community
 
@@ -318,22 +318,45 @@ When a new member joins or is accepted into a community that has global permissi
 
 #### Territory Modification
 
-Community administrators may alter the geographical boundaries of their territory's administrative districts (scopes) through the **Region Geometry** function. This allows communities to expand, contract, or reshape their territorial claims after initial creation.
+Community administrators may alter the geographical boundaries of their territory's administrative districts (scopes) through two entry points: the **Territory Menu** (`圈地`) from the Main Menu, or the **Region Geometry** function in the Administration Menu. Both allow expanding, contracting, or reshaping territorial claims after initial creation.
 
-##### Modification Process
+##### Modification Process (via Territory Menu)
 
-To modify a territorial scope:
+The **Territory Menu** (slot 13, `圈地` button in Main Menu) provides a unified hub for land-claiming operations:
 
-1. Access the **Community Region Scope Menu** through the **Region Geometry** administration function;
-2. Open **Global Modification** for district-level global operations;
-3. Select **Add Administrative District** to create a new district, or choose an existing district for shape modification;
-4. Use the point selection system (same as region creation) to define the new boundaries;
-5. Review the detailed Land Deed Statement showing area changes and costs;
-6. Confirm the modification to execute the change.
+- **创建聚落 (Create Community)** — opens the community creation flow (see Community Creation section);
+- **增加辖区 (Add Scope)** — adds a new scope to an existing community; and
+- **修改地块 (Modify Territory)** — modifies the geometry of an existing scope.
+
+**Modifying an existing scope:**
+
+1. Click `修改地块` in the **Territory Menu**;
+2. If the player is already in **ModifyExisting** selection mode (i.e. has previously chosen a scope to modify), the modification executes immediately with the current selection;
+3. If not in selection mode, the player selects a community (if in multiple), then selects a scope from the list. Clicking a scope **starts ModifyExisting selection mode** and closes the menu with a prompt;
+4. The player then selects new boundary points in the world (right-click with command block in hand);
+5. Re-opening the Territory Menu → `修改地块` executes the modification. A cost summary is shown in chat with an interactive **[CONFIRM]** / **[CANCEL]** prompt valid for 5 minutes.
+
+> **Note:** If the player is in Normal (creation) selection mode when entering `修改地块`, the menu closes with a warning to exit selection mode first.
+
+> **Note:** Requires the **Region Geometry** admin privilege.
+
+**Adding a new scope:**
+
+1. Click `增加辖区` in the **Territory Menu**;
+2. Select a community if in multiple; permission is checked;
+3. The **Scope Creation Screen** opens — same design as the community creation screen with integrated selection mode toggle, shape cycle, and a confirm button (visible when ≥2 points are selected).
+
+> **Note:** If the player is in ModifyExisting selection mode when entering `增加辖区`, the menu closes with a warning to complete or cancel the modification first.
+
+##### Modification Process (via Administration Menu)
+
+The existing **Region Geometry** button in the Administration Menu (slot 19) still works. Selecting a scope from the list now starts **ModifyExisting** selection mode for that scope (instead of opening a geometry menu directly). The player selects new points, then re-opens the territory interface to confirm the change.
+
+The **Add Administrative District** button in the Administration Menu's global geometry panel now uses the same scope creation flow as `增加辖区` in the Territory Menu, including the selection mode conflict check.
 
 ##### Administrative District Addition
 
-Adding a new administrative district now uses a dedicated creation panel with district naming and shape toggle controls.
+Adding a new administrative district uses the dedicated **Scope Creation Screen** with district naming and shape toggle controls, integrated with selection mode.
 
 - Creation cost = **fixed district fee** + **area-based fee**;
 - Fixed fee defaults: **Manor 500.00**, **Realm 1,000.00** (configurable);

@@ -17,16 +17,68 @@ The menu is a chest-style GUI containing the following buttons:
 | Slot | Icon | Button | Description |
 |---|---|---|---|
 | 10 | Writable Book | **Browse Communities** | Opens the Community List Menu |
-| 13 | Diamond Pickaxe | **Create Community** | Opens the Community Creation Menu |
+| 13 | Diamond Pickaxe | **圈地 (Territory)** | Opens the Territory Menu for land-claiming operations |
 | 16 | Red Bed | **My Communities** | Opens your personal community list |
 | 19 | Anvil | **OP Functions** | *(Operators only)* Server management tools |
-| 22 | Command Block / Redstone Block | **Selection Mode** | Toggle region-point selection mode on/off |
-| 31 | Brush | **Reset Selection** | Clear all selected points *(visible only when selection mode is on)* |
 | 44 | Lime/Gray Dye | **Action Bar** | Toggle the region-location action bar display |
 
 ---
 
-## Browse Communities
+## 圈地 (Territory)
+
+Clicking **圈地** opens the **Territory Menu** — the hub for all land-claiming operations.
+
+| Slot | Icon | Button | Description |
+|---|---|---|---|
+| 10 | Diamond Pickaxe | **Create Community (创建聚落)** | Opens the Community Creation screen |
+| 13 | Grass Block | **Add Scope (增加辖区)** | Add a new scope to an existing community |
+| 16 | Shears | **Modify Territory (修改地块)** | Modify the geometry of an existing scope |
+
+### Create Community (创建聚落)
+
+Opens the **Community Creation Screen**, which integrates point selection directly:
+
+| Slot | Icon | Button | Action |
+|---|---|---|---|
+| 10 | Redstone/Emerald | **Selection Mode** | Toggle selection mode on/off |
+| 12 | Clock/Map/Nether Star | **Shape** | *(visible in selection mode)* Cycle through Rectangle → Polygon → Circle |
+| 14 | Barrier | **Exit to Select** | *(visible in selection mode)* Close screen to place points in the world |
+| 28 | Name Tag | **Community Name** | *(visible when ≥2 points)* Open anvil to name the community |
+| 34 | Birch/Cherry Planks | **Community Type** | *(visible when ≥2 points)* Toggle Manor / Realm |
+| 35 | Emerald Block | **Confirm Creation** | *(visible when ≥2 points)* Submit the creation request |
+
+**How to use:**
+
+1. Click **Create Community** in the Territory Menu.
+2. In the creation screen, click **Selection Mode** to enable it. The screen closes.
+3. Right-click blocks in the world with a **command block** in hand to set boundary points.
+4. Re-open the Territory Menu → **Create Community** to return to the screen with your points loaded.
+5. Optionally switch shape, set a name, choose type, then click **Confirm Creation**.
+
+> **Tip:** Use `/community select start` and `/community select stop` as command alternatives for toggling selection mode.
+
+### Add Scope (增加辖区)
+
+Opens the scope creation flow:
+
+1. If in multiple communities, select which one to add a scope to.
+2. Permission is checked (requires **Region Geometry** privilege).
+3. The **Scope Creation Screen** opens — same layout as the Community Creation Screen.
+
+> **Warning:** If you are currently in **ModifyExisting** selection mode (i.e. modifying an existing scope), you must complete or cancel that operation before adding a scope.
+
+### Modify Territory (修改地块)
+
+Opens the scope modification flow:
+
+1. If already in **ModifyExisting** selection mode (i.e. you already chose a scope to modify and have selected new points), the modification executes immediately.
+2. If not in selection mode, select a community (if in multiple), then select a scope from the list.
+3. Clicking a scope starts **ModifyExisting** selection mode and closes the menu with a prompt.
+4. Select new boundary points in the world, then re-open the Territory Menu → **Modify Territory** to confirm.
+
+> **Warning:** If you are in **Normal** (creation) selection mode, the menu closes with a warning to exit that mode first.
+
+> **Note:** Requires the **Region Geometry** admin privilege.
 
 Clicking **Browse Communities** opens the **Community List Menu**, which displays all communities on the server as clickable items. Use the filter buttons at the top to narrow the list:
 
@@ -47,18 +99,9 @@ Each entry shows the community name, ID, founding time, status, join policy, and
 
 ## Create Community
 
-Clicking **Create Community** opens the **Community Creation Menu**.
+> **See the 圈地 section above** for the integrated creation workflow.
 
-### Step 1 — Select a Region
-
-Before creating, you must select a geographic area. Use **Selection Mode** to do this:
-
-1. Click **Selection Mode: Disabled** in the Main Menu (slot 22) to enable it, or run `/community select start`.
-2. With a **command block** in your hand, right-click blocks to set boundary points.
-3. Run `/community select stop` or click the button again to exit selection mode.
-4. To start over, click **Reset Selection** (slot 31) or run `/community select reset`.
-
-> **Tip:** Mark boundary corners with blocks before selecting to make future modifications easier.
+The community creation screen includes selection mode controls directly — no need to set up selection mode from the main menu beforehand.
 
 #### Shape Types
 
@@ -68,20 +111,7 @@ Before creating, you must select a geographic area. Use **Selection Mode** to do
 | **Circle** | 2 | Center point + one point on the circumference |
 | **Polygon** | 3+ | All vertices in order (must be convex) |
 
-### Step 2 — Configure in the Creation Menu
-
-The **Community Creation Menu** shows:
-
-| Slot | Icon | Button | Action |
-|---|---|---|---|
-| 10 | Name Tag | **Community Name** | Click to open an anvil and type the name |
-| 13 | Clock / Map / Nether Star | **Shape** | Click to cycle through Rectangle → Circle → Polygon |
-| 16 | Birch / Cherry Planks | **Type** | Click to toggle between Manor and Realm |
-| 35 | Emerald Block | **Confirm Creation** | Submit the creation request |
-
-The menu title displays the current community name and any validation errors (e.g., name already taken, insufficient funds).
-
-### Step 3 — Confirm and Pay
+### Confirm and Pay
 
 After clicking **Confirm Creation**:
 
@@ -112,13 +142,13 @@ Clicking **My Communities** opens a list of all communities you belong to. Click
 
 ## Selection Mode
 
-Selection mode is a special state in which right-clicking a block with a **command block** in hand registers that location as a boundary point for a new or modified region.
+Selection mode is a special state in which right-clicking a block with a **command block** in hand registers that location as a boundary point for a new or modified region. It is toggled from within the **Community Creation Screen** or **Scope Creation Screen** (reached via the Territory Menu), not from the main menu.
 
-| Action | Menu Button | Command |
-|---|---|---|
-| Enable | Click **Selection Mode: Disabled** (slot 22) | `/community select start` |
-| Disable | Click **Selection Mode: Enabled** (slot 22) | `/community select stop` |
-| Clear all points | Click **Reset Selection** (slot 31) | `/community select reset` |
+| Action | Command |
+|---|---|
+| Enable | `/community select start` |
+| Disable | `/community select stop` |
+| Clear all points | `/community select reset` |
 
 > **Note:** You can enter selection mode, log off, log back in, and your points are retained. You do not need to complete selection in a single session.
 
