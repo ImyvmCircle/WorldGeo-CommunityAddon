@@ -51,7 +51,7 @@ Opens the **Community Creation Screen**, which integrates point selection direct
 
 1. Click **Create Community** in the Territory Menu.
 2. In the creation screen, click **Selection Mode** to enable it. The screen closes.
-3. Right-click blocks in the world with a **command block** in hand to set boundary points.
+3. Right-click blocks in the world while holding a **Nether Star** to set boundary points. Left-click the Nether Star to remove the last placed point (undo).
 4. Re-open the Territory Menu → **Create Community** to return to the screen with your points loaded.
 5. Optionally switch shape, set a name, choose type, then click **Confirm Creation**.
 
@@ -142,7 +142,7 @@ Clicking **My Communities** opens a list of all communities you belong to. Click
 
 ## Selection Mode
 
-Selection mode is a special state in which right-clicking a block with a **command block** in hand registers that location as a boundary point for a new or modified region. It is toggled from within the **Community Creation Screen** or **Scope Creation Screen** (reached via the Territory Menu), not from the main menu.
+Selection mode is a special state in which right-clicking a block while holding a **Nether Star** registers that location as a boundary point for a new or modified region; left-clicking with the Nether Star removes the last placed point (undo). It is toggled from within the **Community Creation Screen** or **Scope Creation Screen** (reached via the Territory Menu), not from the main menu.
 
 | Action | Command |
 |---|---|

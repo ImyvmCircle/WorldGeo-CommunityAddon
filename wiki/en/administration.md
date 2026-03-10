@@ -43,7 +43,7 @@ The confirmation prompt expires after **5 minutes**.
 | Global community name | $2,000.00 | 30 days (real-time) per community |
 | Individual Geoscope name | $100.00 | 30 days (real-time) per Geoscope |
 
-If a name was changed within the last 30 days, the operation is blocked and the remaining cooldown days are shown. Cooldowns are tracked independently per name key and persist across server restarts.
+If a name was changed within the last 30 days, clicking the rename button is blocked immediately (before the anvil opens) and the remaining cooldown days are shown. Cooldowns are tracked per name key and persist across server restarts. The community's global name has its own independent cooldown, and each Geoscope name has its own. After renaming a Geoscope (e.g., A → B), the cooldown transfers to the **new name B** — the old name A's cooldown is released and B's 30-day cooldown starts from the date of that rename.
 
 > **Note:** This action requires the **Rename Community** privilege to be enabled for your Admin role (Owners are always exempt from privilege checks).
 

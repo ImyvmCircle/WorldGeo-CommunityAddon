@@ -53,7 +53,7 @@ A **community creation request** may be initialized spontaneously by any player 
 - that the player is not at the time of application, **a formal member (owner, admin, or member — applicants and refused applicants are excluded) of any other community of the same *community type***, which may be chosen when initiating the creation request. Note that communities in **REVOKED** status still count toward this restriction — a player who formally belongs to a revoked community cannot create another community of the same type until they leave;
 
 * that the player delineates a **valid region(scope) prototype**, which shall be understood as an area defined by 
-    * a set of **points projected on (x,z) plane**, and these points are selected by right-click positions in the Minecraft world with a command block in hand, when the player has already entered **selection mode**, which
+    * a set of **points projected on (x,z) plane**, and these points are selected by right-clicking blocks in the Minecraft world while holding a **Nether Star** (the selection tool provided by IMYVMWorldGeo); left-clicking with the Nether Star removes the most recently placed point (one step undo); this is when the player has already entered **selection mode**, which
         * is defined by IMYVMWorldGeo and utilized by its API;
         * may be started for the player themselves by using the command `/community select start`, and stopped by using the command `/community select stop`; and
         * may be toggled by clicking the **Selection Mode** button in the **Community Creation** screen (reached via the **Territory Menu**); and
@@ -333,7 +333,7 @@ The **Territory Menu** (slot 13, `圈地` button in Main Menu) provides a unifie
 1. Click `修改地块` in the **Territory Menu**;
 2. If the player is already in **ModifyExisting** selection mode (i.e. has previously chosen a scope to modify), the modification executes immediately with the current selection;
 3. If not in selection mode, the player selects a community (if in multiple), then selects a scope from the list. Clicking a scope **starts ModifyExisting selection mode** and closes the menu with a prompt;
-4. The player then selects new boundary points in the world (right-click with command block in hand);
+4. The player then selects new boundary points in the world (hold **Nether Star**, right-click to place a point, left-click to undo the last point);
 5. Re-opening the Territory Menu → `修改地块` executes the modification. A cost summary is shown in chat with an interactive **[CONFIRM]** / **[CANCEL]** prompt valid for 5 minutes.
 
 > **Note:** If the player is in Normal (creation) selection mode when entering `修改地块`, the menu closes with a warning to exit selection mode first.

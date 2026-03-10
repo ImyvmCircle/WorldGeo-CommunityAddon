@@ -28,7 +28,7 @@ All Geoscopes together form the Region — the land this community actually cont
 
 To define or modify a Geoscope's boundaries, you use **Selection Mode** to place boundary points directly in the world.
 
-- Once **Selection Mode is active**, hold a **command block** and **right-click blocks** to set boundary points.
+- Once **Selection Mode is active**, hold a **Nether Star** and **right-click blocks** to place boundary points. **Left-clicking** with the Nether Star removes the most recently placed point (one step undo).
 - Three shape types are supported:
   - **Rectangle**: select two diagonal corner points; the system fills in the rectangle.
   - **Circle**: select the center, then a point on the edge to set the radius.
@@ -66,7 +66,7 @@ Base cost for adding a new Geoscope:
 
 Area-based fees also apply proportionally to the Geoscope's footprint.
 
-**Soft scope limit:** The recommended maximum number of Geoscopes is `floor(formal_members / 2)` (formal members = owner, admin, and member roles). Exceeding this limit does **not** block creation; instead, the **fixed fee** is multiplied by **1.5 per excess scope** beyond the limit. For example, if the limit is 2 and you already have 2 Geoscopes, adding a 3rd (1 over the limit) raises the base fee to 150%; adding a 4th (2 over) raises it to 225%. Area-based fees and any refunds are unaffected. A warning is shown before the cost confirmation whenever surcharges apply.
+**Soft scope limit:** The recommended maximum number of Geoscopes is `ceil(formal_members / 2)` (formal members = owner, admin, and member roles; e.g., 1 member → limit 1, 2 members → limit 1, 3 members → limit 2). Exceeding this limit does **not** block creation; instead, a **soft-limit surcharge** is applied: the entire creation cost (fixed fee + area fee + any settings adjustments) is multiplied by **1.5^N**, where N is the number of scopes beyond the limit. For example, with a limit of 2 and 2 existing Geoscopes, adding a 3rd (N=1) multiplies the total creation cost by ×1.5; adding a 4th (N=2) multiplies it by ×2.25. This surcharge applies **only to new Geoscope creation** — it does not affect charges or refunds from modifying the geometry of existing Geoscopes (those use cumulative total area independently). When a surcharge applies, a notice appears before the confirmation dialog, and the confirmation itself shows the full formula (e.g., `rawTotal × 1.5^N = adjustedTotal`); the final deduction message also notes the surcharge amount.
 
 > **Note:** Only **active** communities may add new Geoscopes. Communities in RECRUITING or PENDING status cannot perform this operation.
 
@@ -85,7 +85,7 @@ You can redefine the boundaries of any existing Geoscope. The system calculates 
 1. Main Menu → **Territory** → **Modify Territory**;
 2. If not already in Selection Mode, choose your community (if in multiple) and click the Geoscope you want to reshape;
 3. **Modify mode** activates for that Geoscope; the menu closes and a prompt guides you to place new boundary points;
-4. Hold a command block and right-click blocks to set the new boundary;
+4. Hold a **Nether Star** and right-click blocks to set the new boundary (left-click to undo the last point);
 5. Re-open Territory Menu → **Modify Territory** to confirm;
 6. A cost summary appears in chat with a **[CONFIRM]** / **[CANCEL]** prompt (valid for 5 minutes).
 
