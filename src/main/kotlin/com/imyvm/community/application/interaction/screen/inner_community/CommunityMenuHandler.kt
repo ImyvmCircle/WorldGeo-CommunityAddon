@@ -18,7 +18,7 @@ import com.imyvm.economy.EconomyMod
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.inter.api.PlayerInteractionApi
 import com.imyvm.iwg.inter.api.RegionDataApi
-import com.imyvm.iwg.util.text.Translator
+import com.imyvm.community.util.Translator
 import net.minecraft.entity.effect.StatusEffectInstance
 import net.minecraft.entity.effect.StatusEffects
 import net.minecraft.particle.ParticleTypes
