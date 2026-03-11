@@ -31,12 +31,16 @@ fun runToggleSelectionModeInScopeCreation(
     currentName: String,
     runBack: (ServerPlayerEntity) -> Unit
 ) {
-    val isSelectionModeEnabled = ImyvmWorldGeo.pointSelectingPlayers.containsKey(player.uuid)
-    if (isSelectionModeEnabled) {
+    val isInNormalSelectionMode = ImyvmWorldGeo.pointSelectingPlayers[player.uuid]?.hypotheticalShape is HypotheticalShape.Normal
+    if (isInNormalSelectionMode) {
         PlayerInteractionApi.stopSelection(player)
         SelectionReturnContext.clearContext(player.uuid)
         player.sendMessage(Translator.tr("community.selection_mode.disabled"))
     } else {
+        if (ImyvmWorldGeo.pointSelectingPlayers.containsKey(player.uuid)) {
+            PlayerInteractionApi.stopSelection(player)
+            SelectionReturnContext.clearContext(player.uuid)
+        }
         PlayerInteractionApi.startSelection(player, GeoShapeType.RECTANGLE)
         community.regionNumberId?.let { id ->
             SelectionReturnContext.setCreateContext(player.uuid, id, currentName)

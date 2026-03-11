@@ -6,6 +6,7 @@ import com.imyvm.community.domain.model.Turnover
 import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.Translator
+import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.inter.api.PlayerInteractionApi
 import com.imyvm.iwg.inter.api.RegionDataApi
 import net.minecraft.server.MinecraftServer
@@ -120,6 +121,10 @@ fun onConfirmScopeModification(player: ServerPlayerEntity, regionNumberId: Int, 
     }
 
     PlayerInteractionApi.modifyScope(player, communityRegion, scopeName)
+    if (ImyvmWorldGeo.pointSelectingPlayers.containsKey(player.uuid)) {
+        WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        return 0
+    }
 
     if (modificationData.cost > 0) {
         community.expenditures.add(Turnover(

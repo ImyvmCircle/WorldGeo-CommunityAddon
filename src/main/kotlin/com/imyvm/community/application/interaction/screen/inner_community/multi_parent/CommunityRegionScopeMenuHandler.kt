@@ -309,7 +309,11 @@ fun onConfirmRename(player: ServerPlayerEntity, regionNumberId: Int, nameKey: St
 
     if (renameData.nameKey == "global") {
         val oldName = communityRegion.name
-        PlayerInteractionApi.renameRegion(player, communityRegion, renameData.newName)
+        val renameResult = PlayerInteractionApi.renameRegion(player, communityRegion, renameData.newName)
+        if (renameResult == 0) {
+            com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+            return 0
+        }
         community.nameChangeCooldowns["global"] = System.currentTimeMillis()
         if (renameData.cost > 0) {
             community.expenditures.add(com.imyvm.community.domain.model.Turnover(
@@ -328,7 +332,11 @@ fun onConfirmRename(player: ServerPlayerEntity, regionNumberId: Int, nameKey: St
             return 0
         }
         val oldScopeName = scope.scopeName
-        PlayerInteractionApi.renameScope(player, communityRegion, oldScopeName, renameData.newName)
+        val renameResult = PlayerInteractionApi.renameScope(player, communityRegion, oldScopeName, renameData.newName)
+        if (renameResult == 0) {
+            com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+            return 0
+        }
         community.nameChangeCooldowns.remove(renameData.nameKey)
         community.nameChangeCooldowns[renameData.newName] = System.currentTimeMillis()
         if (renameData.cost > 0) {
@@ -384,6 +392,10 @@ fun runExecuteScope(
                         runBackRegionScopeMenu(p, community, geographicFunctionType, runBackGrandfatherMenu)
                     }
                 } else {
+                    if (ImyvmWorldGeo.pointSelectingPlayers.containsKey(playerExecutor.uuid)) {
+                        PlayerInteractionApi.stopSelection(playerExecutor)
+                        SelectionReturnContext.clearContext(playerExecutor.uuid)
+                    }
                     PlayerInteractionApi.startSelectionForModify(playerExecutor, scope)
                     community.regionNumberId?.let { id ->
                         SelectionReturnContext.setModifyContext(playerExecutor.uuid, id, scope.scopeName)
