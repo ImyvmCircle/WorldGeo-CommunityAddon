@@ -315,7 +315,7 @@ private fun sendInteractiveTeleportPointConfirmation(player: ServerPlayerEntity,
     val cancelText = Translator.tr("community.teleport_point.confirmation.cancel_button") ?: Text.literal("§c§l[CANCEL]§r")
 
     val confirmButton = confirmText.copy().styled { style ->
-        style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/community confirm_teleport_point_set $regionNumberId $scopeName"))
+        style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/community confirm_teleport_point_set $regionNumberId ${if (scopeName.contains(' ')) "\"$scopeName\"" else scopeName}"))
             .withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, Translator.tr("community.teleport_point.confirmation.confirm_hover")))
     }
 

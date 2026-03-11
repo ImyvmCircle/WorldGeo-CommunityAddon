@@ -10,6 +10,7 @@ This major version is a perfection of current game system.
 
 ### Recent Changes
 
+- feat: `/ch <community> <message>` alias registered as shorthand for `/community chat`; suggestion providers and click-event commands now quote-wrap names containing spaces
 - feat: anvil rename menus now reject invalid names by clearing the output slot; attempting to confirm an invalid name re-opens the menu with an error hint in the title
 - feat: community and scope creation menus now display an error when the name contains unsupported characters (requires IWG dependency update to 1.3.2+)
 

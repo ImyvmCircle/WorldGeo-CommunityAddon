@@ -45,6 +45,12 @@ Send a one-off message without changing your active channel:
 
 `/community chat <communityIdentifier> <message>`
 
+Or use the shorthand alias:
+
+`/ch <communityIdentifier> <message>`
+
+> **Note:** Community names containing spaces must be wrapped in double quotes, e.g. `/ch "my community" Hello!`
+
 ### Toggle Active Channel via Command
 
 `/community chat_channel <communityIdentifier>`

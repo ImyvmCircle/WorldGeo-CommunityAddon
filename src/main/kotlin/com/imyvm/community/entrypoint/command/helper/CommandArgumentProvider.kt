@@ -25,7 +25,7 @@ val JOINABLE_COMMUNITY_PROVIDER = SuggestionProvider<ServerCommandSource> { _, b
     val names = communities
         .filter { it.status != CommunityStatus.REVOKED_MANOR && it.status != CommunityStatus.REVOKED_REALM }
         .mapNotNull { it.getRegion()?.name }
-    names.forEach { builder.suggest(it) }
+    names.forEach { name -> if (!name.all { it.isLetterOrDigit() && it.code < 128 }) builder.suggest("\"$name\"") else builder.suggest(name) }
     builder.buildFuture()
 }
 
@@ -33,7 +33,7 @@ val PENDING_COMMUNITY_PROVIDER = SuggestionProvider<ServerCommandSource> { _, bu
     val names = communities
         .filter { it.status == CommunityStatus.PENDING_MANOR || it.status == CommunityStatus.PENDING_REALM }
         .mapNotNull { it.getRegion()?.name }
-    names.forEach { builder.suggest(it) }
+    names.forEach { name -> if (!name.all { it.isLetterOrDigit() && it.code < 128 }) builder.suggest("\"$name\"") else builder.suggest(name) }
     builder.buildFuture()
 }
 
@@ -41,7 +41,7 @@ val RECRUITING_COMMUNITY_PROVIDER = SuggestionProvider<ServerCommandSource> { _,
     val names = communities
         .filter { it.status == CommunityStatus.RECRUITING_REALM }
         .mapNotNull { it.getRegion()?.name }
-    names.forEach { builder.suggest(it) }
+    names.forEach { name -> if (!name.all { it.isLetterOrDigit() && it.code < 128 }) builder.suggest("\"$name\"") else builder.suggest(name) }
     builder.buildFuture()
 }
 
@@ -49,12 +49,12 @@ val ACTIVE_COMMUNITY_PROVIDER = SuggestionProvider<ServerCommandSource> { _, bui
     val names = communities
         .filter { it.status == CommunityStatus.ACTIVE_MANOR || it.status == CommunityStatus.ACTIVE_REALM }
         .mapNotNull { it.getRegion()?.name }
-    names.forEach { builder.suggest(it) }
+    names.forEach { name -> if (!name.all { it.isLetterOrDigit() && it.code < 128 }) builder.suggest("\"$name\"") else builder.suggest(name) }
     builder.buildFuture()
 }
 
 val ALL_COMMUNITY_PROVIDER = SuggestionProvider<ServerCommandSource> { _, builder ->
     val names = communities.mapNotNull { it.getRegion()?.name }
-    names.forEach { builder.suggest(it) }
+    names.forEach { name -> if (!name.all { it.isLetterOrDigit() && it.code < 128 }) builder.suggest("\"$name\"") else builder.suggest(name) }
     builder.buildFuture()
 }

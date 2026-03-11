@@ -48,7 +48,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                                 argument("communityType", StringArgumentType.word())
                                     .suggests(COMMUNITY_TYPE_PROVIDER)
                                     .then(
-                                        argument("name", StringArgumentType.greedyString())
+                                        argument("name", StringArgumentType.string())
                                             .executes { runCreateCommunity(it) }
                                     )
                             )
@@ -58,7 +58,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                 literal("force_delete")
                     .requires{ it.hasPermissionLevel(2)}
                     .then(
-                        argument("communityIdentifier", StringArgumentType.greedyString())
+                        argument("communityIdentifier", StringArgumentType.string())
                             .suggests(ALL_COMMUNITY_PROVIDER)
                             .executes{ runForceDeleteCommunity(it) }
                     )
@@ -70,7 +70,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                         argument("choice", StringArgumentType.word())
                             .suggests(BINARY_CHOICE_SUGGESTION_PROVIDER)
                             .then(
-                                argument("communityIdentifier", StringArgumentType.greedyString())
+                                argument("communityIdentifier", StringArgumentType.string())
                                     .suggests(PENDING_COMMUNITY_PROVIDER)
                                     .executes{ runAudit(it) }
                             )
@@ -80,7 +80,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                 literal("force_revoke")
                     .requires{ it.hasPermissionLevel(2)}
                     .then(
-                        argument("communityIdentifier", StringArgumentType.greedyString())
+                        argument("communityIdentifier", StringArgumentType.string())
                             .suggests(ALL_COMMUNITY_PROVIDER)
                             .executes{ runForceRevoke(it) }
                     )
@@ -89,7 +89,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                 literal("force_active")
                     .requires{ it.hasPermissionLevel(2)}
                     .then(
-                        argument("communityIdentifier", StringArgumentType.greedyString())
+                        argument("communityIdentifier", StringArgumentType.string())
                             .suggests(ALL_COMMUNITY_PROVIDER)
                             .executes{ runForceActive(it) }
                     )
@@ -97,7 +97,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             .then(
                 literal("join")
                     .then(
-                        argument("communityIdentifier", StringArgumentType.greedyString())
+                        argument("communityIdentifier", StringArgumentType.string())
                             .suggests(JOINABLE_COMMUNITY_PROVIDER)
                             .executes{ runJoin(it) }
                     )
@@ -105,7 +105,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             .then(
                 literal("leave")
                     .then(
-                        argument("communityIdentifier", StringArgumentType.greedyString())
+                        argument("communityIdentifier", StringArgumentType.string())
                             .suggests(ALL_COMMUNITY_PROVIDER)
                             .executes{ runLeave(it) }
                     )
@@ -126,7 +126,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             .then(
                 literal("query")
                     .then(
-                        argument("communityIdentifier", StringArgumentType.word())
+                        argument("communityIdentifier", StringArgumentType.string())
                             .suggests(ALL_COMMUNITY_PROVIDER)
                             .executes{ runQueryCommunityRegion(it) }
                     )
@@ -136,7 +136,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     .then(
                         literal("create")
                             .then(
-                                argument("communityIdentifier", StringArgumentType.word())
+                                argument("communityIdentifier", StringArgumentType.string())
                                     .suggests(ACTIVE_COMMUNITY_PROVIDER)
                                     .then(
                                         argument("content", StringArgumentType.greedyString())
@@ -151,7 +151,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     .then(
                         literal("delete")
                             .then(
-                                argument("communityIdentifier", StringArgumentType.word())
+                                argument("communityIdentifier", StringArgumentType.string())
                                     .suggests(ACTIVE_COMMUNITY_PROVIDER)
                                     .then(
                                         argument("announcementId", StringArgumentType.word())
@@ -166,7 +166,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     .then(
                         literal("list")
                             .then(
-                                argument("communityIdentifier", StringArgumentType.word())
+                                argument("communityIdentifier", StringArgumentType.string())
                                     .suggests(ACTIVE_COMMUNITY_PROVIDER)
                                     .executes { context ->
                                         val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
@@ -177,7 +177,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     .then(
                         literal("view")
                             .then(
-                                argument("communityIdentifier", StringArgumentType.word())
+                                argument("communityIdentifier", StringArgumentType.string())
                                     .suggests(ACTIVE_COMMUNITY_PROVIDER)
                                     .then(
                                         argument("announcementId", StringArgumentType.word())
@@ -201,7 +201,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                             .then(
                                 literal("delete")
                                     .then(
-                                        argument("communityIdentifier", StringArgumentType.word())
+                                        argument("communityIdentifier", StringArgumentType.string())
                                             .suggests(ALL_COMMUNITY_PROVIDER)
                                             .then(
                                                 argument("announcementId", StringArgumentType.word())
@@ -218,7 +218,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             .then(
                 literal("accept_invitation")
                     .then(
-                        argument("communityIdentifier", StringArgumentType.greedyString())
+                        argument("communityIdentifier", StringArgumentType.string())
                             .suggests(ALL_COMMUNITY_PROVIDER)
                             .executes { runAcceptInvitation(it) }
                     )
@@ -226,7 +226,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             .then(
                 literal("reject_invitation")
                     .then(
-                        argument("communityIdentifier", StringArgumentType.greedyString())
+                        argument("communityIdentifier", StringArgumentType.string())
                             .suggests(ALL_COMMUNITY_PROVIDER)
                             .executes { runRejectInvitation(it) }
                     )
@@ -245,7 +245,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             .then(
                 literal("chat_channel")
                     .then(
-                        argument("communityIdentifier", StringArgumentType.greedyString())
+                        argument("communityIdentifier", StringArgumentType.string())
                             .suggests(ALL_COMMUNITY_PROVIDER)
                             .executes { runToggleChatChannel(it) }
                     )
@@ -269,7 +269,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     .then(
                         argument("regionId", IntegerArgumentType.integer())
                             .then(
-                                argument("scopeName", StringArgumentType.greedyString())
+                                argument("scopeName", StringArgumentType.string())
                                     .executes { runConfirmScopeModification(it) }
                             )
                     )
@@ -279,7 +279,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     .then(
                         argument("regionId", IntegerArgumentType.integer())
                             .then(
-                                argument("scopeName", StringArgumentType.greedyString())
+                                argument("scopeName", StringArgumentType.string())
                                     .executes { runCancelScopeModification(it) }
                             )
                     )
@@ -289,7 +289,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     .then(
                         argument("regionId", IntegerArgumentType.integer())
                             .then(
-                                argument("scopeName", StringArgumentType.greedyString())
+                                argument("scopeName", StringArgumentType.string())
                                     .executes { runConfirmTeleportPointSetting(it) }
                             )
                     )
@@ -313,7 +313,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     .then(
                         argument("regionId", IntegerArgumentType.integer())
                             .then(
-                                argument("nameKey", StringArgumentType.greedyString())
+                                argument("nameKey", StringArgumentType.string())
                                     .executes { runConfirmRenameCommand(it) }
                             )
                     )
@@ -323,7 +323,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     .then(
                         argument("regionId", IntegerArgumentType.integer())
                             .then(
-                                argument("nameKey", StringArgumentType.greedyString())
+                                argument("nameKey", StringArgumentType.string())
                                     .executes { runCancelRenameCommand(it) }
                             )
                     )

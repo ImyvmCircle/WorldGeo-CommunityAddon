@@ -60,6 +60,7 @@
 | 命令 | 说明 | 对应菜单 |
 |---|---|---|
 | `/community chat <communityIdentifier> <message>` | 向领域频道发送消息 | — |
+| `/ch <communityIdentifier> <message>` | `/community chat` 的快捷别名 | — |
 | `/community chat_channel <communityIdentifier>` | 切换该领域为活跃聊天频道 | 聊天室菜单 → 切换频道 |
 
 ---

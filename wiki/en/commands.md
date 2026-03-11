@@ -60,6 +60,7 @@ For `<communityIdentifier>`, you can use either the community's **name** or its 
 | Command | Description | Menu Equivalent |
 |---|---|---|
 | `/community chat <communityIdentifier> <message>` | Send a message to the community channel | — |
+| `/ch <communityIdentifier> <message>` | Shorthand alias for `/community chat` | — |
 | `/community chat_channel <communityIdentifier>` | Toggle this community as active chat channel | Chat Room Menu → Toggle Channel |
 
 ---

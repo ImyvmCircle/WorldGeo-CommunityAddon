@@ -447,7 +447,7 @@ private fun sendInteractiveScopeModificationConfirmation(player: ServerPlayerEnt
         .styled { style ->
             style.withClickEvent(net.minecraft.text.ClickEvent(
                 net.minecraft.text.ClickEvent.Action.RUN_COMMAND,
-                "/community confirm_modification $regionNumberId $scopeName"
+                "/community confirm_modification $regionNumberId ${if (scopeName.contains(' ')) "\"$scopeName\"" else scopeName}"
             ))
             .withHoverEvent(net.minecraft.text.HoverEvent(
                 net.minecraft.text.HoverEvent.Action.SHOW_TEXT,
@@ -459,7 +459,7 @@ private fun sendInteractiveScopeModificationConfirmation(player: ServerPlayerEnt
         .styled { style ->
             style.withClickEvent(net.minecraft.text.ClickEvent(
                 net.minecraft.text.ClickEvent.Action.RUN_COMMAND,
-                "/community cancel_modification $regionNumberId $scopeName"
+                "/community cancel_modification $regionNumberId ${if (scopeName.contains(' ')) "\"$scopeName\"" else scopeName}"
             ))
             .withHoverEvent(net.minecraft.text.HoverEvent(
                 net.minecraft.text.HoverEvent.Action.SHOW_TEXT,

@@ -45,6 +45,12 @@
 
 `/community chat <communityIdentifier> <message>`
 
+或使用快捷别名：
+
+`/ch <communityIdentifier> <message>`
+
+> **注意：** 领域名称含空格时须用双引号包裹，例如 `/ch "我的领域" 你好！`
+
 ### 通过命令切换活跃频道
 
 `/community chat_channel <communityIdentifier>`

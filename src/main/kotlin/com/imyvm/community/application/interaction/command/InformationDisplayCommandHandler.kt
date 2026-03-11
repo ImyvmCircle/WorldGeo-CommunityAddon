@@ -12,6 +12,7 @@ fun onHelpCommand(player: ServerPlayerEntity): Int {
     player.sendMessage(Translator.tr("community.command.help.header"))
     player.sendMessage(Translator.tr("community.command.help.list_communities"))
     player.sendMessage(Translator.tr("community.command.help.query_region"))
+    player.sendMessage(Translator.tr("community.command.help.ch"))
     return 1
 }
 
