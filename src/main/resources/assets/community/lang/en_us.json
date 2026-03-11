@@ -74,7 +74,7 @@
   "community.list.header.pending": "§e§l=== PENDING COMMUNITIES (Waiting for Auditing) ===§r\n",
   "community.list.header.recruiting": "§6§l=== RECRUITING COMMUNITIES ===§r\n",
   "community.list.header.active": "§a§l=== ACTIVE COMMUNITIES ===§r\n",
-  "community.list.header.join-able": "§b§l=== JOIN-ABLE COMMUNITIES ===§r\n",
+  "community.list.header.join_able": "§b§l=== JOIN-ABLE COMMUNITIES ===§r\n",
   "community.list.header.revoked": "§c§l=== REVOKED COMMUNITIES ===§r\n",
   "community.list.header.all": "§f§l=== ALL COMMUNITIES ===§r\n",
   "community.list.entry": "§7>> §f§l{0}§r §7(ID: §b{1}§7) | Founded: §e{2}§7 | Status: §f{3}§7 | Join Policy: §d{4}§7 | Members: §a{5}§7\n",

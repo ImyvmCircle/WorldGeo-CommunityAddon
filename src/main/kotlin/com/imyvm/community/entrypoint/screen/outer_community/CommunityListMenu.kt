@@ -125,7 +125,7 @@ class CommunityListMenu(
         CommunityListFilterType.entries.forEachIndexed { index, filterType ->
             addButton(
                 slot = 47 + index,
-                name = filterType.name,
+                name = Translator.tr("ui.list.button.${filterType.name.lowercase()}")?.string ?: filterType.name,
                 item = modeColorMap[filterType] ?: Items.WHITE_WOOL
             ) { runSwitchFilterMode(it, filterType, runBack) }
         }

@@ -74,7 +74,7 @@
   "community.list.header.pending": "§e§l=== 待审核领域（等待审核）===§r\n",
   "community.list.header.recruiting": "§6§l=== 招募中领域 ===§r\n",
   "community.list.header.active": "§a§l=== 活跃领域 ===§r\n",
-  "community.list.header.join-able": "§b§l=== 可加入领域 ===§r\n",
+  "community.list.header.join_able": "§b§l=== 可加入领域 ===§r\n",
   "community.list.header.revoked": "§c§l=== 已撤销领域 ===§r\n",
   "community.list.header.all": "§f§l=== 所有领域 ===§r\n",
   "community.list.entry": "§7>> §f§l{0}§r §7（ID: §b{1}§7）| 创建时间：§e{2}§7 | 状态：§f{3}§7 | 移民政策：§d{4}§7 | 成员数：§a{5}§7\n",
