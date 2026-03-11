@@ -38,7 +38,10 @@ class NonMemberCommunityMenu(
             slot = 22,
             name = Translator.tr("ui.non_member.info")?.string ?: "Community Information",
             item = Items.BOOKSHELF
-        ) { community.sendCommunityRegionDescription(player) }
+        ) {
+            community.sendCommunityRegionDescription(player)
+            player.closeHandledScreen()
+        }
     }
 
     private fun addTeleportButton() {
