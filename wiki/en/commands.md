@@ -8,6 +8,8 @@ All community commands use the root command `/community`. The GUI menus are the 
 
 For `<communityIdentifier>`, you can use either the community's **name** or its **numeric ID**.
 
+> **Name quoting:** Names made up entirely of ASCII letters and digits (a–z, A–Z, 0–9) can be typed directly. Any name containing other characters — spaces, Chinese/Japanese/Korean characters, accented letters, symbols, etc. — **must be enclosed in double quotes** when typed in a command: e.g. `"我的领地"` or `"My Realm"`. This rule applies to both `<communityIdentifier>` and any `<scopeName>` argument. Tab-completion adds the required quotes automatically.
+
 ## General Commands
 
 | Command | Description | Menu Equivalent |

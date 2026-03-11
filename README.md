@@ -894,6 +894,8 @@ Comprehensive player guides are available in two languages:
 
 Each wiki covers the full GUI menu system (primary) and command reference (supplementary), including community types, member roles, region/territory management, economy, teleport points, and the chat channel.
 
+> **Command name syntax:** In all `/community` commands, names (community names, Geoscope names) consisting solely of ASCII letters and digits (a–z, A–Z, 0–9) may be entered as-is. Names containing any other character — spaces, Chinese/Japanese/Korean characters, accented letters, symbols, etc. — must be **enclosed in double quotes**, e.g. `"我的领地"`. Autocompletion wraps such names in quotes automatically.
+
 ---
 
 ## Acknowledgements

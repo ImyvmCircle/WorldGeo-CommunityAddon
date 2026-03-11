@@ -74,6 +74,8 @@ Area-based fees also apply proportionally to the Geoscope's footprint.
 - `/community confirm_modification <regionId> <scopeName>` — confirm creation
 - `/community cancel_modification <regionId> <scopeName>` — cancel creation
 
+> **Quoting names:** A `<scopeName>` (or any region/community name used in commands) that contains characters other than ASCII letters and digits must be enclosed in **double quotes**: e.g. `"我的辖区"`. Tab-completion adds quotes automatically when needed.
+
 ---
 
 ## Modifying a Geoscope's Boundaries
@@ -94,6 +96,8 @@ You can redefine the boundaries of any existing Geoscope. The system calculates 
 1. Administration Menu → **Region Geometry** → select the Geoscope you want to reshape;
 2. Modify mode activates; menu closes with a prompt;
 3. Follow steps 4–6 above.
+
+> **Visual feedback:** Once Modify mode is active, **orange dust particles** trace the full perimeter of the existing Geoscope boundary, so you can clearly see the shape you are replacing while placing new points.
 
 **Cost rules:**
 - Expanding a Geoscope: pay the area-price difference.
