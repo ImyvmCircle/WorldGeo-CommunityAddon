@@ -24,3 +24,4 @@
 17. 修改机制之后，必须检查`README.md`进行修改。不要过度暴露游戏实现，以玩家侧的游戏机制介绍为主。
 18. 不得使用git.
 19. 未说明清楚的机制、语言文件用名和感到机制模糊的地方等等应该向操作者提问。不要为了确认需求终止对话。
+20. 命令参数中涉及 Region 名称、GeoScope 名称或 Community 名称的所有 SuggestionProvider，必须对不满足"全部字符均为 ASCII 字母或数字"条件的名称用双引号包裹后再 suggest，即使用 `if (!name.all { it.isLetterOrDigit() && it.code < 128 }) builder.suggest("\"$name\"") else builder.suggest(name)` 的形式。这是因为包含中文等非 ASCII 字符或空格的名称，在 Brigadier 命令解析中若不加引号将无法被正确识别。
