@@ -44,7 +44,7 @@ Once the free quota is exhausted, each additional use costs more and adds a dela
 | 3rd paid | $40.00 | 8 seconds |
 | nth paid | $10.00 × 2^(n-1) | 2 × 2^(n-1) seconds |
 
-> **Tip:** Moving or taking damage during the delay **cancels** the teleport (no fee charged).
+> **Tip:** Moving or taking damage during the delay **cancels** the teleport (no fee charged). Insufficient balance at the moment of execution also cancels the teleport.
 
 ---
 

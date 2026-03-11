@@ -648,5 +648,10 @@
   "community.rename.cancelled": "§7§l[已取消]§r §7改名操作已取消。",
   "ui.admin.region.name.global": "聚落总名称",
   "ui.admin.region.name.title": "选择要改名的范围",
-  "ui.admin.rename.scope.title": "重命名地域：{0}"
+  "ui.admin.rename.scope.title": "重命名地域：{0}",
+  "ui.button.return_to_menu": "§e§l[ 返回菜单 ]§r",
+  "ui.admin.scope.modify.confirm_menu.title": "修改辖区：{0} > {1}",
+  "ui.admin.scope.modify.confirm_menu.button.toggle_off": "§c§l取消选择模式§r",
+  "ui.admin.scope.modify.confirm_menu.button.exit_to_select": "§e§l退出继续选点§r",
+  "ui.admin.scope.modify.confirm_menu.button.confirm": "§a§l确认修改§r"
 }

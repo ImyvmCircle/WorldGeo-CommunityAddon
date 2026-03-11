@@ -4,6 +4,7 @@ import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityScopeCreationMenu
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityScopeCreationRenameMenuAnvil
+import com.imyvm.community.util.SelectionReturnContext
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.component.GeoShapeType
@@ -33,9 +34,13 @@ fun runToggleSelectionModeInScopeCreation(
     val isSelectionModeEnabled = ImyvmWorldGeo.pointSelectingPlayers.containsKey(player.uuid)
     if (isSelectionModeEnabled) {
         PlayerInteractionApi.stopSelection(player)
+        SelectionReturnContext.clearContext(player.uuid)
         player.sendMessage(Translator.tr("community.selection_mode.disabled"))
     } else {
         PlayerInteractionApi.startSelection(player, GeoShapeType.RECTANGLE)
+        community.regionNumberId?.let { id ->
+            SelectionReturnContext.setCreateContext(player.uuid, id, currentName)
+        }
         player.sendMessage(Translator.tr("community.selection_mode.enabled"))
     }
     CommunityMenuOpener.open(player) { syncId ->

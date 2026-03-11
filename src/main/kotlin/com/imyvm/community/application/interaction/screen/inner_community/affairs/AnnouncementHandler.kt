@@ -15,6 +15,7 @@ import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.TextParser
 import com.imyvm.community.util.Translator
 import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.text.ClickEvent
 import java.util.*
 
 fun runOpenAnnouncementListMenu(player: ServerPlayerEntity, community: Community, runBack: (ServerPlayerEntity) -> Unit) {
@@ -159,11 +160,20 @@ fun runOpenMemberAnnouncementDetailsMenu(
 
 fun onViewAnnouncementContent(
     player: ServerPlayerEntity,
+    community: Community,
     announcement: Announcement
 ) {
     player.sendMessage(Translator.tr("ui.admin.announcement_details.header"))
     player.sendMessage(announcement.content)
     player.sendMessage(Translator.tr("ui.admin.announcement_details.footer"))
+    val regionId = community.regionNumberId
+    if (regionId != null) {
+        player.sendMessage(
+            Translator.tr("ui.button.return_to_menu")?.copy()?.styled { style ->
+                style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/community open_announcements $regionId"))
+            }
+        )
+    }
     player.closeHandledScreen()
 }
 

@@ -10,6 +10,8 @@ This major version is a perfection of current game system.
 
 ### Recent Changes
 
+- feat: `/community` now redirects to the scope creation screen or scope modification list when opened while in selection mode started from the community menu; state is tracked per-player and cleared automatically when selection ends
+- feat: clickable **[ Return to Menu ]** buttons appended in chat for operations that close the GUI and send a message (non-member info view, member description view, announcement content view, teleport point inquiry, rename cooldown error, geometry modification error); clicking the button re-opens the relevant menu directly via command
 - feat: `/ch <community> <message>` alias registered as shorthand for `/community chat`; suggestion providers and click-event commands now quote-wrap names containing spaces
 - feat: anvil rename menus now reject invalid names by clearing the output slot; attempting to confirm an invalid name re-opens the menu with an error hint in the title
 - feat: community and scope creation menus now display an error when the name contains unsupported characters (requires IWG dependency update to 1.3.2+)
@@ -359,6 +361,8 @@ The **Territory Menu** (slot 13, `圈地` button in Main Menu) provides a unifie
 ##### Modification Process (via Administration Menu)
 
 The existing **Region Geometry** button in the Administration Menu (slot 19) still works. Selecting a scope from the list now starts **ModifyExisting** selection mode for that scope (instead of opening a geometry menu directly). The player selects new points, then re-opens the territory interface to confirm the change.
+
+**Smart Return on `/community`:** When a player is currently in selection mode that was started from the community menu (either for scope creation or scope geometry modification), running `/community` bypasses the main menu and opens the relevant interface directly — the **Scope Creation Screen** for creation contexts, or the **Scope List** (`GEOMETRY_MODIFICATION` view) for modification contexts. This state is tracked per player and automatically cleared when selection mode ends. If the community data is no longer available, the main menu opens as fallback.
 
 The **Add Administrative District** button in the Administration Menu's global geometry panel now uses the same scope creation flow as `增加辖区` in the Territory Menu, including the selection mode conflict check.
 

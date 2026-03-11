@@ -8,6 +8,7 @@ import com.imyvm.community.entrypoint.screen.AbstractMenu
 import com.imyvm.community.util.Translator
 import net.minecraft.item.Items
 import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.text.ClickEvent
 import net.minecraft.text.Text
 
 class NonMemberCommunityMenu(
@@ -40,6 +41,14 @@ class NonMemberCommunityMenu(
             item = Items.BOOKSHELF
         ) {
             community.sendCommunityRegionDescription(player)
+            val regionId = community.regionNumberId
+            if (regionId != null) {
+                player.sendMessage(
+                    Translator.tr("ui.button.return_to_menu")?.copy()?.styled { style ->
+                        style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/community open_menu $regionId"))
+                    }
+                )
+            }
             player.closeHandledScreen()
         }
     }

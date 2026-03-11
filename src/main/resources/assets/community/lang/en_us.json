@@ -648,5 +648,10 @@
   "community.rename.cancelled": "§7§l[Cancelled]§r §7Rename operation cancelled.",
   "ui.admin.region.name.global": "Community Global Name",
   "ui.admin.region.name.title": "Select scope to rename",
-  "ui.admin.rename.scope.title": "Rename Scope: {0}"
+  "ui.admin.rename.scope.title": "Rename Scope: {0}",
+  "ui.button.return_to_menu": "§e§l[ Return to Menu ]§r",
+  "ui.admin.scope.modify.confirm_menu.title": "Modify Scope: {0} > {1}",
+  "ui.admin.scope.modify.confirm_menu.button.toggle_off": "§c§lCancel Selection Mode§r",
+  "ui.admin.scope.modify.confirm_menu.button.exit_to_select": "§e§lExit to Continue Selecting§r",
+  "ui.admin.scope.modify.confirm_menu.button.confirm": "§a§lConfirm Modification§r"
 }

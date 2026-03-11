@@ -60,6 +60,15 @@ fun runInquiryTeleportPoint(playerExecutor: ServerPlayerEntity, community: Commu
         } else {
             playerExecutor.sendMessage(Translator.tr("ui.admin.teleport_point.inquiry.success.no_point"))
         }
+        val regionId = community.regionNumberId
+        val scopeNameQuoted = if (!scope.scopeName.all { it.isLetterOrDigit() && it.code < 128 }) "\"${scope.scopeName}\"" else scope.scopeName
+        if (regionId != null) {
+            playerExecutor.sendMessage(
+                Translator.tr("ui.button.return_to_menu")?.copy()?.styled { style ->
+                    style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/community open_teleport_admin $regionId $scopeNameQuoted"))
+                }
+            )
+        }
     } else {
         playerExecutor.sendMessage(Translator.tr("community.not_found.region"))
     }

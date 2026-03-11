@@ -23,6 +23,7 @@ import net.minecraft.entity.effect.StatusEffectInstance
 import net.minecraft.entity.effect.StatusEffects
 import net.minecraft.particle.ParticleTypes
 import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.text.ClickEvent
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.UUID
@@ -46,6 +47,14 @@ fun runOpenOperationMenu(player: ServerPlayerEntity, community: Community, runBa
 
 fun runSendingCommunityDescription(player: ServerPlayerEntity, community: Community) {
     community.sendCommunityRegionDescription(player)
+    val regionId = community.regionNumberId
+    if (regionId != null) {
+        player.sendMessage(
+            Translator.tr("ui.button.return_to_menu")?.copy()?.styled { style ->
+                style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/community open_menu $regionId"))
+            }
+        )
+    }
     player.closeHandledScreen()
 }
 

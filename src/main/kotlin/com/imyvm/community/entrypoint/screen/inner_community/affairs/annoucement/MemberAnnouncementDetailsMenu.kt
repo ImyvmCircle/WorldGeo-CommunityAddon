@@ -47,6 +47,6 @@ class MemberAnnouncementDetailsMenu(
                 )
             ),
             name = Translator.tr("ui.community.announcement_details.content")?.string ?: "Content"
-        ) { onViewAnnouncementContent(player, announcement) }
+        ) { onViewAnnouncementContent(player, community, announcement) }
     }
 }

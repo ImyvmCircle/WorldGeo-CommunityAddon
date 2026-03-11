@@ -6,7 +6,9 @@ import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.model.community.CommunityListFilterType
 import com.imyvm.community.entrypoint.command.helper.*
 import com.imyvm.community.entrypoint.screen.outer_community.MainMenu
+import com.imyvm.community.util.SelectionReturnContext
 import com.imyvm.community.util.Translator
+import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.inter.api.PlayerInteractionApi.resetSelection
 import com.imyvm.iwg.inter.api.PlayerInteractionApi.startSelection
 import com.imyvm.iwg.inter.api.PlayerInteractionApi.stopSelection
@@ -328,11 +330,89 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                             )
                     )
             )
+            .then(
+                literal("open_menu")
+                    .then(
+                        argument("communityIdentifier", StringArgumentType.string())
+                            .executes { runOpenMenuCommand(it) }
+                    )
+            )
+            .then(
+                literal("open_announcements")
+                    .then(
+                        argument("communityIdentifier", StringArgumentType.string())
+                            .executes { runOpenAnnouncementsCommand(it) }
+                    )
+            )
+            .then(
+                literal("open_teleport_admin")
+                    .then(
+                        argument("regionId", IntegerArgumentType.integer())
+                            .then(
+                                argument("scopeName", StringArgumentType.string())
+                                    .executes { runOpenTeleportAdminCommand(it) }
+                            )
+                    )
+            )
+            .then(
+                literal("open_rename_menu")
+                    .then(
+                        argument("regionId", IntegerArgumentType.integer())
+                            .executes { runOpenRenameMenuCommand(it) }
+                    )
+            )
+            .then(
+                literal("open_modify_menu")
+                    .then(
+                        argument("regionId", IntegerArgumentType.integer())
+                            .executes { runOpenModifyMenuCommand(it) }
+                    )
+            )
     )
 }
 
 private fun runInitialUI(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
+    val selectionContext = SelectionReturnContext.getContext(player.uuid)
+    if (selectionContext != null && ImyvmWorldGeo.pointSelectingPlayers.containsKey(player.uuid)) {
+        when (selectionContext) {
+            is SelectionReturnContext.Context.CreateScope -> {
+                val community = com.imyvm.community.infra.CommunityDatabase.getCommunityById(selectionContext.regionNumberId)
+                if (community != null) {
+                    val runBack: (net.minecraft.server.network.ServerPlayerEntity) -> Unit = { p ->
+                        CommunityMenuOpener.open(p) { s -> MainMenu(s, p) }
+                    }
+                    CommunityMenuOpener.open(player) { syncId ->
+                        com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityScopeCreationMenu(
+                            syncId, community, selectionContext.scopeName, player, runBack
+                        )
+                    }
+                    return 1
+                }
+            }
+            is SelectionReturnContext.Context.ModifyScope -> {
+                val community = com.imyvm.community.infra.CommunityDatabase.getCommunityById(selectionContext.regionNumberId)
+                val scope = community?.getRegion()?.geometryScope?.find { it.scopeName == selectionContext.scopeName }
+                if (community != null && scope != null) {
+                    val runBackToScopeList: (net.minecraft.server.network.ServerPlayerEntity) -> Unit = { p ->
+                        CommunityMenuOpener.open(p) { s ->
+                            com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityRegionScopeMenu(
+                                syncId = s,
+                                playerExecutor = p,
+                                community = community,
+                                geographicFunctionType = com.imyvm.community.domain.model.GeographicFunctionType.GEOMETRY_MODIFICATION,
+                                runBack = { pp -> CommunityMenuOpener.open(pp) { ss -> MainMenu(ss, pp) } }
+                            )
+                        }
+                    }
+                    com.imyvm.community.application.interaction.screen.inner_community.multi_parent.runOpenScopeModificationConfirmation(
+                        player, community, scope, runBackToScopeList
+                    )
+                    return 1
+                }
+            }
+        }
+    }
     CommunityMenuOpener.open(player) { syncId ->
         MainMenu(
             syncId,
@@ -591,4 +671,123 @@ private fun runCancelRenameCommand(context: CommandContext<ServerCommandSource>)
     val regionId = IntegerArgumentType.getInteger(context, "regionId")
     val nameKey = StringArgumentType.getString(context, "nameKey")
     return com.imyvm.community.application.interaction.screen.inner_community.multi_parent.onCancelRename(player, regionId, nameKey)
+}
+
+private fun runOpenMenuCommand(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    return identifierHandler(player, communityIdentifier) { community ->
+        val role = community.getMemberRole(player.uuid)
+        val isFormalMember = role != null &&
+            role != com.imyvm.community.domain.model.community.MemberRoleType.APPLICANT &&
+            role != com.imyvm.community.domain.model.community.MemberRoleType.REFUSED
+        CommunityMenuOpener.open(player) { syncId ->
+            if (isFormalMember) {
+                com.imyvm.community.entrypoint.screen.inner_community.CommunityMenu(
+                    syncId, player, community
+                ) { p -> CommunityMenuOpener.open(p) { s -> MainMenu(s, p) } }
+            } else {
+                com.imyvm.community.entrypoint.screen.outer_community.NonMemberCommunityMenu(
+                    syncId, player, community
+                ) { p -> CommunityMenuOpener.open(p) { s -> MainMenu(s, p) } }
+            }
+        }
+        1
+    }
+}
+
+private fun runOpenAnnouncementsCommand(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    return identifierHandler(player, communityIdentifier) { community ->
+        val role = community.getMemberRole(player.uuid)
+        val isAdmin = role == com.imyvm.community.domain.model.community.MemberRoleType.OWNER ||
+            role == com.imyvm.community.domain.model.community.MemberRoleType.ADMIN
+        val isFormalMember = role == com.imyvm.community.domain.model.community.MemberRoleType.MEMBER
+        val runBack: (net.minecraft.server.network.ServerPlayerEntity) -> Unit = { p ->
+            CommunityMenuOpener.open(p) { s -> MainMenu(s, p) }
+        }
+        if (isAdmin) {
+            CommunityMenuOpener.open(player) { syncId ->
+                com.imyvm.community.entrypoint.screen.inner_community.administration_only.annoucement.AdministrationAnnouncementListMenu(
+                    syncId, community, player, 0, runBack
+                )
+            }
+        } else if (isFormalMember) {
+            CommunityMenuOpener.open(player) { syncId ->
+                com.imyvm.community.entrypoint.screen.inner_community.affairs.annoucement.MemberAnnouncementListMenu(
+                    syncId, community, player, 0, runBack
+                )
+            }
+        } else {
+            player.sendMessage(Translator.tr("community.notfound.name", communityIdentifier))
+            return@identifierHandler
+        }
+    }
+}
+
+private fun runOpenTeleportAdminCommand(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val regionId = IntegerArgumentType.getInteger(context, "regionId")
+    val scopeName = StringArgumentType.getString(context, "scopeName")
+    val community = com.imyvm.community.infra.CommunityDatabase.getCommunityById(regionId) ?: run {
+        player.sendMessage(Translator.tr("community.notfound.id", regionId.toString()))
+        return 0
+    }
+    val region = community.getRegion() ?: return 0
+    val scope = region.geometryScope.find { it.scopeName == scopeName } ?: return 0
+    CommunityMenuOpener.open(player) { syncId ->
+        com.imyvm.community.entrypoint.screen.inner_community.administration_only.AdministrationTeleportPointMenu(
+            syncId = syncId,
+            playerExecutor = player,
+            community = community,
+            scope = scope,
+            runBack = { p -> CommunityMenuOpener.open(p) { s -> MainMenu(s, p) } }
+        )
+    }
+    return 1
+}
+
+private fun runOpenRenameMenuCommand(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val regionId = IntegerArgumentType.getInteger(context, "regionId")
+    val community = com.imyvm.community.infra.CommunityDatabase.getCommunityById(regionId) ?: run {
+        player.sendMessage(Translator.tr("community.notfound.id", regionId.toString()))
+        return 0
+    }
+    val runBack: (net.minecraft.server.network.ServerPlayerEntity) -> Unit = { p ->
+        CommunityMenuOpener.open(p) { s -> MainMenu(s, p) }
+    }
+    CommunityMenuOpener.open(player) { syncId ->
+        com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityRegionScopeMenu(
+            syncId = syncId,
+            playerExecutor = player,
+            community = community,
+            geographicFunctionType = com.imyvm.community.domain.model.GeographicFunctionType.NAME_MODIFICATION,
+            runBack = runBack
+        )
+    }
+    return 1
+}
+
+private fun runOpenModifyMenuCommand(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val regionId = IntegerArgumentType.getInteger(context, "regionId")
+    val community = com.imyvm.community.infra.CommunityDatabase.getCommunityById(regionId) ?: run {
+        player.sendMessage(Translator.tr("community.notfound.id", regionId.toString()))
+        return 0
+    }
+    val runBack: (net.minecraft.server.network.ServerPlayerEntity) -> Unit = { p ->
+        CommunityMenuOpener.open(p) { s -> MainMenu(s, p) }
+    }
+    CommunityMenuOpener.open(player) { syncId ->
+        com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityRegionScopeMenu(
+            syncId = syncId,
+            playerExecutor = player,
+            community = community,
+            geographicFunctionType = com.imyvm.community.domain.model.GeographicFunctionType.GEOMETRY_MODIFICATION,
+            runBack = runBack
+        )
+    }
+    return 1
 }

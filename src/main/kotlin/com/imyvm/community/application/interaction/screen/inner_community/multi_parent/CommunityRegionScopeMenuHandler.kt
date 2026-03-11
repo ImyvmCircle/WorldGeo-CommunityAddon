@@ -26,12 +26,15 @@ import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.Commun
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.element.TargetSettingMenu
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.infra.PricingConfig
+import com.imyvm.community.util.SelectionReturnContext
 import com.imyvm.community.util.Translator
+import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.AreaEstimationResult
 import com.imyvm.iwg.domain.CreationError
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShapeType
+import com.imyvm.iwg.domain.component.HypotheticalShape
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.domain.component.PermissionSetting
 import com.imyvm.iwg.domain.component.RuleKey
@@ -39,6 +42,7 @@ import com.imyvm.iwg.inter.api.PlayerInteractionApi
 import com.imyvm.iwg.inter.api.RegionDataApi
 import com.mojang.authlib.GameProfile
 import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.text.ClickEvent
 import net.minecraft.text.Text
 
 fun runExecuteRegion(
@@ -94,6 +98,13 @@ fun runExecuteRegion(
             if (daysSince < 30) {
                 playerExecutor.closeHandledScreen()
                 playerExecutor.sendMessage(Translator.tr("community.rename.error.cooldown", (30 - daysSince).toString(), nameKey))
+                community.regionNumberId?.let { regionId ->
+                    playerExecutor.sendMessage(
+                        Translator.tr("ui.button.return_to_menu")?.copy()?.styled { style ->
+                            style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/community open_rename_menu $regionId"))
+                        }
+                    )
+                }
             } else {
                 AdministrationRenameMenuAnvil(
                     player = playerExecutor,
@@ -246,6 +257,7 @@ private fun onCreateScopeRequest(
         )
     )
 
+    SelectionReturnContext.clearContext(player.uuid)
     sendInteractiveScopeModificationConfirmation(player, regionId, scopeName)
     return 1
 }
@@ -366,9 +378,19 @@ fun runExecuteScope(
                 playerExecutor,
                 { com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.canExecuteAdministration(playerExecutor, community, AdminPrivilege.MODIFY_REGION_GEOMETRY) }
             ) {
-                PlayerInteractionApi.startSelectionForModify(playerExecutor, scope)
-                playerExecutor.closeHandledScreen()
-                playerExecutor.sendMessage(Translator.tr("ui.territory.modify.scope_started", scope.scopeName))
+                val hypotheticalShape = ImyvmWorldGeo.pointSelectingPlayers[playerExecutor.uuid]?.hypotheticalShape
+                if (hypotheticalShape is HypotheticalShape.ModifyExisting && hypotheticalShape.scope.scopeName == scope.scopeName) {
+                    runOpenScopeModificationConfirmation(playerExecutor, community, scope) { p ->
+                        runBackRegionScopeMenu(p, community, geographicFunctionType, runBackGrandfatherMenu)
+                    }
+                } else {
+                    PlayerInteractionApi.startSelectionForModify(playerExecutor, scope)
+                    community.regionNumberId?.let { id ->
+                        SelectionReturnContext.setModifyContext(playerExecutor.uuid, id, scope.scopeName)
+                    }
+                    playerExecutor.closeHandledScreen()
+                    playerExecutor.sendMessage(Translator.tr("ui.territory.modify.scope_started", scope.scopeName))
+                }
             }
         }
         GeographicFunctionType.SETTING_ADJUSTMENT -> {
@@ -412,6 +434,13 @@ fun runExecuteScope(
                 if (daysSince < 30) {
                     playerExecutor.closeHandledScreen()
                     playerExecutor.sendMessage(Translator.tr("community.rename.error.cooldown", (30 - daysSince).toString(), nameKey))
+                    community.regionNumberId?.let { regionId ->
+                        playerExecutor.sendMessage(
+                            Translator.tr("ui.button.return_to_menu")?.copy()?.styled { style ->
+                                style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/community open_rename_menu $regionId"))
+                            }
+                        )
+                    }
                 } else {
                     AdministrationRenameMenuAnvil(
                         player = playerExecutor,
@@ -423,6 +452,35 @@ fun runExecuteScope(
             }
         }
     }
+}
+
+fun runOpenScopeModificationConfirmation(
+    playerExecutor: ServerPlayerEntity,
+    community: Community,
+    scope: GeoScope,
+    runBackToScopeList: (ServerPlayerEntity) -> Unit
+) {
+    CommunityMenuOpener.open(playerExecutor) { syncId ->
+        com.imyvm.community.entrypoint.screen.inner_community.multi_parent.ScopeGeometryModificationConfirmMenu(
+            syncId = syncId,
+            playerExecutor = playerExecutor,
+            community = community,
+            scope = scope,
+            runBack = runBackToScopeList
+        )
+    }
+}
+
+fun runToggleScopeMod(
+    player: ServerPlayerEntity,
+    community: Community,
+    scope: GeoScope,
+    runBack: (ServerPlayerEntity) -> Unit
+) {
+    PlayerInteractionApi.stopSelection(player)
+    SelectionReturnContext.clearContext(player.uuid)
+    player.sendMessage(Translator.tr("community.selection_mode.disabled"))
+    runBack(player)
 }
 
 private fun runBackRegionScopeMenu(
@@ -608,6 +666,13 @@ internal fun executeScopeModification(
                 else -> "community.modification.error.unknown"
             }
             player.sendMessage(Translator.tr(errorKey) ?: Text.literal("Modification error"))
+            community.regionNumberId?.let { regionId ->
+                player.sendMessage(
+                    Translator.tr("ui.button.return_to_menu")?.copy()?.styled { style ->
+                        style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/community open_modify_menu $regionId"))
+                    }
+                )
+            }
             player.closeHandledScreen()
         }
         is AreaEstimationResult.Success -> {
@@ -633,6 +698,7 @@ internal fun executeScopeModification(
 
             player.closeHandledScreen()
 
+            SelectionReturnContext.clearContext(player.uuid)
             generateModificationConfirmationMessage(
                 scopeName = scope.scopeName,
                 costResult = costResult,

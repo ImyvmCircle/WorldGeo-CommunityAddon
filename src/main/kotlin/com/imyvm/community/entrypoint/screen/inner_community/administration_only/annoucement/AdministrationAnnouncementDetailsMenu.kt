@@ -51,7 +51,7 @@ class AdministrationAnnouncementDetailsMenu(
                 )
             ),
             name = Translator.tr("ui.admin.announcement_details.content")?.string ?: "Content"
-        ) { onViewAnnouncementContent(playerExecutor, announcement) }
+        ) { onViewAnnouncementContent(playerExecutor, community, announcement) }
     }
 
     private fun addDeleteButton(announcement: Announcement) {
