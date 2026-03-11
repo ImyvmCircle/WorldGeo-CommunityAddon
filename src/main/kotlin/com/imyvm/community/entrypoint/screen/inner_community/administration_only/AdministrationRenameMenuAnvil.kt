@@ -16,14 +16,16 @@ class AdministrationRenameMenuAnvil(
     player: ServerPlayerEntity,
     private val community: Community,
     private val scopeName: String?,
-    private val runBackGrandfather: ((ServerPlayerEntity) -> Unit)
+    private val runBackGrandfather: ((ServerPlayerEntity) -> Unit),
+    errorHint: String? = null
 ): AbstractRenameMenuAnvil(
     player = player,
     initialName = if (scopeName == null) {
         community.regionNumberId?.let { RegionDataApi.getRegion(it)?.name } ?: "Unknown Name"
     } else {
         scopeName
-    }
+    },
+    errorHint = errorHint
 ) {
     override fun processRenaming(finalName: String) {
         val regionId = community.regionNumberId ?: return
@@ -74,12 +76,17 @@ class AdministrationRenameMenuAnvil(
         sendInteractiveRenameConfirmation(player, regionId, nameKey, finalName, cost)
     }
 
+    override fun reopenWith(errorHint: String?, currentInput: String) {
+        AdministrationRenameMenuAnvil(player, community, scopeName, runBackGrandfather, errorHint).open()
+    }
+
     override fun getMenuTitle(): Text {
-        return if (scopeName == null) {
+        val base = if (scopeName == null) {
             Translator.tr("ui.admin.rename.title") ?: Text.of("Rename Community")
         } else {
             Translator.tr("ui.admin.rename.scope.title", scopeName) ?: Text.of("Rename Scope: $scopeName")
         }
+        return buildTitle(base)
     }
 
     private fun sendInteractiveRenameConfirmation(player: ServerPlayerEntity, regionNumberId: Int, nameKey: String, newName: String, cost: Long) {

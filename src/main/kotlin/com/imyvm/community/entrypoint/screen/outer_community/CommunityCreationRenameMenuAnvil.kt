@@ -12,10 +12,12 @@ class CommunityCreationRenameMenuAnvil(
     initialName: String,
     private val currentShape: GeoShapeType,
     private val isManor: Boolean,
-    private val runBackGrandfather: ((ServerPlayerEntity) -> Unit)
+    private val runBackGrandfather: ((ServerPlayerEntity) -> Unit),
+    errorHint: String? = null
 ) : AbstractRenameMenuAnvil(
     playerExecutor,
-    initialName
+    initialName,
+    errorHint
 ) {
 
     override fun processRenaming(finalName: String) {
@@ -24,6 +26,11 @@ class CommunityCreationRenameMenuAnvil(
         }
     }
 
+    override fun reopenWith(errorHint: String?, currentInput: String) {
+        CommunityCreationRenameMenuAnvil(
+            playerExecutor, currentInput, currentShape, isManor, runBackGrandfather, errorHint
+        ).open()
+    }
 
-    override fun getMenuTitle(): Text = Translator.tr ("ui.create.rename.title") ?: Text.of("Rename Community")
+    override fun getMenuTitle(): Text = buildTitle(Translator.tr("ui.create.rename.title") ?: Text.of("Rename Community"))
 }

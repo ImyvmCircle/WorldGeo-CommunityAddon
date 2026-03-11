@@ -8,6 +8,11 @@ This Project is designed to constitute a comprehensive framework for players' **
 
 This major version is a perfection of current game system.
 
+### Recent Changes
+
+- feat: anvil rename menus now reject invalid names by clearing the output slot; attempting to confirm an invalid name re-opens the menu with an error hint in the title
+- feat: community and scope creation menus now display an error when the name contains unsupported characters (requires IWG dependency update to 1.3.2+)
+
 ## Features
 
 ### Community

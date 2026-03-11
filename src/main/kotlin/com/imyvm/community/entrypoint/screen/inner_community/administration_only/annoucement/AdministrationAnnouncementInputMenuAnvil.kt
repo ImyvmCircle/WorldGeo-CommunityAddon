@@ -12,6 +12,12 @@ class AdministrationAnnouncementInputMenuAnvil(
     val community: Community,
     val runBack: ((ServerPlayerEntity) -> Unit)
 ) : AbstractRenameMenuAnvil(player, "") {
+
+    override fun isNameValid(name: String): Boolean = name.isNotBlank()
+
+    override fun reopenWith(errorHint: String?, currentInput: String) {
+        AdministrationAnnouncementInputMenuAnvil(player, community, runBack).open()
+    }
     
     override fun processRenaming(finalName: String) {
         onCreateAnnouncementConfirm(player, community, finalName, runBack)

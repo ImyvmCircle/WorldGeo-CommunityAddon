@@ -111,6 +111,7 @@
   "ui.confirm.create.caution.region": "您选择的地块将被领域占用，但只能在获得管理员批准后才能修改。",
   "ui.confirm.create.caution.final_check": "请在确认前确保所有信息正确无误。",
   "ui.create.error.name_empty": "名称不能为空。",
+  "ui.create.error.name_invalid_format": "名称格式无效。",
   "ui.create.error.name_duplicated": "名称已被占用。",
   "ui.create.error.shape_unknown": "请选择一个形状。",
   "ui.create.error.shape_polygon": "多边形至少需要3个点。",

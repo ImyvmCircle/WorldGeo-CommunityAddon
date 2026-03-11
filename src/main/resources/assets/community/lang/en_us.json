@@ -111,6 +111,7 @@
   "ui.confirm.create.caution.region": "The region you selected will be occupied by the community, but you can only modify it after administration approval.",
   "ui.confirm.create.caution.final_check": "Please make sure all the information is correct before confirming.",
   "ui.create.error.name_empty": "Name cannot be empty.",
+  "ui.create.error.name_invalid_format": "Invalid name format.",
   "ui.create.error.name_duplicated": "Name is already taken.",
   "ui.create.error.shape_unknown": "Please select a shape.",
   "ui.create.error.shape_polygon": "Polygon requires at least 3 points.",

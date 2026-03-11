@@ -7,6 +7,7 @@ import com.imyvm.community.util.Translator
 import com.imyvm.economy.EconomyMod
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.component.GeoShapeType
+import com.imyvm.iwg.inter.api.UtilApi
 import net.minecraft.server.network.ServerPlayerEntity
 
 fun generateCreationError(
@@ -59,6 +60,8 @@ private fun validateBasicInfo(
 
     if (currentName.isBlank()) {
         errors.add(Translator.tr("ui.create.error.name_empty")?.string ?: "NameEmpty")
+    } else if (!UtilApi.isValidName(currentName)) {
+        errors.add(Translator.tr("ui.create.error.name_invalid_format")?.string ?: "InvalidNameFormat")
     } else if (isNameDuplicate(currentName)) {
         errors.add(Translator.tr("ui.create.error.name_duplicated")?.string ?: "NameDuplicated")
     }

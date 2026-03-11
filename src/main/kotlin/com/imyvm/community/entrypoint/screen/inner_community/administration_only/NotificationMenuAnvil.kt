@@ -17,6 +17,11 @@ class NotificationMenuAnvil(
     playerExecutor,
     initialName
 ) {
+    override fun isNameValid(name: String): Boolean = name.isNotBlank()
+
+    override fun reopenWith(errorHint: String?, currentInput: String) {
+        NotificationMenuAnvil(playerExecutor, currentInput, playerObject, community).open()
+    }
     override fun processRenaming(finalName: String) {
         if (!checkPrerequisites(finalName)) return
         val member = community.member[playerObject.id]!!

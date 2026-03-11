@@ -1,0 +1,273 @@
+═══════════════════════════════════════════════════════════════════════════════
+WORLDGEO-COMMUNITYAD DON - COMPREHENSIVE PROJECT ANALYSIS
+═══════════════════════════════════════════════════════════════════════════════
+
+📁 PROJECT STRUCTURE
+────────────────────────────────────────────────────────────────────────────────
+Location: /home/doohaer/Minecraft/IMYVM/src/WorldGeo-CommunityAddon/
+Total Kotlin Files: 110+ (.kt files)
+Main Packages:
+  • domain/       - Community, Region, Member models + permission policies
+  • application/  - Business logic, handlers, interaction controllers
+  • entrypoint/   - Commands, screens (menus), events
+  • infra/        - Configuration (CommunityConfig, PricingConfig, Database)
+  • util/         - i18n (Translator), formatting utilities
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📋 DEVELOPMENT GUIDELINES KEY POINTS
+────────────────────────────────────────────────────────────────────────────────
+Location: .github/agents/instructions/DEVELOPMENT_GUIDELINES.md
+
+CRITICAL RULES:
+1. i18n MANDATORY: All text via Translator.tr() with Chinese + English keys
+2. Configuration: Use CommunityConfig + PricingConfig (never hardcoded values)
+3. Permission Check MUST BE BOTH:
+   - canExecuteAdministration() (role/permission check)
+   - canExecuteOperationInProto() (community status check)
+   FAILURE TO INCLUDE BOTH = BUG
+4. Menu Pattern: Click handler in /entrypoint/screen/
+                 Logic in /application/interaction/screen/
+5. Money Format: Long value / 100 with .2f format (e.g., $12.34)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🏷️ REGION/SCOPE NAME USAGE - COMPLETE FLOW
+────────────────────────────────────────────────────────────────────────────────
+
+COMMUNITY NAME (Global):
+  Entry Point:     Anvil GUI (CommunityCreationRenameMenuAnvil)
+  Parameter Type:  String initialName → processRenaming(finalName)
+  Flow:            Anvil → CommunityCreationSelectionMenu → CommunityCreationMenu
+  Storage:         Region.name (via IWG RegionDataApi)
+  Rename Cost:     PricingConfig.RENAME_GLOBAL_COST
+  Cooldown:        30 days (tracked in community.nameChangeCooldowns["global"])
+
+SCOPE NAME (Local):
+  Entry Point:     Anvil GUI (CommunityScopeCreationRenameMenuAnvil)
+  Parameter Type:  String initialName → processRenaming(finalName)
+  Flow:            Anvil → CommunityScopeCreationMenu → Confirmation
+  Storage:         GeoScope.scopeName (via IWG)
+  Rename Cost:     PricingConfig.RENAME_SCOPE_COST
+  Cooldown:        30 days (tracked in community.nameChangeCooldowns[scopeName])
+  Display:         Via CommunityRegionScopeMenu button labels
+
+NAME PARSING FROM COMMANDS:
+  File:            CommandRegister.kt
+  Parameter:       Community name passed as String argument
+  Handler:         CommunityCreationHandler validates
+  Validation:
+    - Empty check   → Error key: "ui.create.error.name_empty"
+    - Duplicate     → Error key: "ui.create.error.name_duplicated"
+  Pattern:         Commands → Handlers → ScopeModificationHandler
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🎯 ANVIL RENAME GUI IMPLEMENTATION
+────────────────────────────────────────────────────────────────────────────────
+
+Base Class: AbstractRenameMenuAnvil.kt
+  - Opens AnvilScreenHandler with NAME_TAG
+  - Sets initialName via DataComponentTypes.CUSTOM_NAME
+  - Player edits name, presses confirm
+  - Extracts name and calls processRenaming(finalName)
+
+Three Implementations:
+
+1️⃣ CommunityCreationRenameMenuAnvil.kt
+   Input:   initialName (String)
+   State:   currentShape (GeoShapeType), isManor (Boolean)
+   Output:  CommunityCreationSelectionMenu(finalName)
+   Title:   "Rename Community"
+
+2️⃣ AdministrationRenameMenuAnvil.kt (MOST COMPLEX)
+   Input:   scopeName (null=global, String=scope)
+   State:   community (Community object)
+   Process:
+     → Check 30-day cooldown (community.nameChangeCooldowns[nameKey])
+     → Check no pending rename (WorldGeoCommunityAddon.pendingOperations)
+     → Check sufficient assets (cost from PricingConfig)
+     → Create PendingOperation (5-min expiry)
+     → Display interactive confirmation (click-confirm buttons)
+   Title:   "Rename Community" or "Rename Scope: {scopeName}"
+   Cost:    RENAME_GLOBAL_COST or RENAME_SCOPE_COST
+   Message: Displays cost, rename bill, confirm/cancel buttons (chat GUI)
+
+3️⃣ CommunityScopeCreationRenameMenuAnvil.kt
+   Input:   initialName (String)
+   State:   community (Community)
+   Output:  CommunityScopeCreationMenu(finalName)
+   Title:   "Rename Administrative District"
+   Usage:   During scope creation flow (before confirmation)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📦 CHEST GUI MENUS - SCOPE SELECTION
+────────────────────────────────────────────────────────────────────────────────
+
+CommunityRegionScopeMenu.kt (Primary Scope Selection)
+  Location: /entrypoint/screen/inner_community/multi_parent/
+  Purpose:  List all scopes in a community for various operations
+  
+  Data Source: community.getRegion()?.geometryScope
+  Display: For each GeoScope:
+    - Button name: scope.scopeName (e.g., "辖区1", "District A")
+    - Button icon: Colored smithing templates (9 colors rotating)
+    - Button action: runExecuteScope(player, community, scope, functionType)
+  
+  Operations (geographicFunctionType):
+    • GEOMETRY_MODIFICATION    → Modify scope boundaries
+    • SETTING_ADJUSTMENT       → Change permissions/rules
+    • TELEPORT_POINT_LOCATING  → Set teleport points
+    • TELEPORT_POINT_EXECUTION → Teleport to scope
+    • NAME_MODIFICATION        → Rename scope
+  
+  Special Button: "Global" (slot 10) for region-level operations
+  Pagination: 35 scopes per page + global button
+
+CommunityScopeCreationMenu.kt
+  Shows current scope creation state
+  Button at slot 28: Shows currentName
+  On click: Opens CommunityScopeCreationRenameMenuAnvil
+  
+CommunityScopeSelectionMenu.kt
+  List of communities (not scopes)
+  Shows community.generateCommunityMark() + player heads
+  Used for cross-community selections
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🔗 IMYVMWORLDGEO (IWG) DEPENDENCY - API CALLS
+────────────────────────────────────────────────────────────────────────────────
+
+Core Classes Imported:
+  • GeoShapeType       - RECTANGLE, CIRCLE, POLYGON, UNKNOWN
+  • HypotheticalShape  - Selection state (Normal, ModifyExisting)
+  • GeoScope           - Scope data { scopeName, geometry, ... }
+  • ImyvmWorldGeo      - Main entry (pointSelectingPlayers map)
+
+1. RegionDataApi (READ OPERATIONS)
+   ─────────────────────────────────
+   
+   RegionDataApi.getRegion(regionNumberId: Int) → Region?
+     Usage: Get community name from region
+     Files: AdministrationRenameMenuAnvil:23
+            OperatorCommandHandler
+     Code:  community.regionNumberId?.let { RegionDataApi.getRegion(it)?.name }
+   
+   RegionDataApi.getRegionList(world) → List<Region>
+     Usage: Get all regions
+     Files: IdentifierCommunityGetter.kt
+   
+   RegionDataApi.inquireTeleportPointAccessibility(scope) → Boolean
+     Usage: Check if teleport point is public
+     Files: AdministrationTeleportPointMenu
+            CommunityMenuHandler
+     Code:  val isPublic = RegionDataApi.inquireTeleportPointAccessibility(scope)
+
+2. PlayerInteractionApi (WRITE OPERATIONS)
+   ────────────────────────────────────────
+   
+   SELECTION MODE (圈地模式):
+     PlayerInteractionApi.startSelection(player, GeoShapeType)
+     PlayerInteractionApi.stopSelection(player)
+     PlayerInteractionApi.resetSelection(player)
+     PlayerInteractionApi.setSelectionShape(player, newShape)
+     Files: CommandRegister, MainMenuHandler, CreationSelectionMenuHandler
+   
+   TELEPORT POINT MANAGEMENT:
+     PlayerInteractionApi.addTeleportPoint(player, region, scope)
+     PlayerInteractionApi.resetTeleportPoint(player, region, scope)
+     PlayerInteractionApi.getTeleportPoint(scope) → BlockPos?
+     PlayerInteractionApi.toggleTeleportPointAccessibility(scope)
+     PlayerInteractionApi.teleportPlayerToScope(player, region, scope)
+     Files: AdministrationTeleportationPointMenuHandler
+   
+   SCOPE MANAGEMENT:
+     PlayerInteractionApi.addScope(player, region, scopeName)
+     PlayerInteractionApi.modifyScope(player, region, scopeName)
+     PlayerInteractionApi.deleteRegion(player, region)
+     PlayerInteractionApi.queryRegionInfo(player, region)
+     Files: ScopeModificationHandler (add/modify)
+            OperatorCommandHandler (delete)
+   
+3. ImyvmWorldGeo (STATE TRACKING)
+   ───────────────────────────────
+   
+   ImyvmWorldGeo.pointSelectingPlayers[UUID] → PointSelectingState?
+     ├─ .hypotheticalShape: HypotheticalShape
+     │   ├─ Normal → shapeType (RECTANGLE, CIRCLE, POLYGON)
+     │   └─ ModifyExisting(scope) → being-modified scope
+     └─ .points: List<...>
+   
+   Usage: Check if player in selection mode, what shape, how many points
+   Files: CommunityCreationSelectionMenu
+          CommunityScopeCreationMenu
+          CommunityRegionScopeMenu
+          TerritoryMenu
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🌐 LANGUAGE FILES & VALIDATION KEYS
+────────────────────────────────────────────────────────────────────────────────
+
+Files:
+  Chinese: src/main/resources/assets/community/lang/zh_cn.json (650 lines)
+  English: src/main/resources/assets/community/lang/en_us.json (650 lines)
+
+NAME VALIDATION KEYS:
+  "ui.create.error.name_empty"        → "名称不能为空。" / "Name cannot be empty."
+  "ui.create.error.name_duplicated"   → "名称已被占用。" / "Name is already taken."
+  "community.rename.error.cooldown"   → 30-day cooldown message
+  "community.rename.error.scope_not_found" → Scope deleted message
+  "community.modification.error.insufficient_assets" → Not enough money
+
+RENAME OPERATION KEYS:
+  "community.rename.bill"             → Shows old → new name + cost
+  "community.rename.success.global"   → Community rename successful
+  "community.rename.success.scope"    → Scope rename successful
+  "community.rename.cancelled"        → Rename cancelled
+
+ERROR VALIDATION KEYS:
+  "community.modification.error.no_region" → Region not found
+  "community.modification.error.insufficient_points" → <2 points selected
+  "community.modification.error.duplicated_points" → Same point twice
+  "community.modification.error.coincident_points" → Overlapping points
+  "community.modification.error.overlap_detected" → Overlaps other scope
+  "community.scope_add.error.scope_limit_exceeded" → Too many scopes
+
+═══════════════════════════════════════════════════════════════════════════════
+
+KEY FILE LOCATIONS - QUICK REFERENCE
+────────────────────────────────────────────────────────────────────────────────
+
+📄 Guidelines:
+  .github/agents/instructions/DEVELOPMENT_GUIDELINES.md
+
+🔐 Anvil Renames:
+  CommunityCreationRenameMenuAnvil.kt
+  AdministrationRenameMenuAnvil.kt
+  CommunityScopeCreationRenameMenuAnvil.kt
+  AbstractRenameMenuAnvil.kt (base class)
+
+📋 Scope Selection Menu:
+  CommunityRegionScopeMenu.kt
+  CommunityScopeCreationMenu.kt
+  CommunityScopeSelectionMenu.kt
+
+🔗 IWG Dependency:
+  CommandRegister.kt (selection commands)
+  ScopeModificationHandler.kt (add/modify scopes)
+  AdministrationTeleportationPointMenuHandler.kt
+  CommunityMenuHandler.kt
+
+🌐 i18n:
+  src/main/resources/assets/community/lang/zh_cn.json
+  src/main/resources/assets/community/lang/en_us.json
+
+⚙️ Configuration:
+  infra/CommunityConfig.kt
+  infra/PricingConfig.kt
+  infra/CommunityDatabase.kt
+
+═══════════════════════════════════════════════════════════════════════════════

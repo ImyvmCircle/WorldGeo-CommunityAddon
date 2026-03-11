@@ -1,6 +1,8 @@
 package com.imyvm.community.entrypoint.screen
 
 import com.imyvm.community.entrypoint.screen.component.ReadOnlySlot
+import com.imyvm.community.util.Translator
+import com.imyvm.iwg.inter.api.UtilApi
 import net.minecraft.component.DataComponentTypes
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.entity.player.PlayerInventory
@@ -17,13 +19,17 @@ import net.minecraft.text.Text
 
 abstract class AbstractRenameMenuAnvil(
     protected val player: ServerPlayerEntity,
-    protected val initialName: String
+    protected val initialName: String,
+    private val errorHint: String? = null
 ) {
-    private var newName: String? = null
+    private var currentName: String? = null
     private var hasConfirmed = false
 
     protected abstract fun processRenaming(finalName: String)
     protected abstract fun getMenuTitle(): Text
+    protected abstract fun reopenWith(errorHint: String?, currentInput: String)
+
+    protected open fun isNameValid(name: String): Boolean = UtilApi.isValidName(name)
 
     fun open() {
         player.openHandledScreen(object : NamedScreenHandlerFactory {
@@ -41,15 +47,36 @@ abstract class AbstractRenameMenuAnvil(
                     override fun canUse(player: PlayerEntity?) = true
 
                     override fun setNewItemName(name: String?): Boolean {
-                        newName = name
+                        currentName = name
                         return super.setNewItemName(name)
+                    }
+
+                    override fun updateResult() {
+                        super.updateResult()
+                        val name = currentName?.trim()?.takeIf { it.isNotEmpty() } ?: ""
+                        if (name.isEmpty() || !isNameValid(name)) {
+                            slots[OUTPUT_ID].stack = ItemStack.EMPTY
+                        }
                     }
 
                     override fun onSlotClick(slotIndex: Int, button: Int, actionType: SlotActionType, player: PlayerEntity) {
                         if (slotIndex == OUTPUT_ID && !hasConfirmed) {
+                            val name = currentName?.trim()?.takeIf { it.isNotEmpty() } ?: ""
+                            if (name.isEmpty()) return
+                            if (!isNameValid(name)) {
+                                if (name != initialName) {
+                                    this@AbstractRenameMenuAnvil.player.closeHandledScreen()
+                                    this@AbstractRenameMenuAnvil.player.server.execute {
+                                        reopenWith(
+                                            Translator.tr("ui.create.error.name_invalid_format")?.string,
+                                            name
+                                        )
+                                    }
+                                }
+                                return
+                            }
                             hasConfirmed = true
-                            val finalName = newName?.trim()?.takeIf { it.isNotEmpty() } ?: ""
-                            processRenaming(finalName)
+                            processRenaming(name)
                         }
                     }
                 }
@@ -65,5 +92,10 @@ abstract class AbstractRenameMenuAnvil(
 
             override fun getDisplayName(): Text = getMenuTitle()
         })
+    }
+
+    protected fun buildTitle(base: Text): Text {
+        if (errorHint == null) return base
+        return Text.empty().append(base).append(Text.literal(" ($errorHint)"))
     }
 }

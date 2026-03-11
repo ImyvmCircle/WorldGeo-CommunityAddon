@@ -11,10 +11,12 @@ class CommunityScopeCreationRenameMenuAnvil(
     private val playerExecutor: ServerPlayerEntity,
     private val community: Community,
     initialName: String,
-    private val runBackGrandfather: (ServerPlayerEntity) -> Unit
+    private val runBackGrandfather: (ServerPlayerEntity) -> Unit,
+    errorHint: String? = null
 ) : AbstractRenameMenuAnvil(
     playerExecutor,
-    initialName
+    initialName,
+    errorHint
 ) {
     override fun processRenaming(finalName: String) {
         CommunityMenuOpener.open(playerExecutor) { newSyncId ->
@@ -22,8 +24,15 @@ class CommunityScopeCreationRenameMenuAnvil(
         }
     }
 
+    override fun reopenWith(errorHint: String?, currentInput: String) {
+        CommunityScopeCreationRenameMenuAnvil(
+            playerExecutor, community, currentInput, runBackGrandfather, errorHint
+        ).open()
+    }
+
     override fun getMenuTitle(): Text {
-        return Translator.tr("ui.admin.region.global.add.rename.title")
+        val base = Translator.tr("ui.admin.region.global.add.rename.title")
             ?: Text.of("Rename Administrative District")
+        return buildTitle(base)
     }
 }
