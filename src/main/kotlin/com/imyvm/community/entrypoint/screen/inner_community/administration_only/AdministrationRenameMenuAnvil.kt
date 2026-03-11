@@ -92,12 +92,13 @@ class AdministrationRenameMenuAnvil(
     private fun sendInteractiveRenameConfirmation(player: ServerPlayerEntity, regionNumberId: Int, nameKey: String, newName: String, cost: Long) {
         val costDisplay = String.format("%.2f", cost / 100.0)
         player.sendMessage(Translator.tr("community.rename.bill", nameKey, newName, costDisplay))
+        val quotedNameKey = if (!nameKey.all { it.isLetterOrDigit() && it.code < 128 }) "\"$nameKey\"" else nameKey
 
         val confirmButton = Text.literal("§a§l[确认]§r")
             .styled { style ->
                 style.withClickEvent(net.minecraft.text.ClickEvent(
                     net.minecraft.text.ClickEvent.Action.RUN_COMMAND,
-                    "/community confirm_rename $regionNumberId ${if (nameKey.contains(' ')) "\"$nameKey\"" else nameKey}"
+                    "/commun confirm_rename $regionNumberId $quotedNameKey"
                 )).withHoverEvent(net.minecraft.text.HoverEvent(
                     net.minecraft.text.HoverEvent.Action.SHOW_TEXT,
                     Translator.tr("community.rename.confirm.hover") ?: Text.literal("Click to confirm rename")
@@ -108,7 +109,7 @@ class AdministrationRenameMenuAnvil(
             .styled { style ->
                 style.withClickEvent(net.minecraft.text.ClickEvent(
                     net.minecraft.text.ClickEvent.Action.RUN_COMMAND,
-                    "/community cancel_rename $regionNumberId ${if (nameKey.contains(' ')) "\"$nameKey\"" else nameKey}"
+                    "/commun cancel_rename $regionNumberId $quotedNameKey"
                 )).withHoverEvent(net.minecraft.text.HoverEvent(
                     net.minecraft.text.HoverEvent.Action.SHOW_TEXT,
                     Translator.tr("community.rename.cancel.hover") ?: Text.literal("Click to cancel rename")

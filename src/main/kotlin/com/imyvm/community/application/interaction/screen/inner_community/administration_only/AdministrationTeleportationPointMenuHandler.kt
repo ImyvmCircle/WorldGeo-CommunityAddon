@@ -322,14 +322,15 @@ private fun calculateTeleportPointSettingCost(region: Region, scope: GeoScope): 
 private fun sendInteractiveTeleportPointConfirmation(player: ServerPlayerEntity, regionNumberId: Int, scopeName: String) {
     val confirmText = Translator.tr("community.teleport_point.confirmation.confirm_button") ?: Text.literal("§a§l[CONFIRM]§r")
     val cancelText = Translator.tr("community.teleport_point.confirmation.cancel_button") ?: Text.literal("§c§l[CANCEL]§r")
+    val quotedScopeName = if (!scopeName.all { it.isLetterOrDigit() && it.code < 128 }) "\"$scopeName\"" else scopeName
 
     val confirmButton = confirmText.copy().styled { style ->
-        style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/community confirm_teleport_point_set $regionNumberId ${if (scopeName.contains(' ')) "\"$scopeName\"" else scopeName}"))
+        style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/commun confirm_teleport_point_set $regionNumberId $quotedScopeName"))
             .withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, Translator.tr("community.teleport_point.confirmation.confirm_hover")))
     }
 
     val cancelButton = cancelText.copy().styled { style ->
-        style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/community cancel_teleport_point_set $regionNumberId $scopeName"))
+        style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/commun cancel_teleport_point_set $regionNumberId $quotedScopeName"))
             .withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, Translator.tr("community.teleport_point.confirmation.cancel_hover")))
     }
 

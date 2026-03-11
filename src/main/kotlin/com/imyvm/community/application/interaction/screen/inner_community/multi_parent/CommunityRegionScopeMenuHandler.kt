@@ -513,11 +513,12 @@ private fun runBackRegionScopeMenu(
 }
 
 private fun sendInteractiveScopeModificationConfirmation(player: ServerPlayerEntity, regionNumberId: Int, scopeName: String) {
+    val quotedScopeName = if (!scopeName.all { it.isLetterOrDigit() && it.code < 128 }) "\"$scopeName\"" else scopeName
     val confirmButton = Text.literal("§a§l[CONFIRM]§r")
         .styled { style ->
             style.withClickEvent(net.minecraft.text.ClickEvent(
                 net.minecraft.text.ClickEvent.Action.RUN_COMMAND,
-                "/community confirm_modification $regionNumberId ${if (scopeName.contains(' ')) "\"$scopeName\"" else scopeName}"
+                "/commun confirm_modification $regionNumberId $quotedScopeName"
             ))
             .withHoverEvent(net.minecraft.text.HoverEvent(
                 net.minecraft.text.HoverEvent.Action.SHOW_TEXT,
@@ -529,7 +530,7 @@ private fun sendInteractiveScopeModificationConfirmation(player: ServerPlayerEnt
         .styled { style ->
             style.withClickEvent(net.minecraft.text.ClickEvent(
                 net.minecraft.text.ClickEvent.Action.RUN_COMMAND,
-                "/community cancel_modification $regionNumberId ${if (scopeName.contains(' ')) "\"$scopeName\"" else scopeName}"
+                "/commun cancel_modification $regionNumberId $quotedScopeName"
             ))
             .withHoverEvent(net.minecraft.text.HoverEvent(
                 net.minecraft.text.HoverEvent.Action.SHOW_TEXT,

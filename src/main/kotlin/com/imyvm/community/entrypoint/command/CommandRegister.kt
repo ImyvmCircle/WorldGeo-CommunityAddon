@@ -253,84 +253,6 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     )
             )
             .then(
-                literal("confirm_creation")
-                    .then(
-                        argument("regionId", IntegerArgumentType.integer())
-                            .executes { runConfirmCommunityCreation(it) }
-                    )
-            )
-            .then(
-                literal("cancel_creation")
-                    .then(
-                        argument("regionId", IntegerArgumentType.integer())
-                            .executes { runCancelCommunityCreation(it) }
-                    )
-            )
-            .then(
-                literal("confirm_modification")
-                    .then(
-                        argument("regionId", IntegerArgumentType.integer())
-                            .then(
-                                argument("scopeName", StringArgumentType.string())
-                                    .executes { runConfirmScopeModification(it) }
-                            )
-                    )
-            )
-            .then(
-                literal("cancel_modification")
-                    .then(
-                        argument("regionId", IntegerArgumentType.integer())
-                            .then(
-                                argument("scopeName", StringArgumentType.string())
-                                    .executes { runCancelScopeModification(it) }
-                            )
-                    )
-            )
-            .then(
-                literal("confirm_teleport_point_set")
-                    .then(
-                        argument("regionId", IntegerArgumentType.integer())
-                            .then(
-                                argument("scopeName", StringArgumentType.string())
-                                    .executes { runConfirmTeleportPointSetting(it) }
-                            )
-                    )
-            )
-            .then(
-                literal("confirm_setting")
-                    .then(
-                        argument("regionId", IntegerArgumentType.integer())
-                            .executes { runConfirmSettingChange(it) }
-                    )
-            )
-            .then(
-                literal("cancel_setting")
-                    .then(
-                        argument("regionId", IntegerArgumentType.integer())
-                            .executes { runCancelSettingChange(it) }
-                    )
-            )
-            .then(
-                literal("confirm_rename")
-                    .then(
-                        argument("regionId", IntegerArgumentType.integer())
-                            .then(
-                                argument("nameKey", StringArgumentType.string())
-                                    .executes { runConfirmRenameCommand(it) }
-                            )
-                    )
-            )
-            .then(
-                literal("cancel_rename")
-                    .then(
-                        argument("regionId", IntegerArgumentType.integer())
-                            .then(
-                                argument("nameKey", StringArgumentType.string())
-                                    .executes { runCancelRenameCommand(it) }
-                            )
-                    )
-            )
-            .then(
                 literal("open_menu")
                     .then(
                         argument("communityIdentifier", StringArgumentType.string())
@@ -790,4 +712,98 @@ private fun runOpenModifyMenuCommand(context: CommandContext<ServerCommandSource
         )
     }
     return 1
+}
+
+fun registerCommun(dispatcher: CommandDispatcher<ServerCommandSource>) {
+    dispatcher.register(
+        literal("commun")
+            .then(
+                literal("confirm_creation")
+                    .then(
+                        argument("regionId", IntegerArgumentType.integer())
+                            .executes { runConfirmCommunityCreation(it) }
+                    )
+            )
+            .then(
+                literal("cancel_creation")
+                    .then(
+                        argument("regionId", IntegerArgumentType.integer())
+                            .executes { runCancelCommunityCreation(it) }
+                    )
+            )
+            .then(
+                literal("confirm_modification")
+                    .then(
+                        argument("regionId", IntegerArgumentType.integer())
+                            .then(
+                                argument("scopeName", StringArgumentType.string())
+                                    .executes { runConfirmScopeModification(it) }
+                            )
+                    )
+            )
+            .then(
+                literal("cancel_modification")
+                    .then(
+                        argument("regionId", IntegerArgumentType.integer())
+                            .then(
+                                argument("scopeName", StringArgumentType.string())
+                                    .executes { runCancelScopeModification(it) }
+                            )
+                    )
+            )
+            .then(
+                literal("confirm_teleport_point_set")
+                    .then(
+                        argument("regionId", IntegerArgumentType.integer())
+                            .then(
+                                argument("scopeName", StringArgumentType.string())
+                                    .executes { runConfirmTeleportPointSetting(it) }
+                            )
+                    )
+            )
+            .then(
+                literal("cancel_teleport_point_set")
+                    .then(
+                        argument("regionId", IntegerArgumentType.integer())
+                            .then(
+                                argument("scopeName", StringArgumentType.string())
+                                    .executes { runCancelTeleportPointSetting(it) }
+                            )
+                    )
+            )
+            .then(
+                literal("confirm_setting")
+                    .then(
+                        argument("regionId", IntegerArgumentType.integer())
+                            .executes { runConfirmSettingChange(it) }
+                    )
+            )
+            .then(
+                literal("cancel_setting")
+                    .then(
+                        argument("regionId", IntegerArgumentType.integer())
+                            .executes { runCancelSettingChange(it) }
+                    )
+            )
+            .then(
+                literal("confirm_rename")
+                    .then(
+                        argument("regionId", IntegerArgumentType.integer())
+                            .then(
+                                argument("nameKey", StringArgumentType.string())
+                                    .executes { runConfirmRenameCommand(it) }
+                            )
+                    )
+            )
+            .then(
+                literal("cancel_rename")
+                    .then(
+                        argument("regionId", IntegerArgumentType.integer())
+                            .then(
+                                argument("nameKey", StringArgumentType.string())
+                                    .executes { runCancelRenameCommand(it) }
+                            )
+                    )
+            )
+    )
 }

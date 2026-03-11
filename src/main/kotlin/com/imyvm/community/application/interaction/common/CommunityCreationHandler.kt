@@ -217,7 +217,7 @@ private fun sendInteractiveConfirmation(player: ServerPlayerEntity, regionNumber
         .styled { style ->
             style.withClickEvent(net.minecraft.text.ClickEvent(
                 net.minecraft.text.ClickEvent.Action.RUN_COMMAND,
-                "/community confirm_creation $regionNumberId"
+                "/commun confirm_creation $regionNumberId"
             ))
             .withHoverEvent(net.minecraft.text.HoverEvent(
                 net.minecraft.text.HoverEvent.Action.SHOW_TEXT,
@@ -229,7 +229,7 @@ private fun sendInteractiveConfirmation(player: ServerPlayerEntity, regionNumber
         .styled { style ->
             style.withClickEvent(net.minecraft.text.ClickEvent(
                 net.minecraft.text.ClickEvent.Action.RUN_COMMAND,
-                "/community cancel_creation $regionNumberId"
+                "/commun cancel_creation $regionNumberId"
             ))
             .withHoverEvent(net.minecraft.text.HoverEvent(
                 net.minecraft.text.HoverEvent.Action.SHOW_TEXT,
