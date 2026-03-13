@@ -141,6 +141,7 @@ Permissions govern what non-owner players may do within the Geoscope. Each permi
 | **Ignite** | Use flint and steel or fire charges |
 | **Armor Stand** | Interact with armor stands |
 | **Item Frame** | Interact with item frames |
+| **Wind Charge Throwing** | Throw wind charges |
 
 Each permission has an area-based cost when activated. Restoring the default refunds **50%** of that cost. Per-player targeting costs **1/5** of the Geoscope-wide rate.
 
@@ -153,8 +154,54 @@ Rules control automatic behaviors within the Geoscope (not tied to specific play
 | **Spawn Monsters** | Allow hostile mob spawning |
 | **Spawn Phantoms** | Allow phantom spawning |
 | **TNT Block Protection** | Prevent TNT from destroying blocks |
+| **Enderman Block Pickup** | Allow Endermen to pick up blocks within the Geoscope |
+| **Sculk Spreading** | Allow sculk sensors to spread within the Geoscope |
+| **Snow Golem Trail** | Allow Snow Golems to leave a snow trail |
+| **Dispenser Firing** | Allow dispensers to fire within the Geoscope |
+| **Pressure Plate Triggering** | Allow pressure plates to be triggered within the Geoscope |
+| **Piston Movement** | Allow pistons to push blocks within the Geoscope |
 
 Rules also carry area-based costs when enabled.
+
+### Setting Costs
+
+Setting costs scale progressively with territory size (bracketed by the community's free-area threshold: 10,000 m² for manors, 40,000 m² for realms). Small communities typically stay in the first tier; the per-unit rate rises as territory grows. The table below shows the **base rate** (first tier, per 10,000 m²) for each setting:
+
+| Setting | Base Rate |
+|---|---|
+| Build & Break | $200.00 |
+| Interaction | $150.00 |
+| Build | $125.00 |
+| Break | $125.00 |
+| PvP | $125.00 |
+| Container | $100.00 |
+| Redstone | $100.00 |
+| Villager Killing | $100.00 |
+| Animal Killing | $70.00 |
+| Spawn Monsters (rule) | $450.00 |
+| Spawn Phantoms (rule) | $70.00 |
+| TNT Block Protection (rule) | $70.00 |
+| Enderman Block Pickup (rule) | $70.00 |
+| Sculk Spreading (rule) | $70.00 |
+| Snow Golem Trail (rule) | $70.00 |
+| Dispenser Firing (rule) | $70.00 |
+| Pressure Plate Triggering (rule) | $70.00 |
+| Piston Movement (rule) | $70.00 |
+| Farming | $35.00 |
+| Armor Stand | $35.00 |
+| Item Frame | $35.00 |
+| Trade | $30.00 |
+| Bucket Build | $20.00 |
+| Bucket Scoop | $20.00 |
+| Throwable | $20.00 |
+| Ignite | $20.00 |
+| Potion Use | $10.00 |
+| Wind Charge Throwing | $8.00 |
+| Egg Use | $5.00 |
+| Snowball Use | $5.00 |
+
+- **Per-player targeting** costs **1/5** of the Geoscope-wide rate.
+- **Restoring to default** refunds **50%** of the original cost.
 
 > **Note:** Requires the **Region Settings** administration privilege.
 

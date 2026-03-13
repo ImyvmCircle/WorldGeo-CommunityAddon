@@ -306,6 +306,12 @@ The base rate per 10,000 m² for each setting type:
 | Monster Spawning (rule) | 450.00 |
 | Phantom Spawning (rule) | 70.00 |
 | TNT Block Protection (rule) | 70.00 |
+| Enderman Block Pickup (rule) | 70.00 |
+| Sculk Spread (rule) | 70.00 |
+| Snow Golem Trail (rule) | 70.00 |
+| Dispenser (rule) | 70.00 |
+| Pressure Plate (rule) | 70.00 |
+| Piston (rule) | 70.00 |
 | Farming | 35.00 |
 | Armor Stand | 35.00 |
 | Item Frame | 35.00 |
@@ -315,6 +321,7 @@ The base rate per 10,000 m² for each setting type:
 | Throwable | 20.00 |
 | Ignite | 20.00 |
 | Potion Use | 10.00 |
+| Wind Charge Use | 8.00 |
 | Egg Use | 5.00 |
 | Snowball Use | 5.00 |
 

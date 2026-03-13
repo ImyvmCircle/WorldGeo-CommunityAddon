@@ -10,9 +10,26 @@ import net.minecraft.server.network.ServerPlayerEntity
 
 fun onHelpCommand(player: ServerPlayerEntity): Int {
     player.sendMessage(Translator.tr("community.command.help.header"))
+    player.sendMessage(Translator.tr("community.command.help.open_menu"))
+    player.sendMessage(Translator.tr("community.command.help.help"))
     player.sendMessage(Translator.tr("community.command.help.list_communities"))
     player.sendMessage(Translator.tr("community.command.help.query_region"))
-    player.sendMessage(Translator.tr("community.command.help.ch"))
+    player.sendMessage(Translator.tr("community.command.help.section_land"))
+    player.sendMessage(Translator.tr("community.command.help.select"))
+    player.sendMessage(Translator.tr("community.command.help.create"))
+    player.sendMessage(Translator.tr("community.command.help.section_join"))
+    player.sendMessage(Translator.tr("community.command.help.join"))
+    player.sendMessage(Translator.tr("community.command.help.leave"))
+    player.sendMessage(Translator.tr("community.command.help.accept_invitation"))
+    player.sendMessage(Translator.tr("community.command.help.reject_invitation"))
+    player.sendMessage(Translator.tr("community.command.help.section_chat"))
+    player.sendMessage(Translator.tr("community.command.help.chat"))
+    player.sendMessage(Translator.tr("community.command.help.chat_channel"))
+    player.sendMessage(Translator.tr("community.command.help.section_announce"))
+    player.sendMessage(Translator.tr("community.command.help.announcement_list"))
+    player.sendMessage(Translator.tr("community.command.help.announcement_view"))
+    player.sendMessage(Translator.tr("community.command.help.announcement_create"))
+    player.sendMessage(Translator.tr("community.command.help.announcement_delete"))
     return 1
 }
 
