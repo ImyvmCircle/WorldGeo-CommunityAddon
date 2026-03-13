@@ -8,13 +8,12 @@ This Project is designed to constitute a comprehensive framework for players' **
 
 This major version is a perfection of current game system.
 
-### Recent Changes
+### 1.0.0
 
-- feat: `/community` now redirects to the scope creation screen or scope modification list when opened while in selection mode started from the community menu; state is tracked per-player and cleared automatically when selection ends
-- feat: clickable **[ Return to Menu ]** buttons appended in chat for operations that close the GUI and send a message (non-member info view, member description view, announcement content view, teleport point inquiry, rename cooldown error, geometry modification error); clicking the button re-opens the relevant menu directly via command
-- feat: `/ch <community> <message>` alias registered as shorthand for `/community chat`; suggestion providers and click-event commands now quote-wrap names containing spaces
-- feat: anvil rename menus now reject invalid names by clearing the output slot; attempting to confirm an invalid name re-opens the menu with an error hint in the title
-- feat: community and scope creation menus now display an error when the name contains unsupported characters (requires IWG dependency update to 1.3.2+)
+This version fixes bugs of SNAPSHOT and officially release 1.0.0.
+
+- fix: lan purchase price issues.
+- chore: re-pricing some service.
 
 ## Features
 
