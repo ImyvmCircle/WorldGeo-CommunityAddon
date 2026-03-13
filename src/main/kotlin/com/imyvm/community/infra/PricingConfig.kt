@@ -67,7 +67,7 @@ class PricingConfig : HokiConfig("Pricing.conf") {
         @ConfigOption
         val MANOR_AREA_PRICE_PER_UNIT = Option(
             "economy.manor_area_price_per_unit",
-            100000L,
+            20000L,
             "the price per unit area for manor above free area (Long, = display price * 100 per unit)."
         ) { obj, path ->
             obj.getLong(path)
@@ -97,7 +97,7 @@ class PricingConfig : HokiConfig("Pricing.conf") {
         @ConfigOption
         val REALM_AREA_PRICE_PER_UNIT = Option(
             "economy.realm_area_price_per_unit",
-            300000L,
+            60000L,
             "the price per unit area for realm above free area (Long, = display price * 100 per unit)."
         ) { obj, path ->
             obj.getLong(path)

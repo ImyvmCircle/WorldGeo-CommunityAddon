@@ -80,10 +80,10 @@ A **community creation request** may be initialized spontaneously by any player 
     * **Area-Based Fee** — uses **tiered bracket pricing** (progressive, like a tax bracket system):
         * Each tier covers a range 4× wider than the previous; the multiplier doubles each tier (×1, ×2, ×4, …);
         * Only the area **within each bracket** is charged at that bracket's rate — reaching a higher tier does not retroactively affect lower tiers;
-        * **Manor** (first 10,000 m² free, base rate 1,000 per 10,000 m²):
+        * **Manor** (first 10,000 m² free, base rate 200 per 10,000 m²):
             * Tier 1: \[10,000, 40,000\) m² at ×1 rate;
             * Tier 2: \[40,000, 160,000\) m² at ×2 rate; and so on;
-        * **Realm** (first 40,000 m² free, base rate 3,000 per 40,000 m²):
+        * **Realm** (first 40,000 m² free, base rate 600 per 40,000 m²):
             * Tier 1: \[40,000, 160,000\) m² at ×1 rate;
             * Tier 2: \[160,000, 640,000\) m² at ×2 rate; and so on;
 
@@ -394,15 +394,15 @@ Territory modifications incur costs or provide refunds based on area changes, us
 
 **Expansion Costs**
 - Only the *incremental area* between old and new total is priced bracket-by-bracket;
-- **Manor**: base rate 1,000 per 10,000 m², geometric tier multipliers (×1, ×2, ×4, …);
-- **Realm**: base rate 3,000 per 40,000 m², same bracket structure;
+- **Manor**: base rate 200 per 10,000 m², geometric tier multipliers (×1, ×2, ×4, …);
+- **Realm**: base rate 600 per 40,000 m², same bracket structure;
 
 **Contraction Refunds**
 - The *reduced area* is refunded at 50% of its equivalent expansion cost, bracket-by-bracket;
 - Area within the free area threshold (10,000 m² for manors, 40,000 m² for realms) has no charge and no refund value.
 
 **Confirmation Display**
-Before execution, a bracket-by-bracket breakdown is shown for each tier involved, including the tier number, bracket range, area within that bracket, multiplier, and partial cost (or refund).
+Before execution, a bracket-by-bracket breakdown is shown for each tier involved, including the tier number, bracket range, area within that bracket, unit rate ($/m²), and partial cost (or refund).
 
 ##### Requirements
 

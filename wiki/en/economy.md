@@ -27,23 +27,23 @@ When creating a community, you pay a **base creation fee** plus an **area surcha
 
 The area surcharge uses a **tiered bracket system** (progressive, like a tax bracket). Only the area within each bracket is charged at that bracket's rate. The unit multiplier doubles with each tier.
 
-#### Manor (first 10,000 m² free; base rate: $1,000 per 10,000 m²)
+#### Manor (first 10,000 m² free; base rate: $200 per 10,000 m²)
 
 | Tier | Area Range | Multiplier | Effective Rate |
 |---|---|---|---|
-| 1 | 10,000 – 40,000 m² | ×1 | $0.10 / m² |
-| 2 | 40,000 – 160,000 m² | ×2 | $0.20 / m² |
-| 3 | 160,000 – 640,000 m² | ×4 | $0.40 / m² |
-| 4 | 640,000 – 2,560,000 m² | ×8 | $0.80 / m² |
+| 1 | 10,000 – 40,000 m² | ×1 | $0.020 / m² |
+| 2 | 40,000 – 160,000 m² | ×2 | $0.040 / m² |
+| 3 | 160,000 – 640,000 m² | ×4 | $0.080 / m² |
+| 4 | 640,000 – 2,560,000 m² | ×8 | $0.160 / m² |
 | … | … | doubles | … |
 
-#### Realm (first 40,000 m² free; base rate: $3,000 per 40,000 m²)
+#### Realm (first 40,000 m² free; base rate: $600 per 40,000 m²)
 
 | Tier | Area Range | Multiplier | Effective Rate |
 |---|---|---|---|
-| 1 | 40,000 – 160,000 m² | ×1 | $0.075 / m² |
-| 2 | 160,000 – 640,000 m² | ×2 | $0.15 / m² |
-| 3 | 640,000 – 2,560,000 m² | ×4 | $0.30 / m² |
+| 1 | 40,000 – 160,000 m² | ×1 | $0.015 / m² |
+| 2 | 160,000 – 640,000 m² | ×2 | $0.030 / m² |
+| 3 | 640,000 – 2,560,000 m² | ×4 | $0.060 / m² |
 | … | … | doubles | … |
 
 > **Tip:** Realms have a lower per-m² rate than manors at every tier, making large territory significantly cheaper for realms.

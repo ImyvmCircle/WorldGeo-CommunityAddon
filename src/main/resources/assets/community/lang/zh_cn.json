@@ -453,7 +453,7 @@
   "community.create.confirm.area_cost": "§f§l面积费用：§r §6{0}",
   "community.create.confirm.area_cost_calculation": "§7计算：({0} - {1}) / {2} * {3} = §6{4}",
   "community.create.confirm.land_brackets": "§f§l土地费用 §7（分段计费）：",
-  "community.pricing.bracket_line": "§7  §f第{0}档§7（§e{1} ~ {2}§7 m²）：§b{3}§7 m² §f×{4}§7 = §e{5}",
+  "community.pricing.bracket_line": "§7  §f第{0}档§7（§e{1} ~ {2}§7 m²）：§b{3}§7 m² §f×{4}§7/m² = §e{5}",
   "community.pricing.refund_summary": "§7  × §f{0}%§7 退款 = §a{1}",
   "community.pricing.land.increase_header": "§f§l土地费用 §7（+§b{0}§7 m²）：",
   "community.pricing.land.decrease_header": "§f§l土地退款 §7（-§b{0}§7 m²）：",
