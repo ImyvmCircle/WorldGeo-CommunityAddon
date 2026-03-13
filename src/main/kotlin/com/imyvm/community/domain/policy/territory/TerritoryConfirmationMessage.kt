@@ -41,7 +41,7 @@ object TerritoryConfirmationMessage {
                 messages.add(Translator.tr("community.pricing.bracket_line",
                     tierNum.toString(), String.format("%.2f", low), String.format("%.2f", high),
                     String.format("%.2f", areaIn), mult.toString(), String.format("%.2f", cost / 100.0)
-                ) ?: Text.literal("  Tier $tierNum (${String.format("%.2f", low)} ~ ${String.format("%.2f", high)} m²): ${String.format("%.2f", areaIn)} m² × ×$mult = ${String.format("%.2f", cost / 100.0)}"))
+                ) ?: Text.literal("  Tier $tierNum (${String.format("%.2f", low)} ~ ${String.format("%.2f", high)} m²): ${String.format("%.2f", areaIn)} m² ×$mult = ${String.format("%.2f", cost / 100.0)}"))
             }
         } else {
             messages.add(Translator.tr("community.create.confirm.area_free") ?: Text.literal("Land fee: Free (within free area)"))
@@ -85,7 +85,7 @@ object TerritoryConfirmationMessage {
                 messages.add(Translator.tr("community.pricing.bracket_line",
                     tierNum.toString(), String.format("%.2f", low), String.format("%.2f", high),
                     String.format("%.2f", areaIn), mult.toString(), String.format("%.2f", cost / 100.0)
-                ) ?: Text.literal("  Tier $tierNum (${String.format("%.2f", low)} ~ ${String.format("%.2f", high)} m²): ${String.format("%.2f", areaIn)} m² × ×$mult = ${String.format("%.2f", cost / 100.0)}"))
+                ) ?: Text.literal("  Tier $tierNum (${String.format("%.2f", low)} ~ ${String.format("%.2f", high)} m²): ${String.format("%.2f", areaIn)} m² ×$mult = ${String.format("%.2f", cost / 100.0)}"))
             }
         } else {
             val refundRate = (config.refundRate * 100).toInt()
@@ -95,7 +95,7 @@ object TerritoryConfirmationMessage {
                 messages.add(Translator.tr("community.pricing.bracket_line",
                     tierNum.toString(), String.format("%.2f", low), String.format("%.2f", high),
                     String.format("%.2f", areaIn), mult.toString(), String.format("%.2f", cost / 100.0)
-                ) ?: Text.literal("  Tier $tierNum (${String.format("%.2f", low)} ~ ${String.format("%.2f", high)} m²): ${String.format("%.2f", areaIn)} m² × ×$mult = ${String.format("%.2f", cost / 100.0)}"))
+                ) ?: Text.literal("  Tier $tierNum (${String.format("%.2f", low)} ~ ${String.format("%.2f", high)} m²): ${String.format("%.2f", areaIn)} m² ×$mult = ${String.format("%.2f", cost / 100.0)}"))
             }
             messages.add(Translator.tr("community.pricing.refund_summary", refundRate.toString(), String.format("%.2f", landCostAbs / 100.0))
                 ?: Text.literal("  × $refundRate% refund = ${String.format("%.2f", landCostAbs / 100.0)}"))
@@ -182,7 +182,7 @@ object TerritoryConfirmationMessage {
                 messages.add(Translator.tr("community.pricing.bracket_line",
                     tierNum.toString(), String.format("%.2f", low), String.format("%.2f", high),
                     String.format("%.2f", areaIn), mult.toString(), String.format("%.2f", cost / 100.0)
-                ) ?: Text.literal("  Tier $tierNum (${String.format("%.2f", low)} ~ ${String.format("%.2f", high)} m²): ${String.format("%.2f", areaIn)} m² × ×$mult = ${String.format("%.2f", cost / 100.0)}"))
+                ) ?: Text.literal("  Tier $tierNum (${String.format("%.2f", low)} ~ ${String.format("%.2f", high)} m²): ${String.format("%.2f", areaIn)} m² ×$mult = ${String.format("%.2f", cost / 100.0)}"))
             }
         } else {
             messages.add(Translator.tr("community.scope_add.confirm.land_free") ?: Text.literal("Land fee: Free (within free area)"))

@@ -563,7 +563,7 @@ private fun sendSettingOrderSummary(
             player.sendMessage(Translator.tr("community.pricing.bracket_line",
                 tierNum.toString(), String.format("%.2f", low), String.format("%.2f", high),
                 String.format("%.2f", areaIn), mult.toString(), String.format("%.2f", rawCost / 100.0)
-            ) ?: Text.literal("  Tier $tierNum (${String.format("%.2f", low)} ~ ${String.format("%.2f", high)} m²): ${String.format("%.2f", areaIn)} m² × ×$mult = ${String.format("%.2f", rawCost / 100.0)}"))
+            ) ?: Text.literal("  Tier $tierNum (${String.format("%.2f", low)} ~ ${String.format("%.2f", high)} m²): ${String.format("%.2f", areaIn)} m² ×$mult = ${String.format("%.2f", rawCost / 100.0)}"))
         }
         if (denominator > 1L) {
             player.sendMessage(
@@ -625,7 +625,7 @@ private fun sendRuleSettingOrderSummary(
             player.sendMessage(Translator.tr("community.pricing.bracket_line",
                 tierNum.toString(), String.format("%.2f", low), String.format("%.2f", high),
                 String.format("%.2f", areaIn), mult.toString(), String.format("%.2f", rawCost / 100.0)
-            ) ?: Text.literal("  Tier $tierNum (${String.format("%.2f", low)} ~ ${String.format("%.2f", high)} m²): ${String.format("%.2f", areaIn)} m² × ×$mult = ${String.format("%.2f", rawCost / 100.0)}"))
+            ) ?: Text.literal("  Tier $tierNum (${String.format("%.2f", low)} ~ ${String.format("%.2f", high)} m²): ${String.format("%.2f", areaIn)} m² ×$mult = ${String.format("%.2f", rawCost / 100.0)}"))
         }
         if (cost < 0) {
             val refundPct = (PricingConfig.AREA_REFUND_RATE.value * 100).toInt()

@@ -484,7 +484,7 @@ Members with sufficient permissions may invite online players through:
 **Invitation Requirements:**
 - Inviter must be a member with a role other than `APPLICANT` or `REFUSED`;
 - Community must have sufficient assets to cover the join cost (deducted upon audit approval):
-  - Manor join cost: 1,500.00 (configurable);
+  - Manor join cost: 450.00 (configurable);
   - Realm join cost: 500.00 (configurable);
 - Target player must meet all standard joining conditions (not already a member, passes membership checks);
 - **Manor capacity check**: Manor communities must not be at member capacity (default: 4 members). If the manor is at capacity, the invitation cannot be sent and the inviter is notified.
@@ -552,7 +552,7 @@ Invited players follow a modified audit workflow:
 
 **Configuration Options:**
 - `INVITATION_RESPONSE_TIMEOUT_MINUTES` - Time limit in minutes for responding to invitations (default: 5 minutes);
-- `COMMUNITY_JOIN_COST_MANOR` - Join cost for manor communities paid by the community when invitation is approved (default: 1,500.00);
+- `COMMUNITY_JOIN_COST_MANOR` - Join cost for manor communities paid by the community when invitation is approved (default: 450.00);
 - `COMMUNITY_JOIN_COST_REALM` - Join cost for realm communities paid by the community when invitation is approved (default: 500.00);
 - Timeout enforcement is automatic through the pending operations system, which checks every `PENDING_CHECK_INTERVAL_SECONDS`.
 
@@ -608,7 +608,7 @@ Teleport point accessibility means **public visibility for non-formal players** 
 Teleport point setup now uses a confirmation flow with pricing:
 - first active teleport point in a community is free;
 - creating the second active point costs 2000, and each additional active point doubles that setup cost; and
-- modifying an already-set teleport point costs 3000.
+- modifying an already-set teleport point costs 1000.
 
 Teleport execution now uses daily per-player/per-community escalation:
 - formal members have 10 free uses per day; non-formal players have 1 free use per day;

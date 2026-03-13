@@ -12,12 +12,12 @@ Communities involve several types of in-game currency transactions. This page co
 |---|---|---|
 | Community creation (base) | $5,000.00 | $10,000.00 |
 | Area surcharge | Tiered (see below) | Tiered (see below) |
-| Join fee | $1,500.00 | $500.00 |
+| Join fee | $450.00 | $500.00 |
 | Scope addition (base) | $500.00 | $1,000.00 |
 | 1st teleport point | Free | Free |
 | 2nd teleport point (base) | $2,000.00 | $2,000.00 |
 | Additional teleport point | Doubles per additional | Doubles per additional |
-| Modify existing teleport point | $3,000.00 | $3,000.00 |
+| Modify existing teleport point | $1,000.00 | $1,000.00 |
 
 ## Creation Costs
 
@@ -60,7 +60,7 @@ Joining a community costs a one-time fee, paid by the joining player:
 
 | Community Type | Join Fee |
 |---|---|
-| Manor | $1,500.00 |
+| Manor | $450.00 |
 | Realm | $500.00 |
 
 - **Open policy:** Fee deducted immediately on joining.

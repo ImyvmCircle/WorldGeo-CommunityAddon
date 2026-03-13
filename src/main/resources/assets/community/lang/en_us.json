@@ -453,7 +453,7 @@
   "community.create.confirm.area_cost": "§f§lArea Fee:§r §6{0}",
   "community.create.confirm.area_cost_calculation": "§7Calculation: ({0} - {1}) / {2} * {3} = §6{4}",
   "community.create.confirm.land_brackets": "§f§lLand Fee §7(tiered):",
-  "community.pricing.bracket_line": "§7  §fTier {0}§7 (§e{1} ~ {2}§7 m²): §b{3}§7 m² × §f×{4}§7 = §e{5}",
+  "community.pricing.bracket_line": "§7  §fTier {0}§7 (§e{1} ~ {2}§7 m²): §b{3}§7 m² §f×{4}§7 = §e{5}",
   "community.pricing.refund_summary": "§7  × §f{0}%§7 refund = §a{1}",
   "community.pricing.land.increase_header": "§f§lLand Fee §7(+§b{0}§7 m²):",
   "community.pricing.land.decrease_header": "§f§lLand Refund §7(-§b{0}§7 m²):",
