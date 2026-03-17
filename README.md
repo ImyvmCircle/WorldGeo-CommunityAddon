@@ -13,8 +13,6 @@ This major version is a perfection of current game system.
 This version implements the community like feature.
 
 - feat: implement community like system — each player can like a community once per day (timezone-aware);
-- feat: community list is now sorted by total likes in descending order;
-- feat: community item tooltip (lore) now displays like count.
 
 ## Features
 
