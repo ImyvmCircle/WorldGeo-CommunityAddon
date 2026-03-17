@@ -22,7 +22,7 @@ The **Community Menu** is the central hub for any community member. It is opened
 | 28 | Writable Book | **Chat Channel** | All members | Opens the [Chat Room Menu](chat.md) |
 | 29 | Experience Bottle | **Advancement** | All members | *(Planned feature)* |
 | 30 | Emerald | **Donate** | All members | Opens the [Donation Menu](economy.md#donating) |
-| 32 | Pink Dye | **Like** | All members | *(Planned feature)* |
+| 32 | Pink Dye | **Like** | All members | Like the community; each player can like once per day |
 | 33 | Zombie Villager Spawn Egg | **Leave Community** | Member, Admin | Opens a confirmation screen to leave |
 | 34 | Villager Spawn Egg | **Invite Member** | All formal members | Opens the online player list to send an invitation |
 
@@ -105,6 +105,17 @@ Clicking **Invite Member** opens a list of currently **online players**. Click a
 4. Admin [audits the application](administration.md#audit-applications) → Accept or Refuse.
 
 **Command equivalent (accept/reject):** `/community accept_invitation <communityIdentifier>` | `/community reject_invitation <communityIdentifier>`
+
+---
+
+## Like Community
+
+Clicking **Like** closes the menu and adds one like to the community.
+
+- Each player can like a community **once per day** (based on the server's configured timezone).
+- On success, you will see a chat message showing the community's current total likes and its ranking among all communities.
+- If you have already liked today, you will be reminded to come back tomorrow.
+- In the **Community List Menu**, communities are sorted by total likes in descending order. The community's item tooltip (lore) also displays its like count.
 
 ---
 

@@ -149,6 +149,7 @@
   "ui.list.button.lore.founding_time": "创建时间：{0}",
   "ui.list.button.lore.member_size": "成员数：{0}",
   "ui.list.button.lore.join_policy": "移民政策：{0}",
+  "ui.list.button.lore.like_count": "§d点赞数：{0}",
   "ui.my_communities.title": "已加入的领域，选择一个打开。",
   "ui.community.title": "{0}（ID: {1}）",
   "ui.community.button.description.region": "地块信息",
@@ -671,5 +672,7 @@
   "ui.admin.scope.modify.confirm_menu.title": "修改辖区：{0} > {1}",
   "ui.admin.scope.modify.confirm_menu.button.toggle_off": "§c§l取消选择模式§r",
   "ui.admin.scope.modify.confirm_menu.button.exit_to_select": "§e§l退出继续选点§r",
-  "ui.admin.scope.modify.confirm_menu.button.confirm": "§a§l确认修改§r"
+  "ui.admin.scope.modify.confirm_menu.button.confirm": "§a§l确认修改§r",
+  "community.like.success": "§d§l[点赞成功]§r §d已给 §f§l{0}§r §d点赞，领域现在赞数为 §e§l{1}§r§d，排行第 §a§l{2}§r§d 名。",
+  "community.like.already_liked": "§c§l[点赞提示]§r §c今日已经点赞过，明日再来点赞吧。"
 }

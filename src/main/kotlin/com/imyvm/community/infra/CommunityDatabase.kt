@@ -37,6 +37,7 @@ object CommunityDatabase {
 
             savePendingOperations(stream)
             saveNameChangeCooldownsSection(stream)
+            saveLikesSection(stream)
         }
     }
 
@@ -92,6 +93,13 @@ object CommunityDatabase {
                     loadNameChangeCooldownsSection(stream)
                 } catch (e: Exception) {
                     com.imyvm.community.WorldGeoCommunityAddon.logger.error("Failed to load name change cooldowns: ${e.message}")
+                }
+            }
+            if (stream.available() > 0) {
+                try {
+                    loadLikesSection(stream)
+                } catch (e: Exception) {
+                    com.imyvm.community.WorldGeoCommunityAddon.logger.error("Failed to load likes data: ${e.message}")
                 }
             }
         }
@@ -486,6 +494,39 @@ object CommunityDatabase {
                 cooldowns[key] = timestamp
             }
             getCommunityById(regionId)?.nameChangeCooldowns = cooldowns
+        }
+    }
+
+    private fun saveLikesSection(stream: DataOutputStream) {
+        val communitiesWithLikes = communities.filter { (it.likeCount > 0 || it.lastLikedBy.isNotEmpty()) && it.regionNumberId != null }
+        stream.writeInt(communitiesWithLikes.size)
+        for (community in communitiesWithLikes) {
+            stream.writeInt(community.regionNumberId!!)
+            stream.writeInt(community.likeCount)
+            stream.writeInt(community.lastLikedBy.size)
+            for ((uuid, timestamp) in community.lastLikedBy) {
+                stream.writeUTF(uuid.toString())
+                stream.writeLong(timestamp)
+            }
+        }
+    }
+
+    private fun loadLikesSection(stream: DataInputStream) {
+        val entryCount = stream.readInt()
+        for (i in 0 until entryCount) {
+            val regionId = stream.readInt()
+            val likeCount = stream.readInt()
+            val mapSize = stream.readInt()
+            val lastLikedBy = HashMap<UUID, Long>(mapSize)
+            for (j in 0 until mapSize) {
+                val uuid = UUID.fromString(stream.readUTF())
+                val timestamp = stream.readLong()
+                lastLikedBy[uuid] = timestamp
+            }
+            getCommunityById(regionId)?.let {
+                it.likeCount = likeCount
+                it.lastLikedBy = lastLikedBy
+            }
         }
     }
 }

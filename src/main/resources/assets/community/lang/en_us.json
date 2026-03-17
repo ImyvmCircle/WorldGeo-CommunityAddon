@@ -149,6 +149,7 @@
   "ui.list.button.lore.founding_time": "Founding Time: {0}",
   "ui.list.button.lore.member_size": "Member Size: {0}",
   "ui.list.button.lore.join_policy": "Join Policy: {0}",
+  "ui.list.button.lore.like_count": "§dLikes: {0}",
   "ui.my_communities.title": "JOINED Communities, choose one to open.",
   "ui.community.title": "{0} (ID: {1})",
   "ui.community.button.description.region": "Region information",
@@ -671,5 +672,7 @@
   "ui.admin.scope.modify.confirm_menu.title": "Modify Scope: {0} > {1}",
   "ui.admin.scope.modify.confirm_menu.button.toggle_off": "§c§lCancel Selection Mode§r",
   "ui.admin.scope.modify.confirm_menu.button.exit_to_select": "§e§lExit to Continue Selecting§r",
-  "ui.admin.scope.modify.confirm_menu.button.confirm": "§a§lConfirm Modification§r"
+  "ui.admin.scope.modify.confirm_menu.button.confirm": "§a§lConfirm Modification§r",
+  "community.like.success": "§d§l[Liked!]§r §dSuccessfully liked §f§l{0}§r§d. Community now has §e§l{1}§r§d like(s), ranked §a§l#{2}§r§d.",
+  "community.like.already_liked": "§c§l[Like Reminder]§r §cYou have already liked today. Come back tomorrow!"
 }

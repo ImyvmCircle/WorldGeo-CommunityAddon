@@ -8,12 +8,13 @@ This Project is designed to constitute a comprehensive framework for players' **
 
 This major version is a perfection of current game system.
 
-### 1.0.0
+### 1.0.1
 
-This version fixes bugs of SNAPSHOT and officially release 1.0.0.
+This version implements the community like feature.
 
-- fix: lan purchase price issues.
-- chore: re-pricing some service.
+- feat: implement community like system — each player can like a community once per day (timezone-aware);
+- feat: community list is now sorted by total likes in descending order;
+- feat: community item tooltip (lore) now displays like count.
 
 ## Features
 
@@ -625,7 +626,7 @@ From the public community list, non-members can open a teleport scope list and u
 - **Community Chat** *()* - Access community messaging system;
 - **Advancement** *()* - View community achievements;
 - **Donate to Community** - Contribute currency to the community (opens the Assets menu);
-- **Like Community** *()* - Rate the community;
+- **Like Community** - Like the community; each player can like once per day (timezone-aware); communities are ranked by total likes;
 - **Leave Community** - Exit the community; and
 - **Invite Member** - Recruit new members to join by sending invitations to online players.
 

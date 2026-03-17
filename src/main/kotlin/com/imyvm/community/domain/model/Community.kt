@@ -19,7 +19,9 @@ class Community(
     var expenditures: ArrayList<Turnover> = arrayListOf(),
     var messages: MutableList<CommunityMessage> = mutableListOf(),
     var creationCost: Long = 0L,
-    var nameChangeCooldowns: HashMap<String, Long> = HashMap()
+    var nameChangeCooldowns: HashMap<String, Long> = HashMap(),
+    var likeCount: Int = 0,
+    var lastLikedBy: HashMap<UUID, Long> = HashMap()
 ) {
     fun isManor(): Boolean {
         return status == CommunityStatus.PENDING_MANOR || status == CommunityStatus.ACTIVE_MANOR || status == CommunityStatus.REVOKED_MANOR

@@ -339,3 +339,46 @@ fun runBackToCommunityMenu(player: ServerPlayerEntity, community: Community, run
         )
     }
 }
+
+fun runLikeCommunity(player: ServerPlayerEntity, community: Community) {
+    player.closeHandledScreen()
+
+    val timezone = ZoneId.of(CommunityConfig.TIMEZONE.value)
+    val today = LocalDate.now(timezone)
+    val lastLikeTimestamp = community.lastLikedBy[player.uuid]
+    val communityName = community.generateCommunityMark()
+    val regionId = community.regionNumberId
+
+    if (lastLikeTimestamp != null) {
+        val lastLikeDate = java.time.Instant.ofEpochMilli(lastLikeTimestamp)
+            .atZone(timezone).toLocalDate()
+        if (!today.isAfter(lastLikeDate)) {
+            player.sendMessage(Translator.tr("community.like.already_liked"))
+            sendReturnToMenuButton(player, regionId)
+            return
+        }
+    }
+
+    community.likeCount++
+    community.lastLikedBy[player.uuid] = System.currentTimeMillis()
+
+    val rank = calculateCommunityLikeRank(community)
+    player.sendMessage(Translator.tr("community.like.success", communityName, community.likeCount, rank))
+    sendReturnToMenuButton(player, regionId)
+}
+
+private fun sendReturnToMenuButton(player: ServerPlayerEntity, regionId: Int?) {
+    if (regionId != null) {
+        player.sendMessage(
+            Translator.tr("ui.button.return_to_menu")?.copy()?.styled { style ->
+                style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/community open_menu $regionId"))
+            }
+        )
+    }
+}
+
+private fun calculateCommunityLikeRank(community: Community): Int {
+    val sorted = com.imyvm.community.infra.CommunityDatabase.communities
+        .sortedByDescending { it.likeCount }
+    return sorted.indexOfFirst { it.regionNumberId == community.regionNumberId } + 1
+}

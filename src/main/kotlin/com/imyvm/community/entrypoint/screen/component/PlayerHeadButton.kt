@@ -24,6 +24,7 @@ fun getPlayerHeadButtonItemStackCommunity(community: Community): ItemStack{
     addEntry("ui.list.button.lore.founding_time", community.getFormattedFoundingTime())
     addEntry("ui.list.button.lore.member_size", community.member.size)
     addEntry("ui.list.button.lore.join_policy", community.joinPolicy.name)
+    addEntry("ui.list.button.lore.like_count", community.likeCount)
 
     return getLoreButton(itemStack, loreLines)
 }

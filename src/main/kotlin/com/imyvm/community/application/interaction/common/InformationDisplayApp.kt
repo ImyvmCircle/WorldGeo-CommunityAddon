@@ -25,5 +25,5 @@ fun filterCommunitiesByType(type: CommunityListFilterType): List<Community> {
         CommunityListFilterType.REVOKED -> CommunityDatabase.communities.filter {
             it.status == CommunityStatus.REVOKED_MANOR || it.status == CommunityStatus.REVOKED_REALM
         }
-    }
+    }.sortedByDescending { it.likeCount }
 }
