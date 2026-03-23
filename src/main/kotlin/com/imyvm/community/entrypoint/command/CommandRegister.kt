@@ -405,6 +405,20 @@ private fun runCancelScopeModification(context: CommandContext<ServerCommandSour
     return onCancelScopeModification(player, regionId, scopeName)
 }
 
+private fun runConfirmScopeDeletion(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val regionId = IntegerArgumentType.getInteger(context, "regionId")
+    val scopeName = StringArgumentType.getString(context, "scopeName")
+    return onConfirmScopeDeletion(player, regionId, scopeName)
+}
+
+private fun runCancelScopeDeletion(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val regionId = IntegerArgumentType.getInteger(context, "regionId")
+    val scopeName = StringArgumentType.getString(context, "scopeName")
+    return onCancelScopeDeletion(player, regionId, scopeName)
+}
+
 private fun runConfirmTeleportPointSetting(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
     val regionId = IntegerArgumentType.getInteger(context, "regionId")
@@ -748,6 +762,26 @@ fun registerCommun(dispatcher: CommandDispatcher<ServerCommandSource>) {
                             .then(
                                 argument("scopeName", StringArgumentType.string())
                                     .executes { runCancelScopeModification(it) }
+                            )
+                    )
+            )
+            .then(
+                literal("confirm_delete_scope")
+                    .then(
+                        argument("regionId", IntegerArgumentType.integer())
+                            .then(
+                                argument("scopeName", StringArgumentType.string())
+                                    .executes { runConfirmScopeDeletion(it) }
+                            )
+                    )
+            )
+            .then(
+                literal("cancel_delete_scope")
+                    .then(
+                        argument("regionId", IntegerArgumentType.integer())
+                            .then(
+                                argument("scopeName", StringArgumentType.string())
+                                    .executes { runCancelScopeDeletion(it) }
                             )
                     )
             )

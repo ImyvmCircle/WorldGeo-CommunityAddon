@@ -65,6 +65,13 @@ private fun handleExpiredOperation(
                     ?.sendMessage(Translator.tr("community.setting.confirmation.expired"))
             }
         }
+        PendingOperationType.DELETE_SCOPE_CONFIRMATION -> {
+            iterator.remove()
+            operation.modificationData?.executorUUID?.let { executorUUID ->
+                server.playerManager.getPlayer(executorUUID)
+                    ?.sendMessage(Translator.tr("community.scope_delete.confirmation.expired"))
+            }
+        }
         else -> {
             WorldGeoCommunityAddon.logger.info(
                 "Unhandled expired operation type: ${operation.type} for key $key"
