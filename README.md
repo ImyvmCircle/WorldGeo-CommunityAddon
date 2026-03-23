@@ -386,6 +386,16 @@ Adding a new administrative district uses the dedicated **Scope Creation Screen*
 
 On success, assets are deducted and a notification mail is sent to all formal members (owner/admin/member).
 
+##### Administrative District Sale (Selling a Scope)
+
+The **Sell Administrative District** button in the Administration Menu's global geometry panel allows selling a Geoscope to the system. The refund is calculated as if the scope area were reduced to zero, applying the standard 50% refund rate for land cost and setting cost differences. The scope creation base cost is not refunded.
+
+- The community must retain at least one Geoscope; attempting to sell the last remaining scope is rejected;
+- Confirmation is required through the standard pending command-based confirmation flow (5-minute expiry);
+- The confirmation display shows a bracket-by-bracket refund breakdown, setting item cost changes, total refund amount, and community asset changes;
+- On confirmation, the scope is deleted and the refund is deposited to the community owner's account;
+- A notification is sent to all formal members.
+
 ##### Pricing System
 
 Territory modifications incur costs or provide refunds based on area changes, using the same **tiered bracket pricing** as creation:
@@ -397,7 +407,8 @@ Territory modifications incur costs or provide refunds based on area changes, us
 
 **Contraction Refunds**
 - The *reduced area* is refunded at 50% of its equivalent expansion cost, bracket-by-bracket;
-- Area within the free area threshold (10,000 m² for manors, 40,000 m² for realms) has no charge and no refund value.
+- Area within the free area threshold (10,000 m² for manors, 40,000 m² for realms) has no charge and no refund value;
+- Selling a scope to the system applies the same refund calculation (as if the scope area were reduced to zero), plus refunds for affected settings. The scope creation base cost is not refunded.
 
 **Confirmation Display**
 Before execution, a bracket-by-bracket breakdown is shown for each tier involved, including the tier number, bracket range, area within that bracket, unit rate ($/m²), and partial cost (or refund).

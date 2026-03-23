@@ -50,7 +50,7 @@ The area surcharge uses a **tiered bracket system** (progressive, like a tax bra
 
 ### Refund Policy
 
-When **reducing** territory area, you receive a **50% refund** of the cost difference. No refund is given for scope deletions.
+When **reducing** territory area, you receive a **50% refund** of the cost difference. When **selling** a scope to the system, you receive a **50% refund** of the corresponding land cost and setting cost difference (base cost is not refunded).
 
 ---
 

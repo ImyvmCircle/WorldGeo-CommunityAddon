@@ -78,6 +78,26 @@ Area-based fees also apply proportionally to the Geoscope's footprint.
 
 ---
 
+## Selling a Geoscope
+
+You can sell a Geoscope to the system. The system will calculate the refund amount based on the scope's area and affected settings (refunding **50%** of the corresponding cost difference). The base creation cost is not refunded. Each community must retain at least one Geoscope, so the last remaining scope cannot be sold.
+
+**Steps:**
+
+1. Administration Menu → **Geographic Scope Modification** → **Global** → **Sell Administrative District**;
+2. Select the scope to sell from the list;
+3. A refund summary with **[CONFIRM]** / **[CANCEL]** buttons appears in chat (valid for 5 minutes).
+
+> **Note:** Only **active** communities can sell scopes.
+
+> **Note:** Requires **Geographic Scope Modification** administrative privilege.
+
+**Commands:**
+- `/community confirm_delete_scope <regionId> <scopeName>` — Confirm sale
+- `/community cancel_delete_scope <regionId> <scopeName>` — Cancel sale
+
+---
+
 ## Modifying a Geoscope's Boundaries
 
 You can redefine the boundaries of any existing Geoscope. The system calculates the cost or refund based on the area difference between old and new shapes.
