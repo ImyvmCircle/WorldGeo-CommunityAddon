@@ -185,6 +185,101 @@ fun onCancelScopeModification(player: ServerPlayerEntity, regionNumberId: Int, s
     return 1
 }
 
+private fun getAndValidateDeletionPendingOperation(player: ServerPlayerEntity, regionNumberId: Int, scopeName: String): com.imyvm.community.domain.model.PendingOperation? {
+    val pendingOp = WorldGeoCommunityAddon.pendingOperations[regionNumberId]
+
+    if (pendingOp == null || pendingOp.type != PendingOperationType.DELETE_SCOPE_CONFIRMATION) {
+        player.sendMessage(Translator.tr("community.scope_delete.confirmation.not_found"))
+        return null
+    }
+
+    val modificationData = pendingOp.modificationData
+    if (modificationData == null || modificationData.executorUUID != player.uuid || modificationData.scopeName != scopeName) {
+        player.sendMessage(Translator.tr("community.modification.confirmation.not_yours"))
+        return null
+    }
+
+    return pendingOp
+}
+
+fun onConfirmScopeDeletion(player: ServerPlayerEntity, regionNumberId: Int, scopeName: String): Int {
+    val pendingOp = getAndValidateDeletionPendingOperation(player, regionNumberId, scopeName) ?: return 0
+    val modificationData = pendingOp.modificationData!!
+
+    if (System.currentTimeMillis() > pendingOp.expireAt) {
+        player.sendMessage(Translator.tr("community.modification.confirmation.expired"))
+        WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        return 0
+    }
+
+    val community = CommunityDatabase.getCommunityById(regionNumberId)
+    if (community == null) {
+        player.sendMessage(Translator.tr("community.modification.error.community_not_found"))
+        WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        return 0
+    }
+
+    val communityRegion = community.getRegion()
+    if (communityRegion == null) {
+        player.sendMessage(Translator.tr("community.modification.error.no_region"))
+        WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        return 0
+    }
+
+    if (communityRegion.geometryScope.size <= 1) {
+        player.sendMessage(Translator.tr("community.scope_delete.error.last_scope"))
+        WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        return 0
+    }
+
+    PlayerInteractionApi.deleteScope(player, communityRegion, scopeName)
+
+    if (modificationData.cost < 0) {
+        val refundAmount = -modificationData.cost
+        val ownerUUID = community.getOwnerUUID()
+        if (ownerUUID != null) {
+            val ownerAccount = community.member[ownerUUID]
+            ownerAccount?.turnover?.add(Turnover(
+                amount = refundAmount,
+                timestamp = System.currentTimeMillis()
+            ))
+        }
+    }
+
+    WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+    CommunityDatabase.save()
+
+    val refundDisplay = String.format("%.2f", Math.abs(modificationData.cost) / 100.0)
+    player.sendMessage(Translator.tr("community.scope_delete.success", scopeName, refundDisplay))
+
+    val territoryType = if (community.isManor()) {
+        Translator.tr("community.region.territory.manor")?.string ?: "manor territory"
+    } else {
+        Translator.tr("community.region.territory.realm")?.string ?: "realm territory"
+    }
+
+    val communityName = communityRegion.name
+    val notification = Translator.tr(
+        "community.notification.scope_deleted",
+        scopeName,
+        territoryType,
+        communityName,
+        player.name.string,
+        refundDisplay
+    ) ?: Text.literal("Administrative district '$scopeName' was sold in $territoryType '$communityName' by ${player.name.string}")
+
+    notifyFormalMembers(community, player.server, notification)
+    return 1
+}
+
+fun onCancelScopeDeletion(player: ServerPlayerEntity, regionNumberId: Int, scopeName: String): Int {
+    if (getAndValidateDeletionPendingOperation(player, regionNumberId, scopeName) == null) return 0
+
+    WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+    player.sendMessage(Translator.tr("community.scope_delete.confirmation.cancelled", scopeName))
+    return 1
+}
+
 
 private fun notifyFormalMembers(
     community: com.imyvm.community.domain.model.Community,

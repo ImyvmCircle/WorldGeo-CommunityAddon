@@ -4,6 +4,7 @@ import com.imyvm.community.application.event.addPendingOperation
 import com.imyvm.community.application.interaction.common.helper.calculateModificationCost
 import com.imyvm.community.application.interaction.common.helper.generateModificationConfirmationMessage
 import com.imyvm.community.application.interaction.common.helper.generateScopeAdditionConfirmationMessage
+import com.imyvm.community.application.interaction.common.helper.generateScopeDeletionConfirmationMessage
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.application.interaction.screen.inner_community.canUseCommunityTeleport
 import com.imyvm.community.application.interaction.screen.inner_community.runTeleportCommunity
@@ -463,6 +464,18 @@ fun runExecuteScope(
                 }
             }
         }
+        GeographicFunctionType.SCOPE_DELETION -> {
+            CommunityPermissionPolicy.executeWithPermission(
+                playerExecutor,
+                {
+                    val adminCheck = CommunityPermissionPolicy.canExecuteAdministration(playerExecutor, community, AdminPrivilege.MODIFY_REGION_GEOMETRY)
+                    if (adminCheck.isDenied()) return@executeWithPermission adminCheck
+                    CommunityPermissionPolicy.canExecuteOperationInProto(playerExecutor, community, AdminPrivilege.MODIFY_REGION_GEOMETRY)
+                }
+            ) {
+                executeScopeDeletion(playerExecutor, community, scope)
+            }
+        }
     }
 }
 
@@ -735,4 +748,95 @@ internal fun executeScopeModification(
             sendInteractiveScopeModificationConfirmation(player, community.regionNumberId!!, scope.scopeName)
         }
     }
+}
+
+internal fun executeScopeDeletion(
+    player: ServerPlayerEntity,
+    community: Community,
+    scope: GeoScope
+) {
+    val communityRegion = community.getRegion()
+    if (communityRegion == null) {
+        player.sendMessage(Translator.tr("community.modification.error.no_region"))
+        player.closeHandledScreen()
+        return
+    }
+
+    if (communityRegion.geometryScope.size <= 1) {
+        player.sendMessage(Translator.tr("community.scope_delete.error.last_scope"))
+        player.closeHandledScreen()
+        return
+    }
+
+    val scopeArea = RegionDataApi.getScopeArea(scope) ?: 0.0
+    val currentTotalArea = communityRegion.calculateTotalArea()
+    val isManor = community.isManor()
+
+    val costResult = calculateModificationCost(-scopeArea, currentTotalArea, isManor)
+    val regionSettingChanges = calculateRegionSettingsCostChanges(communityRegion, -scopeArea, isManor)
+    val scopeSettingChanges = calculateScopeSettingsCostChanges(communityRegion, scope, -scopeArea, isManor)
+    val allSettingChanges = regionSettingChanges + scopeSettingChanges
+    val totalCost = costResult.cost + allSettingChanges.sumOf { it.costChange }
+    val currentAssets = community.getTotalAssets()
+
+    player.closeHandledScreen()
+
+    generateScopeDeletionConfirmationMessage(
+        scopeName = scope.scopeName,
+        scopeArea = scopeArea,
+        costResult = costResult,
+        isManor = isManor,
+        currentAssets = currentAssets,
+        settingChanges = allSettingChanges
+    ).forEach { player.sendMessage(it) }
+
+    addPendingOperation(
+        regionId = community.regionNumberId!!,
+        type = PendingOperationType.DELETE_SCOPE_CONFIRMATION,
+        expireMinutes = 5,
+        modificationData = ScopeModificationConfirmationData(
+            regionNumberId = community.regionNumberId!!,
+            scopeName = scope.scopeName,
+            executorUUID = player.uuid,
+            cost = totalCost,
+            isScopeDeletion = true
+        )
+    )
+
+    sendInteractiveScopeDeletionConfirmation(player, community.regionNumberId!!, scope.scopeName)
+}
+
+private fun sendInteractiveScopeDeletionConfirmation(player: ServerPlayerEntity, regionNumberId: Int, scopeName: String) {
+    val quotedScopeName = if (!scopeName.all { it.isLetterOrDigit() && it.code < 128 }) "\"$scopeName\"" else scopeName
+    val confirmButton = Text.literal("§a§l[CONFIRM]§r")
+        .styled { style ->
+            style.withClickEvent(net.minecraft.text.ClickEvent(
+                net.minecraft.text.ClickEvent.Action.RUN_COMMAND,
+                "/commun confirm_delete_scope $regionNumberId $quotedScopeName"
+            ))
+            .withHoverEvent(net.minecraft.text.HoverEvent(
+                net.minecraft.text.HoverEvent.Action.SHOW_TEXT,
+                Text.literal("§aClick to confirm selling scope")
+            ))
+        }
+
+    val cancelButton = Text.literal("§c§l[CANCEL]§r")
+        .styled { style ->
+            style.withClickEvent(net.minecraft.text.ClickEvent(
+                net.minecraft.text.ClickEvent.Action.RUN_COMMAND,
+                "/commun cancel_delete_scope $regionNumberId $quotedScopeName"
+            ))
+            .withHoverEvent(net.minecraft.text.HoverEvent(
+                net.minecraft.text.HoverEvent.Action.SHOW_TEXT,
+                Text.literal("§cClick to cancel")
+            ))
+        }
+
+    val promptMessage = Text.empty()
+        .append(Text.literal("§e§l[ACTION REQUIRED]§r §ePlease confirm within §c§l5 minutes§r§e: "))
+        .append(confirmButton)
+        .append(Text.literal(" "))
+        .append(cancelButton)
+
+    player.sendMessage(promptMessage)
 }

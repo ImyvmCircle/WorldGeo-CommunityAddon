@@ -24,6 +24,20 @@ fun generateModificationConfirmationMessage(
 }
 
 
+fun generateScopeDeletionConfirmationMessage(
+    scopeName: String,
+    scopeArea: Double,
+    costResult: ModificationCostResult,
+    isManor: Boolean,
+    currentAssets: Long,
+    settingChanges: List<SettingItemCostChange> = emptyList()
+): List<Text> {
+    return TerritoryConfirmationMessage.generateScopeDeletionConfirmation(
+        scopeName, scopeArea, costResult, isManor, currentAssets, settingChanges
+    )
+}
+
+
 fun generateScopeAdditionConfirmationMessage(
     scopeName: String,
     shapeType: GeoShapeType,

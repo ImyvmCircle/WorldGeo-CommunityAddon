@@ -1,6 +1,7 @@
 package com.imyvm.community.entrypoint.screen.inner_community.multi_parent
 
 import com.imyvm.community.application.interaction.screen.outer_community.runAddScopeForCommunity
+import com.imyvm.community.application.interaction.screen.outer_community.runDeleteScopeForCommunity
 import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.runUnimplementedGeometryGlobalAction
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.entrypoint.screen.AbstractMenu
@@ -34,7 +35,7 @@ class CommunityRegionGlobalGeometryMenu(
             slot = 22,
             name = Translator.tr("ui.admin.region.global.delete")?.string ?: "Delete Administrative District",
             item = Items.RED_WOOL
-        ) { runUnimplementedGeometryGlobalAction(it) }
+        ) { runDeleteScopeForCommunity(it, community, runBack) }
 
         addButton(
             slot = 23,

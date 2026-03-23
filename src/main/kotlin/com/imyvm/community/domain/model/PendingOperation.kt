@@ -30,7 +30,8 @@ data class ScopeModificationConfirmationData(
     val cost: Long,
     val isScopeCreation: Boolean = false,
     val shapeName: String? = null,
-    val softLimitSurcharge: Long = 0L
+    val softLimitSurcharge: Long = 0L,
+    val isScopeDeletion: Boolean = false
 )
 
 data class TeleportPointConfirmationData(
@@ -73,7 +74,8 @@ enum class PendingOperationType(val value: Int) {
     MODIFY_SCOPE_CONFIRMATION(9),
     TELEPORT_POINT_CONFIRMATION(10),
     SETTING_CONFIRMATION(11),
-    RENAME_CONFIRMATION(12);
+    RENAME_CONFIRMATION(12),
+    DELETE_SCOPE_CONFIRMATION(13);
     
     companion object {
         fun fromValue(value: Int): PendingOperationType {

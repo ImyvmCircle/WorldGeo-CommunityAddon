@@ -73,6 +73,42 @@ fun runAddScopeForCommunity(
     openScopeCreationForCommunity(player, community, runBack)
 }
 
+fun runDeleteScopeForCommunity(
+    player: ServerPlayerEntity,
+    community: Community,
+    runBack: (ServerPlayerEntity) -> Unit
+) {
+    CommunityPermissionPolicy.executeWithPermission(
+        player,
+        {
+            val adminCheck = CommunityPermissionPolicy.canExecuteAdministration(player, community, AdminPrivilege.MODIFY_REGION_GEOMETRY)
+            if (adminCheck.isDenied()) return@executeWithPermission adminCheck
+            CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdminPrivilege.MODIFY_REGION_GEOMETRY)
+        }
+    ) {
+        val region = community.getRegion()
+        if (region == null) {
+            player.closeHandledScreen()
+            player.sendMessage(Translator.tr("community.modification.error.no_region"))
+            return@executeWithPermission
+        }
+        if (region.geometryScope.size <= 1) {
+            player.closeHandledScreen()
+            player.sendMessage(Translator.tr("community.scope_delete.error.last_scope"))
+            return@executeWithPermission
+        }
+        CommunityMenuOpener.open(player) { syncId ->
+            CommunityRegionScopeMenu(
+                syncId = syncId,
+                playerExecutor = player,
+                community = community,
+                geographicFunctionType = GeographicFunctionType.SCOPE_DELETION,
+                runBack = runBack
+            )
+        }
+    }
+}
+
 fun runModifyScopeForCommunity(
     player: ServerPlayerEntity,
     community: Community,

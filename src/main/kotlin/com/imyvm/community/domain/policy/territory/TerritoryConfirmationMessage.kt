@@ -148,6 +148,71 @@ object TerritoryConfirmationMessage {
         return messages
     }
 
+    fun generateScopeDeletionConfirmation(
+        scopeName: String,
+        scopeArea: Double,
+        costResult: ModificationCostResult,
+        isManor: Boolean,
+        currentAssets: Long,
+        settingChanges: List<SettingItemCostChange> = emptyList()
+    ): List<Text> {
+        val messages = mutableListOf<Text>()
+        val config = TerritoryPricing.getPricingConfig(isManor)
+        val modN = config.pricePerUnit.toDouble() / config.unitSize
+
+        messages.add(Translator.tr("community.scope_delete.confirm.header")
+            ?: Text.literal("====== SELL SCOPE CONFIRMATION ======"))
+        messages.add(Translator.tr("community.scope_delete.confirm.scope", scopeName)
+            ?: Text.literal("Administrative District: $scopeName"))
+        messages.add(Translator.tr("community.scope_delete.confirm.area", String.format("%.2f", scopeArea))
+            ?: Text.literal("Scope Area: ${String.format("%.2f", scopeArea)} m²"))
+
+        val landRefundAbs = Math.abs(costResult.cost)
+        val refundRate = (config.refundRate * 100).toInt()
+        messages.add(Translator.tr("community.pricing.land.decrease_header", String.format("%.2f", scopeArea))
+            ?: Text.literal("Land Refund (-${String.format("%.2f", scopeArea)} m²):"))
+        TerritoryPricing.forEachLandBracket(costResult.areaAfter, costResult.areaBefore, isManor) { tierNum, low, high, areaIn, mult, cost ->
+            val unitPrice = modN * mult.toDouble() / 100.0
+            messages.add(Translator.tr("community.pricing.bracket_line",
+                tierNum.toString(), String.format("%.2f", low), String.format("%.2f", high),
+                String.format("%.2f", areaIn), String.format("%.3f", unitPrice), String.format("%.2f", cost / 100.0)
+            ) ?: Text.literal("  Tier $tierNum (${String.format("%.2f", low)} ~ ${String.format("%.2f", high)} m²): ${String.format("%.2f", areaIn)} m² ×${String.format("%.3f", unitPrice)}/m² = ${String.format("%.2f", cost / 100.0)}"))
+        }
+        messages.add(Translator.tr("community.pricing.refund_summary", refundRate.toString(), String.format("%.2f", landRefundAbs / 100.0))
+            ?: Text.literal("  × $refundRate% refund = ${String.format("%.2f", landRefundAbs / 100.0)}"))
+
+        var totalCost = costResult.cost
+        if (settingChanges.isNotEmpty()) {
+            messages.add(Translator.tr("community.modification.confirm.setting_changes_header")
+                ?: Text.literal("Setting item cost changes:"))
+            for (change in settingChanges) {
+                totalCost += change.costChange
+                val target = change.playerName ?: (Translator.tr("community.setting.confirmation.target.global.short")?.string ?: "global")
+                val layer = change.scopeName ?: (Translator.tr("community.setting.confirmation.layer.region.short")?.string ?: "region")
+                val sign = if (change.costChange >= 0) "+" else ""
+                messages.add(Translator.tr(
+                    "community.modification.confirm.setting_change_line",
+                    change.settingKeyName,
+                    layer,
+                    target,
+                    String.format("%.2f", change.areaOld),
+                    String.format("%.2f", change.areaNew),
+                    "$sign${String.format("%.2f", change.costChange / 100.0)}"
+                ) ?: Text.literal("  ${change.settingKeyName} [$layer/$target]: ${String.format("%.2f", change.areaOld)}→${String.format("%.2f", change.areaNew)} m², $sign${String.format("%.2f", change.costChange / 100.0)}"))
+            }
+        }
+
+        val assetsAfter = currentAssets - totalCost
+        messages.add(Translator.tr("community.scope_delete.confirm.refund", String.format("%.2f", -totalCost / 100.0))
+            ?: Text.literal("Total Refund: ${String.format("%.2f", -totalCost / 100.0)}"))
+        messages.add(Translator.tr("community.modification.confirm.assets", String.format("%.2f", currentAssets / 100.0), String.format("%.2f", assetsAfter / 100.0))
+            ?: Text.literal("Community Assets: ${String.format("%.2f", currentAssets / 100.0)} -> ${String.format("%.2f", assetsAfter / 100.0)}"))
+        messages.add(Translator.tr("community.scope_delete.confirm.prompt")
+            ?: Text.literal("Please confirm to sell this scope to the system."))
+
+        return messages
+    }
+
     fun generateScopeAdditionConfirmation(
         scopeName: String,
         shapeType: GeoShapeType,
