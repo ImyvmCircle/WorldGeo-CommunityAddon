@@ -762,6 +762,13 @@ internal fun executeScopeDeletion(
         return
     }
 
+    val existingPending = com.imyvm.community.WorldGeoCommunityAddon.pendingOperations[community.regionNumberId]
+    if (existingPending != null) {
+        player.sendMessage(Translator.tr("community.modification.confirmation.pending"))
+        player.closeHandledScreen()
+        return
+    }
+
     if (communityRegion.geometryScope.size <= 1) {
         player.sendMessage(Translator.tr("community.scope_delete.error.last_scope"))
         player.closeHandledScreen()
