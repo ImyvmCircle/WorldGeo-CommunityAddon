@@ -54,8 +54,6 @@
 |---|---|---|
 | `/community join <communityIdentifier>` | 加入领域（或按政策提交申请） | 浏览领域 → 点击 → 加入 |
 | `/community leave <communityIdentifier>` | 退出领域 | 领域菜单 → 退出领域 |
-| `/community accept_invitation <communityIdentifier>` | 接受待处理的邀请 | 聊天邀请 [接受] 按钮 |
-| `/community reject_invitation <communityIdentifier>` | 拒绝待处理的邀请 | 聊天邀请 [拒绝] 按钮 |
 
 ---
 
@@ -110,6 +108,13 @@
 | `/commun cancel_treasury_grant <regionId>` | 取消本聚落发起的赠予请求 | 发起聚落领主或具有该授权的行政助理 |
 
 国库赠予命令中，`<regionId>` 为**发起方聚落**的数字 ID。
+
+### 成员邀请响应
+
+| 命令 | 说明 | 执行方 |
+|---|---|---|
+| `/commun accept_invitation <communityIdentifier>` | 接受待处理的邀请 | 被邀请的玩家 |
+| `/commun reject_invitation <communityIdentifier>` | 拒绝待处理的邀请 | 被邀请的玩家 |
 
 ---
 

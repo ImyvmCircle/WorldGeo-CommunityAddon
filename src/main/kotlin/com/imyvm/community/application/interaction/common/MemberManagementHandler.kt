@@ -285,7 +285,7 @@ fun sendInvitation(inviter: ServerPlayerEntity, target: ServerPlayerEntity, comm
             style.withColor(net.minecraft.util.Formatting.GREEN)
                 .withClickEvent(net.minecraft.text.ClickEvent(
                     net.minecraft.text.ClickEvent.Action.RUN_COMMAND,
-                    "/community accept_invitation ${community.regionNumberId}"
+                    "/commun accept_invitation ${community.regionNumberId}"
                 ))
                 .withHoverEvent(net.minecraft.text.HoverEvent(
                     net.minecraft.text.HoverEvent.Action.SHOW_TEXT,
@@ -301,7 +301,7 @@ fun sendInvitation(inviter: ServerPlayerEntity, target: ServerPlayerEntity, comm
             style.withColor(net.minecraft.util.Formatting.RED)
                 .withClickEvent(net.minecraft.text.ClickEvent(
                     net.minecraft.text.ClickEvent.Action.RUN_COMMAND,
-                    "/community reject_invitation ${community.regionNumberId}"
+                    "/commun reject_invitation ${community.regionNumberId}"
                 ))
                 .withHoverEvent(net.minecraft.text.HoverEvent(
                     net.minecraft.text.HoverEvent.Action.SHOW_TEXT,

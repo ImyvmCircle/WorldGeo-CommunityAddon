@@ -218,22 +218,6 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     )
             )
             .then(
-                literal("accept_invitation")
-                    .then(
-                        argument("communityIdentifier", StringArgumentType.string())
-                            .suggests(ALL_COMMUNITY_PROVIDER)
-                            .executes { runAcceptInvitation(it) }
-                    )
-            )
-            .then(
-                literal("reject_invitation")
-                    .then(
-                        argument("communityIdentifier", StringArgumentType.string())
-                            .suggests(ALL_COMMUNITY_PROVIDER)
-                            .executes { runRejectInvitation(it) }
-                    )
-            )
-            .then(
                 literal("chat")
                     .then(
                         argument("communityIdentifier", StringArgumentType.string())
@@ -288,6 +272,40 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     .then(
                         argument("regionId", IntegerArgumentType.integer())
                             .executes { runOpenModifyMenuCommand(it) }
+                    )
+            )
+            .then(
+                literal("treasury")
+                    .requires { it.hasPermissionLevel(2) }
+                    .then(
+                        literal("deposit")
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.string())
+                                    .suggests(ALL_COMMUNITY_PROVIDER)
+                                    .then(
+                                        argument("amount", com.mojang.brigadier.arguments.DoubleArgumentType.doubleArg(0.01))
+                                            .executes { runAdminTreasuryDeposit(it, null) }
+                                            .then(
+                                                argument("description", StringArgumentType.greedyString())
+                                                    .executes { runAdminTreasuryDeposit(it, StringArgumentType.getString(it, "description")) }
+                                            )
+                                    )
+                            )
+                    )
+                    .then(
+                        literal("withdraw")
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.string())
+                                    .suggests(ALL_COMMUNITY_PROVIDER)
+                                    .then(
+                                        argument("amount", com.mojang.brigadier.arguments.DoubleArgumentType.doubleArg(0.01))
+                                            .executes { runAdminTreasuryWithdraw(it, null) }
+                                            .then(
+                                                argument("description", StringArgumentType.greedyString())
+                                                    .executes { runAdminTreasuryWithdraw(it, StringArgumentType.getString(it, "description")) }
+                                            )
+                                    )
+                            )
                     )
             )
     )
@@ -948,37 +966,19 @@ fun registerCommun(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     )
             )
             .then(
-                literal("treasury")
-                    .requires { it.hasPermissionLevel(2) }
+                literal("accept_invitation")
                     .then(
-                        literal("deposit")
-                            .then(
-                                argument("communityIdentifier", StringArgumentType.string())
-                                    .suggests(ALL_COMMUNITY_PROVIDER)
-                                    .then(
-                                        argument("amount", com.mojang.brigadier.arguments.DoubleArgumentType.doubleArg(0.01))
-                                            .executes { runAdminTreasuryDeposit(it, null) }
-                                            .then(
-                                                argument("description", StringArgumentType.greedyString())
-                                                    .executes { runAdminTreasuryDeposit(it, StringArgumentType.getString(it, "description")) }
-                                            )
-                                    )
-                            )
+                        argument("communityIdentifier", StringArgumentType.string())
+                            .suggests(ALL_COMMUNITY_PROVIDER)
+                            .executes { runAcceptInvitation(it) }
                     )
+            )
+            .then(
+                literal("reject_invitation")
                     .then(
-                        literal("withdraw")
-                            .then(
-                                argument("communityIdentifier", StringArgumentType.string())
-                                    .suggests(ALL_COMMUNITY_PROVIDER)
-                                    .then(
-                                        argument("amount", com.mojang.brigadier.arguments.DoubleArgumentType.doubleArg(0.01))
-                                            .executes { runAdminTreasuryWithdraw(it, null) }
-                                            .then(
-                                                argument("description", StringArgumentType.greedyString())
-                                                    .executes { runAdminTreasuryWithdraw(it, StringArgumentType.getString(it, "description")) }
-                                            )
-                                    )
-                            )
+                        argument("communityIdentifier", StringArgumentType.string())
+                            .suggests(ALL_COMMUNITY_PROVIDER)
+                            .executes { runRejectInvitation(it) }
                     )
             )
     )

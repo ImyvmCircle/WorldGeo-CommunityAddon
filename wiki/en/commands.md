@@ -54,8 +54,6 @@ For `<communityIdentifier>`, you can use either the community's **name** or its 
 |---|---|---|
 | `/community join <communityIdentifier>` | Join a community (or apply, per policy) | Browse Communities → click → Join |
 | `/community leave <communityIdentifier>` | Leave a community | Community Menu → Leave |
-| `/community accept_invitation <communityIdentifier>` | Accept a pending invitation | Chat invite [Accept] button |
-| `/community reject_invitation <communityIdentifier>` | Reject a pending invitation | Chat invite [Reject] button |
 
 ---
 
@@ -110,6 +108,13 @@ These commands are generated automatically in chat as clickable prompts. You typ
 | `/commun cancel_treasury_grant <regionId>` | Cancel your community's outgoing grant request | Owner or eligible admin of the **source** community |
 
 For treasury grant commands, `<regionId>` is the numeric ID of the **source (initiating)** community.
+
+### Member Invitation Responses
+
+| Command | Description | Executed by |
+|---|---|---|
+| `/commun accept_invitation <communityIdentifier>` | Accept a pending invitation | The invited player |
+| `/commun reject_invitation <communityIdentifier>` | Reject a pending invitation | The invited player |
 
 ---
 
