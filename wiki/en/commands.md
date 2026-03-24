@@ -6,6 +6,8 @@
 
 All community commands use the root command `/community`. The GUI menus are the primary interface; commands provide an alternative or complementary way to trigger the same actions.
 
+> **Note:** All **interactive confirmation commands** automatically generated in chat (e.g. confirm creation, confirm rename, accept grant, etc.) use a separate root command `/commun` instead of `/community`.
+
 For `<communityIdentifier>`, you can use either the community's **name** or its **numeric ID**.
 
 > **Name quoting:** Names made up entirely of ASCII letters and digits (a–z, A–Z, 0–9) can be typed directly. Any name containing other characters — spaces, Chinese/Japanese/Korean characters, accented letters, symbols, etc. — **must be enclosed in double quotes** when typed in a command: e.g. `"我的领地"` or `"My Realm"`. This rule applies to both `<communityIdentifier>` and any `<scopeName>` argument. Tab-completion adds the required quotes automatically.
@@ -38,8 +40,8 @@ For `<communityIdentifier>`, you can use either the community's **name** or its 
 | Command | Description | Menu Equivalent |
 |---|---|---|
 | `/community create <shapeType> <communityType> <name>` | Initialize a community creation request | Main Menu → Create Community |
-| `/community confirm_creation <regionId>` | Confirm and finalize the creation | Chat prompt [CONFIRM] button |
-| `/community cancel_creation <regionId>` | Cancel the pending creation request | Chat prompt [CANCEL] button |
+| `/commun confirm_creation <regionId>` | Confirm and finalize the creation | Chat prompt [CONFIRM] button |
+| `/commun cancel_creation <regionId>` | Cancel the pending creation request | Chat prompt [CANCEL] button |
 
 **Shape types:** `RECTANGLE` · `CIRCLE` · `POLYGON`  
 **Community types:** `manor` · `realm`
@@ -78,17 +80,36 @@ For `<communityIdentifier>`, you can use either the community's **name** or its 
 
 ---
 
-## Geometry and Settings Confirmations
+## /commun Interactive Confirmation Commands
 
-These commands are generated automatically in chat as clickable prompts. You typically do not need to type them manually.
+These commands are generated automatically in chat as clickable prompts. You typically do not need to type them manually. All of them use the `/commun` prefix (not `/community`).
+
+### Geometry and Settings Confirmations
 
 | Command | Description |
 |---|---|
-| `/community confirm_modification <regionId> <scopeName>` | Confirm a geometry change |
-| `/community cancel_modification <regionId> <scopeName>` | Cancel a geometry change |
-| `/community confirm_setting <regionId>` | Confirm a region setting change |
-| `/community cancel_setting <regionId>` | Cancel a region setting change |
-| `/community confirm_teleport_point_set <regionId> <scopeName>` | Confirm setting a teleport point |
+| `/commun confirm_modification <regionId> <scopeName>` | Confirm a geometry change |
+| `/commun cancel_modification <regionId> <scopeName>` | Cancel a geometry change |
+| `/commun confirm_setting <regionId>` | Confirm a region setting change |
+| `/commun cancel_setting <regionId>` | Cancel a region setting change |
+| `/commun confirm_teleport_point_set <regionId> <scopeName>` | Confirm setting a teleport point |
+
+### Community Name Confirmations
+
+| Command | Description |
+|---|---|
+| `/commun confirm_rename <regionId> <nameKey>` | Confirm a community name change |
+| `/commun cancel_rename <regionId> <nameKey>` | Cancel a community name change |
+
+### Treasury Grant Confirmations
+
+| Command | Description | Executed by |
+|---|---|---|
+| `/commun accept_treasury_grant <regionId>` | Accept a treasury grant on behalf of your community | Owner or eligible admin of the **target** community |
+| `/commun decline_treasury_grant <regionId>` | Decline a treasury grant on behalf of your community | Owner or eligible admin of the **target** community |
+| `/commun cancel_treasury_grant <regionId>` | Cancel your community's outgoing grant request | Owner or eligible admin of the **source** community |
+
+For treasury grant commands, `<regionId>` is the numeric ID of the **source (initiating)** community.
 
 ---
 

@@ -11,12 +11,37 @@ import com.imyvm.community.entrypoint.screen.inner_community.CommunityAdministra
 import com.imyvm.community.entrypoint.screen.inner_community.administration_only.AdministrationAdvancementMenu
 import com.imyvm.community.entrypoint.screen.inner_community.administration_only.AdministrationAuditListMenu
 import com.imyvm.community.entrypoint.screen.inner_community.administration_only.AdministrationRenameMenuAnvil
+import com.imyvm.community.entrypoint.screen.inner_community.administration_only.TreasuryGrantTargetListMenu
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityMemberListMenu
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityRegionScopeMenu
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.component.HypotheticalShape
 import net.minecraft.server.network.ServerPlayerEntity
+
+fun runAdmGrantCoins(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit) {
+    CommunityPermissionPolicy.executeWithPermission(
+        player,
+        {
+            val adminCheck = CommunityPermissionPolicy.canExecuteAdministration(player, community, AdminPrivilege.GRANT_COINS_FROM_TREASURY)
+            if (!adminCheck.isAllowed()) return@executeWithPermission adminCheck
+            CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdminPrivilege.GRANT_COINS_FROM_TREASURY)
+        }
+    ) {
+        CommunityMenuOpener.open(player) { syncId ->
+            TreasuryGrantTargetListMenu(
+                syncId = syncId,
+                sourceCommunity = community,
+                page = 0,
+                runBack = { runBackToCommunityAdministrationMenu(player, community, runBackGrandfather) }
+            ) { _, targetCommunity ->
+                com.imyvm.community.application.interaction.screen.inner_community.administration_only.runOpenTreasuryGrantAmountMenu(
+                    player, community, targetCommunity
+                ) { runBackToCommunityAdministrationMenu(player, community, runBackGrandfather) }
+            }
+        }
+    }
+}
 
 fun runAdmRenameCommunity(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit){
     CommunityPermissionPolicy.executeWithPermission(

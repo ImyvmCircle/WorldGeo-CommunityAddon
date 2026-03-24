@@ -84,7 +84,7 @@ Teleport points are set per-scope from **Administration Menu → Teleport Points
 > **Note:** Requires the **Manage Teleport Points** admin privilege.
 
 **Command equivalents:**
-- `/community confirm_teleport_point_set <regionId> <scopeName>` — confirm setting a teleport point
+- `/commun confirm_teleport_point_set <regionId> <scopeName>` — confirm setting a teleport point
 
 ---
 

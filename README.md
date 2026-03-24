@@ -104,6 +104,7 @@ A community's owner and administrators possess extensive management capabilities
 - **Manage Members** - Access comprehensive member management tools;
 - **Community Audit** - Review and process membership applications when join policy requires approval;
 - **Announcement** - Post announcements to all members;
+- **Treasury Grant** - Send coins from this community's treasury to another community's treasury;
 - **Advancement** *(planned)* - Manage community achievements and progression systems;
 - **Community Name** - Rename the community globally or rename individual Geoscopes, via an anvil interface; each name carries a 30-day cooldown and a fee ($2,000 for the global name, $100 per Geoscope name);
 - **Region Geometry** - Modify the community's geographical boundaries and shape;
@@ -187,6 +188,7 @@ Owners may individually enable or disable administration operations **per admini
 - `MANAGE_MEMBERS` - Promote, demote, remove members;
 - `AUDIT_APPLICATIONS` - Review membership applications;
 - `MANAGE_ANNOUNCEMENTS` - Create and delete announcements;
+- `GRANT_COINS_FROM_TREASURY` - Initiate and accept treasury grants to/from other communities;
 - `MANAGE_ADVANCEMENT` - Administer achievement systems *(planned)*;
 - `MODIFY_REGION_GEOMETRY` - Alter community boundaries;
 - `MODIFY_REGION_SETTINGS` - Adjust region properties;
@@ -460,8 +462,8 @@ After entering the new name and confirming payment, an **interactive billing con
 The confirmation prompt expires after 5 minutes.
 
 **Command equivalents:**
-- `/community confirm_rename <regionId> <nameKey>` — confirm a rename
-- `/community cancel_rename <regionId> <nameKey>` — cancel a rename
+- `/commun confirm_rename <regionId> <nameKey>` — confirm a rename
+- `/commun cancel_rename <regionId> <nameKey>` — cancel a rename
 
 #### Member Management
 
@@ -752,7 +754,7 @@ The donation menu presents ten predefined amounts: **1.00**, **5.00**, **10.00**
 
 The **Community Assets Menu** displays:
 
-- **Total Assets** - The net assets calculated as total donations minus total expenditures (such as invitation join costs), displayed prominently as a gold block with formatted currency value;
+- **Total Assets** - The net assets calculated as total donations plus received treasury grants minus total expenditures (such as invitation join costs and outgoing treasury grants), displayed prominently as a gold block with formatted currency value;
 - **Donate** button - Opens the donation menu for contributing currency; and
 - **Donor List** button - Opens the comprehensive donor list.
 
@@ -773,7 +775,30 @@ Selecting a donor opens the **Donor Details Menu**, which shows:
 
 #### Technical Implementation
 
-Each member account maintains a `turnover` ArrayList that records all donation history. The community also maintains an `expenditures` ArrayList for tracking costs such as invitation-based membership fees. The community's total assets are calculated dynamically as: (sum of all donations) - (sum of all expenditures). The `getTotalDonation()` method aggregates each member's turnover records, while `getTotalAssets()` computes the net balance. The `getDonorList()` method returns member UUIDs sorted by total contribution, enabling efficient display of the most generous supporters.
+Each member account maintains a `turnover` ArrayList that records all donation history. The community also maintains an `expenditures` ArrayList for tracking costs such as invitation-based membership fees and outgoing treasury grants, and an `incomingGrants` ArrayList for tracking grants received from other communities. The community's total assets are calculated dynamically as: (sum of all donations) + (sum of all incoming grants) - (sum of all expenditures). The `getTotalDonation()` method aggregates each member's turnover records, while `getTotalAssets()` computes the net balance. The `getDonorList()` method returns member UUIDs sorted by total contribution, enabling efficient display of the most generous supporters.
+
+### Treasury Grant System
+
+The community owner or an administrator with the `GRANT_COINS_FROM_TREASURY` privilege may transfer funds from this community's treasury to another community's treasury using the **Treasury Grant** button in the Administration Menu.
+
+#### Grant Flow
+
+1. The initiator opens the **Treasury Grant Target List Menu** from the Administration Menu;
+2. Selects a target community;
+3. Selects a grant amount in the **Treasury Grant Amount Menu**;
+4. The system dispatches a chat notification with three clickable interaction buttons — **[Accept]**, **[Decline]**, and **[Cancel]** — to all formal members of both communities;
+5. An eligible member of the **target** community clicks **[Accept]** to confirm, or **[Decline]** to reject. An eligible member of the **source** community may click **[Cancel]** to withdraw.
+6. On acceptance, the amount is deducted from the source community's treasury and credited to the target community's treasury. The operation expires after **5 minutes** if no response is received.
+
+#### Accounting
+
+- A `Turnover` record with the grant amount is appended to the source community's `expenditures`.
+- A `Turnover` record with the grant amount is appended to the target community's `incomingGrants`.
+- Both communities' `getTotalAssets()` results are affected immediately.
+
+#### Technical Implementation
+
+The grant state is tracked via `TreasuryGrantConfirmationData` stored in the source community's `pendingOperations` map under key `sourceRegionId`. Only one pending treasury grant per community is allowed at a time. Eligibility for both initiating and accepting is checked via `isEligibleTreasuryGrantRecipient()`, which requires the `GRANT_COINS_FROM_TREASURY` privilege or the OWNER role. Confirmation commands are registered under the `/commun` root (not `/community`): `accept_treasury_grant`, `decline_treasury_grant`, and `cancel_treasury_grant`.
 
 ### Announcement System
 

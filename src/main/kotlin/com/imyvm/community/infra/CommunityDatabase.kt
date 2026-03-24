@@ -38,6 +38,7 @@ object CommunityDatabase {
             savePendingOperations(stream)
             saveNameChangeCooldownsSection(stream)
             saveLikesSection(stream)
+            saveCommunityIncomingGrantsSection(stream)
         }
     }
 
@@ -100,6 +101,13 @@ object CommunityDatabase {
                     loadLikesSection(stream)
                 } catch (e: Exception) {
                     com.imyvm.community.WorldGeoCommunityAddon.logger.error("Failed to load likes data: ${e.message}")
+                }
+            }
+            if (stream.available() > 0) {
+                try {
+                    loadCommunityIncomingGrantsSection(stream)
+                } catch (e: Exception) {
+                    com.imyvm.community.WorldGeoCommunityAddon.logger.error("Failed to load incoming grants data: ${e.message}")
                 }
             }
         }
@@ -527,6 +535,34 @@ object CommunityDatabase {
                 it.likeCount = likeCount
                 it.lastLikedBy = lastLikedBy
             }
+        }
+    }
+
+    private fun saveCommunityIncomingGrantsSection(stream: DataOutputStream) {
+        val communitiesWithGrants = communities.filter { it.incomingGrants.isNotEmpty() && it.regionNumberId != null }
+        stream.writeInt(communitiesWithGrants.size)
+        for (community in communitiesWithGrants) {
+            stream.writeInt(community.regionNumberId!!)
+            stream.writeInt(community.incomingGrants.size)
+            for (grant in community.incomingGrants) {
+                stream.writeLong(grant.amount)
+                stream.writeLong(grant.timestamp)
+            }
+        }
+    }
+
+    private fun loadCommunityIncomingGrantsSection(stream: DataInputStream) {
+        val entryCount = stream.readInt()
+        for (i in 0 until entryCount) {
+            val regionId = stream.readInt()
+            val grantCount = stream.readInt()
+            val grants = ArrayList<Turnover>(grantCount)
+            for (j in 0 until grantCount) {
+                val amount = stream.readLong()
+                val timestamp = stream.readLong()
+                grants.add(Turnover(amount, timestamp))
+            }
+            getCommunityById(regionId)?.incomingGrants = grants
         }
     }
 }

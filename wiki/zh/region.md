@@ -71,8 +71,8 @@
 > **注意：** 只有处于**激活状态**的聚落才能添加辖区范围。招募中或待审核阶段的聚落尚不允许此操作，需等待通过 OP 审核进入激活状态后方可进行。
 
 **对应命令：**
-- `/community confirm_modification <regionId> <scopeName>` — 确认创建
-- `/community cancel_modification <regionId> <scopeName>` — 取消创建
+- `/commun confirm_modification <regionId> <scopeName>` — 确认创建
+- `/commun cancel_modification <regionId> <scopeName>` — 取消创建
 
 > **名称引号：** 命令中的 `<scopeName>`（以及其他地方用到的领域/聚落名称）若包含 ASCII 字母和数字以外的字符，**必须用英文双引号括起来**，例如 `"我的辖区"`。按 Tab 键自动补全时会自动添加引号。
 
@@ -93,8 +93,8 @@
 > **注意：** 需要**地理范围修改**行政授权。
 
 **对应命令：**
-- `/community confirm_delete_scope <regionId> <scopeName>` — 确认出售
-- `/community cancel_delete_scope <regionId> <scopeName>` — 取消出售
+- `/commun confirm_delete_scope <regionId> <scopeName>` — 确认出售
+- `/commun cancel_delete_scope <regionId> <scopeName>` — 取消出售
 
 ---
 
@@ -226,8 +226,8 @@
 > **注意：** 需要**地块设置项修改**行政授权。
 
 **对应命令：**
-- `/community confirm_setting <regionId>` — 确认设置修改
-- `/community cancel_setting <regionId>` — 取消设置修改
+- `/commun confirm_setting <regionId>` — 确认设置修改
+- `/commun cancel_setting <regionId>` — 取消设置修改
 
 ---
 

@@ -84,7 +84,7 @@
 > **注意：** 需要**管理传送点**行政授权。
 
 **对应命令：**
-- `/community confirm_teleport_point_set <regionId> <scopeName>` — 确认设置传送点
+- `/commun confirm_teleport_point_set <regionId> <scopeName>` — 确认设置传送点
 
 ---
 

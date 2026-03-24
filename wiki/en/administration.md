@@ -13,7 +13,8 @@ The **Community Administration Menu** is accessible from the **Administration** 
 | 10 | Player Head | **Manage Members** | View and manage all formal members |
 | 11 | Redstone Torch | **Audit Applications** | Review pending join applications |
 | 12 | Paper | **Announcements** | Create and manage community announcements |
-| 13 | Item Frame | **Advancement** | *(Planned feature)* |
+| 13 | Gold Ingot | **Treasury Grant** | Send coins from this community's treasury to another community's treasury |
+| 14 | Item Frame | **Advancement** | *(Planned feature)* |
 | 19 | Name Tag | **Community Name** | Rename the community globally or rename individual Geoscopes |
 | 20 | Map | **Region Geometry** | Modify the territory's geographic shape |
 | 21 | Heart of the Sea | **Region Settings** | Adjust territory permissions and rules |
@@ -48,8 +49,8 @@ If a name was changed within the last 30 days, clicking the rename button is blo
 > **Note:** This action requires the **Rename Community** privilege to be enabled for your Admin role (Owners are always exempt from privilege checks).
 
 **Command equivalents:**
-- `/community confirm_rename <regionId> <nameKey>` — confirm a rename
-- `/community cancel_rename <regionId> <nameKey>` — cancel a rename
+- `/commun confirm_rename <regionId> <nameKey>` — confirm a rename
+- `/commun cancel_rename <regionId> <nameKey>` — cancel a rename
 
 ---
 
@@ -85,6 +86,7 @@ The **Owner** can individually toggle each privilege for any Admin. Privileges a
 | **Manage Members** | Allow admin to promote/demote/remove members |
 | **Audit Applications** | Allow admin to accept or refuse applicants |
 | **Manage Announcements** | Allow admin to create and delete announcements |
+| **Grant Coins from Treasury** | Allow admin to initiate and accept treasury grants (sending from or receiving into this community's treasury) |
 | **Manage Advancement** | Allow admin to manage the advancement tree *(planned)* |
 | **Region Geometry** | Allow admin to modify territory shape and size |
 | **Region Settings** | Allow admin to adjust territory permissions and rules |
@@ -138,6 +140,31 @@ Click an announcement in the list to open its detail view, then click **Delete**
 > **Note:** Requires the **Manage Announcements** privilege.
 
 **Command equivalent:** `/community announcement delete <communityIdentifier> <announcementId>`
+
+---
+
+## Treasury Grant
+
+Clicking **Treasury Grant** (slot 13, Gold Ingot) opens the **Grant Target List Menu**, listing all other communities. Select a target to proceed.
+
+### Flow
+
+1. Click a target community in the list;
+2. Select the grant amount in the **Grant Amount Menu**;
+3. The system posts a confirmation request in chat with clickable **[Accept]** / **[Decline]** / **[Cancel]** buttons:
+   - **[Accept]** (clicked by an eligible admin or owner of the **target** community) — confirms the grant; the amount is deducted from this community's treasury and credited to the target community's treasury;
+   - **[Decline]** (clicked by an eligible admin or owner of the **target** community) — rejects the request;
+   - **[Cancel]** (clicked by an eligible admin or owner of the **source** community) — withdraws the request.
+4. The confirmation prompt expires after **5 minutes**.
+
+The grant is recorded as an **expenditure** in the source community treasury and as an **incoming grant** in the target community treasury, affecting the **Total Assets** of both.
+
+> **Note:** Both the initiating and the accepting party require the **Grant Coins from Treasury** privilege (Owners are always exempt from privilege checks).
+
+**Command equivalents:**
+- `/commun accept_treasury_grant <regionId>` — accept on behalf of your community
+- `/commun decline_treasury_grant <regionId>` — decline on behalf of your community
+- `/commun cancel_treasury_grant <regionId>` — cancel your community's outgoing grant request
 
 ---
 

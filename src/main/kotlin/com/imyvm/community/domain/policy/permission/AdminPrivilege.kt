@@ -5,6 +5,7 @@ enum class AdminPrivilege(val displayKey: String) {
     MANAGE_MEMBERS("ui.admin.button.members"),
     AUDIT_APPLICATIONS("ui.admin.button.audit"),
     MANAGE_ANNOUNCEMENTS("ui.admin.button.announcement"),
+    GRANT_COINS_FROM_TREASURY("ui.admin.button.treasury_grant"),
     MANAGE_ADVANCEMENT("ui.admin.button.advancement"),
     MODIFY_REGION_GEOMETRY("ui.admin.button.region.geometry"),
     MODIFY_REGION_SETTINGS("ui.admin.button.region.setting"),

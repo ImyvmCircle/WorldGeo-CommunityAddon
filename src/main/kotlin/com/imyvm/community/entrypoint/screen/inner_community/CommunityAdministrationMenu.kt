@@ -47,6 +47,12 @@ class CommunityAdministrationMenu(
 
         addButton(
             slot = 13,
+            name = Translator.tr("ui.admin.button.treasury_grant")?.string ?: "Grant Coins from Treasury",
+            item = Items.GOLD_INGOT
+        ) { runAdmGrantCoins(player, community, runBack) }
+
+        addButton(
+            slot = 14,
             name = Translator.tr("ui.admin.button.advancement")?.string ?: "Advancement",
             item = Items.ITEM_FRAME
         ) { runAdmAdvancement(player, community, runBack) }

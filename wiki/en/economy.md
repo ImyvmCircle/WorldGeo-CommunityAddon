@@ -73,7 +73,7 @@ Joining a community costs a one-time fee, paid by the joining player:
 
 Clicking **Treasury** (slot 21, Gold Ingot) in the [Community Menu](community-menu.md) opens the **Community Treasury Menu**, which displays:
 
-- **Total Assets** — sum of all member donations minus all recorded expenditures.
+- **Total Assets** — sum of all member donations and all received treasury grants minus all recorded expenditures.
 - **Donor List button** — opens a ranked list of contributors.
 - **Donate button** — opens the [Donation Menu](#donating).
 
@@ -95,6 +95,37 @@ Any formal member (Owner, Admin, Member) can donate to the community treasury.
 4. Confirm to transfer funds from your personal balance to the treasury.
 
 The donation is recorded in your member account and contributes to the treasury total.
+
+---
+
+## Treasury Grants
+
+The community Owner or any Admin with the **Grant Coins from Treasury** privilege can send coins from this community's treasury to another community's treasury.
+
+### Initiating a Grant
+
+1. Open the **Administration Menu** and click **Treasury Grant** (slot 13, Gold Ingot);
+2. Select the recipient community from the target list;
+3. Choose the amount in the **Grant Amount Menu**;
+4. The system posts a chat confirmation request with clickable buttons.
+
+### Confirmation Flow
+
+| Action | Performed by | Effect |
+|---|---|---|
+| **[Accept]** | Owner or eligible admin of the **target** community | Executes the transfer; funds leave the source treasury and enter the target treasury |
+| **[Decline]** | Owner or eligible admin of the **target** community | Rejects the request |
+| **[Cancel]** | Owner or eligible admin of the **source** community | Withdraws the request |
+
+The confirmation prompt expires after **5 minutes**.
+
+### Accounting
+
+- The grant amount is recorded as an **expenditure** in the source community's treasury.
+- The grant amount is recorded as an **incoming grant** in the target community's treasury.
+- Both communities' **Total Assets** are updated automatically.
+
+> **Note:** Both initiating and accepting parties require the **Grant Coins from Treasury** privilege. Owners are always exempt.
 
 ---
 

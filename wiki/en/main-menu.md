@@ -123,7 +123,7 @@ After clicking **Confirm Creation**:
 > **Note:** If you do not confirm within 5 minutes, the pending request expires and the region is deleted automatically. No funds are charged for an expired or cancelled request.
 
 **Command equivalent:** `/community create <shapeType> <communityType> <name>`  
-Confirmation: `/community confirm_creation <regionId>` | `/community cancel_creation <regionId>`
+Confirmation: `/commun confirm_creation <regionId>` | `/commun cancel_creation <regionId>`
 
 ### After Creation
 

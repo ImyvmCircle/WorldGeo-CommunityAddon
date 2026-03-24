@@ -122,7 +122,7 @@
 > **注意：** 若 5 分钟内未确认，待处理请求将过期，区域自动删除。过期或取消的请求不收取任何费用。
 
 **对应命令：** `/community create <shapeType> <communityType> <name>`  
-确认：`/community confirm_creation <regionId>` | 取消：`/community cancel_creation <regionId>`
+确认：`/commun confirm_creation <regionId>` | 取消：`/commun cancel_creation <regionId>`
 
 ### 创建后
 

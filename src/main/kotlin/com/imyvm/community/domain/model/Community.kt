@@ -17,6 +17,7 @@ class Community(
     var status: CommunityStatus,
     var announcements: MutableList<Announcement> = mutableListOf(),
     var expenditures: ArrayList<Turnover> = arrayListOf(),
+    var incomingGrants: ArrayList<Turnover> = arrayListOf(),
     var messages: MutableList<CommunityMessage> = mutableListOf(),
     var creationCost: Long = 0L,
     var nameChangeCooldowns: HashMap<String, Long> = HashMap(),
@@ -73,8 +74,9 @@ class Community(
 
     fun getTotalAssets(): Long {
         val totalIncome = member.values.sumOf { it.getTotalDonation() }
+        val totalIncomingGrants = incomingGrants.sumOf { it.amount }
         val totalExpenditure = expenditures.sumOf { it.amount }
-        return totalIncome - totalExpenditure
+        return totalIncome + totalIncomingGrants - totalExpenditure
     }
 
     fun getDonorList(): List<UUID> {

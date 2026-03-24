@@ -71,8 +71,8 @@ Area-based fees also apply proportionally to the Geoscope's footprint.
 > **Note:** Only **active** communities may add new Geoscopes. Communities in RECRUITING or PENDING status cannot perform this operation.
 
 **Command equivalents:**
-- `/community confirm_modification <regionId> <scopeName>` — confirm creation
-- `/community cancel_modification <regionId> <scopeName>` — cancel creation
+- `/commun confirm_modification <regionId> <scopeName>` — confirm creation
+- `/commun cancel_modification <regionId> <scopeName>` — cancel creation
 
 > **Quoting names:** A `<scopeName>` (or any region/community name used in commands) that contains characters other than ASCII letters and digits must be enclosed in **double quotes**: e.g. `"我的辖区"`. Tab-completion adds quotes automatically when needed.
 
@@ -93,8 +93,8 @@ You can sell a Geoscope to the system. The system will calculate the refund amou
 > **Note:** Requires **Geographic Scope Modification** administrative privilege.
 
 **Commands:**
-- `/community confirm_delete_scope <regionId> <scopeName>` — Confirm sale
-- `/community cancel_delete_scope <regionId> <scopeName>` — Cancel sale
+- `/commun confirm_delete_scope <regionId> <scopeName>` — Confirm sale
+- `/commun cancel_delete_scope <regionId> <scopeName>` — Cancel sale
 
 ---
 
@@ -226,8 +226,8 @@ Setting costs scale progressively with territory size (bracketed by the communit
 > **Note:** Requires the **Region Settings** administration privilege.
 
 **Command equivalents:**
-- `/community confirm_setting <regionId>` — confirm a setting change
-- `/community cancel_setting <regionId>` — cancel a setting change
+- `/commun confirm_setting <regionId>` — confirm a setting change
+- `/commun cancel_setting <regionId>` — cancel a setting change
 
 ---
 

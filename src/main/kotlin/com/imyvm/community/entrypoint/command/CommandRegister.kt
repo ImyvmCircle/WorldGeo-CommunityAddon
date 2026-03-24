@@ -749,6 +749,24 @@ private fun runCancelTerritoryGrant(context: CommandContext<ServerCommandSource>
     return com.imyvm.community.application.interaction.common.onCancelTerritoryGrant(player, regionId, scopeName)
 }
 
+private fun runAcceptTreasuryGrant(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val regionId = IntegerArgumentType.getInteger(context, "regionId")
+    return com.imyvm.community.application.interaction.screen.inner_community.administration_only.onAcceptTreasuryGrant(player, regionId)
+}
+
+private fun runDeclineTreasuryGrant(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val regionId = IntegerArgumentType.getInteger(context, "regionId")
+    return com.imyvm.community.application.interaction.screen.inner_community.administration_only.onDeclineTreasuryGrant(player, regionId)
+}
+
+private fun runCancelTreasuryGrant(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val regionId = IntegerArgumentType.getInteger(context, "regionId")
+    return com.imyvm.community.application.interaction.screen.inner_community.administration_only.onCancelTreasuryGrant(player, regionId)
+}
+
 fun registerCommun(dispatcher: CommandDispatcher<ServerCommandSource>) {
     dispatcher.register(
         literal("commun")
@@ -888,6 +906,27 @@ fun registerCommun(dispatcher: CommandDispatcher<ServerCommandSource>) {
                                 argument("scopeName", StringArgumentType.string())
                                     .executes { runCancelTerritoryGrant(it) }
                             )
+                    )
+            )
+            .then(
+                literal("accept_treasury_grant")
+                    .then(
+                        argument("regionId", IntegerArgumentType.integer())
+                            .executes { runAcceptTreasuryGrant(it) }
+                    )
+            )
+            .then(
+                literal("decline_treasury_grant")
+                    .then(
+                        argument("regionId", IntegerArgumentType.integer())
+                            .executes { runDeclineTreasuryGrant(it) }
+                    )
+            )
+            .then(
+                literal("cancel_treasury_grant")
+                    .then(
+                        argument("regionId", IntegerArgumentType.integer())
+                            .executes { runCancelTreasuryGrant(it) }
                     )
             )
     )
