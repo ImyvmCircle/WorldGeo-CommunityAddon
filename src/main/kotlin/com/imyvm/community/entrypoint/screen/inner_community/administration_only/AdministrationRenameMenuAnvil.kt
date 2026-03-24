@@ -98,7 +98,7 @@ class AdministrationRenameMenuAnvil(
             .styled { style ->
                 style.withClickEvent(net.minecraft.text.ClickEvent(
                     net.minecraft.text.ClickEvent.Action.RUN_COMMAND,
-                    "/commun confirm_rename $regionNumberId $quotedNameKey"
+                    "/_commun confirm_rename $regionNumberId $quotedNameKey"
                 )).withHoverEvent(net.minecraft.text.HoverEvent(
                     net.minecraft.text.HoverEvent.Action.SHOW_TEXT,
                     Translator.tr("community.rename.confirm.hover") ?: Text.literal("Click to confirm rename")
@@ -109,7 +109,7 @@ class AdministrationRenameMenuAnvil(
             .styled { style ->
                 style.withClickEvent(net.minecraft.text.ClickEvent(
                     net.minecraft.text.ClickEvent.Action.RUN_COMMAND,
-                    "/commun cancel_rename $regionNumberId $quotedNameKey"
+                    "/_commun cancel_rename $regionNumberId $quotedNameKey"
                 )).withHoverEvent(net.minecraft.text.HoverEvent(
                     net.minecraft.text.HoverEvent.Action.SHOW_TEXT,
                     Translator.tr("community.rename.cancel.hover") ?: Text.literal("Click to cancel rename")

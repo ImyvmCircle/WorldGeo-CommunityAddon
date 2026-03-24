@@ -655,12 +655,12 @@ private fun sendInteractiveSettingConfirmation(player: ServerPlayerEntity, regio
     val cancelText = Translator.tr("community.setting.confirmation.cancel_button") ?: Text.literal("§c§l[CANCEL]§r")
 
     val confirmButton = confirmText.copy().styled { style ->
-        style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/commun confirm_setting $regionNumberId"))
+        style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/_commun confirm_setting $regionNumberId"))
             .withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, Translator.tr("community.setting.confirmation.confirm_hover")))
     }
 
     val cancelButton = cancelText.copy().styled { style ->
-        style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/commun cancel_setting $regionNumberId"))
+        style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/_commun cancel_setting $regionNumberId"))
             .withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, Translator.tr("community.setting.confirmation.cancel_hover")))
     }
 

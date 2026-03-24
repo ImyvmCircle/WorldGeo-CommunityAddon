@@ -6,7 +6,7 @@
 
 所有领域命令均使用根命令 `/community`。GUI 菜单是主要界面；命令提供了触发相同操作的替代或补充途径。
 
-> **注意：** 所有由系统自动生成于聊天框中的**交互确认命令**（例如确认创建、确认改名、接受赠予等）使用单独的根命令 `/commun`，而非 `/community`。
+> **注意：** 所有由系统自动生成于聊天框中的**交互确认命令**（例如确认创建、确认改名、接受赠予等）使用单独的根命令 `/_commun`，而非 `/community`。
 
 `<communityIdentifier>` 可使用领域的**名称**或其**数字 ID**。
 
@@ -40,8 +40,8 @@
 | 命令 | 说明 | 对应菜单 |
 |---|---|---|
 | `/community create <shapeType> <communityType> <name>` | 初始化领域创建请求 | 主菜单 → 创建领域 |
-| `/commun confirm_creation <regionId>` | 确认并完成创建 | 聊天提示 [确认] 按钮 |
-| `/commun cancel_creation <regionId>` | 取消待处理的创建请求 | 聊天提示 [取消] 按钮 |
+| `/_commun confirm_creation <regionId>` | 确认并完成创建 | 聊天提示 [确认] 按钮 |
+| `/_commun cancel_creation <regionId>` | 取消待处理的创建请求 | 聊天提示 [取消] 按钮 |
 
 **形状类型：** `RECTANGLE`（矩形）· `CIRCLE`（圆形）· `POLYGON`（多边形）  
 **领域类型：** `manor`（庄园）· `realm`（领地）
@@ -78,34 +78,34 @@
 
 ---
 
-## /commun 交互确认命令
+## /_commun 交互确认命令
 
-这些命令由系统自动在聊天框中生成为可点击的提示，通常不需要手动输入。所有此类命令均使用 `/commun` 前缀（而非 `/community`）。
+这些命令由系统自动在聊天框中生成为可点击的提示，通常不需要手动输入。所有此类命令均使用 `/_commun` 前缀（而非 `/community`）。
 
 ### 地理修改确认
 
 | 命令 | 说明 |
 |---|---|
-| `/commun confirm_modification <regionId> <scopeName>` | 确认几何修改 |
-| `/commun cancel_modification <regionId> <scopeName>` | 取消几何修改 |
-| `/commun confirm_setting <regionId>` | 确认地块设置修改 |
-| `/commun cancel_setting <regionId>` | 取消地块设置修改 |
-| `/commun confirm_teleport_point_set <regionId> <scopeName>` | 确认设置传送点 |
+| `/_commun confirm_modification <regionId> <scopeName>` | 确认几何修改 |
+| `/_commun cancel_modification <regionId> <scopeName>` | 取消几何修改 |
+| `/_commun confirm_setting <regionId>` | 确认地块设置修改 |
+| `/_commun cancel_setting <regionId>` | 取消地块设置修改 |
+| `/_commun confirm_teleport_point_set <regionId> <scopeName>` | 确认设置传送点 |
 
 ### 聚落改名确认
 
 | 命令 | 说明 |
 |---|---|
-| `/commun confirm_rename <regionId> <nameKey>` | 确认改名 |
-| `/commun cancel_rename <regionId> <nameKey>` | 取消改名 |
+| `/_commun confirm_rename <regionId> <nameKey>` | 确认改名 |
+| `/_commun cancel_rename <regionId> <nameKey>` | 取消改名 |
 
 ### 国库赠予确认
 
 | 命令 | 说明 | 执行方 |
 |---|---|---|
-| `/commun accept_treasury_grant <regionId>` | 代表本聚落接受赠予 | 目标聚落领主或具有该授权的行政助理 |
-| `/commun decline_treasury_grant <regionId>` | 代表本聚落拒绝赠予 | 目标聚落领主或具有该授权的行政助理 |
-| `/commun cancel_treasury_grant <regionId>` | 取消本聚落发起的赠予请求 | 发起聚落领主或具有该授权的行政助理 |
+| `/_commun accept_treasury_grant <regionId>` | 代表本聚落接受赠予 | 目标聚落领主或具有该授权的行政助理 |
+| `/_commun decline_treasury_grant <regionId>` | 代表本聚落拒绝赠予 | 目标聚落领主或具有该授权的行政助理 |
+| `/_commun cancel_treasury_grant <regionId>` | 取消本聚落发起的赠予请求 | 发起聚落领主或具有该授权的行政助理 |
 
 国库赠予命令中，`<regionId>` 为**发起方聚落**的数字 ID。
 
@@ -113,8 +113,8 @@
 
 | 命令 | 说明 | 执行方 |
 |---|---|---|
-| `/commun accept_invitation <communityIdentifier>` | 接受待处理的邀请 | 被邀请的玩家 |
-| `/commun reject_invitation <communityIdentifier>` | 拒绝待处理的邀请 | 被邀请的玩家 |
+| `/_commun accept_invitation <communityIdentifier>` | 接受待处理的邀请 | 被邀请的玩家 |
+| `/_commun reject_invitation <communityIdentifier>` | 拒绝待处理的邀请 | 被邀请的玩家 |
 
 ---
 

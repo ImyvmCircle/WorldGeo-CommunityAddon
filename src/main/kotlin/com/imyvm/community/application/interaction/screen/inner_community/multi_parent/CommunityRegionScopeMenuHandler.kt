@@ -559,7 +559,7 @@ private fun sendInteractiveScopeModificationConfirmation(player: ServerPlayerEnt
         .styled { style ->
             style.withClickEvent(net.minecraft.text.ClickEvent(
                 net.minecraft.text.ClickEvent.Action.RUN_COMMAND,
-                "/commun confirm_modification $regionNumberId $quotedScopeName"
+                "/_commun confirm_modification $regionNumberId $quotedScopeName"
             ))
             .withHoverEvent(net.minecraft.text.HoverEvent(
                 net.minecraft.text.HoverEvent.Action.SHOW_TEXT,
@@ -571,7 +571,7 @@ private fun sendInteractiveScopeModificationConfirmation(player: ServerPlayerEnt
         .styled { style ->
             style.withClickEvent(net.minecraft.text.ClickEvent(
                 net.minecraft.text.ClickEvent.Action.RUN_COMMAND,
-                "/commun cancel_modification $regionNumberId $quotedScopeName"
+                "/_commun cancel_modification $regionNumberId $quotedScopeName"
             ))
             .withHoverEvent(net.minecraft.text.HoverEvent(
                 net.minecraft.text.HoverEvent.Action.SHOW_TEXT,
@@ -847,7 +847,7 @@ private fun sendInteractiveScopeDeletionConfirmation(player: ServerPlayerEntity,
         .styled { style ->
             style.withClickEvent(net.minecraft.text.ClickEvent(
                 net.minecraft.text.ClickEvent.Action.RUN_COMMAND,
-                "/commun confirm_delete_scope $regionNumberId $quotedScopeName"
+                "/_commun confirm_delete_scope $regionNumberId $quotedScopeName"
             ))
             .withHoverEvent(net.minecraft.text.HoverEvent(
                 net.minecraft.text.HoverEvent.Action.SHOW_TEXT,
@@ -859,7 +859,7 @@ private fun sendInteractiveScopeDeletionConfirmation(player: ServerPlayerEntity,
         .styled { style ->
             style.withClickEvent(net.minecraft.text.ClickEvent(
                 net.minecraft.text.ClickEvent.Action.RUN_COMMAND,
-                "/commun cancel_delete_scope $regionNumberId $quotedScopeName"
+                "/_commun cancel_delete_scope $regionNumberId $quotedScopeName"
             ))
             .withHoverEvent(net.minecraft.text.HoverEvent(
                 net.minecraft.text.HoverEvent.Action.SHOW_TEXT,

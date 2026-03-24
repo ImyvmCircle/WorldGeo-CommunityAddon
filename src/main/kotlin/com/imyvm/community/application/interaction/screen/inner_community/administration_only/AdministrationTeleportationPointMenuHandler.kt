@@ -326,12 +326,12 @@ private fun sendInteractiveTeleportPointConfirmation(player: ServerPlayerEntity,
     val quotedScopeName = if (!scopeName.all { it.isLetterOrDigit() && it.code < 128 }) "\"$scopeName\"" else scopeName
 
     val confirmButton = confirmText.copy().styled { style ->
-        style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/commun confirm_teleport_point_set $regionNumberId $quotedScopeName"))
+        style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/_commun confirm_teleport_point_set $regionNumberId $quotedScopeName"))
             .withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, Translator.tr("community.teleport_point.confirmation.confirm_hover")))
     }
 
     val cancelButton = cancelText.copy().styled { style ->
-        style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/commun cancel_teleport_point_set $regionNumberId $quotedScopeName"))
+        style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/_commun cancel_teleport_point_set $regionNumberId $quotedScopeName"))
             .withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, Translator.tr("community.teleport_point.confirmation.cancel_hover")))
     }
 

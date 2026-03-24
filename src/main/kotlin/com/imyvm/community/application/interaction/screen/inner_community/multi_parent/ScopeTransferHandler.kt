@@ -135,7 +135,7 @@ private fun sendCancelButtonToInitiator(
         .styled { style ->
             style.withClickEvent(ClickEvent(
                 ClickEvent.Action.RUN_COMMAND,
-                "/commun cancel_territory_grant $sourceRegionId $quotedScopeName"
+                "/_commun cancel_territory_grant $sourceRegionId $quotedScopeName"
             )).withHoverEvent(HoverEvent(
                 HoverEvent.Action.SHOW_TEXT,
                 Text.literal("§c撤销领土赠予请求")
@@ -165,7 +165,7 @@ private fun sendGrantRequestToTargetMember(
         .styled { style ->
             style.withClickEvent(ClickEvent(
                 ClickEvent.Action.RUN_COMMAND,
-                "/commun accept_territory_grant $sourceRegionId $quotedScopeName"
+                "/_commun accept_territory_grant $sourceRegionId $quotedScopeName"
             )).withHoverEvent(HoverEvent(
                 HoverEvent.Action.SHOW_TEXT,
                 Text.literal("§a接受领土赠予")
@@ -176,7 +176,7 @@ private fun sendGrantRequestToTargetMember(
         .styled { style ->
             style.withClickEvent(ClickEvent(
                 ClickEvent.Action.RUN_COMMAND,
-                "/commun decline_territory_grant $sourceRegionId $quotedScopeName"
+                "/_commun decline_territory_grant $sourceRegionId $quotedScopeName"
             )).withHoverEvent(HoverEvent(
                 HoverEvent.Action.SHOW_TEXT,
                 Text.literal("§c拒绝领土赠予")

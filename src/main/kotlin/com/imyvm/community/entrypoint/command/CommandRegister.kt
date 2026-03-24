@@ -805,7 +805,7 @@ private fun runAdminTreasuryWithdraw(context: CommandContext<ServerCommandSource
 
 fun registerCommun(dispatcher: CommandDispatcher<ServerCommandSource>) {
     dispatcher.register(
-        literal("commun")
+        literal("_commun")
             .then(
                 literal("confirm_creation")
                     .then(

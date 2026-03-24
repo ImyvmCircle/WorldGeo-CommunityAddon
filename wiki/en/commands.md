@@ -6,7 +6,7 @@
 
 All community commands use the root command `/community`. The GUI menus are the primary interface; commands provide an alternative or complementary way to trigger the same actions.
 
-> **Note:** All **interactive confirmation commands** automatically generated in chat (e.g. confirm creation, confirm rename, accept grant, etc.) use a separate root command `/commun` instead of `/community`.
+> **Note:** All **interactive confirmation commands** automatically generated in chat (e.g. confirm creation, confirm rename, accept grant, etc.) use a separate root command `/_commun` instead of `/community`.
 
 For `<communityIdentifier>`, you can use either the community's **name** or its **numeric ID**.
 
@@ -40,8 +40,8 @@ For `<communityIdentifier>`, you can use either the community's **name** or its 
 | Command | Description | Menu Equivalent |
 |---|---|---|
 | `/community create <shapeType> <communityType> <name>` | Initialize a community creation request | Main Menu → Create Community |
-| `/commun confirm_creation <regionId>` | Confirm and finalize the creation | Chat prompt [CONFIRM] button |
-| `/commun cancel_creation <regionId>` | Cancel the pending creation request | Chat prompt [CANCEL] button |
+| `/_commun confirm_creation <regionId>` | Confirm and finalize the creation | Chat prompt [CONFIRM] button |
+| `/_commun cancel_creation <regionId>` | Cancel the pending creation request | Chat prompt [CANCEL] button |
 
 **Shape types:** `RECTANGLE` · `CIRCLE` · `POLYGON`  
 **Community types:** `manor` · `realm`
@@ -78,34 +78,34 @@ For `<communityIdentifier>`, you can use either the community's **name** or its 
 
 ---
 
-## /commun Interactive Confirmation Commands
+## /_commun Interactive Confirmation Commands
 
-These commands are generated automatically in chat as clickable prompts. You typically do not need to type them manually. All of them use the `/commun` prefix (not `/community`).
+These commands are generated automatically in chat as clickable prompts. You typically do not need to type them manually. All of them use the `/_commun` prefix (not `/community`).
 
 ### Geometry and Settings Confirmations
 
 | Command | Description |
 |---|---|
-| `/commun confirm_modification <regionId> <scopeName>` | Confirm a geometry change |
-| `/commun cancel_modification <regionId> <scopeName>` | Cancel a geometry change |
-| `/commun confirm_setting <regionId>` | Confirm a region setting change |
-| `/commun cancel_setting <regionId>` | Cancel a region setting change |
-| `/commun confirm_teleport_point_set <regionId> <scopeName>` | Confirm setting a teleport point |
+| `/_commun confirm_modification <regionId> <scopeName>` | Confirm a geometry change |
+| `/_commun cancel_modification <regionId> <scopeName>` | Cancel a geometry change |
+| `/_commun confirm_setting <regionId>` | Confirm a region setting change |
+| `/_commun cancel_setting <regionId>` | Cancel a region setting change |
+| `/_commun confirm_teleport_point_set <regionId> <scopeName>` | Confirm setting a teleport point |
 
 ### Community Name Confirmations
 
 | Command | Description |
 |---|---|
-| `/commun confirm_rename <regionId> <nameKey>` | Confirm a community name change |
-| `/commun cancel_rename <regionId> <nameKey>` | Cancel a community name change |
+| `/_commun confirm_rename <regionId> <nameKey>` | Confirm a community name change |
+| `/_commun cancel_rename <regionId> <nameKey>` | Cancel a community name change |
 
 ### Treasury Grant Confirmations
 
 | Command | Description | Executed by |
 |---|---|---|
-| `/commun accept_treasury_grant <regionId>` | Accept a treasury grant on behalf of your community | Owner or eligible admin of the **target** community |
-| `/commun decline_treasury_grant <regionId>` | Decline a treasury grant on behalf of your community | Owner or eligible admin of the **target** community |
-| `/commun cancel_treasury_grant <regionId>` | Cancel your community's outgoing grant request | Owner or eligible admin of the **source** community |
+| `/_commun accept_treasury_grant <regionId>` | Accept a treasury grant on behalf of your community | Owner or eligible admin of the **target** community |
+| `/_commun decline_treasury_grant <regionId>` | Decline a treasury grant on behalf of your community | Owner or eligible admin of the **target** community |
+| `/_commun cancel_treasury_grant <regionId>` | Cancel your community's outgoing grant request | Owner or eligible admin of the **source** community |
 
 For treasury grant commands, `<regionId>` is the numeric ID of the **source (initiating)** community.
 
@@ -113,8 +113,8 @@ For treasury grant commands, `<regionId>` is the numeric ID of the **source (ini
 
 | Command | Description | Executed by |
 |---|---|---|
-| `/commun accept_invitation <communityIdentifier>` | Accept a pending invitation | The invited player |
-| `/commun reject_invitation <communityIdentifier>` | Reject a pending invitation | The invited player |
+| `/_commun accept_invitation <communityIdentifier>` | Accept a pending invitation | The invited player |
+| `/_commun reject_invitation <communityIdentifier>` | Reject a pending invitation | The invited player |
 
 ---
 

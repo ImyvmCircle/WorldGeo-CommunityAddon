@@ -247,7 +247,7 @@ private fun sendCancelButtonToInitiator(player: ServerPlayerEntity, sourceRegion
         .styled { style ->
             style.withClickEvent(ClickEvent(
                 ClickEvent.Action.RUN_COMMAND,
-                "/commun cancel_treasury_grant $sourceRegionId"
+                "/_commun cancel_treasury_grant $sourceRegionId"
             )).withHoverEvent(HoverEvent(
                 HoverEvent.Action.SHOW_TEXT,
                 Text.literal("§c撤销国库赠予请求")
@@ -272,7 +272,7 @@ private fun sendGrantRequestToTargetMember(
         .styled { style ->
             style.withClickEvent(ClickEvent(
                 ClickEvent.Action.RUN_COMMAND,
-                "/commun accept_treasury_grant $sourceRegionId"
+                "/_commun accept_treasury_grant $sourceRegionId"
             )).withHoverEvent(HoverEvent(
                 HoverEvent.Action.SHOW_TEXT,
                 Text.literal("§a接受国库赠予")
@@ -283,7 +283,7 @@ private fun sendGrantRequestToTargetMember(
         .styled { style ->
             style.withClickEvent(ClickEvent(
                 ClickEvent.Action.RUN_COMMAND,
-                "/commun decline_treasury_grant $sourceRegionId"
+                "/_commun decline_treasury_grant $sourceRegionId"
             )).withHoverEvent(HoverEvent(
                 HoverEvent.Action.SHOW_TEXT,
                 Text.literal("§c拒绝国库赠予")
