@@ -66,3 +66,76 @@ All user-facing strings go through `Translator.tr(key, vararg args)`. Placeholde
 - English: `src/main/resources/assets/community/lang/en_us.json`
 
 Always add keys to **both** files. Group related keys together (e.g., all `community.scope_transfer.*` keys near `community.scope_delete.*` keys).
+
+> **Single-quote escaping:** Any translation value containing a single quote (e.g., `it''s`, `don''t`) that is called with arguments (`{0}` placeholders) **must** escape the single quote as `''` (two single quotes). This is a `java.text.MessageFormat` requirement; entries without arguments are unaffected.
+
+> **Message format:** Player-facing messages should use MOTD formatting (colours, bold, underline) for visual polish. Do not introduce Unicode special characters. Enum values and similar variables should be converted to human-readable text (e.g., `manor`, `rectangle`) before being inserted into messages. Never wrap argument placeholders in single quotes, as this prevents them from being displayed.
+
+> **Translated names:** Proper nouns and specialised terms must be cross-checked against existing documentation. When unsure, ask — do not guess.
+
+---
+
+## Configuration
+
+- **`CommunityConfig`**: Stores all non-pricing configuration for this mod. Every concrete value must be written here.
+- **`PricingConfig`**: Stores all pricing-related configuration (creation cost, join fee, area pricing coefficients, permission pricing coefficients, etc.). Any new pricing coefficient must be written here.
+
+---
+
+## Database Persistence
+
+`CommunityDatabase` maintains all persistence. Whenever a `Community` member variable is modified, **always check** whether the database storage logic also needs updating.
+
+---
+
+## Pending Operations and Confirmation Flows
+
+Any operation that requires a timed response uses `PendingOperation`, managed centrally by `PendingApplication`. Every `PendingOperation` **must** be created through `pendingApplication` — never bypass it.
+
+---
+
+## Community Permission Checks
+
+For any functionality involving community permissions, verify that the relevant entry point is linked to `AdministrationPermission(s)` and `PermissionCheck`.
+
+**For any community administrative operation, both of the following must be called:**
+- `canExecuteAdministration` (checks role and privilege)
+- `canExecuteOperationInProto` (checks community status)
+
+Neither may be omitted. Use the implementation of `runAdmRegion` (`executeWithPermission` + two-step check) as the canonical reference.
+
+---
+
+## Menu Development Rules
+
+- **Closing the screen:** When a button click needs to send a text message to the player, close the screen first — otherwise the player cannot see the message. Plan the flow carefully to ensure subsequent menus remain reachable.
+- **`runBack` logic:** Every new Menu **must** include complete `runBack` logic.
+- **List menus:** `AbstractListMenu` is the default implementation for all paginated list menus. New list menus must extend it.
+- **Button implementation separation:** Functional parameters inside `addButton(){}` in any Menu under `entrypoint/screen` **must not** be implemented inline. All logic must live in the corresponding feature module under `application/screen`. Check whether the target module file already exists before implementing.
+- **Player lists:** All player lists default to rendering the player's verified (online/Mojang) skin head. See `CommunityMemberListMenu` for the reference implementation.
+- **Toggle switches:** See the Selection Mode toggle in `MainMenu` and its corresponding Handler as the canonical pattern (i.e., mutate data and re-render the current page).
+
+---
+
+## Command Registration
+
+All commands are registered in `CommandRegister.register()`. Parameter extraction and application-layer dispatch also live in `CommandRegister`. Command parameters **must not** use internal IDs (e.g., `regionNumberId`, `announcementId`) as the sole human-typed argument — they are not human-readable. If such IDs are truly necessary, provide a SuggestionProvider following the existing patterns.
+
+> **Non-ASCII name quoting rule:** Any `SuggestionProvider` for Region, GeoScope, or Community names must wrap non-ASCII-alphanumeric names in double quotes before suggesting them: `if (!name.all { it.isLetterOrDigit() && it.code < 128 }) builder.suggest("\"$name\"") else builder.suggest(name)`.
+
+---
+
+## Money Handling
+
+All monetary operations use `EconomyMod`. The internal unit is `Long`. Convert to player-readable format by dividing by 100 and formatting to two decimal places (`"%.2f".format(amount / 100.0)`).
+
+---
+
+## Miscellaneous Rules
+
+- In principle, do not create new classes. Do not add code comments.
+- After changing any game mechanism, **always** update `README.md`. Focus on player-facing descriptions; do not over-expose implementation details.
+- Tests must include `./gradlew runServer`.
+- Do not use git.
+- When a mechanism, translation key name, or behaviour is unclear, ask the operator. Do not stop the conversation just to confirm requirements, and do not guess.
+- This project collaborates closely with IMYVMWorldGeo Core — cross-reference it as needed.

@@ -4,10 +4,12 @@ import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.Turnover
+import com.imyvm.community.domain.model.TurnoverSource
 import com.imyvm.community.entrypoint.screen.inner_community.affairs.assets.CommunityAssetsMenu
 import com.imyvm.community.entrypoint.screen.inner_community.affairs.assets.DonationMenu
 import com.imyvm.community.entrypoint.screen.inner_community.affairs.assets.DonorDetailsMenu
 import com.imyvm.community.entrypoint.screen.inner_community.affairs.assets.DonorListMenu
+import com.imyvm.community.entrypoint.screen.inner_community.affairs.assets.TreasuryLedgerMenu
 import com.imyvm.community.entrypoint.screen.inner_community.CommunityMenu
 import com.imyvm.community.util.Translator
 import com.imyvm.economy.EconomyMod
@@ -43,6 +45,12 @@ fun runOpenDonorDetailsMenu(player: ServerPlayerEntity, community: Community, do
     }
 }
 
+fun runOpenTreasuryLedgerMenu(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit) {
+    CommunityMenuOpener.open(player) { syncId ->
+        TreasuryLedgerMenu(syncId, community, player, 0) { runOpenAssetsMenu(player, community, runBackGrandfather) }
+    }
+}
+
 fun onDonateConfirm(player: ServerPlayerEntity, community: Community, amount: Long, runBackGrandfather: (ServerPlayerEntity) -> Unit) {
     CommunityPermissionPolicy.executeWithPermission(
         player,
@@ -64,7 +72,7 @@ fun onDonateConfirm(player: ServerPlayerEntity, community: Community, amount: Lo
         }
 
         playerAccount.addMoney(-amount)
-        memberAccount.turnover.add(Turnover(amount, System.currentTimeMillis()))
+        memberAccount.turnover.add(Turnover(amount, System.currentTimeMillis(), TurnoverSource.PLAYER, "community.treasury.desc.donation", listOf(player.name.string)))
 
         val amountFormatted = "%.2f".format(amount / 100.0)
         player.sendMessage(Translator.tr("ui.community.assets.donate.success", amountFormatted))

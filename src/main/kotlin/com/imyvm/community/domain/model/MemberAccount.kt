@@ -18,7 +18,23 @@ data class MemberAccount (
     }
 }
 
+enum class TurnoverSource(val value: Int) {
+    PLAYER(0),
+    COMMUNITY_GRANT(1),
+    SYSTEM(2),
+    SERVER_ADMIN(3),
+    UNKNOWN(4);
+
+    companion object {
+        fun fromValue(value: Int): TurnoverSource =
+            entries.firstOrNull { it.value == value } ?: UNKNOWN
+    }
+}
+
 data class Turnover(
     val amount: Long,
-    val timestamp: Long
+    val timestamp: Long,
+    val source: TurnoverSource = TurnoverSource.UNKNOWN,
+    val descriptionKey: String? = null,
+    val descriptionArgs: List<String> = emptyList()
 )

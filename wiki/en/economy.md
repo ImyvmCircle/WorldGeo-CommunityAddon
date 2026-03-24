@@ -73,13 +73,35 @@ Joining a community costs a one-time fee, paid by the joining player:
 
 Clicking **Treasury** (slot 21, Gold Ingot) in the [Community Menu](community-menu.md) opens the **Community Treasury Menu**, which displays:
 
-- **Total Assets** — sum of all member donations and all received treasury grants minus all recorded expenditures.
+- **Total Assets** — sum of all member donations and all recorded community income (grants, admin deposits, etc.) minus all recorded expenditures.
 - **Donor List button** — opens a ranked list of contributors.
 - **Donate button** — opens the [Donation Menu](#donating).
+- **View Ledger button** — opens the [Treasury Ledger](#treasury-ledger).
 
 ### Donor List
 
 The **Donor List Menu** shows all members who have donated, ranked by total contribution (descending). Clicking a donor opens their **Donor Details Menu**, listing every individual donation with timestamps.
+
+---
+
+## Treasury Ledger
+
+The **Treasury Ledger** lists all income and expenditure records for the community treasury, sorted by timestamp (newest first) with pagination.
+
+- **Income entries** (Gold Ingot icon): member donations, community grants received, server admin deposits, etc.
+- **Expenditure entries** (Red Stained-Glass Pane icon): district creation/modification, teleport point setup, member join fees, rename fees, permission/rule costs, etc.
+
+Each entry shows the amount (±), source type, description, and timestamp.
+
+### Source Types
+
+| Source | Description |
+|---|---|
+| Player Donation | Member voluntarily donated to the treasury |
+| Community Grant | Grant sent to or received from another community |
+| System | Fee for various in-community settings or operations |
+| Server Admin | Server-level admin deposit or withdrawal |
+| Unknown | Legacy data migrated from older versions |
 
 ---
 
@@ -121,8 +143,8 @@ The confirmation prompt expires after **5 minutes**.
 
 ### Accounting
 
-- The grant amount is recorded as an **expenditure** in the source community's treasury.
-- The grant amount is recorded as an **incoming grant** in the target community's treasury.
+- The grant amount is recorded as an **expenditure** in the source community's treasury, sourced as "Community Grant".
+- The grant amount is recorded as **income** in the target community's treasury, sourced as "Community Grant".
 - Both communities' **Total Assets** are updated automatically.
 
 > **Note:** Both initiating and accepting parties require the **Grant Coins from Treasury** privilege. Owners are always exempt.
@@ -131,13 +153,22 @@ The confirmation prompt expires after **5 minutes**.
 
 ## Expenditures
 
-Community expenditures are recorded automatically whenever the treasury pays for:
+Community expenditures are recorded automatically (sourced as "System") whenever the treasury pays for:
 
 - Approving invited members (join fee paid from treasury).
 - Teleport point creation beyond the first free point.
 - Teleport point modification.
+- District (scope) creation or modification.
+- Community or district renaming (when a fee applies).
+- Permission or rule changes (when a fee applies).
 
 All expenditures are subtracted from the **Total Assets** calculation in the Treasury Menu.
+
+---
+
+## Server Admin Operations
+
+Server administrators (permission level 2) can deposit or withdraw funds directly to/from any community treasury via command, without a confirmation flow. These entries are sourced as "Server Admin". See [Commands](commands.md#server-admin-commands) for details.
 
 ---
 

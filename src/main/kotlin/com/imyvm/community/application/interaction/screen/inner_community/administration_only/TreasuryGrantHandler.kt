@@ -6,6 +6,7 @@ import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.PendingOperationType
 import com.imyvm.community.domain.model.Turnover
+import com.imyvm.community.domain.model.TurnoverSource
 import com.imyvm.community.domain.model.TreasuryGrantConfirmationData
 import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.domain.policy.permission.AdminPrivilege
@@ -143,25 +144,25 @@ fun onAcceptTreasuryGrant(player: ServerPlayerEntity, sourceRegionId: Int): Int 
     }
 
     val now = System.currentTimeMillis()
-    sourceCommunity.expenditures.add(Turnover(grantData.amount, now))
-    targetCommunity.incomingGrants.add(Turnover(grantData.amount, now))
+    val sourceMark = sourceCommunity.generateCommunityMark()
+    val targetMark = targetCommunity.generateCommunityMark()
+    sourceCommunity.expenditures.add(Turnover(grantData.amount, now, TurnoverSource.COMMUNITY_GRANT, "community.treasury.desc.grant_out", listOf(targetMark)))
+    targetCommunity.communityIncome.add(Turnover(grantData.amount, now, TurnoverSource.COMMUNITY_GRANT, "community.treasury.desc.grant_in", listOf(sourceMark)))
 
     WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
     CommunityDatabase.save()
 
     val amountFormatted = "%.2f".format(grantData.amount / 100.0)
-    val sourceName = sourceCommunity.generateCommunityMark()
-    val targetName = targetCommunity.generateCommunityMark()
 
-    player.sendMessage(Translator.tr("community.treasury_grant.success", amountFormatted, sourceName, targetName))
+    player.sendMessage(Translator.tr("community.treasury_grant.success", amountFormatted, sourceMark, targetMark))
 
     val notification = Translator.tr(
         "community.notification.treasury_granted",
         amountFormatted,
-        sourceName,
-        targetName,
+        sourceMark,
+        targetMark,
         player.name.string
-    ) ?: Text.literal("§6§l[国库赠予]§r §e$sourceName §e赠予了 §a§l$targetName §e共 §6§l\$$amountFormatted§r §e（接受者：§d§l${player.name.string}§r§e）")
+    ) ?: Text.literal("§6§l[国库赠予]§r §e$sourceMark §e赠予了 §a§l$targetMark §e共 §6§l\$$amountFormatted§r §e（接受者：§d§l${player.name.string}§r§e）")
 
     notifyFormalMembers(sourceCommunity, player.server, notification)
     notifyFormalMembers(targetCommunity, player.server, notification)

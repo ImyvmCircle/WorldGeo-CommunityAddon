@@ -7,6 +7,7 @@ import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.PendingOperationType
 import com.imyvm.community.domain.model.TeleportPointConfirmationData
 import com.imyvm.community.domain.model.Turnover
+import com.imyvm.community.domain.model.TurnoverSource
 import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.entrypoint.screen.component.getLoreButton
 import com.imyvm.community.entrypoint.screen.inner_community.administration_only.AdministrationTeleportPointMenu
@@ -222,7 +223,7 @@ fun onConfirmTeleportPointSetting(playerExecutor: ServerPlayerEntity, regionNumb
     if (result == 0) return 0
 
     if (request.cost > 0) {
-        community.expenditures.add(Turnover(request.cost, System.currentTimeMillis()))
+        community.expenditures.add(Turnover(request.cost, System.currentTimeMillis(), TurnoverSource.SYSTEM, "community.treasury.desc.teleport_point", listOf(scope.scopeName)))
     }
     CommunityDatabase.save()
 

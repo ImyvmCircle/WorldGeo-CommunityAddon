@@ -3,6 +3,8 @@ package com.imyvm.community.application.interaction.command
 import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.application.helper.refundNotCreated
 import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.Turnover
+import com.imyvm.community.domain.model.TurnoverSource
 import com.imyvm.community.domain.model.community.CommunityStatus
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.Translator
@@ -163,4 +165,44 @@ private fun getOwnerPlayer(community: Community, server: net.minecraft.server.Mi
         community.getMemberRole(it.key) == com.imyvm.community.domain.model.community.MemberRoleType.OWNER 
     }?.key
     return ownerUUID?.let { server.playerManager?.getPlayer(it) }
+}
+
+fun onAdminTreasuryDeposit(player: ServerPlayerEntity, targetCommunity: Community, amountDisplay: Double, description: String?): Int {
+    val amount = (amountDisplay * 100).toLong()
+    if (amount <= 0) {
+        player.sendMessage(Translator.tr("community.treasury.admin.error.invalid_amount"))
+        return 0
+    }
+    val descArgs = if (description.isNullOrBlank()) listOf("") else listOf(description)
+    targetCommunity.communityIncome.add(
+        Turnover(amount, System.currentTimeMillis(), TurnoverSource.SERVER_ADMIN, "community.treasury.desc.admin_deposit", descArgs)
+    )
+    CommunityDatabase.save()
+    val amountFormatted = "%.2f".format(amountDisplay)
+    player.sendMessage(Translator.tr("community.treasury.admin.deposit.success", targetCommunity.generateCommunityMark(), amountFormatted))
+    return 1
+}
+
+fun onAdminTreasuryWithdraw(player: ServerPlayerEntity, targetCommunity: Community, amountDisplay: Double, description: String?): Int {
+    val amount = (amountDisplay * 100).toLong()
+    if (amount <= 0) {
+        player.sendMessage(Translator.tr("community.treasury.admin.error.invalid_amount"))
+        return 0
+    }
+    if (targetCommunity.getTotalAssets() < amount) {
+        player.sendMessage(Translator.tr(
+            "community.treasury.admin.error.insufficient_assets",
+            "%.2f".format(amountDisplay),
+            "%.2f".format(targetCommunity.getTotalAssets() / 100.0)
+        ))
+        return 0
+    }
+    val descArgs = if (description.isNullOrBlank()) listOf("") else listOf(description)
+    targetCommunity.expenditures.add(
+        Turnover(amount, System.currentTimeMillis(), TurnoverSource.SERVER_ADMIN, "community.treasury.desc.admin_withdrawal", descArgs)
+    )
+    CommunityDatabase.save()
+    val amountFormatted = "%.2f".format(amountDisplay)
+    player.sendMessage(Translator.tr("community.treasury.admin.withdraw.success", targetCommunity.generateCommunityMark(), amountFormatted))
+    return 1
 }

@@ -1,6 +1,7 @@
 package com.imyvm.community.application.interaction.screen.inner_community.administration_only
 
 import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
+import com.imyvm.community.domain.model.TurnoverSource
 import com.imyvm.community.infra.PricingConfig
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.community.MemberRoleType
@@ -45,7 +46,10 @@ fun runAccept(
                 community.expenditures.add(
                     com.imyvm.community.domain.model.Turnover(
                         amount = cost,
-                        timestamp = System.currentTimeMillis()
+                        timestamp = System.currentTimeMillis(),
+                        source = TurnoverSource.SYSTEM,
+                        descriptionKey = "community.treasury.desc.member_join_fee",
+                        descriptionArgs = listOf(playerObject.name)
                     )
                 )
             }

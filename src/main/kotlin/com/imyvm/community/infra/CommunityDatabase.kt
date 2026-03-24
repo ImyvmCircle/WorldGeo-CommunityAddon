@@ -3,6 +3,7 @@ package com.imyvm.community.infra
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.MemberAccount
 import com.imyvm.community.domain.model.Turnover
+import com.imyvm.community.domain.model.TurnoverSource
 import com.imyvm.community.domain.model.community.*
 import com.imyvm.community.domain.policy.permission.AdminPrivilege
 import com.imyvm.community.domain.policy.permission.AdminPrivileges
@@ -38,7 +39,7 @@ object CommunityDatabase {
             savePendingOperations(stream)
             saveNameChangeCooldownsSection(stream)
             saveLikesSection(stream)
-            saveCommunityIncomingGrantsSection(stream)
+            saveCommunityIncomeSection(stream)
         }
     }
 
@@ -105,9 +106,9 @@ object CommunityDatabase {
             }
             if (stream.available() > 0) {
                 try {
-                    loadCommunityIncomingGrantsSection(stream)
+                    loadCommunityIncomeSection(stream)
                 } catch (e: Exception) {
-                    com.imyvm.community.WorldGeoCommunityAddon.logger.error("Failed to load incoming grants data: ${e.message}")
+                    com.imyvm.community.WorldGeoCommunityAddon.logger.error("Failed to load community income data: ${e.message}")
                 }
             }
         }
@@ -153,11 +154,7 @@ object CommunityDatabase {
                 stream.writeUTF(mailItem.string)
             }
 
-            stream.writeInt(memberAccount.turnover.size)
-            for (turnover in memberAccount.turnover) {
-                stream.writeLong(turnover.amount)
-                stream.writeLong(turnover.timestamp)
-            }
+            writeTurnoverList(stream, memberAccount.turnover)
             
             stream.writeBoolean(memberAccount.isInvited)
             stream.writeBoolean(memberAccount.chatHistoryEnabled)
@@ -197,13 +194,7 @@ object CommunityDatabase {
                 communityMail.add(Text.of(mailString))
             }
 
-            val turnoverSize = stream.readInt()
-            val turnoverList = ArrayList<Turnover>(turnoverSize)
-            for (k in 0 until turnoverSize) {
-                val amount = stream.readLong()
-                val timestamp = stream.readLong()
-                turnoverList.add(Turnover(amount, timestamp))
-            }
+            val turnoverList = readTurnoverList(stream)
             
             val isInvited = try {
                 stream.readBoolean()
@@ -296,27 +287,15 @@ object CommunityDatabase {
 
 
     private fun saveCommunityExpenditures(stream: DataOutputStream, community: Community) {
-        stream.writeInt(community.expenditures.size)
-        for (expenditure in community.expenditures) {
-            stream.writeLong(expenditure.amount)
-            stream.writeLong(expenditure.timestamp)
-        }
+        writeTurnoverList(stream, community.expenditures)
     }
 
     private fun loadCommunityExpenditures(stream: DataInputStream): ArrayList<Turnover> {
-        val expenditures = try {
-            val size = stream.readInt()
-            val list = ArrayList<Turnover>(size)
-            for (i in 0 until size) {
-                val amount = stream.readLong()
-                val timestamp = stream.readLong()
-                list.add(Turnover(amount, timestamp))
-            }
-            list
+        return try {
+            readTurnoverList(stream)
         } catch (e: Exception) {
             ArrayList()
         }
-        return expenditures
     }
 
     private fun saveCommunityMessages(stream: DataOutputStream, community: Community) {
@@ -538,31 +517,63 @@ object CommunityDatabase {
         }
     }
 
-    private fun saveCommunityIncomingGrantsSection(stream: DataOutputStream) {
-        val communitiesWithGrants = communities.filter { it.incomingGrants.isNotEmpty() && it.regionNumberId != null }
-        stream.writeInt(communitiesWithGrants.size)
-        for (community in communitiesWithGrants) {
+    private fun saveCommunityIncomeSection(stream: DataOutputStream) {
+        val communitiesWithIncome = communities.filter { it.communityIncome.isNotEmpty() && it.regionNumberId != null }
+        stream.writeInt(communitiesWithIncome.size)
+        for (community in communitiesWithIncome) {
             stream.writeInt(community.regionNumberId!!)
-            stream.writeInt(community.incomingGrants.size)
-            for (grant in community.incomingGrants) {
-                stream.writeLong(grant.amount)
-                stream.writeLong(grant.timestamp)
+            writeTurnoverList(stream, community.communityIncome)
+        }
+    }
+
+    private fun loadCommunityIncomeSection(stream: DataInputStream) {
+        val entryCount = stream.readInt()
+        for (i in 0 until entryCount) {
+            val regionId = stream.readInt()
+            val income = readTurnoverList(stream)
+            getCommunityById(regionId)?.communityIncome = income
+        }
+    }
+
+    private fun writeTurnoverList(stream: DataOutputStream, list: List<Turnover>) {
+        stream.writeInt(-1)
+        stream.writeInt(list.size)
+        for (t in list) {
+            stream.writeLong(t.amount)
+            stream.writeLong(t.timestamp)
+            stream.writeInt(t.source.value)
+            stream.writeUTF(t.descriptionKey ?: "")
+            stream.writeInt(t.descriptionArgs.size)
+            for (arg in t.descriptionArgs) {
+                stream.writeUTF(arg)
             }
         }
     }
 
-    private fun loadCommunityIncomingGrantsSection(stream: DataInputStream) {
-        val entryCount = stream.readInt()
-        for (i in 0 until entryCount) {
-            val regionId = stream.readInt()
-            val grantCount = stream.readInt()
-            val grants = ArrayList<Turnover>(grantCount)
-            for (j in 0 until grantCount) {
+    private fun readTurnoverList(stream: DataInputStream): ArrayList<Turnover> {
+        val firstInt = stream.readInt()
+        return if (firstInt == -1) {
+            val size = stream.readInt()
+            val list = ArrayList<Turnover>(size)
+            for (i in 0 until size) {
                 val amount = stream.readLong()
                 val timestamp = stream.readLong()
-                grants.add(Turnover(amount, timestamp))
+                val source = TurnoverSource.fromValue(stream.readInt())
+                val rawDescKey = stream.readUTF()
+                val descKey = if (rawDescKey.isEmpty()) null else rawDescKey
+                val argCount = stream.readInt()
+                val args = (0 until argCount).map { stream.readUTF() }
+                list.add(Turnover(amount, timestamp, source, descKey, args))
             }
-            getCommunityById(regionId)?.incomingGrants = grants
+            list
+        } else {
+            val list = ArrayList<Turnover>(firstInt)
+            for (i in 0 until firstInt) {
+                val amount = stream.readLong()
+                val timestamp = stream.readLong()
+                list.add(Turnover(amount, timestamp))
+            }
+            list
         }
     }
 }

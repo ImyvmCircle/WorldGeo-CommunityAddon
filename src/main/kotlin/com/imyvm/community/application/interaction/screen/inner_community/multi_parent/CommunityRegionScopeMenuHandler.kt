@@ -27,6 +27,7 @@ import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.Commun
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.element.TargetSettingMenu
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.infra.PricingConfig
+import com.imyvm.community.domain.model.TurnoverSource
 import com.imyvm.community.util.SelectionReturnContext
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.ImyvmWorldGeo
@@ -319,7 +320,10 @@ fun onConfirmRename(player: ServerPlayerEntity, regionNumberId: Int, nameKey: St
         if (renameData.cost > 0) {
             community.expenditures.add(com.imyvm.community.domain.model.Turnover(
                 amount = renameData.cost,
-                timestamp = System.currentTimeMillis()
+                timestamp = System.currentTimeMillis(),
+                source = TurnoverSource.SYSTEM,
+                descriptionKey = "community.treasury.desc.rename_community",
+                descriptionArgs = listOf(renameData.newName)
             ))
         }
         com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
@@ -343,7 +347,10 @@ fun onConfirmRename(player: ServerPlayerEntity, regionNumberId: Int, nameKey: St
         if (renameData.cost > 0) {
             community.expenditures.add(com.imyvm.community.domain.model.Turnover(
                 amount = renameData.cost,
-                timestamp = System.currentTimeMillis()
+                timestamp = System.currentTimeMillis(),
+                source = TurnoverSource.SYSTEM,
+                descriptionKey = "community.treasury.desc.rename_scope",
+                descriptionArgs = listOf(renameData.nameKey, renameData.newName)
             ))
         }
         com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)

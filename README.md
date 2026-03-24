@@ -732,7 +732,7 @@ All active votes are maintained in a `voteSet` within the council, allowing mult
 
 ### Assets System
 
-Communities maintain a treasury that tracks all member donations. Any player who is a member of a community (excluding those with `APPLICANT` or `REFUSED` status) may donate currency to support the community.
+Communities maintain a treasury that tracks all income and expenditures. Any member (excluding `APPLICANT` or `REFUSED` status) may donate currency to support the community.
 
 #### Donation Process
 
@@ -741,41 +741,32 @@ Members may donate through the **Community Assets Menu**, accessible via:
 - The **Assets** button in the Community Menu (description section); or
 - The **Donate to Community** button in the Community Menu (interaction section).
 
-The donation menu presents ten predefined amounts: **1.00**, **5.00**, **10.00**, **50.00**, **100.00**, **500.00**, **1,000.00**, **2,000.00**, **5,000.00**, and **10,000.00** (displayed as currency values divided by 100). When a member selects an amount:
+The donation menu presents ten predefined amounts. When a member selects an amount:
 
 - The system verifies the member has sufficient currency;
 - The currency is deducted from the member's account;
-- A `Turnover` record is created containing:
-  - `amount` - The donation amount (integer);
-  - `timestamp` - The time of donation (long); and
-- The turnover is added to the member's `turnover` list in their member account.
+- A `Turnover` record (source: `PLAYER`, key: `community.treasury.desc.donation`) is added to the member's `turnover` list.
 
 #### Asset Inquiry
 
 The **Community Assets Menu** displays:
 
-- **Total Assets** - The net assets calculated as total donations plus received treasury grants minus total expenditures (such as invitation join costs and outgoing treasury grants), displayed prominently as a gold block with formatted currency value;
-- **Donate** button - Opens the donation menu for contributing currency; and
-- **Donor List** button - Opens the comprehensive donor list.
+- **Total Assets** - Net balance: (all member donations + all community income) minus (all expenditures);
+- **Donate** button - Opens the donation menu;
+- **Donor List** button - Opens the donor list; and
+- **View Ledger** button - Opens the treasury ledger.
 
 #### Donor List
 
-The **Donor List Menu** presents all members who have made donations, sorted by total contribution in descending order. The list displays:
+The **Donor List Menu** presents all members who have made donations, sorted by total contribution in descending order. Selecting a donor opens the **Donor Details Menu** with individual turnover records.
 
-- Each donor represented by their player head;
-- Total donation amount displayed beneath each donor's name; and
-- Pagination supporting 45 donors per page.
+#### Treasury Ledger
 
-Selecting a donor opens the **Donor Details Menu**, which shows:
-
-- The donor's profile with total donation amount; and
-- Up to 14 individual turnover records (most recent first), each displaying:
-  - Donation amount;
-  - Timestamp formatted as readable date and time.
+The **Treasury Ledger** is a unified paginated view of all treasury transactions (income and expenditures), sorted by timestamp descending. Income entries display a Gold Ingot icon; expenditure entries display a Red Stained-Glass Pane icon. Each entry shows the amount, source type, description, and timestamp.
 
 #### Technical Implementation
 
-Each member account maintains a `turnover` ArrayList that records all donation history. The community also maintains an `expenditures` ArrayList for tracking costs such as invitation-based membership fees and outgoing treasury grants, and an `incomingGrants` ArrayList for tracking grants received from other communities. The community's total assets are calculated dynamically as: (sum of all donations) + (sum of all incoming grants) - (sum of all expenditures). The `getTotalDonation()` method aggregates each member's turnover records, while `getTotalAssets()` computes the net balance. The `getDonorList()` method returns member UUIDs sorted by total contribution, enabling efficient display of the most generous supporters.
+Each member account maintains a `turnover` ArrayList. The community maintains a `communityIncome` ArrayList (grants received, admin deposits, future system income) and an `expenditures` ArrayList. The `Turnover` data class has been extended with `source: TurnoverSource`, `descriptionKey: String?`, and `descriptionArgs: List<String>` for full audit trail support. The `TurnoverSource` enum values are `PLAYER`, `COMMUNITY_GRANT`, `SYSTEM`, `SERVER_ADMIN`, and `UNKNOWN`. Database serialization uses a `-1` magic-number sentinel to distinguish the new rich format from legacy records (backward-compatible). The `getTotalAssets()` computes: `memberDonations + communityIncome.sum - expenditures.sum`.
 
 ### Treasury Grant System
 
@@ -792,13 +783,22 @@ The community owner or an administrator with the `GRANT_COINS_FROM_TREASURY` pri
 
 #### Accounting
 
-- A `Turnover` record with the grant amount is appended to the source community's `expenditures`.
-- A `Turnover` record with the grant amount is appended to the target community's `incomingGrants`.
+- A `Turnover` record (source: `COMMUNITY_GRANT`) is appended to the source community's `expenditures`.
+- A `Turnover` record (source: `COMMUNITY_GRANT`) is appended to the target community's `communityIncome`.
 - Both communities' `getTotalAssets()` results are affected immediately.
 
 #### Technical Implementation
 
 The grant state is tracked via `TreasuryGrantConfirmationData` stored in the source community's `pendingOperations` map under key `sourceRegionId`. Only one pending treasury grant per community is allowed at a time. Eligibility for both initiating and accepting is checked via `isEligibleTreasuryGrantRecipient()`, which requires the `GRANT_COINS_FROM_TREASURY` privilege or the OWNER role. Confirmation commands are registered under the `/commun` root (not `/community`): `accept_treasury_grant`, `decline_treasury_grant`, and `cancel_treasury_grant`.
+
+### Server Admin Treasury Operations
+
+Server administrators (permission level 2) may directly adjust any community's treasury balance via command:
+
+- `/community treasury deposit <communityIdentifier> <amount> [description]` — adds funds to `communityIncome` with `source: SERVER_ADMIN`.
+- `/community treasury withdraw <communityIdentifier> <amount> [description]` — adds an entry to `expenditures` with `source: SERVER_ADMIN`.
+
+`<amount>` is in display units (e.g., `100.00` = $100.00 = 10000L internally). `[description]` is an optional note recorded in the ledger. Both commands save the database immediately.
 
 ### Announcement System
 

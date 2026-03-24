@@ -767,6 +767,24 @@ private fun runCancelTreasuryGrant(context: CommandContext<ServerCommandSource>)
     return com.imyvm.community.application.interaction.screen.inner_community.administration_only.onCancelTreasuryGrant(player, regionId)
 }
 
+private fun runAdminTreasuryDeposit(context: CommandContext<ServerCommandSource>, description: String?): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    val amount = com.mojang.brigadier.arguments.DoubleArgumentType.getDouble(context, "amount")
+    return identifierHandler(player, communityIdentifier) { targetCommunity ->
+        onAdminTreasuryDeposit(player, targetCommunity, amount, description)
+    }
+}
+
+private fun runAdminTreasuryWithdraw(context: CommandContext<ServerCommandSource>, description: String?): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    val amount = com.mojang.brigadier.arguments.DoubleArgumentType.getDouble(context, "amount")
+    return identifierHandler(player, communityIdentifier) { targetCommunity ->
+        onAdminTreasuryWithdraw(player, targetCommunity, amount, description)
+    }
+}
+
 fun registerCommun(dispatcher: CommandDispatcher<ServerCommandSource>) {
     dispatcher.register(
         literal("commun")
@@ -927,6 +945,40 @@ fun registerCommun(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     .then(
                         argument("regionId", IntegerArgumentType.integer())
                             .executes { runCancelTreasuryGrant(it) }
+                    )
+            )
+            .then(
+                literal("treasury")
+                    .requires { it.hasPermissionLevel(2) }
+                    .then(
+                        literal("deposit")
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.string())
+                                    .suggests(ALL_COMMUNITY_PROVIDER)
+                                    .then(
+                                        argument("amount", com.mojang.brigadier.arguments.DoubleArgumentType.doubleArg(0.01))
+                                            .executes { runAdminTreasuryDeposit(it, null) }
+                                            .then(
+                                                argument("description", StringArgumentType.greedyString())
+                                                    .executes { runAdminTreasuryDeposit(it, StringArgumentType.getString(it, "description")) }
+                                            )
+                                    )
+                            )
+                    )
+                    .then(
+                        literal("withdraw")
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.string())
+                                    .suggests(ALL_COMMUNITY_PROVIDER)
+                                    .then(
+                                        argument("amount", com.mojang.brigadier.arguments.DoubleArgumentType.doubleArg(0.01))
+                                            .executes { runAdminTreasuryWithdraw(it, null) }
+                                            .then(
+                                                argument("description", StringArgumentType.greedyString())
+                                                    .executes { runAdminTreasuryWithdraw(it, StringArgumentType.getString(it, "description")) }
+                                            )
+                                    )
+                            )
                     )
             )
     )

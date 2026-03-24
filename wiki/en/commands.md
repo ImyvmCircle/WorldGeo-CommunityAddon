@@ -119,12 +119,17 @@ For treasury grant commands, `<regionId>` is the numeric ID of the **source (ini
 
 | Command | Description |
 |---|---|
-| `/community audit <approve|deny> <communityIdentifier>` | Approve or deny a community creation request |
+| `/community audit <approve\|deny> <communityIdentifier>` | Approve or deny a community creation request |
 | `/community force_active <communityIdentifier>` | Force-activate a community |
 | `/community force_revoke <communityIdentifier>` | Force-revoke a community |
 | `/community force_delete <communityIdentifier>` | Permanently delete a community |
 | `/community announcement op list` | List all announcements across all communities |
 | `/community announcement op delete <id> <announcementId>` | Force-delete any announcement |
+| `/community treasury deposit <communityIdentifier> <amount> [description]` | Deposit funds into a community treasury (sourced as "Server Admin") |
+| `/community treasury withdraw <communityIdentifier> <amount> [description]` | Withdraw funds from a community treasury (sourced as "Server Admin") |
+
+- `<amount>` is in display units (e.g., `100.00` = $100.00).
+- `[description]` is an optional note that will appear in the treasury ledger.
 
 ---
 

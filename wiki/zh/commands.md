@@ -125,6 +125,11 @@
 | `/community force_delete <communityIdentifier>` | 永久删除领域 |
 | `/community announcement op list` | 列出所有领域的所有公告 |
 | `/community announcement op delete <id> <announcementId>` | 强制删除任意公告 |
+| `/community treasury deposit <communityIdentifier> <amount> [description]` | 向指定聚落国库充值（来源标记为"服务器管理员"） |
+| `/community treasury withdraw <communityIdentifier> <amount> [description]` | 从指定聚落国库提款（来源标记为"服务器管理员"） |
+
+- `<amount>` 为显示单位（如 `100.00` 即 $100.00）。
+- `[description]` 为可选说明，会记录在国库账单中。
 
 ---
 

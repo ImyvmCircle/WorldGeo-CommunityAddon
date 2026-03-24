@@ -2,6 +2,7 @@ package com.imyvm.community.entrypoint.screen.inner_community.affairs.assets
 
 import com.imyvm.community.application.interaction.screen.inner_community.affairs.runOpenDonationMenu
 import com.imyvm.community.application.interaction.screen.inner_community.affairs.runOpenDonorListMenu
+import com.imyvm.community.application.interaction.screen.inner_community.affairs.runOpenTreasuryLedgerMenu
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.entrypoint.screen.AbstractMenu
 import com.imyvm.community.entrypoint.screen.component.getLoreButton
@@ -24,6 +25,7 @@ class CommunityAssetsMenu(
     init {
         addAssetDisplay()
         addDonateButton()
+        addLedgerButton()
         addDonorListButton()
     }
 
@@ -55,5 +57,13 @@ class CommunityAssetsMenu(
             name = Translator.tr("ui.community.assets.donor_list")?.string ?: "Donor List",
             item = Items.WRITABLE_BOOK
         ) { runOpenDonorListMenu(player, community, runBack) }
+    }
+
+    private fun addLedgerButton() {
+        addButton(
+            slot = 22,
+            name = Translator.tr("ui.treasury.ledger.button")?.string ?: "Treasury Ledger",
+            item = Items.BOOK
+        ) { runOpenTreasuryLedgerMenu(player, community, runBack) }
     }
 }

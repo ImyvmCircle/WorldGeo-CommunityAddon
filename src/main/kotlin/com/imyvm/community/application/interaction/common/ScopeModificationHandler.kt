@@ -4,6 +4,7 @@ import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.PendingOperationType
 import com.imyvm.community.domain.model.Turnover
+import com.imyvm.community.domain.model.TurnoverSource
 import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.domain.policy.permission.AdminPrivilege
 import com.imyvm.community.infra.CommunityDatabase
@@ -82,7 +83,10 @@ fun onConfirmScopeModification(player: ServerPlayerEntity, regionNumberId: Int, 
         if (modificationData.cost > 0) {
             community.expenditures.add(Turnover(
                 amount = modificationData.cost,
-                timestamp = System.currentTimeMillis()
+                timestamp = System.currentTimeMillis(),
+                source = TurnoverSource.SYSTEM,
+                descriptionKey = "community.treasury.desc.scope_creation",
+                descriptionArgs = listOf(scopeName)
             ))
         }
 
@@ -131,7 +135,10 @@ fun onConfirmScopeModification(player: ServerPlayerEntity, regionNumberId: Int, 
     if (modificationData.cost > 0) {
         community.expenditures.add(Turnover(
             amount = modificationData.cost,
-            timestamp = System.currentTimeMillis()
+            timestamp = System.currentTimeMillis(),
+            source = TurnoverSource.SYSTEM,
+            descriptionKey = "community.treasury.desc.scope_modification",
+            descriptionArgs = listOf(scopeName)
         ))
     } else if (modificationData.cost < 0) {
         val refundAmount = -modificationData.cost
@@ -140,7 +147,10 @@ fun onConfirmScopeModification(player: ServerPlayerEntity, regionNumberId: Int, 
             val ownerAccount = community.member[ownerUUID]
             ownerAccount?.turnover?.add(Turnover(
                 amount = refundAmount,
-                timestamp = System.currentTimeMillis()
+                timestamp = System.currentTimeMillis(),
+                source = TurnoverSource.SYSTEM,
+                descriptionKey = "community.treasury.desc.scope_refund",
+                descriptionArgs = listOf(scopeName)
             ))
         }
     }

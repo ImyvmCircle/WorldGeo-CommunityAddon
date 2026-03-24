@@ -6,6 +6,7 @@ import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.PendingOperationType
 import com.imyvm.community.domain.model.SettingConfirmationData
 import com.imyvm.community.domain.model.Turnover
+import com.imyvm.community.domain.model.TurnoverSource
 import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.domain.policy.territory.TerritoryPricing
 import com.imyvm.community.entrypoint.screen.component.getLoreButton
@@ -285,12 +286,12 @@ fun onConfirmSettingChange(playerExecutor: ServerPlayerEntity, regionNumberId: I
         WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
 
         if (request.cost > 0) {
-            community.expenditures.add(Turnover(request.cost, System.currentTimeMillis()))
+            community.expenditures.add(Turnover(request.cost, System.currentTimeMillis(), TurnoverSource.SYSTEM, "community.treasury.desc.setting_change", listOf(request.permissionKeyStr)))
         } else if (request.cost < 0) {
             val refundAmount = -request.cost
             val ownerUUID = community.getOwnerUUID()
             val ownerAccount = ownerUUID?.let { community.member[it] }
-            ownerAccount?.turnover?.add(Turnover(refundAmount, System.currentTimeMillis()))
+            ownerAccount?.turnover?.add(Turnover(refundAmount, System.currentTimeMillis(), TurnoverSource.SYSTEM, "community.treasury.desc.setting_refund", listOf(request.permissionKeyStr)))
         }
         CommunityDatabase.save()
 
@@ -368,12 +369,12 @@ fun onConfirmSettingChange(playerExecutor: ServerPlayerEntity, regionNumberId: I
     WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
 
     if (request.cost > 0) {
-        community.expenditures.add(Turnover(request.cost, System.currentTimeMillis()))
+        community.expenditures.add(Turnover(request.cost, System.currentTimeMillis(), TurnoverSource.SYSTEM, "community.treasury.desc.setting_change", listOf(request.permissionKeyStr)))
     } else if (request.cost < 0) {
         val refundAmount = -request.cost
         val ownerUUID = community.getOwnerUUID()
         val ownerAccount = ownerUUID?.let { community.member[it] }
-        ownerAccount?.turnover?.add(Turnover(refundAmount, System.currentTimeMillis()))
+        ownerAccount?.turnover?.add(Turnover(refundAmount, System.currentTimeMillis(), TurnoverSource.SYSTEM, "community.treasury.desc.setting_refund", listOf(request.permissionKeyStr)))
     }
     CommunityDatabase.save()
 
