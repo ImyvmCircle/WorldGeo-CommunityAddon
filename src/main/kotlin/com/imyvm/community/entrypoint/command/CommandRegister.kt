@@ -728,18 +728,25 @@ private fun runOpenModifyMenuCommand(context: CommandContext<ServerCommandSource
     return 1
 }
 
-private fun runConfirmScopeTransfer(context: CommandContext<ServerCommandSource>): Int {
+private fun runAcceptTerritoryGrant(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
     val regionId = IntegerArgumentType.getInteger(context, "regionId")
     val scopeName = StringArgumentType.getString(context, "scopeName")
-    return com.imyvm.community.application.interaction.common.onConfirmScopeTransfer(player, regionId, scopeName)
+    return com.imyvm.community.application.interaction.common.onAcceptTerritoryGrant(player, regionId, scopeName)
 }
 
-private fun runCancelScopeTransfer(context: CommandContext<ServerCommandSource>): Int {
+private fun runDeclineTerritoryGrant(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
     val regionId = IntegerArgumentType.getInteger(context, "regionId")
     val scopeName = StringArgumentType.getString(context, "scopeName")
-    return com.imyvm.community.application.interaction.common.onCancelScopeTransfer(player, regionId, scopeName)
+    return com.imyvm.community.application.interaction.common.onDeclineTerritoryGrant(player, regionId, scopeName)
+}
+
+private fun runCancelTerritoryGrant(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val regionId = IntegerArgumentType.getInteger(context, "regionId")
+    val scopeName = StringArgumentType.getString(context, "scopeName")
+    return com.imyvm.community.application.interaction.common.onCancelTerritoryGrant(player, regionId, scopeName)
 }
 
 fun registerCommun(dispatcher: CommandDispatcher<ServerCommandSource>) {
@@ -854,22 +861,32 @@ fun registerCommun(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     )
             )
             .then(
-                literal("confirm_transfer_scope")
+                literal("accept_territory_grant")
                     .then(
                         argument("regionId", IntegerArgumentType.integer())
                             .then(
                                 argument("scopeName", StringArgumentType.string())
-                                    .executes { runConfirmScopeTransfer(it) }
+                                    .executes { runAcceptTerritoryGrant(it) }
                             )
                     )
             )
             .then(
-                literal("cancel_transfer_scope")
+                literal("decline_territory_grant")
                     .then(
                         argument("regionId", IntegerArgumentType.integer())
                             .then(
                                 argument("scopeName", StringArgumentType.string())
-                                    .executes { runCancelScopeTransfer(it) }
+                                    .executes { runDeclineTerritoryGrant(it) }
+                            )
+                    )
+            )
+            .then(
+                literal("cancel_territory_grant")
+                    .then(
+                        argument("regionId", IntegerArgumentType.integer())
+                            .then(
+                                argument("scopeName", StringArgumentType.string())
+                                    .executes { runCancelTerritoryGrant(it) }
                             )
                     )
             )

@@ -2,6 +2,7 @@ package com.imyvm.community.application.interaction.screen.inner_community.multi
 
 import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.application.event.addPendingOperation
+import com.imyvm.community.application.interaction.common.getEligibleGrantRecipients
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.GeographicFunctionType
@@ -10,7 +11,6 @@ import com.imyvm.community.domain.model.ScopeTransferConfirmationData
 import com.imyvm.community.domain.policy.permission.AdminPrivilege
 import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityRegionScopeMenu
-import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.ScopeTransferTargetListMenu
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.inter.api.RegionDataApi
@@ -76,6 +76,13 @@ fun runTransferScopeToTarget(
         return
     }
 
+    val eligibleOnlineMembers = getEligibleGrantRecipients(targetCommunity, player.server)
+    if (eligibleOnlineMembers.isEmpty()) {
+        player.closeHandledScreen()
+        player.sendMessage(Translator.tr("community.scope_transfer.error.no_eligible_online"))
+        return
+    }
+
     val sourceRegionId = sourceCommunity.regionNumberId ?: return
     val targetRegionId = targetCommunity.regionNumberId ?: return
 
@@ -86,21 +93,6 @@ fun runTransferScopeToTarget(
     val sourceName = sourceCommunity.generateCommunityMark()
     val targetName = targetCommunity.generateCommunityMark()
     val scopeName = scope.scopeName
-
-    listOf(
-        Translator.tr("community.scope_transfer.confirm.header")
-            ?: Text.literal("§e§l====== 转移辖区确认 ======"),
-        Translator.tr("community.scope_transfer.confirm.scope", scopeName)
-            ?: Text.literal("§f§l辖区：§r §b$scopeName"),
-        Translator.tr("community.scope_transfer.confirm.area", areaDisplay)
-            ?: Text.literal("§f§l辖区面积：§r §b$areaDisplay m²"),
-        Translator.tr("community.scope_transfer.confirm.source", sourceName)
-            ?: Text.literal("§f§l来源聚落：§r §e$sourceName"),
-        Translator.tr("community.scope_transfer.confirm.target", targetName)
-            ?: Text.literal("§f§l目标聚落：§r §a$targetName"),
-        Translator.tr("community.scope_transfer.confirm.prompt")
-            ?: Text.literal("§e§l[!]§r §e请确认将此辖区转移给目标聚落，此操作不可撤销。"),
-    ).forEach { player.sendMessage(it) }
 
     addPendingOperation(
         regionId = sourceRegionId,
@@ -114,43 +106,91 @@ fun runTransferScopeToTarget(
         )
     )
 
-    sendInteractiveScopeTransferConfirmation(player, sourceRegionId, scopeName)
+    // Notify the initiator that the request has been sent
+    listOf(
+        Translator.tr("community.scope_transfer.confirm.header"),
+        Translator.tr("community.scope_transfer.confirm.scope", scopeName),
+        Translator.tr("community.scope_transfer.confirm.area", areaDisplay),
+        Translator.tr("community.scope_transfer.confirm.source", sourceName),
+        Translator.tr("community.scope_transfer.confirm.target", targetName),
+        Translator.tr("community.scope_transfer.sent"),
+    ).filterNotNull().forEach { player.sendMessage(it) }
+
+    sendCancelButtonToInitiator(player, sourceRegionId, scopeName)
+
+    // Notify all eligible online target community members with accept/decline buttons
+    eligibleOnlineMembers.forEach { targetMember ->
+        sendGrantRequestToTargetMember(targetMember, sourceRegionId, scopeName, sourceName, targetName)
+    }
 }
 
-private fun sendInteractiveScopeTransferConfirmation(
+private fun sendCancelButtonToInitiator(
     player: ServerPlayerEntity,
     sourceRegionId: Int,
     scopeName: String
 ) {
-    val quotedScopeName = if (!scopeName.all { it.isLetterOrDigit() && it.code < 128 }) "\"$scopeName\"" else scopeName
+    val quotedScopeName = quoteScopeName(scopeName)
 
-    val confirmButton = Text.literal("§a§l[CONFIRM]§r")
+    val cancelButton = Text.literal("§c§l[取消赠予]§r")
         .styled { style ->
             style.withClickEvent(ClickEvent(
                 ClickEvent.Action.RUN_COMMAND,
-                "/commun confirm_transfer_scope $sourceRegionId $quotedScopeName"
+                "/commun cancel_territory_grant $sourceRegionId $quotedScopeName"
             )).withHoverEvent(HoverEvent(
                 HoverEvent.Action.SHOW_TEXT,
-                Text.literal("§aClick to confirm transfer")
+                Text.literal("§c撤销领土赠予请求")
             ))
         }
 
-    val cancelButton = Text.literal("§c§l[CANCEL]§r")
+    val msg = Text.empty()
+        .append(cancelButton)
+
+    player.sendMessage(msg)
+}
+
+private fun sendGrantRequestToTargetMember(
+    targetMember: ServerPlayerEntity,
+    sourceRegionId: Int,
+    scopeName: String,
+    sourceName: String,
+    targetName: String
+) {
+    val quotedScopeName = quoteScopeName(scopeName)
+
+    targetMember.sendMessage(
+        Translator.tr("community.scope_transfer.incoming", sourceName, scopeName, targetName)
+    )
+
+    val acceptButton = Text.literal("§a§l[接受]§r")
         .styled { style ->
             style.withClickEvent(ClickEvent(
                 ClickEvent.Action.RUN_COMMAND,
-                "/commun cancel_transfer_scope $sourceRegionId $quotedScopeName"
+                "/commun accept_territory_grant $sourceRegionId $quotedScopeName"
             )).withHoverEvent(HoverEvent(
                 HoverEvent.Action.SHOW_TEXT,
-                Text.literal("§cClick to cancel")
+                Text.literal("§a接受领土赠予")
+            ))
+        }
+
+    val declineButton = Text.literal("§c§l[拒绝]§r")
+        .styled { style ->
+            style.withClickEvent(ClickEvent(
+                ClickEvent.Action.RUN_COMMAND,
+                "/commun decline_territory_grant $sourceRegionId $quotedScopeName"
+            )).withHoverEvent(HoverEvent(
+                HoverEvent.Action.SHOW_TEXT,
+                Text.literal("§c拒绝领土赠予")
             ))
         }
 
     val promptMessage = Text.empty()
-        .append(Text.literal("§e§l[ACTION REQUIRED]§r §ePlease confirm within §c§l5 minutes§r§e: "))
-        .append(confirmButton)
+        .append(Text.literal("§e§l[领土赠予请求]§r §e请在 §c§l5分钟§r§e 内决定："))
+        .append(acceptButton)
         .append(Text.literal(" "))
-        .append(cancelButton)
+        .append(declineButton)
 
-    player.sendMessage(promptMessage)
+    targetMember.sendMessage(promptMessage)
 }
+
+private fun quoteScopeName(scopeName: String): String =
+    if (!scopeName.all { it.isLetterOrDigit() && it.code < 128 }) "\"$scopeName\"" else scopeName
