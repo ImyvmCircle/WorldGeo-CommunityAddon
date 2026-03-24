@@ -728,6 +728,20 @@ private fun runOpenModifyMenuCommand(context: CommandContext<ServerCommandSource
     return 1
 }
 
+private fun runConfirmScopeTransfer(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val regionId = IntegerArgumentType.getInteger(context, "regionId")
+    val scopeName = StringArgumentType.getString(context, "scopeName")
+    return com.imyvm.community.application.interaction.common.onConfirmScopeTransfer(player, regionId, scopeName)
+}
+
+private fun runCancelScopeTransfer(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val regionId = IntegerArgumentType.getInteger(context, "regionId")
+    val scopeName = StringArgumentType.getString(context, "scopeName")
+    return com.imyvm.community.application.interaction.common.onCancelScopeTransfer(player, regionId, scopeName)
+}
+
 fun registerCommun(dispatcher: CommandDispatcher<ServerCommandSource>) {
     dispatcher.register(
         literal("commun")
@@ -836,6 +850,26 @@ fun registerCommun(dispatcher: CommandDispatcher<ServerCommandSource>) {
                             .then(
                                 argument("nameKey", StringArgumentType.string())
                                     .executes { runCancelRenameCommand(it) }
+                            )
+                    )
+            )
+            .then(
+                literal("confirm_transfer_scope")
+                    .then(
+                        argument("regionId", IntegerArgumentType.integer())
+                            .then(
+                                argument("scopeName", StringArgumentType.string())
+                                    .executes { runConfirmScopeTransfer(it) }
+                            )
+                    )
+            )
+            .then(
+                literal("cancel_transfer_scope")
+                    .then(
+                        argument("regionId", IntegerArgumentType.integer())
+                            .then(
+                                argument("scopeName", StringArgumentType.string())
+                                    .executes { runCancelScopeTransfer(it) }
                             )
                     )
             )

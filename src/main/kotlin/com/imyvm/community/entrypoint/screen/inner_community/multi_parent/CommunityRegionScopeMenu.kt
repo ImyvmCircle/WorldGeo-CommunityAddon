@@ -44,7 +44,8 @@ class CommunityRegionScopeMenu(
     }
 
     private fun addGlobalButton() {
-        if (geographicFunctionType == GeographicFunctionType.SCOPE_DELETION) return
+        if (geographicFunctionType == GeographicFunctionType.SCOPE_DELETION ||
+            geographicFunctionType == GeographicFunctionType.SCOPE_TRANSFER) return
 
         val globalName = when (geographicFunctionType) {
             GeographicFunctionType.TELEPORT_POINT_EXECUTION,
@@ -164,6 +165,10 @@ class CommunityRegionScopeMenu(
                 GeographicFunctionType.SCOPE_DELETION -> {
                     Translator.tr("ui.admin.region.deletion.title")?.string
                         ?: "Choose scope to delete"
+                }
+                GeographicFunctionType.SCOPE_TRANSFER -> {
+                    Translator.tr("ui.admin.region.transfer.scope.title")?.string
+                        ?: "Choose scope to transfer"
                 }
             }
             return if (playerObject != null) {

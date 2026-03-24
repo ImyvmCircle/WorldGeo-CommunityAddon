@@ -280,6 +280,101 @@ fun onCancelScopeDeletion(player: ServerPlayerEntity, regionNumberId: Int, scope
     return 1
 }
 
+fun onConfirmScopeTransfer(player: ServerPlayerEntity, sourceRegionId: Int, scopeName: String): Int {
+    val pendingOp = WorldGeoCommunityAddon.pendingOperations[sourceRegionId]
+    if (pendingOp == null || pendingOp.type != PendingOperationType.TRANSFER_SCOPE_CONFIRMATION) {
+        player.sendMessage(Translator.tr("community.scope_transfer.confirmation.not_found"))
+        return 0
+    }
+
+    val transferData = pendingOp.transferData
+    if (transferData == null || transferData.executorUUID != player.uuid || transferData.scopeName != scopeName) {
+        player.sendMessage(Translator.tr("community.modification.confirmation.not_yours"))
+        return 0
+    }
+
+    if (System.currentTimeMillis() > pendingOp.expireAt) {
+        player.sendMessage(Translator.tr("community.scope_transfer.confirmation.expired"))
+        WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
+        return 0
+    }
+
+    val sourceCommunity = CommunityDatabase.getCommunityById(sourceRegionId)
+    if (sourceCommunity == null) {
+        player.sendMessage(Translator.tr("community.modification.error.community_not_found"))
+        WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
+        return 0
+    }
+
+    val targetCommunity = CommunityDatabase.getCommunityById(transferData.targetRegionNumberId)
+    if (targetCommunity == null) {
+        player.sendMessage(Translator.tr("community.scope_transfer.error.target_not_found"))
+        WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
+        return 0
+    }
+
+    val sourceRegion = sourceCommunity.getRegion()
+    if (sourceRegion == null) {
+        player.sendMessage(Translator.tr("community.modification.error.no_region"))
+        WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
+        return 0
+    }
+
+    if (sourceRegion.geometryScope.size <= 1) {
+        player.sendMessage(Translator.tr("community.scope_transfer.error.last_scope"))
+        WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
+        return 0
+    }
+
+    val targetRegion = targetCommunity.getRegion()
+    if (targetRegion == null) {
+        player.sendMessage(Translator.tr("community.scope_transfer.error.target_no_region"))
+        WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
+        return 0
+    }
+
+    val result = PlayerInteractionApi.transferScope(player, sourceRegion, scopeName, targetRegion)
+    if (result == 0) return 0
+
+    WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
+    CommunityDatabase.save()
+
+    val sourceName = sourceCommunity.generateCommunityMark()
+    val targetName = targetCommunity.generateCommunityMark()
+    player.sendMessage(Translator.tr("community.scope_transfer.success", scopeName, sourceName, targetName))
+
+    val notification = Translator.tr(
+        "community.notification.scope_transferred",
+        scopeName,
+        sourceName,
+        targetName,
+        player.name.string
+    ) ?: Text.literal("§b§l[辖区转移]§r §e辖区 §b§l$scopeName§r §e已从 §f§l$sourceName§r §e转移至 §a§l$targetName§r §e（执行者：§d§l${player.name.string}§r§e）")
+
+    notifyFormalMembers(sourceCommunity, player.server, notification)
+    notifyFormalMembers(targetCommunity, player.server, notification)
+
+    return 1
+}
+
+fun onCancelScopeTransfer(player: ServerPlayerEntity, sourceRegionId: Int, scopeName: String): Int {
+    val pendingOp = WorldGeoCommunityAddon.pendingOperations[sourceRegionId]
+    if (pendingOp == null || pendingOp.type != PendingOperationType.TRANSFER_SCOPE_CONFIRMATION) {
+        player.sendMessage(Translator.tr("community.scope_transfer.confirmation.not_found"))
+        return 0
+    }
+
+    val transferData = pendingOp.transferData
+    if (transferData == null || transferData.executorUUID != player.uuid || transferData.scopeName != scopeName) {
+        player.sendMessage(Translator.tr("community.modification.confirmation.not_yours"))
+        return 0
+    }
+
+    WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
+    player.sendMessage(Translator.tr("community.scope_transfer.confirmation.cancelled", scopeName))
+    return 1
+}
+
 
 private fun notifyFormalMembers(
     community: com.imyvm.community.domain.model.Community,

@@ -1,8 +1,8 @@
 package com.imyvm.community.entrypoint.screen.inner_community.multi_parent
 
+import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.runTransferScopeFromGlobalMenu
 import com.imyvm.community.application.interaction.screen.outer_community.runAddScopeForCommunity
 import com.imyvm.community.application.interaction.screen.outer_community.runDeleteScopeForCommunity
-import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.runUnimplementedGeometryGlobalAction
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.entrypoint.screen.AbstractMenu
 import com.imyvm.community.util.Translator
@@ -41,6 +41,6 @@ class CommunityRegionGlobalGeometryMenu(
             slot = 23,
             name = Translator.tr("ui.admin.region.global.transfer")?.string ?: "Transfer Administrative District",
             item = Items.YELLOW_WOOL
-        ) { runUnimplementedGeometryGlobalAction(it) }
+        ) { runTransferScopeFromGlobalMenu(it, community, runBack) }
     }
 }

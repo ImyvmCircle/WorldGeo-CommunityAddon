@@ -476,6 +476,27 @@ fun runExecuteScope(
                 executeScopeDeletion(playerExecutor, community, scope)
             }
         }
+        GeographicFunctionType.SCOPE_TRANSFER -> {
+            CommunityPermissionPolicy.executeWithPermission(
+                playerExecutor,
+                {
+                    val adminCheck = CommunityPermissionPolicy.canExecuteAdministration(playerExecutor, community, AdminPrivilege.MODIFY_REGION_GEOMETRY)
+                    if (adminCheck.isDenied()) return@executeWithPermission adminCheck
+                    CommunityPermissionPolicy.canExecuteOperationInProto(playerExecutor, community, AdminPrivilege.MODIFY_REGION_GEOMETRY)
+                }
+            ) {
+                CommunityMenuOpener.open(playerExecutor) { syncId ->
+                    com.imyvm.community.entrypoint.screen.inner_community.multi_parent.ScopeTransferTargetListMenu(
+                        syncId = syncId,
+                        sourceCommunity = community,
+                        scope = scope,
+                        runBack = runBackGrandfatherMenu
+                    ) { player, targetCommunity ->
+                        runTransferScopeToTarget(player, community, scope, targetCommunity, runBackGrandfatherMenu)
+                    }
+                }
+            }
+        }
     }
 }
 
