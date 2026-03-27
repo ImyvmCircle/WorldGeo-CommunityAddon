@@ -21,9 +21,10 @@
 14. 我们这个项目中所说的toggle开关的实现范例是`MainMenu`中的Selection Mode开关及其对应`Handler`实现。其实质是修改数据，并重新根据修改后的数据加载本页面。
 15. 任何涉及到金钱的操作，都要明白金钱以`EconomyMod`实现，单位是`Long`，且转换为玩家可读的格式需要除以100并保留两位小数点。
 16. 原则上不要新建新的class，也不要添加Comments.
-17. 修改机制之后，必须检查`README.md`进行修改。不要过度暴露游戏实现，以玩家侧的游戏机制介绍为主。
-18. 不得使用git.
-19. 测试要包含./gradlew runServer.
-20. 未说明清楚的机制、语言文件用名和感到机制模糊的地方等等应该向操作者提问。不要为了确认需求终止对话。
-21. 命令参数中涉及 Region 名称、GeoScope 名称或 Community 名称的所有 SuggestionProvider，必须对不满足"全部字符均为 ASCII 字母或数字"条件的名称用双引号包裹后再 suggest，即使用 `if (!name.all { it.isLetterOrDigit() && it.code < 128 }) builder.suggest("\"$name\"") else builder.suggest(name)` 的形式。这是因为包含中文等非 ASCII 字符或空格的名称，在 Brigadier 命令解析中若不加引号将无法被正确识别。
-22. 本项目跟IMYVMWorldGeo Core要高度协作，互相参考。
+17. 修改机制之后，必须检查`README.md`进行修改。不要过度暴露游戏实现，以玩家侧的游戏机制介绍为主。每次完成任务前，须确认`README.md`的changelog部分已同步记录本次更改，但不要随意新建版本或更新版本号。
+18. 不使用git,除非prompt要求。进行prompt提交时，应符合git log里面先前的一般commit格式，简洁规范。
+19. 本项目依赖`ImyvmWorldGeo`从Maven仓库拉取制品，相邻目录下的本地源码**不保证**与实际构建所使用的制品版本一致。实现调用`ImyvmWorldGeo` API的功能时，请对照**已发布制品**验证方法签名（在`gradle.properties`中查看版本号，然后检查解析后的jar），不要将本地源文件视为规范的API参考，否则将在运行时抛出`NoSuchMethodError`等错误。
+20. 测试要包含./gradlew runServer.
+21. 未说明清楚的机制、语言文件用名和感到机制模糊的地方等等应该向操作者提问。不要为了确认需求终止对话。
+22. 命令参数中涉及 Region 名称、GeoScope 名称或 Community 名称的所有 SuggestionProvider，必须对不满足"全部字符均为 ASCII 字母或数字"条件的名称用双引号包裹后再 suggest，即使用 `if (!name.all { it.isLetterOrDigit() && it.code < 128 }) builder.suggest("\"$name\"") else builder.suggest(name)` 的形式。这是因为包含中文等非 ASCII 字符或空格的名称，在 Brigadier 命令解析中若不加引号将无法被正确识别。
+23. 本项目跟IMYVMWorldGeo Core要高度协作，互相参考。
