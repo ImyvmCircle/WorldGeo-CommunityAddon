@@ -4,15 +4,11 @@
 
 This Project is designed to constitute a comprehensive framework for players' **communities** in Minecraft servers. It is built on the IMYVMWorldGeo as an extension, which provides mechanics centered around **Region**, performing a Minecraft geography element, and is intended to offer an administration simulation system granting players the ability to self-govern their in-game regions in the form of a player community.
 
-## Major version 1.0.x
+## Major version 1.1.x
 
-This major version is a perfection of current game system.
+This major version introduces community economical profits. 
 
-### 1.0.1
-
-This version implements the community like feature.
-
-- feat: implement community like system — each player can like a community once per day (timezone-aware);
+### 1.1.0
 
 ## Features
 
