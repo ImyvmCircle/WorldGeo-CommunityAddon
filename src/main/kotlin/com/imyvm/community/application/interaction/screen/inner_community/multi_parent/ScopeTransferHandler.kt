@@ -14,15 +14,15 @@ import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.Commun
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.inter.api.RegionDataApi
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.ClickEvent
-import net.minecraft.text.HoverEvent
-import net.minecraft.text.Text
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.ClickEvent
+import net.minecraft.network.chat.HoverEvent
+import net.minecraft.network.chat.Component
 
 fun runTransferScopeFromGlobalMenu(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     community: Community,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     CommunityPermissionPolicy.executeWithPermission(
         player,
@@ -34,13 +34,13 @@ fun runTransferScopeFromGlobalMenu(
     ) {
         val region = community.getRegion()
         if (region == null) {
-            player.closeHandledScreen()
-            player.sendMessage(Translator.tr("community.modification.error.no_region"))
+            player.closeContainer()
+            player.sendSystemMessage(Translator.tr("community.modification.error.no_region"))
             return@executeWithPermission
         }
         if (region.geometryScope.size <= 1) {
-            player.closeHandledScreen()
-            player.sendMessage(Translator.tr("community.scope_transfer.error.last_scope"))
+            player.closeContainer()
+            player.sendSystemMessage(Translator.tr("community.scope_transfer.error.last_scope"))
             return@executeWithPermission
         }
         CommunityMenuOpener.open(player) { syncId ->
@@ -56,37 +56,37 @@ fun runTransferScopeFromGlobalMenu(
 }
 
 fun runTransferScopeToTarget(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     sourceCommunity: Community,
     scope: GeoScope,
     targetCommunity: Community,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     val existingPending = WorldGeoCommunityAddon.pendingOperations[sourceCommunity.regionNumberId]
     if (existingPending != null) {
-        player.closeHandledScreen()
-        player.sendMessage(Translator.tr("community.modification.confirmation.pending"))
+        player.closeContainer()
+        player.sendSystemMessage(Translator.tr("community.modification.confirmation.pending"))
         return
     }
 
     val targetRegion = targetCommunity.getRegion()
     if (targetRegion == null) {
-        player.closeHandledScreen()
-        player.sendMessage(Translator.tr("community.scope_transfer.error.target_no_region"))
+        player.closeContainer()
+        player.sendSystemMessage(Translator.tr("community.scope_transfer.error.target_no_region"))
         return
     }
 
-    val eligibleOnlineMembers = getEligibleGrantRecipients(targetCommunity, player.server)
+    val eligibleOnlineMembers = getEligibleGrantRecipients(targetCommunity, player.level().server)
     if (eligibleOnlineMembers.isEmpty()) {
-        player.closeHandledScreen()
-        player.sendMessage(Translator.tr("community.scope_transfer.error.no_eligible_online"))
+        player.closeContainer()
+        player.sendSystemMessage(Translator.tr("community.scope_transfer.error.no_eligible_online"))
         return
     }
 
     val sourceRegionId = sourceCommunity.regionNumberId ?: return
     val targetRegionId = targetCommunity.regionNumberId ?: return
 
-    player.closeHandledScreen()
+    player.closeContainer()
 
     val scopeArea = RegionDataApi.getScopeArea(scope) ?: 0.0
     val areaDisplay = String.format("%.2f", scopeArea)
@@ -114,7 +114,7 @@ fun runTransferScopeToTarget(
         Translator.tr("community.scope_transfer.confirm.source", sourceName),
         Translator.tr("community.scope_transfer.confirm.target", targetName),
         Translator.tr("community.scope_transfer.sent"),
-    ).filterNotNull().forEach { player.sendMessage(it) }
+    ).filterNotNull().forEach { player.sendSystemMessage(it) }
 
     sendCancelButtonToInitiator(player, sourceRegionId, scopeName)
 
@@ -125,31 +125,26 @@ fun runTransferScopeToTarget(
 }
 
 private fun sendCancelButtonToInitiator(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     sourceRegionId: Int,
     scopeName: String
 ) {
     val quotedScopeName = quoteScopeName(scopeName)
 
-    val cancelButton = Text.literal("§c§l[取消赠予]§r")
-        .styled { style ->
-            style.withClickEvent(ClickEvent(
-                ClickEvent.Action.RUN_COMMAND,
-                "/_commun cancel_territory_grant $sourceRegionId $quotedScopeName"
-            )).withHoverEvent(HoverEvent(
-                HoverEvent.Action.SHOW_TEXT,
-                Text.literal("§c撤销领土赠予请求")
+    val cancelButton = Component.literal("§c§l[取消赠予]§r")
+        .withStyle { style ->
+            style.withClickEvent(ClickEvent.RunCommand("/_commun cancel_territory_grant $sourceRegionId $quotedScopeName")).withHoverEvent(HoverEvent.ShowText(Component.literal("§c撤销领土赠予请求")
             ))
         }
 
-    val msg = Text.empty()
+    val msg = Component.empty()
         .append(cancelButton)
 
-    player.sendMessage(msg)
+    player.sendSystemMessage(msg)
 }
 
 private fun sendGrantRequestToTargetMember(
-    targetMember: ServerPlayerEntity,
+    targetMember: ServerPlayer,
     sourceRegionId: Int,
     scopeName: String,
     sourceName: String,
@@ -157,39 +152,29 @@ private fun sendGrantRequestToTargetMember(
 ) {
     val quotedScopeName = quoteScopeName(scopeName)
 
-    targetMember.sendMessage(
+    targetMember.sendSystemMessage(
         Translator.tr("community.scope_transfer.incoming", sourceName, scopeName, targetName)
     )
 
-    val acceptButton = Text.literal("§a§l[接受]§r")
-        .styled { style ->
-            style.withClickEvent(ClickEvent(
-                ClickEvent.Action.RUN_COMMAND,
-                "/_commun accept_territory_grant $sourceRegionId $quotedScopeName"
-            )).withHoverEvent(HoverEvent(
-                HoverEvent.Action.SHOW_TEXT,
-                Text.literal("§a接受领土赠予")
+    val acceptButton = Component.literal("§a§l[接受]§r")
+        .withStyle { style ->
+            style.withClickEvent(ClickEvent.RunCommand("/_commun accept_territory_grant $sourceRegionId $quotedScopeName")).withHoverEvent(HoverEvent.ShowText(Component.literal("§a接受领土赠予")
             ))
         }
 
-    val declineButton = Text.literal("§c§l[拒绝]§r")
-        .styled { style ->
-            style.withClickEvent(ClickEvent(
-                ClickEvent.Action.RUN_COMMAND,
-                "/_commun decline_territory_grant $sourceRegionId $quotedScopeName"
-            )).withHoverEvent(HoverEvent(
-                HoverEvent.Action.SHOW_TEXT,
-                Text.literal("§c拒绝领土赠予")
+    val declineButton = Component.literal("§c§l[拒绝]§r")
+        .withStyle { style ->
+            style.withClickEvent(ClickEvent.RunCommand("/_commun decline_territory_grant $sourceRegionId $quotedScopeName")).withHoverEvent(HoverEvent.ShowText(Component.literal("§c拒绝领土赠予")
             ))
         }
 
-    val promptMessage = Text.empty()
-        .append(Text.literal("§e§l[领土赠予请求]§r §e请在 §c§l5分钟§r§e 内决定："))
+    val promptMessage = Component.empty()
+        .append(Component.literal("§e§l[领土赠予请求]§r §e请在 §c§l5分钟§r§e 内决定："))
         .append(acceptButton)
-        .append(Text.literal(" "))
+        .append(Component.literal(" "))
         .append(declineButton)
 
-    targetMember.sendMessage(promptMessage)
+    targetMember.sendSystemMessage(promptMessage)
 }
 
 private fun quoteScopeName(scopeName: String): String =

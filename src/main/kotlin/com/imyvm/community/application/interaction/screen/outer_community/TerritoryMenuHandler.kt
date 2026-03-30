@@ -5,11 +5,11 @@ import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.entrypoint.screen.outer_community.CommunityCreationSelectionMenu
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.Translator
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 
 fun runOpenCommunityCreation(
-    player: ServerPlayerEntity,
-    runBackTerritoryMenu: (ServerPlayerEntity) -> Unit
+    player: ServerPlayer,
+    runBackTerritoryMenu: (ServerPlayer) -> Unit
 ) {
     if (!checkPlayerMembershipPreCreation(player)) return
     val defaultTitle = generateNewCommunityTitle()
@@ -25,7 +25,7 @@ fun runOpenCommunityCreation(
 
 private fun generateNewCommunityTitle(): String {
     val index = CommunityDatabase.communities.size + 1
-    val defaultTitle = Translator.tr("ui.create.title")?.string ?: "New-Community"
+    val defaultTitle = Translator.tr("ui.create.title").string ?: "New-Community"
     return generateSequence(index) { it + 1 }
         .map { "$defaultTitle$it" }
         .first { title -> CommunityDatabase.communities.none { it.getRegion()?.name == title } }

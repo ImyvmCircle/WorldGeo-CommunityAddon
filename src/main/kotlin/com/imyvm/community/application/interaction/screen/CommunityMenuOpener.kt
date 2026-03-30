@@ -1,23 +1,23 @@
 package com.imyvm.community.application.interaction.screen
 
 import com.imyvm.community.entrypoint.screen.AbstractMenu
-import net.minecraft.entity.player.PlayerEntity
-import net.minecraft.entity.player.PlayerInventory
-import net.minecraft.screen.NamedScreenHandlerFactory
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.world.entity.player.Player
+import net.minecraft.world.entity.player.Inventory
+import net.minecraft.world.MenuProvider
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.Component
 
 object CommunityMenuOpener {
     fun <M : AbstractMenu> open(
-        player: ServerPlayerEntity,
+        player: ServerPlayer,
         handlerFactory: (syncId: Int) -> M
     ) {
-        player.openHandledScreen(object : NamedScreenHandlerFactory {
-            override fun createMenu(syncId: Int, inv: PlayerInventory, player: PlayerEntity): M =
+        player.openMenu(object : MenuProvider {
+            override fun createMenu(syncId: Int, inv: Inventory, player: Player): M =
                 handlerFactory(syncId)
 
-            override fun getDisplayName(): Text? =
-                handlerFactory(0).menuTitle
+            override fun getDisplayName(): Component =
+                handlerFactory(0).menuTitle ?: Component.empty()
         })
     }
 

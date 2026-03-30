@@ -13,55 +13,55 @@ import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.inter.api.PlayerInteractionApi
 import com.imyvm.iwg.inter.api.RegionDataApi
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.Component
 
-private fun getAndValidatePendingOperation(player: ServerPlayerEntity, regionNumberId: Int, scopeName: String): com.imyvm.community.domain.model.PendingOperation? {
+private fun getAndValidatePendingOperation(player: ServerPlayer, regionNumberId: Int, scopeName: String): com.imyvm.community.domain.model.PendingOperation? {
     val pendingOp = WorldGeoCommunityAddon.pendingOperations[regionNumberId]
 
     if (pendingOp == null || pendingOp.type != PendingOperationType.MODIFY_SCOPE_CONFIRMATION) {
-        player.sendMessage(Translator.tr("community.modification.confirmation.not_found"))
+        player.sendSystemMessage(Translator.tr("community.modification.confirmation.not_found"))
         return null
     }
 
     val modificationData = pendingOp.modificationData
     if (modificationData == null || modificationData.executorUUID != player.uuid || modificationData.scopeName != scopeName) {
-        player.sendMessage(Translator.tr("community.modification.confirmation.not_yours"))
+        player.sendSystemMessage(Translator.tr("community.modification.confirmation.not_yours"))
         return null
     }
 
     return pendingOp
 }
 
-fun onConfirmScopeModification(player: ServerPlayerEntity, regionNumberId: Int, scopeName: String): Int {
+fun onConfirmScopeModification(player: ServerPlayer, regionNumberId: Int, scopeName: String): Int {
     val pendingOp = getAndValidatePendingOperation(player, regionNumberId, scopeName) ?: return 0
     val modificationData = pendingOp.modificationData!!
 
     if (System.currentTimeMillis() > pendingOp.expireAt) {
-        player.sendMessage(Translator.tr("community.modification.confirmation.expired"))
+        player.sendSystemMessage(Translator.tr("community.modification.confirmation.expired"))
         WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
         return 0
     }
 
     val community = CommunityDatabase.getCommunityById(regionNumberId)
     if (community == null) {
-        player.sendMessage(Translator.tr("community.modification.error.community_not_found"))
+        player.sendSystemMessage(Translator.tr("community.modification.error.community_not_found"))
         WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
         return 0
     }
 
     val currentAssets = community.getTotalAssets()
     if (modificationData.cost > 0 && currentAssets < modificationData.cost) {
-        player.sendMessage(Translator.tr("community.modification.error.insufficient_assets",
+        player.sendSystemMessage(Translator.tr("community.modification.error.insufficient_assets",
             String.format("%.2f", modificationData.cost / 100.0),
             String.format("%.2f", currentAssets / 100.0)
-        ) ?: Text.literal("Insufficient assets: need ${modificationData.cost / 100.0}, have ${currentAssets / 100.0}"))
+        ) ?: Component.literal("Insufficient assets: need ${modificationData.cost / 100.0}, have ${currentAssets / 100.0}"))
         return 0
     }
 
     val communityRegion = community.getRegion()
     if (communityRegion == null) {
-        player.sendMessage(Translator.tr("community.modification.error.no_region"))
+        player.sendSystemMessage(Translator.tr("community.modification.error.no_region"))
         WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
         return 0
     }
@@ -71,7 +71,7 @@ fun onConfirmScopeModification(player: ServerPlayerEntity, regionNumberId: Int, 
         PlayerInteractionApi.addScope(player, communityRegion, scopeName)
         val createdScope = communityRegion.geometryScope.firstOrNull { it.scopeName.equals(scopeName, ignoreCase = true) }
         if (createdScope == null) {
-            player.sendMessage(Translator.tr("community.scope_add.error.creation_failed", scopeName))
+            player.sendSystemMessage(Translator.tr("community.scope_add.error.creation_failed", scopeName))
             return 0
         }
 
@@ -95,22 +95,22 @@ fun onConfirmScopeModification(player: ServerPlayerEntity, regionNumberId: Int, 
 
         val costDisplay = String.format("%.2f", modificationData.cost / 100.0)
         val shapeText = when (shapeName.uppercase()) {
-            "CIRCLE" -> Translator.tr("community.shape.circle")?.string ?: "circle"
-            "POLYGON" -> Translator.tr("community.shape.polygon")?.string ?: "polygon"
-            else -> Translator.tr("community.shape.rectangle")?.string ?: "rectangle"
+            "CIRCLE" -> Translator.tr("community.shape.circle").string ?: "circle"
+            "POLYGON" -> Translator.tr("community.shape.polygon").string ?: "polygon"
+            else -> Translator.tr("community.shape.rectangle").string ?: "rectangle"
         }
-        player.sendMessage(Translator.tr("community.scope_add.success", scopeName, shapeText, costDisplay))
+        player.sendSystemMessage(Translator.tr("community.scope_add.success", scopeName, shapeText, costDisplay))
         if (modificationData.softLimitSurcharge > 0) {
-            player.sendMessage(Translator.tr(
+            player.sendSystemMessage(Translator.tr(
                 "community.scope_add.success.surcharge_note",
                 String.format("%.2f", modificationData.softLimitSurcharge / 100.0)
             ))
         }
 
         val territoryType = if (community.isManor()) {
-            Translator.tr("community.region.territory.manor")?.string ?: "manor territory"
+            Translator.tr("community.region.territory.manor").string ?: "manor territory"
         } else {
-            Translator.tr("community.region.territory.realm")?.string ?: "realm territory"
+            Translator.tr("community.region.territory.realm").string ?: "realm territory"
         }
         val communityName = communityRegion.name
         val notification = Translator.tr(
@@ -121,8 +121,8 @@ fun onConfirmScopeModification(player: ServerPlayerEntity, regionNumberId: Int, 
             communityName,
             player.name.string,
             costDisplay
-        ) ?: Text.literal("Administrative district $scopeName was added in $communityName by ${player.name.string}")
-        notifyFormalMembers(community, player.server, notification)
+        ) ?: Component.literal("Administrative district $scopeName was added in $communityName by ${player.name.string}")
+        notifyFormalMembers(community, player.level().server, notification)
         return 1
     }
 
@@ -161,18 +161,18 @@ fun onConfirmScopeModification(player: ServerPlayerEntity, regionNumberId: Int, 
     val costDisplay = String.format("%.2f", Math.abs(modificationData.cost) / 100.0)
 
     if (modificationData.cost >= 0) {
-        player.sendMessage(Translator.tr("community.modification.success.charged", scopeName, costDisplay))
+        player.sendSystemMessage(Translator.tr("community.modification.success.charged", scopeName, costDisplay))
     } else {
-        player.sendMessage(Translator.tr("community.modification.success.refunded", scopeName, costDisplay))
+        player.sendSystemMessage(Translator.tr("community.modification.success.refunded", scopeName, costDisplay))
     }
 
     val territoryType = if (community.isManor()) {
-        Translator.tr("community.region.territory.manor")?.string ?: "manor territory"
+        Translator.tr("community.region.territory.manor").string ?: "manor territory"
     } else {
-        Translator.tr("community.region.territory.realm")?.string ?: "realm territory"
+        Translator.tr("community.region.territory.realm").string ?: "realm territory"
     }
 
-    val districtType = Translator.tr("community.region.district")?.string ?: "administrative district"
+    val districtType = Translator.tr("community.region.district").string ?: "administrative district"
 
     val communityName = communityRegion.name
     val notification = Translator.tr(
@@ -182,64 +182,64 @@ fun onConfirmScopeModification(player: ServerPlayerEntity, regionNumberId: Int, 
         territoryType,
         communityName,
         player.name.string
-    ) ?: Text.literal("$districtType '$scopeName' was modified in $territoryType '$communityName' by ${player.name.string}")
+    ) ?: Component.literal("$districtType '$scopeName' was modified in $territoryType '$communityName' by ${player.name.string}")
 
-    notifyOfficials(community, player.server, notification, player)
+    notifyOfficials(community, player.level().server, notification, player)
 
     return 1
 }
 
-fun onCancelScopeModification(player: ServerPlayerEntity, regionNumberId: Int, scopeName: String): Int {
+fun onCancelScopeModification(player: ServerPlayer, regionNumberId: Int, scopeName: String): Int {
     if (getAndValidatePendingOperation(player, regionNumberId, scopeName) == null) return 0
 
     WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
-    player.sendMessage(Translator.tr("community.modification.confirmation.cancelled", scopeName))
+    player.sendSystemMessage(Translator.tr("community.modification.confirmation.cancelled", scopeName))
     return 1
 }
 
-private fun getAndValidateDeletionPendingOperation(player: ServerPlayerEntity, regionNumberId: Int, scopeName: String): com.imyvm.community.domain.model.PendingOperation? {
+private fun getAndValidateDeletionPendingOperation(player: ServerPlayer, regionNumberId: Int, scopeName: String): com.imyvm.community.domain.model.PendingOperation? {
     val pendingOp = WorldGeoCommunityAddon.pendingOperations[regionNumberId]
 
     if (pendingOp == null || pendingOp.type != PendingOperationType.DELETE_SCOPE_CONFIRMATION) {
-        player.sendMessage(Translator.tr("community.scope_delete.confirmation.not_found"))
+        player.sendSystemMessage(Translator.tr("community.scope_delete.confirmation.not_found"))
         return null
     }
 
     val modificationData = pendingOp.modificationData
     if (modificationData == null || modificationData.executorUUID != player.uuid || modificationData.scopeName != scopeName) {
-        player.sendMessage(Translator.tr("community.modification.confirmation.not_yours"))
+        player.sendSystemMessage(Translator.tr("community.modification.confirmation.not_yours"))
         return null
     }
 
     return pendingOp
 }
 
-fun onConfirmScopeDeletion(player: ServerPlayerEntity, regionNumberId: Int, scopeName: String): Int {
+fun onConfirmScopeDeletion(player: ServerPlayer, regionNumberId: Int, scopeName: String): Int {
     val pendingOp = getAndValidateDeletionPendingOperation(player, regionNumberId, scopeName) ?: return 0
     val modificationData = pendingOp.modificationData!!
 
     if (System.currentTimeMillis() > pendingOp.expireAt) {
-        player.sendMessage(Translator.tr("community.modification.confirmation.expired"))
+        player.sendSystemMessage(Translator.tr("community.modification.confirmation.expired"))
         WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
         return 0
     }
 
     val community = CommunityDatabase.getCommunityById(regionNumberId)
     if (community == null) {
-        player.sendMessage(Translator.tr("community.modification.error.community_not_found"))
+        player.sendSystemMessage(Translator.tr("community.modification.error.community_not_found"))
         WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
         return 0
     }
 
     val communityRegion = community.getRegion()
     if (communityRegion == null) {
-        player.sendMessage(Translator.tr("community.modification.error.no_region"))
+        player.sendSystemMessage(Translator.tr("community.modification.error.no_region"))
         WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
         return 0
     }
 
     if (communityRegion.geometryScope.size <= 1) {
-        player.sendMessage(Translator.tr("community.scope_delete.error.last_scope"))
+        player.sendSystemMessage(Translator.tr("community.scope_delete.error.last_scope"))
         WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
         return 0
     }
@@ -262,12 +262,12 @@ fun onConfirmScopeDeletion(player: ServerPlayerEntity, regionNumberId: Int, scop
     CommunityDatabase.save()
 
     val refundDisplay = String.format("%.2f", Math.abs(modificationData.cost) / 100.0)
-    player.sendMessage(Translator.tr("community.scope_delete.success", scopeName, refundDisplay))
+    player.sendSystemMessage(Translator.tr("community.scope_delete.success", scopeName, refundDisplay))
 
     val territoryType = if (community.isManor()) {
-        Translator.tr("community.region.territory.manor")?.string ?: "manor territory"
+        Translator.tr("community.region.territory.manor").string ?: "manor territory"
     } else {
-        Translator.tr("community.region.territory.realm")?.string ?: "realm territory"
+        Translator.tr("community.region.territory.realm").string ?: "realm territory"
     }
 
     val communityName = communityRegion.name
@@ -278,74 +278,74 @@ fun onConfirmScopeDeletion(player: ServerPlayerEntity, regionNumberId: Int, scop
         communityName,
         player.name.string,
         refundDisplay
-    ) ?: Text.literal("Administrative district '$scopeName' was sold in $territoryType '$communityName' by ${player.name.string}")
+    ) ?: Component.literal("Administrative district '$scopeName' was sold in $territoryType '$communityName' by ${player.name.string}")
 
-    notifyFormalMembers(community, player.server, notification)
+    notifyFormalMembers(community, player.level().server, notification)
     return 1
 }
 
-fun onCancelScopeDeletion(player: ServerPlayerEntity, regionNumberId: Int, scopeName: String): Int {
+fun onCancelScopeDeletion(player: ServerPlayer, regionNumberId: Int, scopeName: String): Int {
     if (getAndValidateDeletionPendingOperation(player, regionNumberId, scopeName) == null) return 0
 
     WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
-    player.sendMessage(Translator.tr("community.scope_delete.confirmation.cancelled", scopeName))
+    player.sendSystemMessage(Translator.tr("community.scope_delete.confirmation.cancelled", scopeName))
     return 1
 }
 
-fun onAcceptTerritoryGrant(player: ServerPlayerEntity, sourceRegionId: Int, scopeName: String): Int {
+fun onAcceptTerritoryGrant(player: ServerPlayer, sourceRegionId: Int, scopeName: String): Int {
     val pendingOp = WorldGeoCommunityAddon.pendingOperations[sourceRegionId]
     if (pendingOp == null || pendingOp.type != PendingOperationType.TRANSFER_SCOPE_CONFIRMATION) {
-        player.sendMessage(Translator.tr("community.scope_transfer.confirmation.not_found"))
+        player.sendSystemMessage(Translator.tr("community.scope_transfer.confirmation.not_found"))
         return 0
     }
 
     val transferData = pendingOp.transferData
     if (transferData == null || transferData.scopeName != scopeName) {
-        player.sendMessage(Translator.tr("community.scope_transfer.confirmation.not_found"))
+        player.sendSystemMessage(Translator.tr("community.scope_transfer.confirmation.not_found"))
         return 0
     }
 
     if (System.currentTimeMillis() > pendingOp.expireAt) {
-        player.sendMessage(Translator.tr("community.scope_transfer.confirmation.expired"))
+        player.sendSystemMessage(Translator.tr("community.scope_transfer.confirmation.expired"))
         WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
         return 0
     }
 
     val targetCommunity = CommunityDatabase.getCommunityById(transferData.targetRegionNumberId)
     if (targetCommunity == null) {
-        player.sendMessage(Translator.tr("community.scope_transfer.error.target_not_found"))
+        player.sendSystemMessage(Translator.tr("community.scope_transfer.error.target_not_found"))
         WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
         return 0
     }
 
     if (!isEligibleGrantRecipient(player, targetCommunity)) {
-        player.sendMessage(Translator.tr("community.scope_transfer.confirmation.not_eligible"))
+        player.sendSystemMessage(Translator.tr("community.scope_transfer.confirmation.not_eligible"))
         return 0
     }
 
     val sourceCommunity = CommunityDatabase.getCommunityById(sourceRegionId)
     if (sourceCommunity == null) {
-        player.sendMessage(Translator.tr("community.modification.error.community_not_found"))
+        player.sendSystemMessage(Translator.tr("community.modification.error.community_not_found"))
         WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
         return 0
     }
 
     val sourceRegion = sourceCommunity.getRegion()
     if (sourceRegion == null) {
-        player.sendMessage(Translator.tr("community.modification.error.no_region"))
+        player.sendSystemMessage(Translator.tr("community.modification.error.no_region"))
         WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
         return 0
     }
 
     if (sourceRegion.geometryScope.size <= 1) {
-        player.sendMessage(Translator.tr("community.scope_transfer.error.last_scope"))
+        player.sendSystemMessage(Translator.tr("community.scope_transfer.error.last_scope"))
         WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
         return 0
     }
 
     val targetRegion = targetCommunity.getRegion()
     if (targetRegion == null) {
-        player.sendMessage(Translator.tr("community.scope_transfer.error.target_no_region"))
+        player.sendSystemMessage(Translator.tr("community.scope_transfer.error.target_no_region"))
         WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
         return 0
     }
@@ -358,7 +358,7 @@ fun onAcceptTerritoryGrant(player: ServerPlayerEntity, sourceRegionId: Int, scop
 
     val sourceName = sourceCommunity.generateCommunityMark()
     val targetName = targetCommunity.generateCommunityMark()
-    player.sendMessage(Translator.tr("community.scope_transfer.success", scopeName, sourceName, targetName))
+    player.sendSystemMessage(Translator.tr("community.scope_transfer.success", scopeName, sourceName, targetName))
 
     val notification = Translator.tr(
         "community.notification.scope_transferred",
@@ -366,69 +366,69 @@ fun onAcceptTerritoryGrant(player: ServerPlayerEntity, sourceRegionId: Int, scop
         sourceName,
         targetName,
         player.name.string
-    ) ?: Text.literal("§b§l[领土赠予]§r §e辖区 §b§l$scopeName§r §e已从 §f§l$sourceName§r §e赠予至 §a§l$targetName§r §e（接受者：§d§l${player.name.string}§r§e）")
+    ) ?: Component.literal("§b§l[领土赠予]§r §e辖区 §b§l$scopeName§r §e已从 §f§l$sourceName§r §e赠予至 §a§l$targetName§r §e（接受者：§d§l${player.name.string}§r§e）")
 
-    notifyFormalMembers(sourceCommunity, player.server, notification)
-    notifyFormalMembers(targetCommunity, player.server, notification)
+    notifyFormalMembers(sourceCommunity, player.level().server, notification)
+    notifyFormalMembers(targetCommunity, player.level().server, notification)
 
     return 1
 }
 
-fun onDeclineTerritoryGrant(player: ServerPlayerEntity, sourceRegionId: Int, scopeName: String): Int {
+fun onDeclineTerritoryGrant(player: ServerPlayer, sourceRegionId: Int, scopeName: String): Int {
     val pendingOp = WorldGeoCommunityAddon.pendingOperations[sourceRegionId]
     if (pendingOp == null || pendingOp.type != PendingOperationType.TRANSFER_SCOPE_CONFIRMATION) {
-        player.sendMessage(Translator.tr("community.scope_transfer.confirmation.not_found"))
+        player.sendSystemMessage(Translator.tr("community.scope_transfer.confirmation.not_found"))
         return 0
     }
 
     val transferData = pendingOp.transferData
     if (transferData == null || transferData.scopeName != scopeName) {
-        player.sendMessage(Translator.tr("community.scope_transfer.confirmation.not_found"))
+        player.sendSystemMessage(Translator.tr("community.scope_transfer.confirmation.not_found"))
         return 0
     }
 
     val targetCommunity = CommunityDatabase.getCommunityById(transferData.targetRegionNumberId)
     if (targetCommunity != null && !isEligibleGrantRecipient(player, targetCommunity)) {
-        player.sendMessage(Translator.tr("community.scope_transfer.confirmation.not_eligible"))
+        player.sendSystemMessage(Translator.tr("community.scope_transfer.confirmation.not_eligible"))
         return 0
     }
 
     WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
-    player.sendMessage(Translator.tr("community.scope_transfer.confirmation.declined", scopeName))
+    player.sendSystemMessage(Translator.tr("community.scope_transfer.confirmation.declined", scopeName))
 
     // Notify the initiator that the grant was declined
     val executorId = transferData.executorUUID
-    player.server.playerManager.getPlayer(executorId)?.sendMessage(
+    player.level().server.playerList.getPlayer(executorId)?.sendSystemMessage(
         Translator.tr("community.scope_transfer.confirmation.declined_notify", scopeName, player.name.string)
     )
     return 1
 }
 
-fun onCancelTerritoryGrant(player: ServerPlayerEntity, sourceRegionId: Int, scopeName: String): Int {
+fun onCancelTerritoryGrant(player: ServerPlayer, sourceRegionId: Int, scopeName: String): Int {
     val pendingOp = WorldGeoCommunityAddon.pendingOperations[sourceRegionId]
     if (pendingOp == null || pendingOp.type != PendingOperationType.TRANSFER_SCOPE_CONFIRMATION) {
-        player.sendMessage(Translator.tr("community.scope_transfer.confirmation.not_found"))
+        player.sendSystemMessage(Translator.tr("community.scope_transfer.confirmation.not_found"))
         return 0
     }
 
     val transferData = pendingOp.transferData
     if (transferData == null || transferData.executorUUID != player.uuid || transferData.scopeName != scopeName) {
-        player.sendMessage(Translator.tr("community.modification.confirmation.not_yours"))
+        player.sendSystemMessage(Translator.tr("community.modification.confirmation.not_yours"))
         return 0
     }
 
     WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
-    player.sendMessage(Translator.tr("community.scope_transfer.confirmation.cancelled", scopeName))
+    player.sendSystemMessage(Translator.tr("community.scope_transfer.confirmation.cancelled", scopeName))
 
     val targetCommunity = CommunityDatabase.getCommunityById(transferData.targetRegionNumberId)
     if (targetCommunity != null) {
         val cancelMsg = Translator.tr("community.scope_transfer.confirmation.cancelled_notify", scopeName, player.name.string)
-        getEligibleGrantRecipients(targetCommunity, player.server).forEach { it.sendMessage(cancelMsg) }
+        getEligibleGrantRecipients(targetCommunity, player.level().server).forEach { it.sendSystemMessage(cancelMsg) }
     }
     return 1
 }
 
-fun isEligibleGrantRecipient(player: ServerPlayerEntity, community: Community): Boolean {
+fun isEligibleGrantRecipient(player: ServerPlayer, community: Community): Boolean {
     val account = community.member[player.uuid] ?: return false
     return when (account.basicRoleType) {
         MemberRoleType.OWNER -> true
@@ -437,14 +437,14 @@ fun isEligibleGrantRecipient(player: ServerPlayerEntity, community: Community): 
     }
 }
 
-fun getEligibleGrantRecipients(community: Community, server: MinecraftServer): List<ServerPlayerEntity> {
+fun getEligibleGrantRecipients(community: Community, server: MinecraftServer): List<ServerPlayer> {
     return community.member.entries.mapNotNull { (uuid, account) ->
         val isEligible = when (account.basicRoleType) {
             MemberRoleType.OWNER -> true
             MemberRoleType.ADMIN -> account.adminPrivileges?.isEnabled(AdminPrivilege.MODIFY_REGION_GEOMETRY) == true
             else -> false
         }
-        if (isEligible) server.playerManager.getPlayer(uuid) else null
+        if (isEligible) server.playerList.getPlayer(uuid) else null
     }.filterNotNull()
 }
 
@@ -452,13 +452,13 @@ fun getEligibleGrantRecipients(community: Community, server: MinecraftServer): L
 private fun notifyFormalMembers(
     community: com.imyvm.community.domain.model.Community,
     server: MinecraftServer,
-    message: Text
+    message: Component
 ) {
     community.member.forEach { (memberUUID, memberAccount) ->
         if (memberAccount.basicRoleType == MemberRoleType.APPLICANT || memberAccount.basicRoleType == MemberRoleType.REFUSED) {
             return@forEach
         }
-        server.playerManager.getPlayer(memberUUID)?.sendMessage(message)
+        server.playerList.getPlayer(memberUUID)?.sendSystemMessage(message)
         memberAccount.mail.add(message)
     }
 }

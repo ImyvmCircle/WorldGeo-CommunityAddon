@@ -6,17 +6,17 @@ import com.imyvm.community.domain.policy.permission.AdminPrivilege
 import com.imyvm.community.entrypoint.screen.AbstractMenu
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.inter.api.UtilApi
-import net.minecraft.item.Items
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.world.item.Items
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.Component
 import java.util.*
 
 class AdminPrivilegeMenu(
     syncId: Int,
-    private val playerExecutor: ServerPlayerEntity,
+    private val playerExecutor: ServerPlayer,
     private val community: Community,
     private val targetUUID: UUID,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) : AbstractMenu(
     syncId,
     menuTitle = generateTitle(community, targetUUID, playerExecutor),
@@ -30,7 +30,7 @@ class AdminPrivilegeMenu(
             val enabled = privileges?.isEnabled(privilege) ?: false
             addButton(
                 slot = slot,
-                name = (Translator.tr(privilege.displayKey)?.string ?: privilege.name) +
+                name = (Translator.tr(privilege.displayKey).string ?: privilege.name) +
                     ": " + (Translator.tr(if (enabled) "ui.admin.privilege.state.enabled"
                                           else "ui.admin.privilege.state.disabled")?.string
                             ?: if (enabled) "Enabled" else "Disabled"),
@@ -50,12 +50,12 @@ class AdminPrivilegeMenu(
     }
 
     companion object {
-        private fun generateTitle(community: Community, targetUUID: UUID, player: ServerPlayerEntity): Text {
+        private fun generateTitle(community: Community, targetUUID: UUID, player: ServerPlayer): Component {
             val name = UtilApi.getPlayerName(player, targetUUID)
-            return Text.of(
+            return Component.literal(
                 community.generateCommunityMark() +
                 " - " + name + " " +
-                (Translator.tr("ui.admin.privilege.title")?.string ?: "- Privileges")
+                (Translator.tr("ui.admin.privilege.title").string ?: "- Privileges")
             )
         }
     }

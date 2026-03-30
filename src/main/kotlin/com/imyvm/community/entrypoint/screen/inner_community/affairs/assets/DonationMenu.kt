@@ -5,16 +5,16 @@ import com.imyvm.community.domain.model.Community
 import com.imyvm.community.entrypoint.screen.AbstractMenu
 import com.imyvm.community.entrypoint.screen.component.getLoreButton
 import com.imyvm.community.util.Translator
-import net.minecraft.item.ItemStack
-import net.minecraft.item.Items
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.Items
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.Component
 
 class DonationMenu(
     syncId: Int,
-    val player: ServerPlayerEntity,
+    val player: ServerPlayer,
     val community: Community,
-    val runBack: ((ServerPlayerEntity) -> Unit)
+    val runBack: ((ServerPlayer) -> Unit)
 ) : AbstractMenu(
     syncId,
     menuTitle = Translator.tr("ui.community.assets.donate.title"),
@@ -34,9 +34,9 @@ class DonationMenu(
                 slot = slots[index],
                 itemStack = getLoreButton(
                     ItemStack(Items.GOLD_INGOT),
-                    listOf(Translator.tr("ui.community.assets.donate.amount.lore", amountFormatted) ?: Text.of("§7$amountFormatted"))
+                    listOf(Translator.tr("ui.community.assets.donate.amount.lore", amountFormatted) ?: Component.literal("§7$amountFormatted"))
                 ),
-                name = Translator.tr("ui.community.assets.donate.amount")?.string ?: "Donate"
+                name = Translator.tr("ui.community.assets.donate.amount").string ?: "Donate"
             ) {
                 onDonateConfirm(player, community, amount, runBack)
             }

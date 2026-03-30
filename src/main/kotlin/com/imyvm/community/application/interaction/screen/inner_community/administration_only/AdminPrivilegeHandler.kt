@@ -7,14 +7,14 @@ import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.entrypoint.screen.inner_community.administration_only.AdminPrivilegeMenu
 import com.imyvm.community.infra.CommunityDatabase
 import com.mojang.authlib.GameProfile
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 import java.util.*
 
 fun runOpenAdminPrivilegeMenu(
-    playerExecutor: ServerPlayerEntity,
+    playerExecutor: ServerPlayer,
     community: Community,
     targetUUID: UUID,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     CommunityPermissionPolicy.executeWithPermission(
         playerExecutor,
@@ -33,11 +33,11 @@ fun runOpenAdminPrivilegeMenu(
 }
 
 fun runToggleAdminPrivilege(
-    playerExecutor: ServerPlayerEntity,
+    playerExecutor: ServerPlayer,
     community: Community,
     targetUUID: UUID,
     privilege: AdminPrivilege,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     CommunityPermissionPolicy.executeWithPermission(
         playerExecutor,

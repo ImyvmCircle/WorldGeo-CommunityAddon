@@ -7,18 +7,18 @@ import com.imyvm.community.entrypoint.screen.component.getLoreButton
 import com.imyvm.community.util.Translator
 import com.imyvm.community.util.getFormattedMillsHour
 import com.imyvm.iwg.inter.api.UtilApi
-import net.minecraft.item.ItemStack
-import net.minecraft.item.Items
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.Items
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.Component
 import java.util.*
 
 class DonorDetailsMenu(
     syncId: Int,
-    val player: ServerPlayerEntity,
+    val player: ServerPlayer,
     val community: Community,
     val donorUUID: UUID,
-    val runBack: ((ServerPlayerEntity) -> Unit)
+    val runBack: ((ServerPlayer) -> Unit)
 ) : AbstractMenu(
     syncId,
     menuTitle = Translator.tr("ui.community.assets.donor_details.title"),
@@ -39,7 +39,7 @@ class DonorDetailsMenu(
             slot = 4,
             itemStack = getLoreButton(
                 createPlayerHeadItemStack(donorName, donorUUID),
-                listOf(Translator.tr("ui.community.assets.donor_details.lore.total", donationFormatted) ?: Text.of("§7Total Donation: $donationFormatted"))
+                listOf(Translator.tr("ui.community.assets.donor_details.lore.total", donationFormatted) ?: Component.literal("§7Total Donation: $donationFormatted"))
             ),
             name = donorName
         ) {}
@@ -61,11 +61,11 @@ class DonorDetailsMenu(
                 itemStack = getLoreButton(
                     ItemStack(Items.PAPER),
                     listOf(
-                        Translator.tr("ui.community.assets.donor_details.lore.amount", amountFormatted) ?: Text.of("§7Amount: $amountFormatted"),
-                        Translator.tr("ui.community.assets.donor_details.lore.time", timeFormatted) ?: Text.of("§7Time: $timeFormatted")
+                        Translator.tr("ui.community.assets.donor_details.lore.amount", amountFormatted) ?: Component.literal("§7Amount: $amountFormatted"),
+                        Translator.tr("ui.community.assets.donor_details.lore.time", timeFormatted) ?: Component.literal("§7Time: $timeFormatted")
                     )
                 ),
-                name = Translator.tr("ui.community.assets.turnover")?.string ?: "Donation"
+                name = Translator.tr("ui.community.assets.turnover").string ?: "Donation"
             ) {}
         }
     }

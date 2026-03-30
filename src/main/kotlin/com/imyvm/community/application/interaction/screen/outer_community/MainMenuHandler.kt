@@ -14,9 +14,9 @@ import com.imyvm.community.util.Translator
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.application.interaction.onToggleActionBar
 import com.imyvm.iwg.inter.api.PlayerInteractionApi
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 
-fun runList(player: ServerPlayerEntity) {
+fun runList(player: ServerPlayer) {
     val mode = CommunityListFilterType.JOIN_ABLE
     CommunityMenuOpener.open(player) { syncId ->
         CommunityListMenu(
@@ -27,13 +27,13 @@ fun runList(player: ServerPlayerEntity) {
     }
 }
 
-fun runGeoOperation(player: ServerPlayerEntity) {
+fun runGeoOperation(player: ServerPlayer) {
     CommunityMenuOpener.open(player) { syncId ->
         TerritoryMenu(syncId, player, runBack = { runBackOrRefreshMainMenu(it) })
     }
 }
 
-fun runMyCommunity(player: ServerPlayerEntity) {
+fun runMyCommunity(player: ServerPlayer) {
     val joinedCommunities = CommunityDatabase.communities.filter {
         it.member.any { m -> m.key == player.uuid &&
                 it.getMemberRole(m.key) != MemberRoleType.APPLICANT &&
@@ -42,8 +42,8 @@ fun runMyCommunity(player: ServerPlayerEntity) {
 
     when {
         joinedCommunities.isEmpty() -> {
-            player.sendMessage(Translator.tr("ui.main.message.no_community"))
-            player.closeHandledScreen()
+            player.sendSystemMessage(Translator.tr("ui.main.message.no_community"))
+            player.closeContainer()
         }
 
         joinedCommunities.size == 1 -> {
@@ -71,32 +71,32 @@ fun runMyCommunity(player: ServerPlayerEntity) {
     }
 }
 
-fun runToggleSelectionMode(player: ServerPlayerEntity) {
+fun runToggleSelectionMode(player: ServerPlayer) {
     val isSelectionModeEnabled = ImyvmWorldGeo.pointSelectingPlayers.containsKey(player.uuid)
     if (isSelectionModeEnabled) {
         PlayerInteractionApi.stopSelection(player)
-        player.sendMessage(Translator.tr("community.selection_mode.disabled"))
+        player.sendSystemMessage(Translator.tr("community.selection_mode.disabled"))
     } else {
         PlayerInteractionApi.startSelection(player)
-        player.sendMessage(Translator.tr("community.selection_mode.enabled"))
+        player.sendSystemMessage(Translator.tr("community.selection_mode.enabled"))
     }
     runBackOrRefreshMainMenu(player)
 }
 
-fun runResetSelection(player: ServerPlayerEntity) {
+fun runResetSelection(player: ServerPlayer) {
     PlayerInteractionApi.resetSelection(player)
-    player.sendMessage(Translator.tr("community.selection_mode.reset"))
+    player.sendSystemMessage(Translator.tr("community.selection_mode.reset"))
     runBackOrRefreshMainMenu(player)
 }
 
 @Deprecated("Temporary function call inside before the function being added to PlayerInteractionApi",
     replaceWith = ReplaceWith("PlayerInteractionApi.toggleActionBar(player)"))
-fun runToggleActionBar(player: ServerPlayerEntity) {
+fun runToggleActionBar(player: ServerPlayer) {
     onToggleActionBar(player)
     runBackOrRefreshMainMenu(player)
 }
 
-internal fun runBackOrRefreshMainMenu(player: ServerPlayerEntity) {
+internal fun runBackOrRefreshMainMenu(player: ServerPlayer) {
     CommunityMenuOpener.open(player) { syncId ->
         MainMenu(
             syncId = syncId,

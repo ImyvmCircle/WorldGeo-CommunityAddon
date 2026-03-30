@@ -3,7 +3,7 @@ package com.imyvm.community.entrypoint.event
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.Translator
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 
 fun registerAnnouncementNotification() {
     ServerPlayConnectionEvents.JOIN.register { handler, _, _ ->
@@ -11,7 +11,7 @@ fun registerAnnouncementNotification() {
     }
 }
 
-private fun notifyPlayerOfUnreadAnnouncements(player: ServerPlayerEntity) {
+private fun notifyPlayerOfUnreadAnnouncements(player: ServerPlayer) {
     val playerUuid = player.uuid
     var totalUnreadCount = 0
     
@@ -24,7 +24,7 @@ private fun notifyPlayerOfUnreadAnnouncements(player: ServerPlayerEntity) {
         totalUnreadCount += unreadAnnouncements.size
         
         val communityName = community.getRegion()?.name ?: "Community#${community.regionNumberId}"
-        player.sendMessage(
+        player.sendSystemMessage(
             Translator.tr(
                 "announcement.notification.unread.community",
                 communityName,
@@ -34,7 +34,7 @@ private fun notifyPlayerOfUnreadAnnouncements(player: ServerPlayerEntity) {
     }
     
     if (totalUnreadCount > 0) {
-        player.sendMessage(
+        player.sendSystemMessage(
             Translator.tr(
                 "announcement.notification.unread.total",
                 totalUnreadCount

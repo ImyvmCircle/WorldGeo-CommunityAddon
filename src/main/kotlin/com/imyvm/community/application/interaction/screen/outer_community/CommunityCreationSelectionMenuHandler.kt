@@ -8,34 +8,34 @@ import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.HypotheticalShape
 import com.imyvm.iwg.inter.api.PlayerInteractionApi
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 
 fun runResetSelectionInCreation(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     currentName: String,
     isManor: Boolean,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     PlayerInteractionApi.resetSelection(player)
-    player.sendMessage(Translator.tr("community.selection_mode.reset"))
+    player.sendSystemMessage(Translator.tr("community.selection_mode.reset"))
     CommunityMenuOpener.open(player) { syncId ->
         CommunityCreationSelectionMenu(syncId, currentName, isManor, player, runBack)
     }
 }
 
 fun runToggleSelectionModeInCreation(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     currentName: String,
     isManor: Boolean,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     val isSelectionModeEnabled = ImyvmWorldGeo.pointSelectingPlayers.containsKey(player.uuid)
     if (isSelectionModeEnabled) {
         PlayerInteractionApi.stopSelection(player)
-        player.sendMessage(Translator.tr("community.selection_mode.disabled"))
+        player.sendSystemMessage(Translator.tr("community.selection_mode.disabled"))
     } else {
         PlayerInteractionApi.startSelection(player, GeoShapeType.RECTANGLE)
-        player.sendMessage(Translator.tr("community.selection_mode.enabled"))
+        player.sendSystemMessage(Translator.tr("community.selection_mode.enabled"))
     }
     CommunityMenuOpener.open(player) { syncId ->
         CommunityCreationSelectionMenu(syncId, currentName, isManor, player, runBack)
@@ -43,10 +43,10 @@ fun runToggleSelectionModeInCreation(
 }
 
 fun runSwitchSelectionShapeInCreation(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     currentName: String,
     isManor: Boolean,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     val currentShape = when (val hs = ImyvmWorldGeo.pointSelectingPlayers[player.uuid]?.hypotheticalShape) {
         is HypotheticalShape.Normal -> hs.shapeType
@@ -65,10 +65,10 @@ fun runSwitchSelectionShapeInCreation(
 }
 
 fun runRenameNewCommunityFromSelectionMenu(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     currentName: String,
     isManor: Boolean,
-    runBackGrandfatherMenu: (ServerPlayerEntity) -> Unit
+    runBackGrandfatherMenu: (ServerPlayer) -> Unit
 ) {
     val currentShape = when (val hs = ImyvmWorldGeo.pointSelectingPlayers[player.uuid]?.hypotheticalShape) {
         is HypotheticalShape.Normal -> hs.shapeType
@@ -78,10 +78,10 @@ fun runRenameNewCommunityFromSelectionMenu(
 }
 
 fun runSwitchCommunityTypeInSelectionMenu(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     currentName: String,
     isManor: Boolean,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     CommunityMenuOpener.open(player) { syncId ->
         CommunityCreationSelectionMenu(syncId, currentName, !isManor, player, runBack)
@@ -89,7 +89,7 @@ fun runSwitchCommunityTypeInSelectionMenu(
 }
 
 fun runConfirmCommunityCreationFromSelectionMenu(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     communityName: String,
     isManor: Boolean
 ) {
@@ -99,5 +99,5 @@ fun runConfirmCommunityCreationFromSelectionMenu(
         communityType,
         communityName
     )
-    player.closeHandledScreen()
+    player.closeContainer()
 }

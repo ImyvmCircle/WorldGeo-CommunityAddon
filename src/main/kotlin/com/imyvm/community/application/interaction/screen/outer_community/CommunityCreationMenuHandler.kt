@@ -4,24 +4,24 @@ import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.entrypoint.screen.outer_community.CommunityCreationMenu
 import com.imyvm.community.entrypoint.screen.outer_community.CommunityCreationRenameMenuAnvil
 import com.imyvm.iwg.domain.component.GeoShapeType
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 
 fun runRenameNewCommunity(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     currentName: String,
     currentShape: GeoShapeType,
     isManor: Boolean,
-    runBackGrandfatherMenu: (ServerPlayerEntity) -> Unit
+    runBackGrandfatherMenu: (ServerPlayer) -> Unit
 ) {
     CommunityCreationRenameMenuAnvil(player, currentName, currentShape, isManor, runBackGrandfatherMenu).open()
 }
 
 fun runSwitchCommunityShape(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     communityName: String,
     geoShapeType: GeoShapeType,
     isManor: Boolean,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     val newType = when (geoShapeType) {
         GeoShapeType.CIRCLE -> GeoShapeType.RECTANGLE
@@ -36,11 +36,11 @@ fun runSwitchCommunityShape(
 }
 
 fun runSwitchCommunityType(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     communityName: String,
     geoShapeType: GeoShapeType,
     isManor: Boolean,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     CommunityMenuOpener.open(player) { syncId ->
         CommunityCreationMenu(syncId, communityName, geoShapeType, !isManor, player, runBack)
@@ -48,7 +48,7 @@ fun runSwitchCommunityType(
 }
 
 fun runConfirmCommunityCreation(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     communityName: String,
     geoShapeType: GeoShapeType,
     isManor: Boolean
@@ -61,5 +61,5 @@ fun runConfirmCommunityCreation(
         communityName
     )
 
-    player.closeHandledScreen()
+    player.closeContainer()
 }

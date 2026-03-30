@@ -10,6 +10,8 @@ This major version introduces community economical profits.
 
 ### 1.1.0
 
+- chore: upgrade to MC 26.1
+
 ## Features
 
 ### Community

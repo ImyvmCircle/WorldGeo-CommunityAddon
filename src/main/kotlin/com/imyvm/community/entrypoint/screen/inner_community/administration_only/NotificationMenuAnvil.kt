@@ -5,11 +5,11 @@ import com.imyvm.community.entrypoint.screen.AbstractRenameMenuAnvil
 import com.imyvm.community.util.Translator.trMenu
 import com.imyvm.community.util.constructAndSendMail
 import com.mojang.authlib.GameProfile
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.Component
 
 class NotificationMenuAnvil(
-    private val playerExecutor: ServerPlayerEntity,
+    private val playerExecutor: ServerPlayer,
     initialName: String,
     private val playerObject: GameProfile,
     val community: Community
@@ -34,7 +34,7 @@ class NotificationMenuAnvil(
         }
     }
 
-    override fun getMenuTitle(): Text  = Text.of("(Edit your notification here to ${playerObject.name})")
+    override fun getMenuTitle(): Component  = Component.literal("(Edit your notification here to ${playerObject.name})")
 
     private fun checkPrerequisites(finalName: String): Boolean {
         if (finalName.isBlank()) {

@@ -54,36 +54,36 @@ private fun handleExpiredOperation(
         PendingOperationType.TELEPORT_POINT_CONFIRMATION -> {
             iterator.remove()
             operation.inviterUUID?.let { executorUUID ->
-                server.playerManager.getPlayer(executorUUID)
-                    ?.sendMessage(Translator.tr("community.teleport_point.confirmation.expired"))
+                server.playerList.getPlayer(executorUUID)
+                    ?.sendSystemMessage(Translator.tr("community.teleport_point.confirmation.expired"))
             }
         }
         PendingOperationType.SETTING_CONFIRMATION -> {
             iterator.remove()
             operation.inviterUUID?.let { executorUUID ->
-                server.playerManager.getPlayer(executorUUID)
-                    ?.sendMessage(Translator.tr("community.setting.confirmation.expired"))
+                server.playerList.getPlayer(executorUUID)
+                    ?.sendSystemMessage(Translator.tr("community.setting.confirmation.expired"))
             }
         }
         PendingOperationType.DELETE_SCOPE_CONFIRMATION -> {
             iterator.remove()
             operation.modificationData?.executorUUID?.let { executorUUID ->
-                server.playerManager.getPlayer(executorUUID)
-                    ?.sendMessage(Translator.tr("community.scope_delete.confirmation.expired"))
+                server.playerList.getPlayer(executorUUID)
+                    ?.sendSystemMessage(Translator.tr("community.scope_delete.confirmation.expired"))
             }
         }
         PendingOperationType.TRANSFER_SCOPE_CONFIRMATION -> {
             iterator.remove()
             operation.transferData?.executorUUID?.let { executorUUID ->
-                server.playerManager.getPlayer(executorUUID)
-                    ?.sendMessage(Translator.tr("community.scope_transfer.confirmation.expired"))
+                server.playerList.getPlayer(executorUUID)
+                    ?.sendSystemMessage(Translator.tr("community.scope_transfer.confirmation.expired"))
             }
         }
         PendingOperationType.TREASURY_GRANT_CONFIRMATION -> {
             iterator.remove()
             operation.treasuryGrantData?.executorUUID?.let { executorUUID ->
-                server.playerManager.getPlayer(executorUUID)
-                    ?.sendMessage(Translator.tr("community.treasury_grant.confirmation.expired"))
+                server.playerList.getPlayer(executorUUID)
+                    ?.sendSystemMessage(Translator.tr("community.treasury_grant.confirmation.expired"))
             }
         }
         else -> {
@@ -110,10 +110,10 @@ private fun handleExpiredInvitation(
         community.member.remove(inviteeUUID)
         CommunityDatabase.save()
         
-        val inviterPlayer = server.playerManager?.getPlayer(inviterUUID)
-        val inviteePlayer = server.playerManager?.getPlayer(inviteeUUID)
+        val inviterPlayer = server.playerList.getPlayer(inviterUUID)
+        val inviteePlayer = server.playerList.getPlayer(inviteeUUID)
         
-        inviterPlayer?.sendMessage(
+        inviterPlayer?.sendSystemMessage(
             Translator.tr(
                 "community.invite.expired.inviter",
                 inviteePlayer?.name?.string ?: "Unknown",
@@ -121,7 +121,7 @@ private fun handleExpiredInvitation(
             )
         )
         
-        inviteePlayer?.sendMessage(
+        inviteePlayer?.sendSystemMessage(
             Translator.tr(
                 "community.invite.expired.invitee",
                 community.getRegion()?.name ?: "Community #${community.regionNumberId}"
@@ -138,7 +138,7 @@ private fun handleExpiredCreationConfirmation(
     server: MinecraftServer
 ) {
     val creationData = operation.creationData ?: return
-    val creatorPlayer = server.playerManager?.getPlayer(creationData.creatorUUID)
+    val creatorPlayer = server.playerList.getPlayer(creationData.creatorUUID)
 
     val region = com.imyvm.iwg.inter.api.RegionDataApi.getRegion(regionId)
     if (region != null && creatorPlayer != null) {
@@ -150,7 +150,7 @@ private fun handleExpiredCreationConfirmation(
         }
     }
 
-    creatorPlayer?.sendMessage(
+    creatorPlayer?.sendSystemMessage(
         Translator.tr(
             "community.create.confirmation.expired"
         )
@@ -186,7 +186,7 @@ fun checkAndPromoteRecruitingRealm(community: Community) {
 
 private fun removeExpiredRealmRequest(regionId: Int, community: Community, server: MinecraftServer) {
     val ownerEntry = community.member.entries.find { community.getMemberRole(it.key) == MemberRoleType.OWNER } ?: return
-    val ownerPlayer = server.playerManager?.getPlayer(ownerEntry.key) ?: return
+    val ownerPlayer = server.playerList.getPlayer(ownerEntry.key) ?: return
 
     if (community.status == CommunityStatus.RECRUITING_REALM) {
         community.status = CommunityStatus.REVOKED_REALM
@@ -205,8 +205,8 @@ private fun removePendingOperation(
     WorldGeoCommunityAddon.logger.info("Removed expired pending operation for community $regionId")
     val community = CommunityDatabase.communities.find { it.regionNumberId == regionId } ?: return
     val ownerUuid = community.member.entries.find { community.getMemberRole(it.key) == MemberRoleType.OWNER }?.key ?: return
-    server.playerManager.getPlayer(ownerUuid)
-        ?.sendMessage(Translator.tr("pending.expired", operationType), false)
+    server.playerList.getPlayer(ownerUuid)
+        ?.sendSystemMessage(Translator.tr("pending.expired", operationType), false)
 }
 
 private fun addAuditingRequestRealm(regionId: Int, community: Community, ownerUUID: UUID) {
@@ -219,7 +219,7 @@ private fun addAuditingRequestRealm(regionId: Int, community: Community, ownerUU
     CommunityDatabase.save()
     
     val server = WorldGeoCommunityAddon.server
-    val ownerPlayer = server?.playerManager?.getPlayer(ownerUUID)
+    val ownerPlayer = server?.playerList?.getPlayer(ownerUUID)
     if (ownerPlayer != null) {
         com.imyvm.community.application.interaction.common.notifyOPsAndOwnerAboutCreationRequest(ownerPlayer, regionId)
     }

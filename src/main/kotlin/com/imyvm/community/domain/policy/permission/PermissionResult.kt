@@ -1,7 +1,7 @@
 package com.imyvm.community.domain.policy.permission
 
 import com.imyvm.community.util.Translator
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 
 sealed class PermissionResult {
     data object Allowed : PermissionResult()
@@ -24,9 +24,9 @@ sealed class PermissionResult {
     fun isAllowed(): Boolean = this is Allowed
     fun isDenied(): Boolean = this is Denied
 
-    fun sendFeedback(player: ServerPlayerEntity) {
+    fun sendSuccess(player: ServerPlayer) {
         if (this is Denied) {
-            player.sendMessage(Translator.tr(reasonKey, *args))
+            player.sendSystemMessage(Translator.tr(reasonKey, *args))
         }
     }
 }

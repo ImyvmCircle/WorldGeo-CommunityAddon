@@ -6,14 +6,14 @@ import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.Commun
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.element.CommunityMemberMenu
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.inter.api.UtilApi
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 import java.util.*
 
 fun runCommunityOpenMember(
     community: Community,
     playerObjectUuid: UUID,
-    playerExecutor: ServerPlayerEntity,
-    runBackGrandfather: (ServerPlayerEntity) -> Unit
+    playerExecutor: ServerPlayer,
+    runBackGrandfather: (ServerPlayer) -> Unit
 ){
     val playerObjectProfile = UtilApi.getPlayerProfile(playerExecutor, playerObjectUuid)
     if (playerObjectProfile != null) {
@@ -27,15 +27,15 @@ fun runCommunityOpenMember(
             }
         }
     } else {
-        playerExecutor.closeHandledScreen()
-        playerExecutor.sendMessage(Translator.tr("ui.community.member_list.error.offline_member"))
+        playerExecutor.closeContainer()
+        playerExecutor.sendSystemMessage(Translator.tr("ui.community.member_list.error.offline_member"))
     }
 }
 
 private fun runBackToMemberListMenu(
-    playerExecutor: ServerPlayerEntity,
+    playerExecutor: ServerPlayer,
     community: Community,
-    runBackGrandfatherMenu: (ServerPlayerEntity) -> Unit
+    runBackGrandfatherMenu: (ServerPlayer) -> Unit
 ) {
     CommunityMenuOpener.open(playerExecutor) { syncId ->
         CommunityMemberListMenu(syncId, community, playerExecutor, runBack = runBackGrandfatherMenu)

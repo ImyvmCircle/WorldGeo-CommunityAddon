@@ -6,17 +6,17 @@ import com.imyvm.community.entrypoint.screen.AbstractListMenu
 import com.imyvm.community.entrypoint.screen.component.getPlayerHeadButtonItemStackCommunity
 import com.imyvm.community.entrypoint.screen.inner_community.CommunityMenu
 import com.imyvm.community.util.Translator
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.Component
 
 class MyCommunityListMenu(
     syncId: Int,
     private val joinedCommunities: List<Community>,
     page: Int = 0,
-    val runBack: (ServerPlayerEntity) -> Unit
+    val runBack: (ServerPlayer) -> Unit
 ) : AbstractListMenu(
     syncId = syncId,
-    menuTitle = Translator.tr("ui.my_communities.title") ?: Text.literal("My Communities"),
+    menuTitle = Translator.tr("ui.my_communities.title") ?: Component.literal("My Communities"),
     page = page,
     runBack = runBack
 ) {
@@ -48,7 +48,7 @@ class MyCommunityListMenu(
         handlePageWithSize(joinedCommunities.size, communitiesPerPage)
     }
 
-    override fun openNewPage(player: ServerPlayerEntity, newPage: Int) {
+    override fun openNewPage(player: ServerPlayer, newPage: Int) {
         CommunityMenuOpener.open(player) { syncId ->
             MyCommunityListMenu(syncId, joinedCommunities, newPage, runBack)
         }

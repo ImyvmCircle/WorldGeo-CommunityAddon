@@ -17,9 +17,9 @@ import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.Commun
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.component.HypotheticalShape
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 
-fun runAdmGrantCoins(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit) {
+fun runAdmGrantCoins(player: ServerPlayer, community: Community, runBackGrandfather: (ServerPlayer) -> Unit) {
     CommunityPermissionPolicy.executeWithPermission(
         player,
         {
@@ -43,7 +43,7 @@ fun runAdmGrantCoins(player: ServerPlayerEntity, community: Community, runBackGr
     }
 }
 
-fun runAdmRenameCommunity(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit){
+fun runAdmRenameCommunity(player: ServerPlayer, community: Community, runBackGrandfather: (ServerPlayer) -> Unit){
     CommunityPermissionPolicy.executeWithPermission(
         player,
         {
@@ -56,7 +56,7 @@ fun runAdmRenameCommunity(player: ServerPlayerEntity, community: Community, runB
     }
 }
 
-fun runAdmManageMembers(player: ServerPlayerEntity, community: Community, runBackGrandfather: ((ServerPlayerEntity) -> Unit)) {
+fun runAdmManageMembers(player: ServerPlayer, community: Community, runBackGrandfather: ((ServerPlayer) -> Unit)) {
     CommunityPermissionPolicy.executeWithPermission(
         player,
         { 
@@ -75,7 +75,7 @@ fun runAdmManageMembers(player: ServerPlayerEntity, community: Community, runBac
     }
 }
 
-fun runAdmAuditRequests(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit) {
+fun runAdmAuditRequests(player: ServerPlayer, community: Community, runBackGrandfather: (ServerPlayer) -> Unit) {
     CommunityPermissionPolicy.executeWithPermission(
         player,
         { CommunityPermissionPolicy.canAuditApplications(player, community) }
@@ -91,7 +91,7 @@ fun runAdmAuditRequests(player: ServerPlayerEntity, community: Community, runBac
     }
 }
 
-fun runAdmAdvancement(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit){
+fun runAdmAdvancement(player: ServerPlayer, community: Community, runBackGrandfather: (ServerPlayer) -> Unit){
     CommunityPermissionPolicy.executeWithPermission(
         player,
         { 
@@ -107,10 +107,10 @@ fun runAdmAdvancement(player: ServerPlayerEntity, community: Community, runBackG
 }
 
 fun runAdmRegion(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     community: Community,
     geographicFunctionType: GeographicFunctionType,
-    runBackGrandfather: (ServerPlayerEntity) -> Unit
+    runBackGrandfather: (ServerPlayer) -> Unit
 ) {
     val permission = when (geographicFunctionType) {
         GeographicFunctionType.GEOMETRY_MODIFICATION -> AdminPrivilege.MODIFY_REGION_GEOMETRY
@@ -123,8 +123,8 @@ fun runAdmRegion(
     if (geographicFunctionType == GeographicFunctionType.GEOMETRY_MODIFICATION) {
         val hypotheticalShape = ImyvmWorldGeo.pointSelectingPlayers[player.uuid]?.hypotheticalShape
         if (hypotheticalShape is HypotheticalShape.Normal) {
-            player.closeHandledScreen()
-            player.sendMessage(Translator.tr("ui.territory.modify.busy_creating"))
+            player.closeContainer()
+            player.sendSystemMessage(Translator.tr("ui.territory.modify.busy_creating"))
             return
         }
     }
@@ -152,7 +152,7 @@ fun runAdmRegion(
     }
 }
 
-fun runAdmChangeJoinPolicy(player: ServerPlayerEntity, community: Community, policy: CommunityJoinPolicy, runBack: (ServerPlayerEntity) -> Unit) {
+fun runAdmChangeJoinPolicy(player: ServerPlayer, community: Community, policy: CommunityJoinPolicy, runBack: (ServerPlayer) -> Unit) {
     CommunityPermissionPolicy.executeWithPermission(
         player,
         { CommunityPermissionPolicy.canChangeJoinPolicy(player, community) }
@@ -171,15 +171,15 @@ fun runAdmChangeJoinPolicy(player: ServerPlayerEntity, community: Community, pol
             community.joinPolicy.name,
             player.name.string,
             communityName
-        ) ?: net.minecraft.text.Text.literal("Join policy changed from ${oldPolicy.name} to ${community.joinPolicy.name} in $communityName by ${player.name.string}")
-        com.imyvm.community.application.interaction.common.notifyOfficials(community, player.server, notification, player)
+        ) ?: net.minecraft.network.chat.Component.literal("Join policy changed from ${oldPolicy.name} to ${community.joinPolicy.name} in $communityName by ${player.name.string}")
+        com.imyvm.community.application.interaction.common.notifyOfficials(community, player.level().server, notification, player)
         
         com.imyvm.community.infra.CommunityDatabase.save()
         runBackToCommunityAdministrationMenu(player, community, runBack)
     }
 }
 
-fun runBackToCommunityAdministrationMenu(player: ServerPlayerEntity, community: Community, runBack: (ServerPlayerEntity) -> Unit) {
+fun runBackToCommunityAdministrationMenu(player: ServerPlayer, community: Community, runBack: (ServerPlayer) -> Unit) {
     CommunityMenuOpener.open(player) { syncId ->
         CommunityAdministrationMenu(syncId, community, player, runBack)
     }

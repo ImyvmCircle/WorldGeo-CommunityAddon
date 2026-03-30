@@ -5,9 +5,9 @@ import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.GeographicFunctionType
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityMemberListMenu
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityRegionScopeMenu
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 
-fun runOpenSettingRegional(playerExecutor: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit) {
+fun runOpenSettingRegional(playerExecutor: ServerPlayer, community: Community, runBackGrandfather: (ServerPlayer) -> Unit) {
     CommunityMenuOpener.open(playerExecutor) { syncId ->
         CommunityRegionScopeMenu(
             syncId = syncId,
@@ -18,16 +18,16 @@ fun runOpenSettingRegional(playerExecutor: ServerPlayerEntity, community: Commun
     }
 }
 
-fun runOpenSettingPlayerTargeted(playerExecutor: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit) {
+fun runOpenSettingPlayerTargeted(playerExecutor: ServerPlayer, community: Community, runBackGrandfather: (ServerPlayer) -> Unit) {
     CommunityMenuOpener.open(playerExecutor) {syncId ->
         CommunityMemberListMenu(syncId, community, playerExecutor) { runBackToSettingMenu(playerExecutor, community, runBackGrandfather) }
     }
 }
 
 private fun runBackToSettingMenu(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     community: Community,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     runOpenSettingMenu(player, community, runBack)
 }

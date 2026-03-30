@@ -1,12 +1,12 @@
 package com.imyvm.community.domain.model.community
 
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 import java.util.*
 
 data class CommunityMessage(
     val id: UUID = UUID.randomUUID(),
     val type: MessageType,
-    val content: Text,
+    val content: Component,
     val senderUUID: UUID,
     val timestamp: Long = System.currentTimeMillis(),
     var isDeleted: Boolean = false,

@@ -4,10 +4,10 @@ import com.imyvm.community.domain.model.Community
 import com.imyvm.community.infra.CommunityDatabase.communities
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.inter.api.RegionDataApi.getRegionList
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 
 fun identifierHandler(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     communityIdentifier: String,
     onCommunityFound: (community: Community) -> Unit
 ) : Int {
@@ -23,9 +23,9 @@ fun identifierHandler(
         1
     } else {
         if (communityIdentifier.matches("\\d+".toRegex())) {
-            player.sendMessage(Translator.tr("community.notfound.id", communityIdentifier))
+            player.sendSystemMessage(Translator.tr("community.notfound.id", communityIdentifier))
         } else {
-            player.sendMessage(Translator.tr("community.notfound.name", communityIdentifier))
+            player.sendSystemMessage(Translator.tr("community.notfound.name", communityIdentifier))
         }
         0
     }

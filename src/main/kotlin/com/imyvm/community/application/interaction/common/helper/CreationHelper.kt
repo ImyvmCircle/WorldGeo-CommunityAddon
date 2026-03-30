@@ -4,7 +4,7 @@ import com.imyvm.community.domain.policy.territory.CreationCostResult
 import com.imyvm.community.domain.policy.territory.TerritoryPricing
 import com.imyvm.community.domain.policy.territory.TerritoryConfirmationMessage
 import com.imyvm.iwg.domain.component.GeoShapeType
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 
 fun calculateCreationCost(area: Double, isManor: Boolean): CreationCostResult {
     return TerritoryPricing.calculateCreationCost(area, isManor)
@@ -15,7 +15,7 @@ fun generateCreationConfirmationMessage(
     geoShapeType: GeoShapeType,
     isManor: Boolean,
     costResult: CreationCostResult
-): List<Text> {
+): List<Component> {
     return TerritoryConfirmationMessage.generateCreationConfirmation(
         communityName, geoShapeType, isManor, costResult
     )

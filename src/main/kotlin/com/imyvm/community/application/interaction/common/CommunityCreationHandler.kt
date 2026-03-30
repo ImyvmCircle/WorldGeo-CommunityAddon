@@ -20,11 +20,13 @@ import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.HypotheticalShape
 import com.imyvm.iwg.inter.api.PlayerInteractionApi
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.ClickEvent
+import net.minecraft.network.chat.HoverEvent
 
 fun onCreateCommunityRequest(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     communityType: String,
     communityName: String
 ): Int {
@@ -35,7 +37,7 @@ fun onCreateCommunityRequest(
         it.creationData?.creatorUUID == player.uuid
     }
     if (existingPending != null) {
-        player.sendMessage(Translator.tr("community.create.confirmation.pending"))
+        player.sendSystemMessage(Translator.tr("community.create.confirmation.pending"))
         return 0
     }
 
@@ -46,7 +48,7 @@ fun onCreateCommunityRequest(
 
     val region = PlayerInteractionApi.createAndGetRegion(player, communityName)
     if (region == null) {
-        player.sendMessage(Translator.tr("community.create.region.error"))
+        player.sendSystemMessage(Translator.tr("community.create.region.error"))
         return 0
     }
 
@@ -56,7 +58,7 @@ fun onCreateCommunityRequest(
 
     val playerAccount = EconomyMod.data.getOrCreate(player)
     if (playerAccount.money < costResult.totalCost) {
-        player.sendMessage(Translator.tr("community.create.money.error", costResult.totalCost / 100.0))
+        player.sendSystemMessage(Translator.tr("community.create.money.error", costResult.totalCost / 100.0))
         PlayerInteractionApi.deleteRegion(player, region)
         return 0
     }
@@ -70,7 +72,7 @@ fun onCreateCommunityRequest(
         costResult = costResult
     )
     confirmationMessages.forEach { msg ->
-        player.sendMessage(msg)
+        player.sendSystemMessage(msg)
     }
 
     addPendingOperation(
@@ -93,34 +95,34 @@ fun onCreateCommunityRequest(
 }
 
 
-fun onConfirmCommunityCreation(player: ServerPlayerEntity, regionNumberId: Int): Int {
+fun onConfirmCommunityCreation(player: ServerPlayer, regionNumberId: Int): Int {
     val pendingOp = WorldGeoCommunityAddon.pendingOperations[regionNumberId]
 
     if (pendingOp == null || pendingOp.type != PendingOperationType.CREATE_COMMUNITY_CONFIRMATION) {
-        player.sendMessage(Translator.tr("community.create.confirmation.not_found"))
+        player.sendSystemMessage(Translator.tr("community.create.confirmation.not_found"))
         return 0
     }
 
     val creationData = pendingOp.creationData
     if (creationData == null || creationData.creatorUUID != player.uuid) {
-        player.sendMessage(Translator.tr("community.create.confirmation.not_yours"))
+        player.sendSystemMessage(Translator.tr("community.create.confirmation.not_yours"))
         return 0
     }
 
     if (System.currentTimeMillis() > pendingOp.expireAt) {
-        player.sendMessage(Translator.tr("community.create.confirmation.expired"))
+        player.sendSystemMessage(Translator.tr("community.create.confirmation.expired"))
         return 0
     }
 
     val playerAccount = EconomyMod.data.getOrCreate(player)
     if (playerAccount.money < creationData.totalCost) {
-        player.sendMessage(Translator.tr("community.create.money.error", creationData.totalCost / 100.0))
+        player.sendSystemMessage(Translator.tr("community.create.money.error", creationData.totalCost / 100.0))
         cancelCommunityCreation(player, regionNumberId)
         return 0
     }
 
     playerAccount.addMoney(-creationData.totalCost)
-    player.sendMessage(Translator.tr("community.create.money.checked", creationData.totalCost / 100.0))
+    player.sendSystemMessage(Translator.tr("community.create.money.checked", creationData.totalCost / 100.0))
 
     WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
 
@@ -130,21 +132,21 @@ fun onConfirmCommunityCreation(player: ServerPlayerEntity, regionNumberId: Int):
     return 1
 }
 
-fun onCancelCommunityCreation(player: ServerPlayerEntity, regionNumberId: Int): Int {
+fun onCancelCommunityCreation(player: ServerPlayer, regionNumberId: Int): Int {
     return cancelCommunityCreation(player, regionNumberId)
 }
 
-private fun cancelCommunityCreation(player: ServerPlayerEntity, regionNumberId: Int): Int {
+private fun cancelCommunityCreation(player: ServerPlayer, regionNumberId: Int): Int {
     val pendingOp = WorldGeoCommunityAddon.pendingOperations[regionNumberId]
 
     if (pendingOp == null || pendingOp.type != PendingOperationType.CREATE_COMMUNITY_CONFIRMATION) {
-        player.sendMessage(Translator.tr("community.create.confirmation.not_found"))
+        player.sendSystemMessage(Translator.tr("community.create.confirmation.not_found"))
         return 0
     }
 
     val creationData = pendingOp.creationData
     if (creationData == null || creationData.creatorUUID != player.uuid) {
-        player.sendMessage(Translator.tr("community.create.confirmation.not_yours"))
+        player.sendSystemMessage(Translator.tr("community.create.confirmation.not_yours"))
         return 0
     }
 
@@ -155,11 +157,11 @@ private fun cancelCommunityCreation(player: ServerPlayerEntity, regionNumberId: 
 
     WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
 
-    player.sendMessage(Translator.tr("community.create.confirmation.cancelled"))
+    player.sendSystemMessage(Translator.tr("community.create.confirmation.cancelled"))
     return 1
 }
 
-private fun initialRequest(player: ServerPlayerEntity, name: String, communityType: String, regionNumberId: Int, creationCost: Long) {
+private fun initialRequest(player: ServerPlayer, name: String, communityType: String, regionNumberId: Int, creationCost: Long) {
     val community = Community(
         regionNumberId = regionNumberId,
         member = hashMapOf(player.uuid to MemberAccount(
@@ -176,12 +178,12 @@ private fun initialRequest(player: ServerPlayerEntity, name: String, communityTy
     )
 
     CommunityDatabase.addCommunity(community)
-    player.sendMessage(Translator.tr("community.create.request.initial.success", name, community.regionNumberId))
+    player.sendSystemMessage(Translator.tr("community.create.request.initial.success", name, community.regionNumberId))
 }
 
-private fun handleRequestBranches(player: ServerPlayerEntity, communityType: String, regionNumberId: Int) {
+private fun handleRequestBranches(player: ServerPlayer, communityType: String, regionNumberId: Int) {
     if (communityType.equals("manor", ignoreCase = true)) {
-        player.sendMessage(Translator.tr("community.create.request.sent"))
+        player.sendSystemMessage(Translator.tr("community.create.request.sent"))
         addPendingOperation(
             regionId = regionNumberId,
             type = PendingOperationType.AUDITING_COMMUNITY_REQUEST,
@@ -189,7 +191,7 @@ private fun handleRequestBranches(player: ServerPlayerEntity, communityType: Str
         )
         notifyOPsAndOwnerAboutCreationRequest(player, regionNumberId)
     } else if (communityType.equals("realm", ignoreCase = true)) {
-        player.sendMessage(Translator.tr("community.create.request.recruitment", CommunityConfig.MIN_NUMBER_MEMBER_REALM.value))
+        player.sendSystemMessage(Translator.tr("community.create.request.recruitment", CommunityConfig.MIN_NUMBER_MEMBER_REALM.value))
         addPendingOperation(
             regionId = regionNumberId,
             type = PendingOperationType.CREATE_COMMUNITY_REALM_REQUEST_RECRUITMENT,
@@ -198,50 +200,40 @@ private fun handleRequestBranches(player: ServerPlayerEntity, communityType: Str
     }
 }
 
-internal fun notifyOPsAndOwnerAboutCreationRequest(creator: ServerPlayerEntity, regionNumberId: Int) {
+internal fun notifyOPsAndOwnerAboutCreationRequest(creator: ServerPlayer, regionNumberId: Int) {
     val message = Translator.tr(
         "community.create.notification.new_request",
         creator.name.string,
         regionNumberId
     )
     
-    creator.server.playerManager.playerList.forEach { player ->
-        if (player.hasPermissionLevel(2) || player.uuid == creator.uuid) {
-            player.sendMessage(message)
+    creator.level().server.playerList.players.forEach { player ->
+        if (net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(player.permissions()) || player.uuid == creator.uuid) {
+            player.sendSystemMessage(message)
         }
     }
 }
 
-private fun sendInteractiveConfirmation(player: ServerPlayerEntity, regionNumberId: Int) {
-    val confirmButton = Text.literal("§a§l[CONFIRM]§r")
-        .styled { style ->
-            style.withClickEvent(net.minecraft.text.ClickEvent(
-                net.minecraft.text.ClickEvent.Action.RUN_COMMAND,
-                "/_commun confirm_creation $regionNumberId"
-            ))
-            .withHoverEvent(net.minecraft.text.HoverEvent(
-                net.minecraft.text.HoverEvent.Action.SHOW_TEXT,
-                Text.literal("§aClick to confirm creation")
+private fun sendInteractiveConfirmation(player: ServerPlayer, regionNumberId: Int) {
+    val confirmButton = Component.literal("§a§l[CONFIRM]§r")
+        .withStyle { style ->
+            style.withClickEvent(ClickEvent.RunCommand("/_commun confirm_creation $regionNumberId"))
+            .withHoverEvent(HoverEvent.ShowText(Component.literal("§aClick to confirm creation")
             ))
         }
     
-    val cancelButton = Text.literal("§c§l[CANCEL]§r")
-        .styled { style ->
-            style.withClickEvent(net.minecraft.text.ClickEvent(
-                net.minecraft.text.ClickEvent.Action.RUN_COMMAND,
-                "/_commun cancel_creation $regionNumberId"
-            ))
-            .withHoverEvent(net.minecraft.text.HoverEvent(
-                net.minecraft.text.HoverEvent.Action.SHOW_TEXT,
-                Text.literal("§cClick to cancel creation")
+    val cancelButton = Component.literal("§c§l[CANCEL]§r")
+        .withStyle { style ->
+            style.withClickEvent(ClickEvent.RunCommand("/_commun cancel_creation $regionNumberId"))
+            .withHoverEvent(HoverEvent.ShowText(Component.literal("§cClick to cancel creation")
             ))
         }
     
-    val promptMessage = Text.empty()
-        .append(Text.literal("§e§l[ACTION REQUIRED]§r §ePlease confirm within §c§l5 minutes§r§e: "))
+    val promptMessage = Component.empty()
+        .append(Component.literal("§e§l[ACTION REQUIRED]§r §ePlease confirm within §c§l5 minutes§r§e: "))
         .append(confirmButton)
-        .append(Text.literal(" "))
+        .append(Component.literal(" "))
         .append(cancelButton)
     
-    player.sendMessage(promptMessage)
+    player.sendSystemMessage(promptMessage)
 }

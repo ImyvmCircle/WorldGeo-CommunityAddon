@@ -7,7 +7,7 @@ import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.inter.api.PlayerInteractionApi
 import com.imyvm.iwg.inter.api.RegionDataApi
 import com.imyvm.iwg.inter.api.UtilApi
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 import java.util.*
 
 class Community(
@@ -42,12 +42,12 @@ class Community(
         return RegionDataApi.getRegion(regionNumberId)
     }
 
-    fun sendCommunityRegionDescription(player: ServerPlayerEntity) {
+    fun sendCommunityRegionDescription(player: ServerPlayer) {
         val region = getRegion()
         if(region != null){
             PlayerInteractionApi.queryRegionInfo(player, region)
         } else {
-            player.sendMessage(Translator.tr("community.description.no_region", regionNumberId))
+            player.sendSystemMessage(Translator.tr("community.description.no_region", regionNumberId))
         }
     }
 

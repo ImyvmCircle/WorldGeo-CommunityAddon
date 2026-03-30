@@ -6,26 +6,26 @@ import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.domain.model.community.MessageType
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.Translator
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.Component
 
 object ChatRoomHandler {
 
-    fun sendChatMessage(player: ServerPlayerEntity, community: Community, message: String): Boolean {
+    fun sendChatMessage(player: ServerPlayer, community: Community, message: String): Boolean {
         val memberAccount = community.member[player.uuid] ?: run {
-            player.sendMessage(Translator.tr("community.chat.error.not_member"))
+            player.sendSystemMessage(Translator.tr("community.chat.error.not_member"))
             return false
         }
 
         if (memberAccount.basicRoleType == MemberRoleType.APPLICANT || 
             memberAccount.basicRoleType == MemberRoleType.REFUSED) {
-            player.sendMessage(Translator.tr("community.chat.error.not_member"))
+            player.sendSystemMessage(Translator.tr("community.chat.error.not_member"))
             return false
         }
 
         val chatMessage = CommunityMessage(
             type = MessageType.CHAT,
-            content = Text.of(message),
+            content = Component.literal(message),
             senderUUID = player.uuid
         )
         community.addMessage(chatMessage)
@@ -36,30 +36,30 @@ object ChatRoomHandler {
         return true
     }
 
-    fun broadcastChatMessage(community: Community, sender: ServerPlayerEntity, message: String) {
+    fun broadcastChatMessage(community: Community, sender: ServerPlayer, message: String) {
         val senderAccount = community.member[sender.uuid] ?: return
         val roleDisplay = getRoleDisplayName(senderAccount.basicRoleType, community.isManor())
         val communityColor = getCommunityColor(community.regionNumberId ?: 0)
         val communityName = community.generateCommunityMark()
 
         val prefix = "${communityColor}❮${communityName}❯§r ${roleDisplay}"
-        val formattedMessage = Text.literal("$prefix §f${sender.name.string}§7: §r$message")
+        val formattedMessage = Component.literal("$prefix §f${sender.name.string}§7: §r$message")
 
         for ((memberUUID, memberAccount) in community.member) {
             if (isFormalMember(memberAccount.basicRoleType)) {
-                val memberPlayer = sender.server.playerManager.getPlayer(memberUUID)
+                val memberPlayer = sender.level().server.playerList.getPlayer(memberUUID)
                 if (memberPlayer != null) {
-                    memberPlayer.sendMessage(formattedMessage)
+                    memberPlayer.sendSystemMessage(formattedMessage)
                 }
             }
         }
     }
 
-    fun toggleChatChannel(player: ServerPlayerEntity, community: Community): Boolean {
+    fun toggleChatChannel(player: ServerPlayer, community: Community): Boolean {
         val memberAccount = community.member[player.uuid] ?: return false
         
         if (!isFormalMember(memberAccount.basicRoleType)) {
-            player.sendMessage(Translator.tr("community.chat.error.not_member"))
+            player.sendSystemMessage(Translator.tr("community.chat.error.not_member"))
             return false
         }
 
@@ -68,10 +68,10 @@ object ChatRoomHandler {
         
         if (currentChannel == targetRegionId) {
             ChatChannelManager.clearChannel(player.uuid)
-            player.sendMessage(Translator.tr("community.chat.channel.disabled", community.generateCommunityMark()))
+            player.sendSystemMessage(Translator.tr("community.chat.channel.disabled", community.generateCommunityMark()))
         } else {
             ChatChannelManager.setActiveChannel(player.uuid, targetRegionId)
-            player.sendMessage(Translator.tr("community.chat.channel.enabled", community.generateCommunityMark()))
+            player.sendSystemMessage(Translator.tr("community.chat.channel.enabled", community.generateCommunityMark()))
         }
         
         return true

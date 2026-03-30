@@ -4,14 +4,14 @@ import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.entrypoint.screen.AbstractRenameMenuAnvil
 import com.imyvm.community.util.Translator
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.Component
 
 class CommunityScopeCreationRenameMenuAnvil(
-    private val playerExecutor: ServerPlayerEntity,
+    private val playerExecutor: ServerPlayer,
     private val community: Community,
     initialName: String,
-    private val runBackGrandfather: (ServerPlayerEntity) -> Unit,
+    private val runBackGrandfather: (ServerPlayer) -> Unit,
     errorHint: String? = null
 ) : AbstractRenameMenuAnvil(
     playerExecutor,
@@ -30,9 +30,9 @@ class CommunityScopeCreationRenameMenuAnvil(
         ).open()
     }
 
-    override fun getMenuTitle(): Text {
+    override fun getMenuTitle(): Component {
         val base = Translator.tr("ui.admin.region.global.add.rename.title")
-            ?: Text.of("Rename Administrative District")
+            ?: Component.literal("Rename Administrative District")
         return buildTitle(base)
     }
 }

@@ -3,45 +3,45 @@ package com.imyvm.community.application.interaction.screen.inner_community.chat
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.entrypoint.screen.inner_community.ChatRoomMenu
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.Component
 
 fun runOpenChatRoomMenu(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     community: Community,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
-    player.closeHandledScreen()
+    player.closeContainer()
     CommunityMenuOpener.open(player) { syncId ->
         ChatRoomMenu(syncId, player, community, runBack)
     }
 }
 
 fun runOpenChatHistory(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     community: Community,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
-    player.closeHandledScreen()
+    player.closeContainer()
     
     val chatMessages = community.getChatMessages()
     
     if (chatMessages.isEmpty()) {
-        player.sendMessage(Text.literal("§7No messages in chat history yet."))
-        player.sendMessage(Text.literal("§7Use §e/community chat ${community.generateCommunityMark()} <message>§7 to send messages!"))
+        player.sendSystemMessage(Component.literal("§7No messages in chat history yet."))
+        player.sendSystemMessage(Component.literal("§7Use §e/community chat ${community.generateCommunityMark()} <message>§7 to send messages!"))
         return
     }
     
-    player.sendMessage(Text.literal("§7§m                                                    "))
-    player.sendMessage(Text.literal("§6§lChat History: §r${community.generateCommunityMark()}"))
-    player.sendMessage(Text.literal("§7Showing last ${minOf(20, chatMessages.size)} messages"))
-    player.sendMessage(Text.literal(""))
+    player.sendSystemMessage(Component.literal("§7§m                                                    "))
+    player.sendSystemMessage(Component.literal("§6§lChat History: §r${community.generateCommunityMark()}"))
+    player.sendSystemMessage(Component.literal("§7Showing last ${minOf(20, chatMessages.size)} messages"))
+    player.sendSystemMessage(Component.literal(""))
     
     val messagesToShow = chatMessages.take(20)
     
     for (message in messagesToShow) {
         val senderName = community.member[message.senderUUID]?.let {
-            player.server.userCache?.getByUuid(message.senderUUID)?.get()?.name ?: "Unknown"
+            player.level().server?.playerList?.getPlayer(message.senderUUID)?.gameProfile?.name ?: "Unknown"
         } ?: "Unknown"
         
         val role = community.getMemberRole(message.senderUUID)
@@ -55,17 +55,17 @@ fun runOpenChatHistory(
         val timestamp = com.imyvm.community.util.getFormattedMillsHour(message.timestamp)
         val messageText = message.content.string
         
-        player.sendMessage(Text.literal("§8[$timestamp]§r $roleDisplay §f$senderName§7: §r$messageText"))
+        player.sendSystemMessage(Component.literal("§8[$timestamp]§r $roleDisplay §f$senderName§7: §r$messageText"))
     }
     
-    player.sendMessage(Text.literal(""))
-    player.sendMessage(Text.literal("§7§m                                                    "))
+    player.sendSystemMessage(Component.literal(""))
+    player.sendSystemMessage(Component.literal("§7§m                                                    "))
 }
 
 fun runToggleChatChannel(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     community: Community,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     com.imyvm.community.application.interaction.common.ChatRoomHandler.toggleChatChannel(player, community)
     

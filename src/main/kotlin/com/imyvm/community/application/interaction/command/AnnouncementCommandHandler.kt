@@ -8,16 +8,16 @@ import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.TextParser
 import com.imyvm.community.util.Translator
 import com.mojang.brigadier.context.CommandContext
-import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.server.level.ServerPlayer
 import java.util.*
 
-fun onAnnouncementCreateCommand(context: CommandContext<ServerCommandSource>, community: Community, content: String): Int {
+fun onAnnouncementCreateCommand(context: CommandContext<CommandSourceStack>, community: Community, content: String): Int {
     val player = getPlayerOrNull(context) ?: return 0
     if (!canManage(player, community)) return 0
 
     if (content.isBlank()) {
-        player.sendMessage(Translator.tr("ui.admin.announcement.error.empty"))
+        player.sendSystemMessage(Translator.tr("ui.admin.announcement.error.empty"))
         return 0
     }
 
@@ -25,68 +25,68 @@ fun onAnnouncementCreateCommand(context: CommandContext<ServerCommandSource>, co
     community.addAnnouncement(announcement)
     CommunityDatabase.save()
 
-    community.member.keys.mapNotNull { context.source.server.playerManager.getPlayer(it) }.forEach { member ->
-        member.sendMessage(Translator.tr("announcement.notification.new"))
-        member.sendMessage(announcement.content)
+    community.member.keys.mapNotNull { context.source.server.playerList.getPlayer(it) }.forEach { member ->
+        member.sendSystemMessage(Translator.tr("announcement.notification.new"))
+        member.sendSystemMessage(announcement.content)
     }
 
-    player.sendMessage(Translator.tr("ui.admin.announcement.created"))
+    player.sendSystemMessage(Translator.tr("ui.admin.announcement.created"))
     return 1
 }
 
-fun onAnnouncementDeleteCommand(context: CommandContext<ServerCommandSource>, community: Community, announcementId: String): Int {
+fun onAnnouncementDeleteCommand(context: CommandContext<CommandSourceStack>, community: Community, announcementId: String): Int {
     val player = getPlayerOrNull(context) ?: return 0
     if (!canManage(player, community)) return 0
     val uuid = parseUUID(player, announcementId) ?: return 0
     return performDelete(player, community, uuid)
 }
 
-fun onAnnouncementOpDeleteCommand(context: CommandContext<ServerCommandSource>, community: Community, announcementId: String): Int {
+fun onAnnouncementOpDeleteCommand(context: CommandContext<CommandSourceStack>, community: Community, announcementId: String): Int {
     val player = getPlayerOrNull(context) ?: return 0
     val uuid = parseUUID(player, announcementId) ?: return 0
     return performDelete(player, community, uuid)
 }
 
-fun onAnnouncementListCommand(context: CommandContext<ServerCommandSource>, community: Community): Int {
+fun onAnnouncementListCommand(context: CommandContext<CommandSourceStack>, community: Community): Int {
     val player = getPlayerOrNull(context) ?: return 0
     if (!isMember(player, community)) return 0
 
     val announcements = community.getActiveAnnouncements().sortedByDescending { it.timestamp }
     if (announcements.isEmpty()) {
-        player.sendMessage(Translator.tr("community.announcement.list.empty"))
+        player.sendSystemMessage(Translator.tr("community.announcement.list.empty"))
         return 1
     }
 
-    player.sendMessage(Translator.tr("community.announcement.list.header", community.generateCommunityMark()))
+    player.sendSystemMessage(Translator.tr("community.announcement.list.header", community.generateCommunityMark()))
     announcements.forEachIndexed { index, announcement ->
         val status = if (announcement.isReadBy(player.uuid)) "[READ]" else "[UNREAD]"
         val preview = announcement.content.string.let { if (it.length > 50) it.take(50) + "..." else it }
-        player.sendMessage(Translator.tr("community.announcement.list.entry", index + 1, status, announcement.id.toString().substring(0, 8), preview))
+        player.sendSystemMessage(Translator.tr("community.announcement.list.entry", index + 1, status, announcement.id.toString().substring(0, 8), preview))
     }
     return 1
 }
 
-fun onAnnouncementViewCommand(context: CommandContext<ServerCommandSource>, community: Community, announcementId: String): Int {
+fun onAnnouncementViewCommand(context: CommandContext<CommandSourceStack>, community: Community, announcementId: String): Int {
     val player = getPlayerOrNull(context) ?: return 0
     if (!isMember(player, community)) return 0
     val uuid = parseUUID(player, announcementId) ?: return 0
 
     val announcement = community.getAnnouncementById(uuid)?.takeIf { !it.isDeleted }
         ?: run {
-            player.sendMessage(Translator.tr("ui.admin.announcement.error.not_found"))
+            player.sendSystemMessage(Translator.tr("ui.admin.announcement.error.not_found"))
             return 0
         }
 
     announcement.markAsRead(player.uuid)
     CommunityDatabase.save()
 
-    player.sendMessage(Translator.tr("ui.community.announcement_details.header"))
-    player.sendMessage(announcement.content)
-    player.sendMessage(Translator.tr("ui.community.announcement_details.footer"))
+    player.sendSystemMessage(Translator.tr("ui.community.announcement_details.header"))
+    player.sendSystemMessage(announcement.content)
+    player.sendSystemMessage(Translator.tr("ui.community.announcement_details.footer"))
     return 1
 }
 
-fun onAnnouncementOpListCommand(context: CommandContext<ServerCommandSource>): Int {
+fun onAnnouncementOpListCommand(context: CommandContext<CommandSourceStack>): Int {
     val player = getPlayerOrNull(context) ?: return 0
 
     val summary = CommunityDatabase.communities.mapNotNull { comm ->
@@ -94,53 +94,53 @@ fun onAnnouncementOpListCommand(context: CommandContext<ServerCommandSource>): I
     }
 
     if (summary.isEmpty()) {
-        player.sendMessage(Translator.tr("community.announcement.administration.list.empty"))
+        player.sendSystemMessage(Translator.tr("community.announcement.administration.list.empty"))
         return 1
     }
 
     summary.forEach { (comm, count) ->
-        player.sendMessage(Translator.tr("community.announcement.administration.list.community", comm.generateCommunityMark(), comm.regionNumberId, count))
+        player.sendSystemMessage(Translator.tr("community.announcement.administration.list.community", comm.generateCommunityMark(), comm.regionNumberId, count))
     }
-    player.sendMessage(Translator.tr("community.announcement.op.list.total", summary.sumOf { it.second }))
+    player.sendSystemMessage(Translator.tr("community.announcement.op.list.total", summary.sumOf { it.second }))
     return 1
 }
 
-private fun getPlayerOrNull(context: CommandContext<ServerCommandSource>): ServerPlayerEntity? {
+private fun getPlayerOrNull(context: CommandContext<CommandSourceStack>): ServerPlayer? {
     return context.source.player
 }
 
-private fun parseUUID(player: ServerPlayerEntity, idString: String): UUID? {
+private fun parseUUID(player: ServerPlayer, idString: String): UUID? {
     return try {
         UUID.fromString(idString)
     } catch (e: IllegalArgumentException) {
-        player.sendMessage(Translator.tr("community.announcement.error.invalid_id"))
+        player.sendSystemMessage(Translator.tr("community.announcement.error.invalid_id"))
         null
     }
 }
 
-private fun canManage(player: ServerPlayerEntity, community: Community): Boolean {
+private fun canManage(player: ServerPlayer, community: Community): Boolean {
     if (CommunityPermissionPolicy.canExecuteAdministration(player, community, AdminPrivilege.MANAGE_ANNOUNCEMENTS).isAllowed()) {
         return true
     }
-    player.sendMessage(Translator.tr("community.announcement.error.no_permission"))
+    player.sendSystemMessage(Translator.tr("community.announcement.error.no_permission"))
     return false
 }
 
-private fun isMember(player: ServerPlayerEntity, community: Community): Boolean {
+private fun isMember(player: ServerPlayer, community: Community): Boolean {
     if (CommunityPermissionPolicy.canViewCommunity(player, community).isAllowed()) {
         return true
     }
-    player.sendMessage(Translator.tr("community.announcement.error.not_member"))
+    player.sendSystemMessage(Translator.tr("community.announcement.error.not_member"))
     return false
 }
 
-private fun performDelete(player: ServerPlayerEntity, community: Community, uuid: UUID): Int {
+private fun performDelete(player: ServerPlayer, community: Community, uuid: UUID): Int {
     return if (community.softDeleteAnnouncement(uuid)) {
         CommunityDatabase.save()
-        player.sendMessage(Translator.tr("ui.admin.announcement.deleted"))
+        player.sendSystemMessage(Translator.tr("ui.admin.announcement.deleted"))
         1
     } else {
-        player.sendMessage(Translator.tr("ui.admin.announcement.error.not_found"))
+        player.sendSystemMessage(Translator.tr("ui.admin.announcement.error.not_found"))
         0
     }
 }

@@ -15,15 +15,15 @@ import com.imyvm.community.util.Translator
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.HypotheticalShape
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 
-fun runModifyScope(player: ServerPlayerEntity, runBack: (ServerPlayerEntity) -> Unit) {
+fun runModifyScope(player: ServerPlayer, runBack: (ServerPlayer) -> Unit) {
     val selectionState = ImyvmWorldGeo.pointSelectingPlayers[player.uuid]
     val hypotheticalShape = selectionState?.hypotheticalShape
 
     if (hypotheticalShape is HypotheticalShape.Normal) {
-        player.closeHandledScreen()
-        player.sendMessage(Translator.tr("ui.territory.modify.busy_creating"))
+        player.closeContainer()
+        player.sendSystemMessage(Translator.tr("ui.territory.modify.busy_creating"))
         return
     }
 
@@ -31,14 +31,14 @@ fun runModifyScope(player: ServerPlayerEntity, runBack: (ServerPlayerEntity) -> 
         val targetScope = hypotheticalShape.scope
         val community = findCommunityOwningScope(player, targetScope)
         if (community == null) {
-            player.closeHandledScreen()
-            player.sendMessage(Translator.tr("ui.territory.modify.scope_not_found"))
+            player.closeContainer()
+            player.sendSystemMessage(Translator.tr("ui.territory.modify.scope_not_found"))
             return
         }
         val permResult = CommunityPermissionPolicy.canExecuteAdministration(player, community, AdminPrivilege.MODIFY_REGION_GEOMETRY)
         if (permResult.isDenied()) {
-            player.closeHandledScreen()
-            permResult.sendFeedback(player)
+            player.closeContainer()
+            permResult.sendSuccess(player)
             return
         }
         runExecuteScopeModification(player, community, targetScope)
@@ -48,11 +48,11 @@ fun runModifyScope(player: ServerPlayerEntity, runBack: (ServerPlayerEntity) -> 
     runCommunitySelectionForScopeModify(player, runBack)
 }
 
-fun runAddScope(player: ServerPlayerEntity, runBack: (ServerPlayerEntity) -> Unit) {
+fun runAddScope(player: ServerPlayer, runBack: (ServerPlayer) -> Unit) {
     val selectionState = ImyvmWorldGeo.pointSelectingPlayers[player.uuid]
     if (selectionState?.hypotheticalShape is HypotheticalShape.ModifyExisting) {
-        player.closeHandledScreen()
-        player.sendMessage(Translator.tr("ui.territory.add_scope.busy_modifying"))
+        player.closeContainer()
+        player.sendSystemMessage(Translator.tr("ui.territory.add_scope.busy_modifying"))
         return
     }
 
@@ -60,23 +60,23 @@ fun runAddScope(player: ServerPlayerEntity, runBack: (ServerPlayerEntity) -> Uni
 }
 
 fun runAddScopeForCommunity(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     community: Community,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     val selectionState = ImyvmWorldGeo.pointSelectingPlayers[player.uuid]
     if (selectionState?.hypotheticalShape is HypotheticalShape.ModifyExisting) {
-        player.closeHandledScreen()
-        player.sendMessage(Translator.tr("ui.territory.add_scope.busy_modifying"))
+        player.closeContainer()
+        player.sendSystemMessage(Translator.tr("ui.territory.add_scope.busy_modifying"))
         return
     }
     openScopeCreationForCommunity(player, community, runBack)
 }
 
 fun runDeleteScopeForCommunity(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     community: Community,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     CommunityPermissionPolicy.executeWithPermission(
         player,
@@ -88,13 +88,13 @@ fun runDeleteScopeForCommunity(
     ) {
         val region = community.getRegion()
         if (region == null) {
-            player.closeHandledScreen()
-            player.sendMessage(Translator.tr("community.modification.error.no_region"))
+            player.closeContainer()
+            player.sendSystemMessage(Translator.tr("community.modification.error.no_region"))
             return@executeWithPermission
         }
         if (region.geometryScope.size <= 1) {
-            player.closeHandledScreen()
-            player.sendMessage(Translator.tr("community.scope_delete.error.last_scope"))
+            player.closeContainer()
+            player.sendSystemMessage(Translator.tr("community.scope_delete.error.last_scope"))
             return@executeWithPermission
         }
         CommunityMenuOpener.open(player) { syncId ->
@@ -110,14 +110,14 @@ fun runDeleteScopeForCommunity(
 }
 
 fun runModifyScopeForCommunity(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     community: Community,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     val selectionState = ImyvmWorldGeo.pointSelectingPlayers[player.uuid]
     if (selectionState?.hypotheticalShape is HypotheticalShape.Normal) {
-        player.closeHandledScreen()
-        player.sendMessage(Translator.tr("ui.territory.modify.busy_creating"))
+        player.closeContainer()
+        player.sendSystemMessage(Translator.tr("ui.territory.modify.busy_creating"))
         return
     }
 
@@ -133,7 +133,7 @@ fun runModifyScopeForCommunity(
 }
 
 internal fun runExecuteScopeModification(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     community: Community,
     scope: GeoScope
 ) {
@@ -150,20 +150,20 @@ internal fun runExecuteScopeModification(
 }
 
 private fun runCommunitySelectionForScopeModify(
-    player: ServerPlayerEntity,
-    runBack: (ServerPlayerEntity) -> Unit
+    player: ServerPlayer,
+    runBack: (ServerPlayer) -> Unit
 ) {
     val joinedCommunities = getJoinedCommunities(player)
     if (joinedCommunities.isEmpty()) {
-        player.closeHandledScreen()
-        player.sendMessage(Translator.tr("ui.main.message.no_community"))
+        player.closeContainer()
+        player.sendSystemMessage(Translator.tr("ui.main.message.no_community"))
         return
     }
     if (joinedCommunities.size == 1) {
         openScopeListForModify(player, joinedCommunities.first(), runBack)
         return
     }
-    val title = Translator.tr("ui.territory.modify.select_community") ?: net.minecraft.text.Text.literal("Select Community to Modify")
+    val title = Translator.tr("ui.territory.modify.select_community") ?: net.minecraft.network.chat.Component.literal("Select Community to Modify")
     CommunityMenuOpener.open(player) { syncId ->
         CommunityScopeSelectionMenu(
             syncId = syncId,
@@ -178,20 +178,20 @@ private fun runCommunitySelectionForScopeModify(
 }
 
 private fun runCommunitySelectionForScopeAdd(
-    player: ServerPlayerEntity,
-    runBack: (ServerPlayerEntity) -> Unit
+    player: ServerPlayer,
+    runBack: (ServerPlayer) -> Unit
 ) {
     val joinedCommunities = getJoinedCommunities(player)
     if (joinedCommunities.isEmpty()) {
-        player.closeHandledScreen()
-        player.sendMessage(Translator.tr("ui.main.message.no_community"))
+        player.closeContainer()
+        player.sendSystemMessage(Translator.tr("ui.main.message.no_community"))
         return
     }
     if (joinedCommunities.size == 1) {
         openScopeCreationForCommunity(player, joinedCommunities.first(), runBack)
         return
     }
-    val title = Translator.tr("ui.territory.add_scope.select_community") ?: net.minecraft.text.Text.literal("Select Community to Add Scope")
+    val title = Translator.tr("ui.territory.add_scope.select_community") ?: net.minecraft.network.chat.Component.literal("Select Community to Add Scope")
     CommunityMenuOpener.open(player) { syncId ->
         CommunityScopeSelectionMenu(
             syncId = syncId,
@@ -206,9 +206,9 @@ private fun runCommunitySelectionForScopeAdd(
 }
 
 private fun openScopeListForModify(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     community: Community,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     CommunityPermissionPolicy.executeWithPermission(
         player,
@@ -231,9 +231,9 @@ private fun openScopeListForModify(
 }
 
 private fun openScopeCreationForCommunity(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     community: Community,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     CommunityPermissionPolicy.executeWithPermission(
         player,
@@ -249,13 +249,13 @@ private fun openScopeCreationForCommunity(
     }
 }
 
-private fun getJoinedCommunities(player: ServerPlayerEntity): List<Community> =
+private fun getJoinedCommunities(player: ServerPlayer): List<Community> =
     CommunityDatabase.communities.filter {
         val role = it.getMemberRole(player.uuid)
         role != null && role != MemberRoleType.APPLICANT && role != MemberRoleType.REFUSED
     }
 
-private fun findCommunityOwningScope(player: ServerPlayerEntity, scope: GeoScope): Community? =
+private fun findCommunityOwningScope(player: ServerPlayer, scope: GeoScope): Community? =
     CommunityDatabase.communities.find { community ->
         val role = community.getMemberRole(player.uuid)
         role != null && role != MemberRoleType.APPLICANT && role != MemberRoleType.REFUSED &&

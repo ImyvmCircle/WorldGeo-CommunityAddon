@@ -9,14 +9,16 @@ import com.imyvm.community.entrypoint.screen.AbstractRenameMenuAnvil
 import com.imyvm.community.infra.PricingConfig
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.inter.api.RegionDataApi
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.ClickEvent
+import net.minecraft.network.chat.HoverEvent
 
 class AdministrationRenameMenuAnvil(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     private val community: Community,
     private val scopeName: String?,
-    private val runBackGrandfather: ((ServerPlayerEntity) -> Unit),
+    private val runBackGrandfather: ((ServerPlayer) -> Unit),
     errorHint: String? = null
 ): AbstractRenameMenuAnvil(
     player = player,
@@ -36,22 +38,22 @@ class AdministrationRenameMenuAnvil(
         val daysSince = (System.currentTimeMillis() - cooldownMs) / (1000L * 60 * 60 * 24)
         if (daysSince < 30) {
             val daysLeft = 30 - daysSince
-            player.closeHandledScreen()
-            player.sendMessage(Translator.tr("community.rename.error.cooldown", daysLeft.toString(), nameKey))
+            player.closeContainer()
+            player.sendSystemMessage(Translator.tr("community.rename.error.cooldown", daysLeft.toString(), nameKey))
             return
         }
 
         val existingPending = com.imyvm.community.WorldGeoCommunityAddon.pendingOperations[regionId]
         if (existingPending != null) {
-            player.closeHandledScreen()
-            player.sendMessage(Translator.tr("community.modification.confirmation.pending"))
+            player.closeContainer()
+            player.sendSystemMessage(Translator.tr("community.modification.confirmation.pending"))
             return
         }
 
         val currentAssets = community.getTotalAssets()
         if (cost > 0 && currentAssets < cost) {
-            player.closeHandledScreen()
-            player.sendMessage(Translator.tr(
+            player.closeContainer()
+            player.sendSystemMessage(Translator.tr(
                 "community.modification.error.insufficient_assets",
                 String.format("%.2f", cost / 100.0),
                 String.format("%.2f", currentAssets / 100.0)
@@ -72,7 +74,7 @@ class AdministrationRenameMenuAnvil(
             )
         )
 
-        player.closeHandledScreen()
+        player.closeContainer()
         sendInteractiveRenameConfirmation(player, regionId, nameKey, finalName, cost)
     }
 
@@ -80,48 +82,38 @@ class AdministrationRenameMenuAnvil(
         AdministrationRenameMenuAnvil(player, community, scopeName, runBackGrandfather, errorHint).open()
     }
 
-    override fun getMenuTitle(): Text {
+    override fun getMenuTitle(): Component {
         val base = if (scopeName == null) {
-            Translator.tr("ui.admin.rename.title") ?: Text.of("Rename Community")
+            Translator.tr("ui.admin.rename.title") ?: Component.literal("Rename Community")
         } else {
-            Translator.tr("ui.admin.rename.scope.title", scopeName) ?: Text.of("Rename Scope: $scopeName")
+            Translator.tr("ui.admin.rename.scope.title", scopeName) ?: Component.literal("Rename Scope: $scopeName")
         }
         return buildTitle(base)
     }
 
-    private fun sendInteractiveRenameConfirmation(player: ServerPlayerEntity, regionNumberId: Int, nameKey: String, newName: String, cost: Long) {
+    private fun sendInteractiveRenameConfirmation(player: ServerPlayer, regionNumberId: Int, nameKey: String, newName: String, cost: Long) {
         val costDisplay = String.format("%.2f", cost / 100.0)
-        player.sendMessage(Translator.tr("community.rename.bill", nameKey, newName, costDisplay))
+        player.sendSystemMessage(Translator.tr("community.rename.bill", nameKey, newName, costDisplay))
         val quotedNameKey = if (!nameKey.all { it.isLetterOrDigit() && it.code < 128 }) "\"$nameKey\"" else nameKey
 
-        val confirmButton = Text.literal("§a§l[确认]§r")
-            .styled { style ->
-                style.withClickEvent(net.minecraft.text.ClickEvent(
-                    net.minecraft.text.ClickEvent.Action.RUN_COMMAND,
-                    "/_commun confirm_rename $regionNumberId $quotedNameKey"
-                )).withHoverEvent(net.minecraft.text.HoverEvent(
-                    net.minecraft.text.HoverEvent.Action.SHOW_TEXT,
-                    Translator.tr("community.rename.confirm.hover") ?: Text.literal("Click to confirm rename")
+        val confirmButton = Component.literal("§a§l[确认]§r")
+            .withStyle { style ->
+                style.withClickEvent(ClickEvent.RunCommand("/_commun confirm_rename $regionNumberId $quotedNameKey")).withHoverEvent(HoverEvent.ShowText(Translator.tr("community.rename.confirm.hover") ?: Component.literal("Click to confirm rename")
                 ))
             }
 
-        val cancelButton = Text.literal("§c§l[取消]§r")
-            .styled { style ->
-                style.withClickEvent(net.minecraft.text.ClickEvent(
-                    net.minecraft.text.ClickEvent.Action.RUN_COMMAND,
-                    "/_commun cancel_rename $regionNumberId $quotedNameKey"
-                )).withHoverEvent(net.minecraft.text.HoverEvent(
-                    net.minecraft.text.HoverEvent.Action.SHOW_TEXT,
-                    Translator.tr("community.rename.cancel.hover") ?: Text.literal("Click to cancel rename")
+        val cancelButton = Component.literal("§c§l[取消]§r")
+            .withStyle { style ->
+                style.withClickEvent(ClickEvent.RunCommand("/_commun cancel_rename $regionNumberId $quotedNameKey")).withHoverEvent(HoverEvent.ShowText(Translator.tr("community.rename.cancel.hover") ?: Component.literal("Click to cancel rename")
                 ))
             }
 
-        val promptMessage = Text.empty()
-            .append(Text.literal("§e§l[等待确认]§r §e请在 §c§l5分钟§r§e 内操作: "))
+        val promptMessage = Component.empty()
+            .append(Component.literal("§e§l[等待确认]§r §e请在 §c§l5分钟§r§e 内操作: "))
             .append(confirmButton)
-            .append(Text.literal(" "))
+            .append(Component.literal(" "))
             .append(cancelButton)
 
-        player.sendMessage(promptMessage)
+        player.sendSystemMessage(promptMessage)
     }
 }

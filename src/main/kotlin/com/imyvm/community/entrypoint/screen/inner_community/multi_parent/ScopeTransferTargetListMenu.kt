@@ -7,23 +7,23 @@ import com.imyvm.community.entrypoint.screen.component.getPlayerHeadButtonItemSt
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.domain.component.GeoScope
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.Component
 
 class ScopeTransferTargetListMenu(
     syncId: Int,
     private val sourceCommunity: Community,
     private val scope: GeoScope,
     page: Int = 0,
-    val runBack: (ServerPlayerEntity) -> Unit,
-    private val onCommunitySelected: (ServerPlayerEntity, Community) -> Unit
+    val runBack: (ServerPlayer) -> Unit,
+    private val onCommunitySelected: (ServerPlayer, Community) -> Unit
 ) : AbstractListMenu(
     syncId = syncId,
     menuTitle = Translator.tr(
         "ui.scope_transfer.target.title",
         sourceCommunity.generateCommunityMark(),
         scope.scopeName
-    ) ?: Text.literal("Transfer: ${scope.scopeName} → Select Community"),
+    ) ?: Component.literal("Transfer: ${scope.scopeName} → Select Community"),
     page = page,
     runBack = runBack
 ) {
@@ -44,7 +44,7 @@ class ScopeTransferTargetListMenu(
         handlePageWithSize(targetCommunities.size, communitiesPerPage)
     }
 
-    override fun openNewPage(playerExecutor: ServerPlayerEntity, newPage: Int) {
+    override fun openNewPage(playerExecutor: ServerPlayer, newPage: Int) {
         CommunityMenuOpener.open(playerExecutor) { syncId ->
             ScopeTransferTargetListMenu(
                 syncId = syncId,

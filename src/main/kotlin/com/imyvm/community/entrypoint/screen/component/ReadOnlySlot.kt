@@ -1,11 +1,11 @@
 package com.imyvm.community.entrypoint.screen.component
 
-import net.minecraft.entity.player.PlayerEntity
-import net.minecraft.inventory.Inventory
-import net.minecraft.item.ItemStack
-import net.minecraft.screen.slot.Slot
+import net.minecraft.world.entity.player.Player
+import net.minecraft.world.Container
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.inventory.Slot
 
-class ReadOnlySlot(inv: Inventory, index: Int, x: Int, y: Int) : Slot(inv, index, x, y) {
-    override fun canTakeItems(player: PlayerEntity) = false
-    override fun canInsert(stack: ItemStack) = false
+class ReadOnlySlot(inv: Container, index: Int, x: Int, y: Int) : Slot(inv, index, x, y) {
+    override fun mayPickup(player: Player) = false
+    override fun mayPlace(stack: ItemStack) = false
 }

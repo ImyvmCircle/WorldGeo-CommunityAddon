@@ -17,12 +17,12 @@ import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.context.CommandContext
-import net.minecraft.server.command.CommandManager.argument
-import net.minecraft.server.command.CommandManager.literal
-import net.minecraft.server.command.ServerCommandSource
+import net.minecraft.commands.Commands.argument
+import net.minecraft.commands.Commands.literal
+import net.minecraft.commands.CommandSourceStack
 import java.util.*
 
-fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
+fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
     dispatcher.register(
         literal("community")
             .executes{ runInitialUI(it) }
@@ -58,7 +58,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("force_delete")
-                    .requires{ it.hasPermissionLevel(2)}
+                    .requires{ net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(it.permissions())}
                     .then(
                         argument("communityIdentifier", StringArgumentType.string())
                             .suggests(ALL_COMMUNITY_PROVIDER)
@@ -67,7 +67,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("audit")
-                    .requires{ it.hasPermissionLevel(2)}
+                    .requires{ net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(it.permissions())}
                     .then(
                         argument("choice", StringArgumentType.word())
                             .suggests(BINARY_CHOICE_SUGGESTION_PROVIDER)
@@ -80,7 +80,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("force_revoke")
-                    .requires{ it.hasPermissionLevel(2)}
+                    .requires{ net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(it.permissions())}
                     .then(
                         argument("communityIdentifier", StringArgumentType.string())
                             .suggests(ALL_COMMUNITY_PROVIDER)
@@ -89,7 +89,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("force_active")
-                    .requires{ it.hasPermissionLevel(2)}
+                    .requires{ net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(it.permissions())}
                     .then(
                         argument("communityIdentifier", StringArgumentType.string())
                             .suggests(ALL_COMMUNITY_PROVIDER)
@@ -193,7 +193,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     )
                     .then(
                         literal("op")
-                            .requires { it.hasPermissionLevel(2) }
+                            .requires { net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(it.permissions()) }
                             .then(
                                 literal("list")
                                     .executes { context ->
@@ -276,7 +276,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("treasury")
-                    .requires { it.hasPermissionLevel(2) }
+                    .requires { net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(it.permissions()) }
                     .then(
                         literal("deposit")
                             .then(
@@ -311,7 +311,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
     )
 }
 
-private fun runInitialUI(context: CommandContext<ServerCommandSource>): Int {
+private fun runInitialUI(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val selectionContext = SelectionReturnContext.getContext(player.uuid)
     if (selectionContext != null && ImyvmWorldGeo.pointSelectingPlayers.containsKey(player.uuid)) {
@@ -319,7 +319,7 @@ private fun runInitialUI(context: CommandContext<ServerCommandSource>): Int {
             is SelectionReturnContext.Context.CreateScope -> {
                 val community = com.imyvm.community.infra.CommunityDatabase.getCommunityById(selectionContext.regionNumberId)
                 if (community != null) {
-                    val runBack: (net.minecraft.server.network.ServerPlayerEntity) -> Unit = { p ->
+                    val runBack: (net.minecraft.server.level.ServerPlayer) -> Unit = { p ->
                         CommunityMenuOpener.open(p) { s -> MainMenu(s, p) }
                     }
                     CommunityMenuOpener.open(player) { syncId ->
@@ -334,7 +334,7 @@ private fun runInitialUI(context: CommandContext<ServerCommandSource>): Int {
                 val community = com.imyvm.community.infra.CommunityDatabase.getCommunityById(selectionContext.regionNumberId)
                 val scope = community?.getRegion()?.geometryScope?.find { it.scopeName == selectionContext.scopeName }
                 if (community != null && scope != null) {
-                    val runBackToScopeList: (net.minecraft.server.network.ServerPlayerEntity) -> Unit = { p ->
+                    val runBackToScopeList: (net.minecraft.server.level.ServerPlayer) -> Unit = { p ->
                         CommunityMenuOpener.open(p) { s ->
                             com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityRegionScopeMenu(
                                 syncId = s,
@@ -362,34 +362,34 @@ private fun runInitialUI(context: CommandContext<ServerCommandSource>): Int {
     return 1
 }
 
-private fun runStartSelect(context: CommandContext<ServerCommandSource>): Int {
+private fun runStartSelect(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val result = startSelection(player)
     if (result == 1) {
-        player.sendMessage(Translator.tr("community.selection_mode.enabled"))
+        player.sendSystemMessage(Translator.tr("community.selection_mode.enabled"))
     }
     return result
 }
 
-private fun runStopSelect(context: CommandContext<ServerCommandSource>): Int {
+private fun runStopSelect(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val result = stopSelection(player)
     if (result == 1) {
-        player.sendMessage(Translator.tr("community.selection_mode.disabled"))
+        player.sendSystemMessage(Translator.tr("community.selection_mode.disabled"))
     }
     return result
 }
 
-private fun runResetSelect(context: CommandContext<ServerCommandSource>): Int {
+private fun runResetSelect(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val result = resetSelection(player)
     if (result == 1) {
-        player.sendMessage(Translator.tr("community.selection_mode.reset"))
+        player.sendSystemMessage(Translator.tr("community.selection_mode.reset"))
     }
     return result
 }
 
-private fun runCreateCommunity(context: CommandContext<ServerCommandSource>): Int {
+private fun runCreateCommunity(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val communityType = StringArgumentType.getString(context, "communityType").lowercase(Locale.getDefault())
     val name = StringArgumentType.getString(context, "name")
@@ -397,86 +397,86 @@ private fun runCreateCommunity(context: CommandContext<ServerCommandSource>): In
     return onCreateCommunityRequest(player, communityType, name)
 }
 
-private fun runConfirmCommunityCreation(context: CommandContext<ServerCommandSource>): Int {
+private fun runConfirmCommunityCreation(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val regionId = IntegerArgumentType.getInteger(context, "regionId")
     return onConfirmCommunityCreation(player, regionId)
 }
 
-private fun runCancelCommunityCreation(context: CommandContext<ServerCommandSource>): Int {
+private fun runCancelCommunityCreation(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val regionId = IntegerArgumentType.getInteger(context, "regionId")
     return onCancelCommunityCreation(player, regionId)
 }
 
-private fun runConfirmScopeModification(context: CommandContext<ServerCommandSource>): Int {
+private fun runConfirmScopeModification(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val regionId = IntegerArgumentType.getInteger(context, "regionId")
     val scopeName = StringArgumentType.getString(context, "scopeName")
     return onConfirmScopeModification(player, regionId, scopeName)
 }
 
-private fun runCancelScopeModification(context: CommandContext<ServerCommandSource>): Int {
+private fun runCancelScopeModification(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val regionId = IntegerArgumentType.getInteger(context, "regionId")
     val scopeName = StringArgumentType.getString(context, "scopeName")
     return onCancelScopeModification(player, regionId, scopeName)
 }
 
-private fun runConfirmScopeDeletion(context: CommandContext<ServerCommandSource>): Int {
+private fun runConfirmScopeDeletion(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val regionId = IntegerArgumentType.getInteger(context, "regionId")
     val scopeName = StringArgumentType.getString(context, "scopeName")
     return onConfirmScopeDeletion(player, regionId, scopeName)
 }
 
-private fun runCancelScopeDeletion(context: CommandContext<ServerCommandSource>): Int {
+private fun runCancelScopeDeletion(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val regionId = IntegerArgumentType.getInteger(context, "regionId")
     val scopeName = StringArgumentType.getString(context, "scopeName")
     return onCancelScopeDeletion(player, regionId, scopeName)
 }
 
-private fun runConfirmTeleportPointSetting(context: CommandContext<ServerCommandSource>): Int {
+private fun runConfirmTeleportPointSetting(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val regionId = IntegerArgumentType.getInteger(context, "regionId")
     val scopeName = StringArgumentType.getString(context, "scopeName")
     return com.imyvm.community.application.interaction.screen.inner_community.administration_only.onConfirmTeleportPointSetting(player, regionId, scopeName)
 }
 
-private fun runCancelTeleportPointSetting(context: CommandContext<ServerCommandSource>): Int {
+private fun runCancelTeleportPointSetting(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val regionId = IntegerArgumentType.getInteger(context, "regionId")
     val scopeName = StringArgumentType.getString(context, "scopeName")
     return com.imyvm.community.application.interaction.screen.inner_community.administration_only.onCancelTeleportPointSetting(player, regionId, scopeName)
 }
 
-private fun runForceDeleteCommunity(context: CommandContext<ServerCommandSource>): Int {
+private fun runForceDeleteCommunity(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
     return identifierHandler(player, communityIdentifier) { targetCommunity -> onForceDeleteCommunity(player, targetCommunity) }
 }
 
-private fun runAudit(context: CommandContext<ServerCommandSource>): Int {
+private fun runAudit(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val choice = StringArgumentType.getString(context, "choice").lowercase(Locale.getDefault())
     val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
     return identifierHandler(player, communityIdentifier) { targetCommunity -> onAudit(player, choice, targetCommunity) }
 }
 
-private fun runForceRevoke(context: CommandContext<ServerCommandSource>): Int {
+private fun runForceRevoke(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
     return identifierHandler(player, communityIdentifier) { targetCommunity -> onForceRevoke(player, targetCommunity) }
 }
 
-private fun runForceActive(context: CommandContext<ServerCommandSource>): Int {
+private fun runForceActive(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
     return identifierHandler(player, communityIdentifier) { targetCommunity -> onForceActive(player, targetCommunity) }
 }
 
-private fun runJoin(context: CommandContext<ServerCommandSource>): Int {
+private fun runJoin(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
     return identifierHandler(player, communityIdentifier) { targetCommunity ->
@@ -487,7 +487,7 @@ private fun runJoin(context: CommandContext<ServerCommandSource>): Int {
     }
 }
 
-private fun runLeave(context: CommandContext<ServerCommandSource>): Int {
+private fun runLeave(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
     return identifierHandler(player, communityIdentifier) { targetCommunity ->
@@ -498,12 +498,12 @@ private fun runLeave(context: CommandContext<ServerCommandSource>): Int {
     }
 }
 
-private fun runHelpCommand(context: CommandContext<ServerCommandSource>): Int {
+private fun runHelpCommand(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     return onHelpCommand(player)
 }
 
-private fun runListCommand(context: CommandContext<ServerCommandSource>): Int {
+private fun runListCommand(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val type = try {
         val communityTypeString = StringArgumentType.getString(context, "communityType").uppercase()
@@ -514,7 +514,7 @@ private fun runListCommand(context: CommandContext<ServerCommandSource>): Int {
     return onListCommunities(player, type)
 }
 
-private fun runQueryCommunityRegion(context: CommandContext<ServerCommandSource>): Int {
+private fun runQueryCommunityRegion(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
     return identifierHandler(player, communityIdentifier) { targetCommunity ->
@@ -523,46 +523,46 @@ private fun runQueryCommunityRegion(context: CommandContext<ServerCommandSource>
     }
 }
 
-private fun runAnnouncementCreate(context: CommandContext<ServerCommandSource>, communityIdentifier: String, content: String): Int {
+private fun runAnnouncementCreate(context: CommandContext<CommandSourceStack>, communityIdentifier: String, content: String): Int {
     val player = context.source.player ?: return 0
     return identifierHandler(player, communityIdentifier) { targetCommunity ->
         onAnnouncementCreateCommand(context, targetCommunity, content)
     }
 }
 
-private fun runAnnouncementDelete(context: CommandContext<ServerCommandSource>, communityIdentifier: String, announcementId: String): Int {
+private fun runAnnouncementDelete(context: CommandContext<CommandSourceStack>, communityIdentifier: String, announcementId: String): Int {
     val player = context.source.player ?: return 0
     return identifierHandler(player, communityIdentifier) { targetCommunity ->
         onAnnouncementDeleteCommand(context, targetCommunity, announcementId)
     }
 }
 
-private fun runAnnouncementList(context: CommandContext<ServerCommandSource>, communityIdentifier: String): Int {
+private fun runAnnouncementList(context: CommandContext<CommandSourceStack>, communityIdentifier: String): Int {
     val player = context.source.player ?: return 0
     return identifierHandler(player, communityIdentifier) { targetCommunity ->
         onAnnouncementListCommand(context, targetCommunity)
     }
 }
 
-private fun runAnnouncementView(context: CommandContext<ServerCommandSource>, communityIdentifier: String, announcementId: String): Int {
+private fun runAnnouncementView(context: CommandContext<CommandSourceStack>, communityIdentifier: String, announcementId: String): Int {
     val player = context.source.player ?: return 0
     return identifierHandler(player, communityIdentifier) { targetCommunity ->
         onAnnouncementViewCommand(context, targetCommunity, announcementId)
     }
 }
 
-private fun runAnnouncementOpList(context: CommandContext<ServerCommandSource>): Int {
+private fun runAnnouncementOpList(context: CommandContext<CommandSourceStack>): Int {
     return onAnnouncementOpListCommand(context)
 }
 
-private fun runAnnouncementOpDelete(context: CommandContext<ServerCommandSource>, communityIdentifier: String, announcementId: String): Int {
+private fun runAnnouncementOpDelete(context: CommandContext<CommandSourceStack>, communityIdentifier: String, announcementId: String): Int {
     val player = context.source.player ?: return 0
     return identifierHandler(player, communityIdentifier) { targetCommunity ->
         onAnnouncementOpDeleteCommand(context, targetCommunity, announcementId)
     }
 }
 
-private fun runAcceptInvitation(context: CommandContext<ServerCommandSource>): Int {
+private fun runAcceptInvitation(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
     return identifierHandler(player, communityIdentifier) { targetCommunity ->
@@ -571,7 +571,7 @@ private fun runAcceptInvitation(context: CommandContext<ServerCommandSource>): I
     }
 }
 
-private fun runRejectInvitation(context: CommandContext<ServerCommandSource>): Int {
+private fun runRejectInvitation(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
     return identifierHandler(player, communityIdentifier) { targetCommunity ->
@@ -580,7 +580,7 @@ private fun runRejectInvitation(context: CommandContext<ServerCommandSource>): I
     }
 }
 
-private fun runSendChatMessage(context: CommandContext<ServerCommandSource>): Int {
+private fun runSendChatMessage(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
     val message = StringArgumentType.getString(context, "message")
@@ -591,7 +591,7 @@ private fun runSendChatMessage(context: CommandContext<ServerCommandSource>): In
     }
 }
 
-private fun runToggleChatChannel(context: CommandContext<ServerCommandSource>): Int {
+private fun runToggleChatChannel(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
     
@@ -601,33 +601,33 @@ private fun runToggleChatChannel(context: CommandContext<ServerCommandSource>): 
     }
 }
 
-private fun runConfirmSettingChange(context: CommandContext<ServerCommandSource>): Int {
+private fun runConfirmSettingChange(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val regionId = IntegerArgumentType.getInteger(context, "regionId")
     return com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.onConfirmSettingChange(player, regionId)
 }
 
-private fun runCancelSettingChange(context: CommandContext<ServerCommandSource>): Int {
+private fun runCancelSettingChange(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val regionId = IntegerArgumentType.getInteger(context, "regionId")
     return com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.onCancelSettingChange(player, regionId)
 }
 
-private fun runConfirmRenameCommand(context: CommandContext<ServerCommandSource>): Int {
+private fun runConfirmRenameCommand(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val regionId = IntegerArgumentType.getInteger(context, "regionId")
     val nameKey = StringArgumentType.getString(context, "nameKey")
     return com.imyvm.community.application.interaction.screen.inner_community.multi_parent.onConfirmRename(player, regionId, nameKey)
 }
 
-private fun runCancelRenameCommand(context: CommandContext<ServerCommandSource>): Int {
+private fun runCancelRenameCommand(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val regionId = IntegerArgumentType.getInteger(context, "regionId")
     val nameKey = StringArgumentType.getString(context, "nameKey")
     return com.imyvm.community.application.interaction.screen.inner_community.multi_parent.onCancelRename(player, regionId, nameKey)
 }
 
-private fun runOpenMenuCommand(context: CommandContext<ServerCommandSource>): Int {
+private fun runOpenMenuCommand(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
     return identifierHandler(player, communityIdentifier) { community ->
@@ -650,7 +650,7 @@ private fun runOpenMenuCommand(context: CommandContext<ServerCommandSource>): In
     }
 }
 
-private fun runOpenAnnouncementsCommand(context: CommandContext<ServerCommandSource>): Int {
+private fun runOpenAnnouncementsCommand(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
     return identifierHandler(player, communityIdentifier) { community ->
@@ -658,7 +658,7 @@ private fun runOpenAnnouncementsCommand(context: CommandContext<ServerCommandSou
         val isAdmin = role == com.imyvm.community.domain.model.community.MemberRoleType.OWNER ||
             role == com.imyvm.community.domain.model.community.MemberRoleType.ADMIN
         val isFormalMember = role == com.imyvm.community.domain.model.community.MemberRoleType.MEMBER
-        val runBack: (net.minecraft.server.network.ServerPlayerEntity) -> Unit = { p ->
+        val runBack: (net.minecraft.server.level.ServerPlayer) -> Unit = { p ->
             CommunityMenuOpener.open(p) { s -> MainMenu(s, p) }
         }
         if (isAdmin) {
@@ -674,18 +674,18 @@ private fun runOpenAnnouncementsCommand(context: CommandContext<ServerCommandSou
                 )
             }
         } else {
-            player.sendMessage(Translator.tr("community.notfound.name", communityIdentifier))
+            player.sendSystemMessage(Translator.tr("community.notfound.name", communityIdentifier))
             return@identifierHandler
         }
     }
 }
 
-private fun runOpenTeleportAdminCommand(context: CommandContext<ServerCommandSource>): Int {
+private fun runOpenTeleportAdminCommand(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val regionId = IntegerArgumentType.getInteger(context, "regionId")
     val scopeName = StringArgumentType.getString(context, "scopeName")
     val community = com.imyvm.community.infra.CommunityDatabase.getCommunityById(regionId) ?: run {
-        player.sendMessage(Translator.tr("community.notfound.id", regionId.toString()))
+        player.sendSystemMessage(Translator.tr("community.notfound.id", regionId.toString()))
         return 0
     }
     val region = community.getRegion() ?: return 0
@@ -702,14 +702,14 @@ private fun runOpenTeleportAdminCommand(context: CommandContext<ServerCommandSou
     return 1
 }
 
-private fun runOpenRenameMenuCommand(context: CommandContext<ServerCommandSource>): Int {
+private fun runOpenRenameMenuCommand(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val regionId = IntegerArgumentType.getInteger(context, "regionId")
     val community = com.imyvm.community.infra.CommunityDatabase.getCommunityById(regionId) ?: run {
-        player.sendMessage(Translator.tr("community.notfound.id", regionId.toString()))
+        player.sendSystemMessage(Translator.tr("community.notfound.id", regionId.toString()))
         return 0
     }
-    val runBack: (net.minecraft.server.network.ServerPlayerEntity) -> Unit = { p ->
+    val runBack: (net.minecraft.server.level.ServerPlayer) -> Unit = { p ->
         CommunityMenuOpener.open(p) { s -> MainMenu(s, p) }
     }
     CommunityMenuOpener.open(player) { syncId ->
@@ -724,14 +724,14 @@ private fun runOpenRenameMenuCommand(context: CommandContext<ServerCommandSource
     return 1
 }
 
-private fun runOpenModifyMenuCommand(context: CommandContext<ServerCommandSource>): Int {
+private fun runOpenModifyMenuCommand(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val regionId = IntegerArgumentType.getInteger(context, "regionId")
     val community = com.imyvm.community.infra.CommunityDatabase.getCommunityById(regionId) ?: run {
-        player.sendMessage(Translator.tr("community.notfound.id", regionId.toString()))
+        player.sendSystemMessage(Translator.tr("community.notfound.id", regionId.toString()))
         return 0
     }
-    val runBack: (net.minecraft.server.network.ServerPlayerEntity) -> Unit = { p ->
+    val runBack: (net.minecraft.server.level.ServerPlayer) -> Unit = { p ->
         CommunityMenuOpener.open(p) { s -> MainMenu(s, p) }
     }
     CommunityMenuOpener.open(player) { syncId ->
@@ -746,46 +746,46 @@ private fun runOpenModifyMenuCommand(context: CommandContext<ServerCommandSource
     return 1
 }
 
-private fun runAcceptTerritoryGrant(context: CommandContext<ServerCommandSource>): Int {
+private fun runAcceptTerritoryGrant(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val regionId = IntegerArgumentType.getInteger(context, "regionId")
     val scopeName = StringArgumentType.getString(context, "scopeName")
     return com.imyvm.community.application.interaction.common.onAcceptTerritoryGrant(player, regionId, scopeName)
 }
 
-private fun runDeclineTerritoryGrant(context: CommandContext<ServerCommandSource>): Int {
+private fun runDeclineTerritoryGrant(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val regionId = IntegerArgumentType.getInteger(context, "regionId")
     val scopeName = StringArgumentType.getString(context, "scopeName")
     return com.imyvm.community.application.interaction.common.onDeclineTerritoryGrant(player, regionId, scopeName)
 }
 
-private fun runCancelTerritoryGrant(context: CommandContext<ServerCommandSource>): Int {
+private fun runCancelTerritoryGrant(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val regionId = IntegerArgumentType.getInteger(context, "regionId")
     val scopeName = StringArgumentType.getString(context, "scopeName")
     return com.imyvm.community.application.interaction.common.onCancelTerritoryGrant(player, regionId, scopeName)
 }
 
-private fun runAcceptTreasuryGrant(context: CommandContext<ServerCommandSource>): Int {
+private fun runAcceptTreasuryGrant(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val regionId = IntegerArgumentType.getInteger(context, "regionId")
     return com.imyvm.community.application.interaction.screen.inner_community.administration_only.onAcceptTreasuryGrant(player, regionId)
 }
 
-private fun runDeclineTreasuryGrant(context: CommandContext<ServerCommandSource>): Int {
+private fun runDeclineTreasuryGrant(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val regionId = IntegerArgumentType.getInteger(context, "regionId")
     return com.imyvm.community.application.interaction.screen.inner_community.administration_only.onDeclineTreasuryGrant(player, regionId)
 }
 
-private fun runCancelTreasuryGrant(context: CommandContext<ServerCommandSource>): Int {
+private fun runCancelTreasuryGrant(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val regionId = IntegerArgumentType.getInteger(context, "regionId")
     return com.imyvm.community.application.interaction.screen.inner_community.administration_only.onCancelTreasuryGrant(player, regionId)
 }
 
-private fun runAdminTreasuryDeposit(context: CommandContext<ServerCommandSource>, description: String?): Int {
+private fun runAdminTreasuryDeposit(context: CommandContext<CommandSourceStack>, description: String?): Int {
     val player = context.source.player ?: return 0
     val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
     val amount = com.mojang.brigadier.arguments.DoubleArgumentType.getDouble(context, "amount")
@@ -794,7 +794,7 @@ private fun runAdminTreasuryDeposit(context: CommandContext<ServerCommandSource>
     }
 }
 
-private fun runAdminTreasuryWithdraw(context: CommandContext<ServerCommandSource>, description: String?): Int {
+private fun runAdminTreasuryWithdraw(context: CommandContext<CommandSourceStack>, description: String?): Int {
     val player = context.source.player ?: return 0
     val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
     val amount = com.mojang.brigadier.arguments.DoubleArgumentType.getDouble(context, "amount")
@@ -803,7 +803,7 @@ private fun runAdminTreasuryWithdraw(context: CommandContext<ServerCommandSource
     }
 }
 
-fun registerCommun(dispatcher: CommandDispatcher<ServerCommandSource>) {
+fun registerCommun(dispatcher: CommandDispatcher<CommandSourceStack>) {
     dispatcher.register(
         literal("_commun")
             .then(

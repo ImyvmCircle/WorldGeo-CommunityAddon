@@ -11,13 +11,13 @@ import com.imyvm.community.util.Translator
 import com.imyvm.community.util.Translator.trMenu
 import com.mojang.authlib.GameProfile
 import com.imyvm.community.domain.policy.permission.AdminPrivileges
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 
 fun runOpenPlayerRegionScopeChoice(
     community: Community,
-    playerExecutor: ServerPlayerEntity,
+    playerExecutor: ServerPlayer,
     playerObject: GameProfile,
-    runBackGrandfather: (ServerPlayerEntity) -> Unit
+    runBackGrandfather: (ServerPlayer) -> Unit
 ) {
     CommunityPermissionPolicy.executeWithPermission(
         playerExecutor,
@@ -37,7 +37,7 @@ fun runOpenPlayerRegionScopeChoice(
 
 fun runRemoveMember(
     community: Community,
-    playerExecutor: ServerPlayerEntity,
+    playerExecutor: ServerPlayer,
     playerObject: GameProfile
 ) {
     CommunityPermissionPolicy.executeWithPermission(
@@ -50,9 +50,9 @@ fun runRemoveMember(
             "community.notification.target.removed",
             communityName,
             playerExecutor.name.string
-        ) ?: net.minecraft.text.Text.literal("You were removed from $communityName by ${playerExecutor.name.string}")
+        ) ?: net.minecraft.network.chat.Component.literal("You were removed from $communityName by ${playerExecutor.name.string}")
         com.imyvm.community.application.interaction.common.notifyTargetPlayer(
-            playerExecutor.server, playerObject.id, targetNotification, community
+            playerExecutor.level().server, playerObject.id, targetNotification, community
         )
         
         community.member.remove(playerObject.id)
@@ -69,8 +69,8 @@ fun runRemoveMember(
             playerObject.name,
             playerExecutor.name.string,
             communityName
-        ) ?: net.minecraft.text.Text.literal("${playerObject.name} was removed from $communityName by ${playerExecutor.name.string}")
-        com.imyvm.community.application.interaction.common.notifyOfficials(community, playerExecutor.server, notification, playerExecutor)
+        ) ?: net.minecraft.network.chat.Component.literal("${playerObject.name} was removed from $communityName by ${playerExecutor.name.string}")
+        com.imyvm.community.application.interaction.common.notifyOfficials(community, playerExecutor.level().server, notification, playerExecutor)
         
         com.imyvm.community.infra.CommunityDatabase.save()
     }
@@ -78,7 +78,7 @@ fun runRemoveMember(
 
 fun runNotifyMember(
     community: Community,
-    playerExecutor: ServerPlayerEntity,
+    playerExecutor: ServerPlayer,
     playerObject: GameProfile
 ) {
     CommunityPermissionPolicy.executeWithPermission(
@@ -87,7 +87,7 @@ fun runNotifyMember(
     ) {
         val handler = NotificationMenuAnvil(
             playerExecutor,
-            initialName = Translator.tr("ui.admin.member.notify.to_edit")?.string ?: "(Edit your notification here)",
+            initialName = Translator.tr("ui.admin.member.notify.to_edit").string ?: "(Edit your notification here)",
             playerObject = playerObject,
             community = community
         )
@@ -97,7 +97,7 @@ fun runNotifyMember(
 
 fun runPromoteMember(
     community: Community,
-    playerExecutor: ServerPlayerEntity,
+    playerExecutor: ServerPlayer,
     playerObject: GameProfile,
     isPromote: Boolean = true
 ) {
@@ -110,7 +110,7 @@ fun runPromoteMember(
 
 private fun handleRolePromotion(
     community: Community,
-    playerExecutor: ServerPlayerEntity,
+    playerExecutor: ServerPlayer,
     playerObject: GameProfile
 ) {
     CommunityPermissionPolicy.executeWithPermission(
@@ -128,9 +128,9 @@ private fun handleRolePromotion(
                 "community.notification.target.promoted",
                 communityName,
                 playerExecutor.name.string
-            ) ?: net.minecraft.text.Text.literal("You were promoted to Admin in $communityName by ${playerExecutor.name.string}")
+            ) ?: net.minecraft.network.chat.Component.literal("You were promoted to Admin in $communityName by ${playerExecutor.name.string}")
             com.imyvm.community.application.interaction.common.notifyTargetPlayer(
-                playerExecutor.server, playerObject.id, targetNotification, community
+                playerExecutor.level().server, playerObject.id, targetNotification, community
             )
             
             trMenu(
@@ -144,8 +144,8 @@ private fun handleRolePromotion(
                 playerObject.name,
                 playerExecutor.name.string,
                 communityName
-            ) ?: net.minecraft.text.Text.literal("${playerObject.name} was promoted to Admin in $communityName by ${playerExecutor.name.string}")
-            com.imyvm.community.application.interaction.common.notifyOfficials(community, playerExecutor.server, notification, playerExecutor)
+            ) ?: net.minecraft.network.chat.Component.literal("${playerObject.name} was promoted to Admin in $communityName by ${playerExecutor.name.string}")
+            com.imyvm.community.application.interaction.common.notifyOfficials(community, playerExecutor.level().server, notification, playerExecutor)
             
             com.imyvm.community.infra.CommunityDatabase.save()
         }
@@ -154,7 +154,7 @@ private fun handleRolePromotion(
 
 private fun handleRoleDemotion(
     community: Community,
-    playerExecutor: ServerPlayerEntity,
+    playerExecutor: ServerPlayer,
     playerObject: GameProfile
 ) {
     CommunityPermissionPolicy.executeWithPermission(
@@ -172,9 +172,9 @@ private fun handleRoleDemotion(
                 "community.notification.target.demoted",
                 communityName,
                 playerExecutor.name.string
-            ) ?: net.minecraft.text.Text.literal("You were demoted to Member in $communityName by ${playerExecutor.name.string}")
+            ) ?: net.minecraft.network.chat.Component.literal("You were demoted to Member in $communityName by ${playerExecutor.name.string}")
             com.imyvm.community.application.interaction.common.notifyTargetPlayer(
-                playerExecutor.server, playerObject.id, targetNotification, community
+                playerExecutor.level().server, playerObject.id, targetNotification, community
             )
             
             trMenu(
@@ -188,8 +188,8 @@ private fun handleRoleDemotion(
                 playerObject.name,
                 playerExecutor.name.string,
                 communityName
-            ) ?: net.minecraft.text.Text.literal("${playerObject.name} was demoted to Member in $communityName by ${playerExecutor.name.string}")
-            com.imyvm.community.application.interaction.common.notifyOfficials(community, playerExecutor.server, notification, playerExecutor)
+            ) ?: net.minecraft.network.chat.Component.literal("${playerObject.name} was demoted to Member in $communityName by ${playerExecutor.name.string}")
+            com.imyvm.community.application.interaction.common.notifyOfficials(community, playerExecutor.level().server, notification, playerExecutor)
             
             com.imyvm.community.infra.CommunityDatabase.save()
         }
@@ -197,10 +197,10 @@ private fun handleRoleDemotion(
 }
 
 private fun runBackToMemberMenu(
-    playerExecutor: ServerPlayerEntity,
+    playerExecutor: ServerPlayer,
     community: Community,
     playerObject: GameProfile,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     CommunityMenuOpener.open(playerExecutor) { syncId ->
         CommunityMemberMenu(

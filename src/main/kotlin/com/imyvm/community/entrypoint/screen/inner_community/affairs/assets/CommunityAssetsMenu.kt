@@ -7,16 +7,16 @@ import com.imyvm.community.domain.model.Community
 import com.imyvm.community.entrypoint.screen.AbstractMenu
 import com.imyvm.community.entrypoint.screen.component.getLoreButton
 import com.imyvm.community.util.Translator
-import net.minecraft.item.ItemStack
-import net.minecraft.item.Items
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.Items
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.Component
 
 class CommunityAssetsMenu(
     syncId: Int,
-    val player: ServerPlayerEntity,
+    val player: ServerPlayer,
     val community: Community,
-    val runBack: ((ServerPlayerEntity) -> Unit)
+    val runBack: ((ServerPlayer) -> Unit)
 ) : AbstractMenu(
     syncId,
     menuTitle = Translator.tr("ui.community.assets.title"),
@@ -37,16 +37,16 @@ class CommunityAssetsMenu(
             slot = 13,
             itemStack = getLoreButton(
                 ItemStack(Items.GOLD_BLOCK),
-                listOf(Translator.tr("ui.community.assets.total.lore", assetsFormatted) ?: Text.of("§7$assetsFormatted"))
+                listOf(Translator.tr("ui.community.assets.total.lore", assetsFormatted) ?: Component.literal("§7$assetsFormatted"))
             ),
-            name = Translator.tr("ui.community.assets.total")?.string ?: "Total Assets"
+            name = Translator.tr("ui.community.assets.total").string ?: "Total Assets"
         ) {}
     }
 
     private fun addDonateButton() {
         addButton(
             slot = 20,
-            name = Translator.tr("ui.community.assets.donate")?.string ?: "Donate",
+            name = Translator.tr("ui.community.assets.donate").string ?: "Donate",
             item = Items.EMERALD
         ) { runOpenDonationMenu(player, community, runBack) }
     }
@@ -54,7 +54,7 @@ class CommunityAssetsMenu(
     private fun addDonorListButton() {
         addButton(
             slot = 24,
-            name = Translator.tr("ui.community.assets.donor_list")?.string ?: "Donor List",
+            name = Translator.tr("ui.community.assets.donor_list").string ?: "Donor List",
             item = Items.WRITABLE_BOOK
         ) { runOpenDonorListMenu(player, community, runBack) }
     }
@@ -62,7 +62,7 @@ class CommunityAssetsMenu(
     private fun addLedgerButton() {
         addButton(
             slot = 22,
-            name = Translator.tr("ui.treasury.ledger.button")?.string ?: "Treasury Ledger",
+            name = Translator.tr("ui.treasury.ledger.button").string ?: "Treasury Ledger",
             item = Items.BOOK
         ) { runOpenTreasuryLedgerMenu(player, community, runBack) }
     }

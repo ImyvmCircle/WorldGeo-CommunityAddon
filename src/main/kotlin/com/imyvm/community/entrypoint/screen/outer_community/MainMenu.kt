@@ -4,41 +4,41 @@ import com.imyvm.community.application.interaction.screen.outer_community.*
 import com.imyvm.community.entrypoint.screen.AbstractMenu
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.ImyvmWorldGeo
-import net.minecraft.item.Items
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.world.item.Items
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.Component
 
 class MainMenu(
     syncId: Int,
-    val playerExecutor: ServerPlayerEntity
+    val playerExecutor: ServerPlayer
 ) : AbstractMenu(
         syncId,
-        menuTitle = Translator.tr("ui.main.title") ?: Text.literal("Community Menu")
+        menuTitle = Translator.tr("ui.main.title") ?: Component.literal("Community Menu")
     ) {
 
     init {
         addGeneralButtons()
         addSelectionModeButtons()
-        if (playerExecutor.hasPermissionLevel(2)) { addServerOperatorButton() }
+        if (net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(playerExecutor.permissions())) { addServerOperatorButton() }
         addActionBarToggleButton()
     }
 
     private fun addGeneralButtons() {
         addButton(
             slot = 10,
-            name = Translator.tr("ui.main.button.list")?.string ?: "List",
+            name = Translator.tr("ui.main.button.list").string ?: "List",
             item = Items.WRITABLE_BOOK
         ) { runList(it) }
 
         addButton(
             slot = 13,
-            name = Translator.tr("ui.main.button.geo")?.string ?: "Territory",
+            name = Translator.tr("ui.main.button.geo").string ?: "Territory",
             item = Items.DIAMOND_PICKAXE
         ) { runGeoOperation(it) }
 
         addButton(
             slot = 16,
-            name = Translator.tr("ui.main.button.my")?.string ?: "My Village",
+            name = Translator.tr("ui.main.button.my").string ?: "My Village",
             item = Items.RED_BED
         ) { runMyCommunity(it) }
     }
@@ -49,13 +49,13 @@ class MainMenu(
 
         addButton(
             slot = 22,
-            name = Translator.tr("ui.create.button.selection_mode.close")?.string ?: "Close Selection Mode",
+            name = Translator.tr("ui.create.button.selection_mode.close").string ?: "Close Selection Mode",
             item = Items.COMMAND_BLOCK
         ) { runToggleSelectionMode(it) }
 
         addButton(
             slot = 31,
-            name = Translator.tr("ui.main.button.selection_mode.reset")?.string ?: "Reset Point Selection",
+            name = Translator.tr("ui.main.button.selection_mode.reset").string ?: "Reset Point Selection",
             item = Items.TNT
         ) { runResetSelection(it) }
     }
@@ -63,7 +63,7 @@ class MainMenu(
     private fun addServerOperatorButton() {
         addButton(
             slot = 19,
-            name = Translator.tr("ui.main.button.op")?.string ?: "OP",
+            name = Translator.tr("ui.main.button.op").string ?: "OP",
             item = Items.ANVIL
         ) {}
     }
@@ -73,9 +73,9 @@ class MainMenu(
         addButton(
             slot = 44,
             name = if (isRegionActionBarEnabled) {
-                Translator.tr("ui.main.button.action_bar.enable")?.string ?: "Action Bar : Enabled"
+                Translator.tr("ui.main.button.action_bar.enable").string ?: "Action Bar : Enabled"
             } else {
-                Translator.tr("ui.main.button.action_bar.disable")?.string ?: "Action Bar: Disabled"
+                Translator.tr("ui.main.button.action_bar.disable").string ?: "Action Bar: Disabled"
             },
             item = if (isRegionActionBarEnabled) Items.LIME_DYE else Items.GRAY_DYE
         ) { runToggleActionBar(playerExecutor)}

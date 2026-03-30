@@ -4,9 +4,9 @@ import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.community.CommunityStatus
 import com.imyvm.community.infra.CommunityConfig
 import com.imyvm.economy.EconomyMod
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 
-fun refundNotCreated(player: ServerPlayerEntity, community: Community) {
+fun refundNotCreated(player: ServerPlayer, community: Community) {
     val playerAccount = EconomyMod.data.getOrCreate(player)
     playerAccount.addMoney(community.creationCost)
 }

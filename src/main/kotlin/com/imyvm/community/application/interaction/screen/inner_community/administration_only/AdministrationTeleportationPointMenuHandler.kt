@@ -17,12 +17,12 @@ import com.imyvm.community.util.Translator
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.inter.api.PlayerInteractionApi
-import net.minecraft.item.Item
-import net.minecraft.item.ItemStack
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.ClickEvent
-import net.minecraft.text.HoverEvent
-import net.minecraft.text.Text
+import net.minecraft.world.item.Item
+import net.minecraft.world.item.ItemStack
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.ClickEvent
+import net.minecraft.network.chat.HoverEvent
+import net.minecraft.network.chat.Component
 
 fun getTeleportPointInformationItemStack(
     item: Item,
@@ -30,12 +30,12 @@ fun getTeleportPointInformationItemStack(
 ): ItemStack {
     val itemStack = ItemStack(item)
 
-    val loreLines = mutableListOf<Text>()
+    val loreLines = mutableListOf<Component>()
     val blockPos = PlayerInteractionApi.getTeleportPoint(scope)
     if (blockPos != null) {
-        loreLines.add(Text.of("x=" + blockPos.x))
-        loreLines.add(Text.of("y=" + blockPos.y))
-        loreLines.add(Text.of("z=" + blockPos.z))
+        loreLines.add(Component.literal("x=" + blockPos.x))
+        loreLines.add(Component.literal("y=" + blockPos.y))
+        loreLines.add(Component.literal("z=" + blockPos.z))
     } else {
         loreLines.add(Translator.tr("ui.admin.teleport_point.inquiry.lore.no_point")!!)
     }
@@ -43,14 +43,14 @@ fun getTeleportPointInformationItemStack(
     return getLoreButton(itemStack, loreLines)
 }
 
-fun runInquiryTeleportPoint(playerExecutor: ServerPlayerEntity, community: Community, scope: GeoScope) {
-    playerExecutor.closeHandledScreen()
+fun runInquiryTeleportPoint(playerExecutor: ServerPlayer, community: Community, scope: GeoScope) {
+    playerExecutor.closeContainer()
 
     val region = community.getRegion()
     if (region != null) {
         val blockPos = PlayerInteractionApi.getTeleportPoint(scope)
         if (blockPos != null) {
-            playerExecutor.sendMessage(
+            playerExecutor.sendSystemMessage(
                 Translator.tr(
                     "ui.admin.teleport_point.inquiry.success.result",
                     blockPos.x,
@@ -59,27 +59,27 @@ fun runInquiryTeleportPoint(playerExecutor: ServerPlayerEntity, community: Commu
                 )
             )
         } else {
-            playerExecutor.sendMessage(Translator.tr("ui.admin.teleport_point.inquiry.success.no_point"))
+            playerExecutor.sendSystemMessage(Translator.tr("ui.admin.teleport_point.inquiry.success.no_point"))
         }
         val regionId = community.regionNumberId
         val scopeNameQuoted = if (!scope.scopeName.all { it.isLetterOrDigit() && it.code < 128 }) "\"${scope.scopeName}\"" else scope.scopeName
         if (regionId != null) {
-            playerExecutor.sendMessage(
-                Translator.tr("ui.button.return_to_menu")?.copy()?.styled { style ->
-                    style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/community open_teleport_admin $regionId $scopeNameQuoted"))
+            playerExecutor.sendSystemMessage(
+                Translator.tr("ui.button.return_to_menu").copy().withStyle { style ->
+                    style.withClickEvent(ClickEvent.RunCommand( "/community open_teleport_admin $regionId $scopeNameQuoted"))
                 }
             )
         }
     } else {
-        playerExecutor.sendMessage(Translator.tr("community.not_found.region"))
+        playerExecutor.sendSystemMessage(Translator.tr("community.not_found.region"))
     }
 }
 
 fun runToggleTeleportPointAccessibility(
-    playerExecutor: ServerPlayerEntity,
+    playerExecutor: ServerPlayer,
     community: Community,
     scope: GeoScope,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     val permission = com.imyvm.community.domain.policy.permission.AdminPrivilege.MANAGE_TELEPORT_POINTS
     com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.executeWithPermission(
@@ -95,10 +95,10 @@ fun runToggleTeleportPointAccessibility(
             } else {
                 "ui.admin.teleport_point.state.private"
             }
-            playerExecutor.sendMessage(
+            playerExecutor.sendSystemMessage(
                 Translator.tr(
                     "ui.admin.teleport_point.toggle.result",
-                    Translator.tr(stateKey)?.string ?: if (isPublic) "Public" else "Private"
+                    Translator.tr(stateKey).string ?: if (isPublic) "Public" else "Private"
                 )
             )
             CommunityMenuOpener.open(playerExecutor) { syncId ->
@@ -111,37 +111,37 @@ fun runToggleTeleportPointAccessibility(
                 )
             }
         } else {
-            playerExecutor.closeHandledScreen()
-            playerExecutor.sendMessage(Translator.tr("community.not_found.region"))
+            playerExecutor.closeContainer()
+            playerExecutor.sendSystemMessage(Translator.tr("community.not_found.region"))
         }
     }
 }
 
-fun runSettingTeleportPoint(playerExecutor: ServerPlayerEntity, community: Community, scope: GeoScope) {
+fun runSettingTeleportPoint(playerExecutor: ServerPlayer, community: Community, scope: GeoScope) {
     val permission = com.imyvm.community.domain.policy.permission.AdminPrivilege.MANAGE_TELEPORT_POINTS
     com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.executeWithPermission(
         playerExecutor,
         { com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.canExecuteAdministration(playerExecutor, community, permission) }
     ) {
-        playerExecutor.closeHandledScreen()
+        playerExecutor.closeContainer()
 
         val region = community.getRegion()
         if (region == null) {
-            playerExecutor.sendMessage(Translator.tr("community.not_found.region"))
+            playerExecutor.sendSystemMessage(Translator.tr("community.not_found.region"))
             return@executeWithPermission
         }
 
         val regionId = community.regionNumberId ?: return@executeWithPermission
         val existingPending = WorldGeoCommunityAddon.pendingOperations[regionId]
         if (existingPending != null) {
-            playerExecutor.sendMessage(Translator.tr("community.modification.confirmation.pending"))
+            playerExecutor.sendSystemMessage(Translator.tr("community.modification.confirmation.pending"))
             return@executeWithPermission
         }
 
         val (cost, reasonKey) = calculateTeleportPointSettingCost(region, scope)
         val currentAssets = community.getTotalAssets()
         if (cost > 0 && currentAssets < cost) {
-            playerExecutor.sendMessage(
+            playerExecutor.sendSystemMessage(
                 Translator.tr(
                     "community.modification.error.insufficient_assets",
                     String.format("%.2f", cost / 100.0),
@@ -165,35 +165,35 @@ fun runSettingTeleportPoint(playerExecutor: ServerPlayerEntity, community: Commu
             )
         )
 
-        playerExecutor.sendMessage(
+        playerExecutor.sendSystemMessage(
             Translator.tr(
                 "community.teleport_point.confirmation.summary",
                 scope.scopeName,
                 String.format("%.2f", cost / 100.0),
-                Translator.tr(reasonKey)?.string ?: reasonKey
+                Translator.tr(reasonKey).string ?: reasonKey
             )
         )
         sendInteractiveTeleportPointConfirmation(playerExecutor, regionId, scope.scopeName)
     }
 }
 
-fun onConfirmTeleportPointSetting(playerExecutor: ServerPlayerEntity, regionNumberId: Int, scopeName: String): Int {
+fun onConfirmTeleportPointSetting(playerExecutor: ServerPlayer, regionNumberId: Int, scopeName: String): Int {
     val pendingOperation = WorldGeoCommunityAddon.pendingOperations[regionNumberId]
     val request = pendingOperation?.teleportPointData
     if (pendingOperation == null ||
         pendingOperation.type != PendingOperationType.TELEPORT_POINT_CONFIRMATION ||
         request == null
     ) {
-        playerExecutor.sendMessage(Translator.tr("community.teleport_point.confirmation.not_found"))
+        playerExecutor.sendSystemMessage(Translator.tr("community.teleport_point.confirmation.not_found"))
         return 0
     }
     if (request.executorUUID != playerExecutor.uuid || !request.scopeName.equals(scopeName, ignoreCase = true)) {
-        playerExecutor.sendMessage(Translator.tr("community.teleport_point.confirmation.not_yours"))
+        playerExecutor.sendSystemMessage(Translator.tr("community.teleport_point.confirmation.not_yours"))
         return 0
     }
     if (System.currentTimeMillis() > pendingOperation.expireAt) {
         WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
-        playerExecutor.sendMessage(Translator.tr("community.teleport_point.confirmation.expired"))
+        playerExecutor.sendSystemMessage(Translator.tr("community.teleport_point.confirmation.expired"))
         return 0
     }
 
@@ -202,13 +202,13 @@ fun onConfirmTeleportPointSetting(playerExecutor: ServerPlayerEntity, regionNumb
     val scope = region?.geometryScope?.firstOrNull { it.scopeName.equals(request.scopeName, ignoreCase = true) }
     if (community == null || region == null || scope == null) {
         WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
-        playerExecutor.sendMessage(Translator.tr("community.not_found.region"))
+        playerExecutor.sendSystemMessage(Translator.tr("community.not_found.region"))
         return 0
     }
 
     val currentAssets = community.getTotalAssets()
     if (request.cost > 0 && currentAssets < request.cost) {
-        playerExecutor.sendMessage(
+        playerExecutor.sendSystemMessage(
             Translator.tr(
                 "community.modification.error.insufficient_assets",
                 String.format("%.2f", request.cost / 100.0),
@@ -230,7 +230,7 @@ fun onConfirmTeleportPointSetting(playerExecutor: ServerPlayerEntity, regionNumb
     val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
     val costText = String.format("%.2f", request.cost / 100.0)
     val newPos = PlayerInteractionApi.getTeleportPoint(scope)
-    playerExecutor.sendMessage(Translator.tr("community.teleport_point.confirmation.completed", scope.scopeName, costText))
+    playerExecutor.sendSystemMessage(Translator.tr("community.teleport_point.confirmation.completed", scope.scopeName, costText))
 
     val notification = Translator.tr(
         "community.notification.teleport_point_set",
@@ -241,39 +241,39 @@ fun onConfirmTeleportPointSetting(playerExecutor: ServerPlayerEntity, regionNumb
         playerExecutor.name.string,
         communityName,
         costText,
-        Translator.tr(request.reasonKey)?.string ?: request.reasonKey
-    ) ?: Text.literal("Teleport point set")
-    notifyFormalMembers(community, playerExecutor.server, notification)
+        Translator.tr(request.reasonKey).string ?: request.reasonKey
+    ) ?: Component.literal("Teleport point set")
+    notifyFormalMembers(community, playerExecutor.level().server, notification)
     return 1
 }
 
-fun onCancelTeleportPointSetting(playerExecutor: ServerPlayerEntity, regionNumberId: Int, scopeName: String): Int {
+fun onCancelTeleportPointSetting(playerExecutor: ServerPlayer, regionNumberId: Int, scopeName: String): Int {
     val pendingOperation = WorldGeoCommunityAddon.pendingOperations[regionNumberId]
     val request = pendingOperation?.teleportPointData
     if (pendingOperation == null ||
         pendingOperation.type != PendingOperationType.TELEPORT_POINT_CONFIRMATION ||
         request == null
     ) {
-        playerExecutor.sendMessage(Translator.tr("community.teleport_point.confirmation.not_found"))
+        playerExecutor.sendSystemMessage(Translator.tr("community.teleport_point.confirmation.not_found"))
         return 0
     }
     if (request.executorUUID != playerExecutor.uuid || !request.scopeName.equals(scopeName, ignoreCase = true)) {
-        playerExecutor.sendMessage(Translator.tr("community.teleport_point.confirmation.not_yours"))
+        playerExecutor.sendSystemMessage(Translator.tr("community.teleport_point.confirmation.not_yours"))
         return 0
     }
 
     WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
-    playerExecutor.sendMessage(Translator.tr("community.teleport_point.confirmation.cancelled", request.scopeName))
+    playerExecutor.sendSystemMessage(Translator.tr("community.teleport_point.confirmation.cancelled", request.scopeName))
     return 1
 }
 
-fun runResetTeleportPoint(playerExecutor: ServerPlayerEntity, community: Community, scope: GeoScope) {
+fun runResetTeleportPoint(playerExecutor: ServerPlayer, community: Community, scope: GeoScope) {
     val permission = com.imyvm.community.domain.policy.permission.AdminPrivilege.MANAGE_TELEPORT_POINTS
     com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.executeWithPermission(
         playerExecutor,
         { com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.canExecuteAdministration(playerExecutor, community, permission) }
     ) {
-        playerExecutor.closeHandledScreen()
+        playerExecutor.closeContainer()
 
         val region = community.getRegion()
         if (region != null) {
@@ -285,18 +285,18 @@ fun runResetTeleportPoint(playerExecutor: ServerPlayerEntity, community: Communi
                 scope.scopeName,
                 playerExecutor.name.string,
                 communityName
-            ) ?: net.minecraft.text.Text.literal("Teleport point for scope ${scope.scopeName} was reset in $communityName by ${playerExecutor.name.string}")
-            com.imyvm.community.application.interaction.common.notifyOfficials(community, playerExecutor.server, notification, playerExecutor)
+            ) ?: net.minecraft.network.chat.Component.literal("Teleport point for scope ${scope.scopeName} was reset in $communityName by ${playerExecutor.name.string}")
+            com.imyvm.community.application.interaction.common.notifyOfficials(community, playerExecutor.level().server, notification, playerExecutor)
 
             com.imyvm.community.infra.CommunityDatabase.save()
         } else {
-            playerExecutor.sendMessage(Translator.tr("community.not_found.region"))
+            playerExecutor.sendSystemMessage(Translator.tr("community.not_found.region"))
         }
     }
 }
 
-fun runTeleportToPoint(playerExecutor: ServerPlayerEntity, community: Community, scope: GeoScope) {
-    playerExecutor.closeHandledScreen()
+fun runTeleportToPoint(playerExecutor: ServerPlayer, community: Community, scope: GeoScope) {
+    playerExecutor.closeContainer()
     com.imyvm.community.application.interaction.screen.inner_community.startCommunityTeleportExecution(
         player = playerExecutor,
         community = community,
@@ -320,40 +320,40 @@ private fun calculateTeleportPointSettingCost(region: Region, scope: GeoScope): 
     return PricingConfig.TELEPORT_POINT_SECOND_POINT_BASE_COST.value * multiplier to "community.teleport_point.cost_reason.new_additional"
 }
 
-private fun sendInteractiveTeleportPointConfirmation(player: ServerPlayerEntity, regionNumberId: Int, scopeName: String) {
-    val confirmText = Translator.tr("community.teleport_point.confirmation.confirm_button") ?: Text.literal("§a§l[CONFIRM]§r")
-    val cancelText = Translator.tr("community.teleport_point.confirmation.cancel_button") ?: Text.literal("§c§l[CANCEL]§r")
+private fun sendInteractiveTeleportPointConfirmation(player: ServerPlayer, regionNumberId: Int, scopeName: String) {
+    val confirmText = Translator.tr("community.teleport_point.confirmation.confirm_button") ?: Component.literal("§a§l[CONFIRM]§r")
+    val cancelText = Translator.tr("community.teleport_point.confirmation.cancel_button") ?: Component.literal("§c§l[CANCEL]§r")
     val quotedScopeName = if (!scopeName.all { it.isLetterOrDigit() && it.code < 128 }) "\"$scopeName\"" else scopeName
 
-    val confirmButton = confirmText.copy().styled { style ->
-        style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/_commun confirm_teleport_point_set $regionNumberId $quotedScopeName"))
-            .withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, Translator.tr("community.teleport_point.confirmation.confirm_hover")))
+    val confirmButton = confirmText.copy().withStyle { style ->
+        style.withClickEvent(ClickEvent.RunCommand( "/_commun confirm_teleport_point_set $regionNumberId $quotedScopeName"))
+            .withHoverEvent(HoverEvent.ShowText( Translator.tr("community.teleport_point.confirmation.confirm_hover")))
     }
 
-    val cancelButton = cancelText.copy().styled { style ->
-        style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/_commun cancel_teleport_point_set $regionNumberId $quotedScopeName"))
-            .withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, Translator.tr("community.teleport_point.confirmation.cancel_hover")))
+    val cancelButton = cancelText.copy().withStyle { style ->
+        style.withClickEvent(ClickEvent.RunCommand( "/_commun cancel_teleport_point_set $regionNumberId $quotedScopeName"))
+            .withHoverEvent(HoverEvent.ShowText( Translator.tr("community.teleport_point.confirmation.cancel_hover")))
     }
 
-    val prompt = (Translator.tr("community.teleport_point.confirmation.prompt") ?: Text.literal("§e§l[ACTION REQUIRED]§r"))
+    val prompt = (Translator.tr("community.teleport_point.confirmation.prompt") ?: Component.literal("§e§l[ACTION REQUIRED]§r"))
         .copy()
-        .append(Text.literal(" "))
+        .append(Component.literal(" "))
         .append(confirmButton)
-        .append(Text.literal(" "))
+        .append(Component.literal(" "))
         .append(cancelButton)
-    player.sendMessage(prompt)
+    player.sendSystemMessage(prompt)
 }
 
 private fun notifyFormalMembers(
     community: Community,
     server: net.minecraft.server.MinecraftServer,
-    message: Text
+    message: Component
 ) {
     community.member.forEach { (memberUUID, memberAccount) ->
         if (memberAccount.basicRoleType == MemberRoleType.APPLICANT || memberAccount.basicRoleType == MemberRoleType.REFUSED) {
             return@forEach
         }
-        server.playerManager.getPlayer(memberUUID)?.sendMessage(message)
+        server.playerList.getPlayer(memberUUID)?.sendSystemMessage(message)
         memberAccount.mail.add(message)
     }
 }

@@ -8,7 +8,7 @@ import com.imyvm.community.domain.model.community.*
 import com.imyvm.community.domain.policy.permission.AdminPrivilege
 import com.imyvm.community.domain.policy.permission.AdminPrivileges
 import net.fabricmc.loader.api.FabricLoader
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.IOException
@@ -188,10 +188,10 @@ object CommunityDatabase {
             val role = MemberRoleType.fromValue(stream.readInt())
 
             val mailSize = stream.readInt()
-            val communityMail = ArrayList<Text>(mailSize)
+            val communityMail = ArrayList<Component>(mailSize)
             for (k in 0 until mailSize) {
                 val mailString = stream.readUTF()
-                communityMail.add(Text.of(mailString))
+                communityMail.add(Component.literal(mailString))
             }
 
             val turnoverList = readTurnoverList(stream)
@@ -327,7 +327,7 @@ object CommunityDatabase {
             for (i in 0 until size) {
                 val id = UUID.fromString(stream.readUTF())
                 val type = MessageType.entries.find { it.value == stream.readInt() } ?: MessageType.CHAT
-                val content = Text.of(stream.readUTF())
+                val content = Component.literal(stream.readUTF())
                 val senderUUID = UUID.fromString(stream.readUTF())
                 val timestamp = stream.readLong()
                 val isDeleted = stream.readBoolean()

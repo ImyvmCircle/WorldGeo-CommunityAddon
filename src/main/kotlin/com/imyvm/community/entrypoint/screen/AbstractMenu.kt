@@ -3,28 +3,28 @@ package com.imyvm.community.entrypoint.screen
 import com.imyvm.community.entrypoint.screen.component.MenuButton
 import com.imyvm.community.entrypoint.screen.component.ReadOnlySlot
 import com.imyvm.community.util.Translator
-import net.minecraft.component.DataComponentTypes
-import net.minecraft.entity.player.PlayerEntity
-import net.minecraft.inventory.SimpleInventory
-import net.minecraft.item.Item
-import net.minecraft.item.ItemStack
-import net.minecraft.item.Items
-import net.minecraft.screen.ScreenHandler
-import net.minecraft.screen.ScreenHandlerType
-import net.minecraft.screen.slot.SlotActionType
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.core.component.DataComponents
+import net.minecraft.world.entity.player.Player
+import net.minecraft.world.SimpleContainer
+import net.minecraft.world.item.Item
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.Items
+import net.minecraft.world.inventory.AbstractContainerMenu
+import net.minecraft.world.inventory.MenuType
+import net.minecraft.world.inventory.ContainerInput
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.Component
 
 abstract class AbstractMenu(
     syncId: Int,
     rows: Int = 6,
     private val defaultBackground: Item = Items.GRAY_STAINED_GLASS_PANE,
     private val defaultBackgroundName: String = " ",
-    val menuTitle: Text? = Text.literal("Menu"),
-    private val runBack: ((ServerPlayerEntity) -> Unit)? = null
-) : ScreenHandler(ScreenHandlerType.GENERIC_9X6, syncId) {
+    val menuTitle: Component? = Component.literal("Menu"),
+    private val runBack: ((ServerPlayer) -> Unit)? = null
+) : AbstractContainerMenu(MenuType.GENERIC_9x6, syncId) {
 
-    private val inventory = SimpleInventory(rows * 9)
+    private val inventory = SimpleContainer(rows * 9)
     private val buttons = mutableListOf<MenuButton>()
 
     init {
@@ -35,29 +35,29 @@ abstract class AbstractMenu(
     }
 
     private fun fillBackground() {
-        for (i in 0 until inventory.size()) {
-            inventory.setStack(i, createItem(Text.literal(defaultBackgroundName), defaultBackground))
+        for (i in 0 until inventory.getContainerSize()) {
+            inventory.setItem(i, createItem(Component.literal(defaultBackgroundName), defaultBackground))
         }
     }
 
     private fun setupSlots() {
-        for (i in 0 until inventory.size()) {
+        for (i in 0 until inventory.getContainerSize()) {
             addSlot(ReadOnlySlot(inventory, i, 0, 0))
         }
     }
 
-    protected fun addButton(slot: Int, name: String, item: Item, onClick: (ServerPlayerEntity) -> Unit) {
+    protected fun addButton(slot: Int, name: String, item: Item, onClick: (ServerPlayer) -> Unit) {
         buttons.add(MenuButton(slot, item, name, onClick))
-        inventory.setStack(slot, createItem(Text.literal(name), item))
+        inventory.setItem(slot, createItem(Component.literal(name), item))
     }
 
-    protected fun addButton(slot: Int, itemStack: ItemStack, name: String? = null, onClick: (ServerPlayerEntity) -> Unit) {
-        val finalName = name ?: itemStack.name.string
+    protected fun addButton(slot: Int, itemStack: ItemStack, name: String? = null, onClick: (ServerPlayer) -> Unit) {
+        val finalName = name ?: itemStack.hoverName.string
         if (name != null) {
-            itemStack.set(DataComponentTypes.CUSTOM_NAME, Text.literal(name))
+            itemStack.set(DataComponents.CUSTOM_NAME, Component.literal(name))
         }
         buttons.add(MenuButton(slot, itemStack.item, finalName, onClick))
-        inventory.setStack(slot, itemStack)
+        inventory.setItem(slot, itemStack)
     }
 
    fun incrementSlotIndex(slot: Int): Int {
@@ -68,16 +68,16 @@ abstract class AbstractMenu(
         return newSlot
     }
 
-    private fun createItem(name: Text, item: Item): ItemStack {
+    private fun createItem(name: Component, item: Item): ItemStack {
         val stack = ItemStack(item)
-        stack.set(DataComponentTypes.CUSTOM_NAME, name)
+        stack.set(DataComponents.CUSTOM_NAME, name)
         return stack
     }
 
     private fun addDefaultCloseButton() {
         addButton(
             slot = 53,
-            name = Translator.tr("ui.general.button.close")?.string ?: "Close",
+            name = Translator.tr("ui.general.button.close").string ?: "Close",
             item = Items.BARRIER
         ) { playerExecutor -> runClose(playerExecutor) }
     }
@@ -86,27 +86,27 @@ abstract class AbstractMenu(
         runBack?.let { backLogic ->
             addButton(
                 slot = 44,
-                name = Translator.tr("ui.general.button.back")?.string ?: "Back",
+                name = Translator.tr("ui.general.button.back").string ?: "Back",
                 item = Items.ARROW
             ) { playerExecutor -> backLogic(playerExecutor) }
         }
     }
 
-    private fun runClose(playerExecutor: ServerPlayerEntity) {
-        playerExecutor.closeHandledScreen()
-        playerExecutor.sendMessage(Translator.tr("ui.general.button.close.feedback"))
+    private fun runClose(playerExecutor: ServerPlayer) {
+        playerExecutor.closeContainer()
+        playerExecutor.sendSystemMessage(Translator.tr("ui.general.button.close.feedback"))
     }
 
-    override fun onSlotClick(slotIndex: Int, button: Int, actionType: SlotActionType, playerExecutor: PlayerEntity) {
-        super.onSlotClick(slotIndex, button, actionType, playerExecutor)
-        if (slotIndex < 0 || slotIndex >= inventory.size()) return
+    override fun clicked(slotIndex: Int, button: Int, actionType: ContainerInput, playerExecutor: Player) {
+        super.clicked(slotIndex, button, actionType, playerExecutor)
+        if (slotIndex < 0 || slotIndex >= inventory.getContainerSize()) return
 
-        (playerExecutor as? ServerPlayerEntity)?.let { p ->
-            val clickedName = inventory.getStack(slotIndex).get(DataComponentTypes.CUSTOM_NAME)?.string
+        (playerExecutor as? ServerPlayer)?.let { p ->
+            val clickedName = inventory.getItem(slotIndex).get(DataComponents.CUSTOM_NAME)?.string
             buttons.find { it.slot == slotIndex && it.name == clickedName }?.onClick?.invoke(p)
         }
     }
 
-    override fun canUse(playerExecutor: PlayerEntity) = true
-    override fun quickMove(playerExecutor: PlayerEntity, slotIndex: Int): ItemStack = ItemStack.EMPTY
+    override fun stillValid(playerExecutor: Player) = true
+    override fun quickMoveStack(playerExecutor: Player, slotIndex: Int): ItemStack = ItemStack.EMPTY
 }

@@ -8,18 +8,18 @@ import com.imyvm.community.domain.model.Community
 import com.imyvm.community.entrypoint.screen.AbstractListMenu
 import com.imyvm.community.entrypoint.screen.component.createPlayerHeadItemStack
 import com.imyvm.community.util.Translator
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.Component
 
 class OnlinePlayerListMenu private constructor(
     syncId: Int,
     val community: Community,
-    val playerExecutor: ServerPlayerEntity,
+    val playerExecutor: ServerPlayer,
     page: Int = 0,
-    val runBack: ((ServerPlayerEntity) -> Unit)
+    val runBack: ((ServerPlayer) -> Unit)
 ) : AbstractListMenu(
     syncId = syncId,
-    menuTitle = Translator.tr("ui.community.invite.online_players") ?: Text.literal("Invite Player"),
+    menuTitle = Translator.tr("ui.community.invite.online_players") ?: Component.literal("Invite Player"),
     page = page,
     runBack = runBack
 ) {
@@ -30,9 +30,9 @@ class OnlinePlayerListMenu private constructor(
         fun create(
             syncId: Int,
             community: Community,
-            playerExecutor: ServerPlayerEntity,
+            playerExecutor: ServerPlayer,
             page: Int = 0,
-            runBack: ((ServerPlayerEntity) -> Unit)
+            runBack: ((ServerPlayer) -> Unit)
         ): OnlinePlayerListMenu? {
             if (!validateInvitationSender(playerExecutor, community)) {
                 return null
@@ -53,20 +53,20 @@ class OnlinePlayerListMenu private constructor(
                 if (validateInvitationTarget(playerExecutor, player, community)) {
                     sendInvitation(playerExecutor, player, community)
                 }
-                playerExecutor.closeHandledScreen()
+                playerExecutor.closeContainer()
             }
         }
 
         handlePageWithSize(onlinePlayers.size, playersPerPage)
     }
 
-    private fun getInvitablePlayers(): List<ServerPlayerEntity> {
-        return playerExecutor.server.playerManager.playerList
+    private fun getInvitablePlayers(): List<ServerPlayer> {
+        return playerExecutor.level().server.playerList.players
             .filter { it.uuid != playerExecutor.uuid }
             .filter { !community.member.containsKey(it.uuid) }
     }
 
-    override fun openNewPage(player: ServerPlayerEntity, newPage: Int) {
+    override fun openNewPage(player: ServerPlayer, newPage: Int) {
         CommunityMenuOpener.open(player) { syncId ->
             create(syncId, community, player, newPage, runBack)!!
         }

@@ -4,16 +4,16 @@ import com.imyvm.community.application.interaction.screen.runConfirmDispatcher
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.entrypoint.screen.component.ConfirmTaskType
 import com.imyvm.community.util.Translator
-import net.minecraft.item.Items
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.world.item.Items
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.Component
 
 class ConfirmMenu(
     syncId: Int,
-    val playerExecutor: ServerPlayerEntity,
+    val playerExecutor: ServerPlayer,
     val confirmTaskType: ConfirmTaskType,
     private val cautions: List<String>,
-    val runBack: (ServerPlayerEntity) -> Unit,
+    val runBack: (ServerPlayer) -> Unit,
     val communityType: String? = null,
     val communityName: String? = null,
     val shapeName: String? = null,
@@ -22,7 +22,7 @@ class ConfirmMenu(
     syncId = syncId,
     menuTitle = getConfirmMenuTitle(
         cautions.firstOrNull()
-        ?: Translator.tr("ui.confirm.default")?.string ?: "<Error When Getting Target Operation>"),
+        ?: Translator.tr("ui.confirm.default").string ?: "<Error When Getting Target Operation>"),
     runBack = runBack
 ) {
 
@@ -45,7 +45,7 @@ class ConfirmMenu(
     private fun addConfirmButton() {
         addButton(
             slot = 35,
-            name = Translator.tr("ui.confirm.button.confirm")?.string ?: "Confirm",
+            name = Translator.tr("ui.confirm.button.confirm").string ?: "Confirm",
             item = Items.GREEN_WOOL
         ) {
             runConfirmDispatcher(
@@ -60,9 +60,9 @@ class ConfirmMenu(
     }
 
     companion object {
-        private fun getConfirmMenuTitle(cautionTitle: String): Text {
+        private fun getConfirmMenuTitle(cautionTitle: String): Component {
             return Translator.tr("ui.confirm.title", cautionTitle)
-                ?: Text.of("Confirm: $cautionTitle")
+                ?: Component.literal("Confirm: $cautionTitle")
         }
     }
 }

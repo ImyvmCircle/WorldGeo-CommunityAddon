@@ -7,16 +7,16 @@ import com.imyvm.community.entrypoint.screen.component.createPlayerHeadItemStack
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.inter.api.UtilApi
 import com.mojang.authlib.GameProfile
-import net.minecraft.item.Items
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.world.item.Items
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.Component
 
 class AdministrationAuditListMenu(
     syncId: Int,
     private val community: Community,
-    private val playerExecutor: ServerPlayerEntity,
+    private val playerExecutor: ServerPlayer,
     page: Int,
-    private val runBackCommunityOperationMenu: ((ServerPlayerEntity) -> Unit)
+    private val runBackCommunityOperationMenu: ((ServerPlayer) -> Unit)
 ): AbstractListMenu(
     syncId,
     menuTitle = generateMenuTitle(community),
@@ -32,14 +32,14 @@ class AdministrationAuditListMenu(
         if (applicants.isEmpty()) {
             addButton(
                 slot = 10,
-                name = Translator.tr("ui.admin.audit_list.no_requests")?.string ?: "No Audit Requests",
+                name = Translator.tr("ui.admin.audit_list.no_requests").string ?: "No Audit Requests",
                 item = Items.DARK_OAK_SIGN
             ) {}
         } else {
             renderList(applicants, playersPerPage, startSlot) { applicant, slot, _ ->
                 val uuid = applicant.key
-                val name = UtilApi.getPlayerName(playerExecutor.server, uuid)
-                val objectProfile = UtilApi.getPlayerProfile(playerExecutor.server, uuid)
+                val name = UtilApi.getPlayerName(playerExecutor.level().server, uuid)
+                val objectProfile = UtilApi.getPlayerProfile(playerExecutor.level().server, uuid)
                 
                 if (objectProfile != null) {
                     addButton(
@@ -54,7 +54,7 @@ class AdministrationAuditListMenu(
         handlePageWithSize(applicants.size, playersPerPage)
     }
 
-    override fun openNewPage(player: ServerPlayerEntity, newPage: Int) {
+    override fun openNewPage(player: ServerPlayer, newPage: Int) {
         CommunityMenuOpener.open(player) { syncId ->
             AdministrationAuditListMenu(
                 syncId,
@@ -88,7 +88,7 @@ class AdministrationAuditListMenu(
     }
 
     companion object {
-        fun generateMenuTitle(community: Community): Text =
-            Text.of(community.generateCommunityMark() + "ui.admin.audit_list.title")
+        fun generateMenuTitle(community: Community): Component =
+            Component.literal(community.generateCommunityMark() + "ui.admin.audit_list.title")
     }
 }

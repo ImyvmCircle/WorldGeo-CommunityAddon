@@ -13,18 +13,18 @@ import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.domain.component.RuleKey
 import com.mojang.authlib.GameProfile
-import net.minecraft.item.Items
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.world.item.Items
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.Component
 
 class TargetSettingMenu(
     syncId: Int,
-    val playerExecutor: ServerPlayerEntity,
+    val playerExecutor: ServerPlayer,
     val community: Community,
     val scope: GeoScope? = null,
     private val playerObject: GameProfile? = null,
     private val page: Int = 0,
-    val runBack: (ServerPlayerEntity) -> Unit
+    val runBack: (ServerPlayer) -> Unit
 ) : AbstractMenu(
     syncId = syncId,
     menuTitle = generateRegionSettingMenuTitle(
@@ -40,14 +40,14 @@ class TargetSettingMenu(
         if (page > 0) {
             addButton(
                 slot = 0,
-                name = Translator.tr("ui.general.list.prev")?.string ?: "Previous",
+                name = Translator.tr("ui.general.list.prev").string ?: "Previous",
                 item = Items.ARROW
             ) { openNewPage(it, page - 1) }
         }
         if (isGlobal && page < 1) {
             addButton(
                 slot = 8,
-                name = Translator.tr("ui.general.list.next")?.string ?: "Next",
+                name = Translator.tr("ui.general.list.next").string ?: "Next",
                 item = Items.ARROW
             ) { openNewPage(it, page + 1) }
         }
@@ -61,7 +61,7 @@ class TargetSettingMenu(
         }
     }
 
-    private fun openNewPage(player: ServerPlayerEntity, newPage: Int) {
+    private fun openNewPage(player: ServerPlayer, newPage: Int) {
         CommunityMenuOpener.open(player) { syncId ->
             TargetSettingMenu(syncId, playerExecutor, community, scope, playerObject, newPage, runBack)
         }
@@ -70,7 +70,7 @@ class TargetSettingMenu(
     private fun addPermissionSettingButtons() {
         addButton(
             slot = 10,
-            name = Translator.tr("ui.admin.region.setting.permission.header")?.string ?: "Permissions",
+            name = Translator.tr("ui.admin.region.setting.permission.header").string ?: "Permissions",
             item = Items.SHIELD
         ) {}
 
@@ -105,7 +105,7 @@ class TargetSettingMenu(
             val nameKey = "ui.admin.region.setting.permission.${key.toString().lowercase()}"
             addButton(
                 slot = slot,
-                name = Translator.tr(nameKey)?.string ?: key.toString().lowercase().replace("_", " "),
+                name = Translator.tr(nameKey).string ?: key.toString().lowercase().replace("_", " "),
                 itemStack = getPermissionButtonItemStack(item, community, scope, playerObject, key)
             ) { runTogglingPermissionSetting(playerExecutor, community, scope, playerObject, key, runBack) }
         }
@@ -114,7 +114,7 @@ class TargetSettingMenu(
     private fun addRuleSettingButtons() {
         addButton(
             slot = 10,
-            name = Translator.tr("ui.admin.region.setting.rule.header")?.string ?: "Rules",
+            name = Translator.tr("ui.admin.region.setting.rule.header").string ?: "Rules",
             item = Items.WRITABLE_BOOK
         ) {}
 
@@ -136,7 +136,7 @@ class TargetSettingMenu(
             val nameKey = "ui.admin.region.setting.rule.${key.toString().lowercase()}"
             addButton(
                 slot = slot,
-                name = Translator.tr(nameKey)?.string ?: key.toString().lowercase().replace("_", " "),
+                name = Translator.tr(nameKey).string ?: key.toString().lowercase().replace("_", " "),
                 itemStack = getRuleButtonItemStack(item, community, scope, key)
             ) { runTogglingRuleSetting(playerExecutor, community, scope, key, runBack) }
         }
@@ -145,7 +145,7 @@ class TargetSettingMenu(
     private fun addEffectSettingButtons() {
         addButton(
             slot = 28,
-            name = Translator.tr("ui.admin.region.setting.effect.header")?.string ?: "Effects",
+            name = Translator.tr("ui.admin.region.setting.effect.header").string ?: "Effects",
             item = Items.BEACON
         ) {}
 
@@ -167,11 +167,11 @@ class TargetSettingMenu(
             val nameKey = "ui.admin.region.setting.effect.${key.toString().lowercase()}"
             addButton(
                 slot = slot,
-                name = Translator.tr(nameKey)?.string ?: key.toString().lowercase().replace("_", " "),
+                name = Translator.tr(nameKey).string ?: key.toString().lowercase().replace("_", " "),
                 item = item
             ) {
-                playerExecutor.closeHandledScreen()
-                playerExecutor.sendMessage(Translator.tr("community.setting.effect.coming_soon") ?: Text.literal("This feature is under development. Stay tuned!"))
+                playerExecutor.closeContainer()
+                playerExecutor.sendSystemMessage(Translator.tr("community.setting.effect.coming_soon") ?: Component.literal("This feature is under development. Stay tuned!"))
             }
         }
     }
@@ -181,13 +181,13 @@ class TargetSettingMenu(
             community: Community,
             scope: GeoScope? = null,
             playerProfile: GameProfile? = null
-        ): Text {
-            val nullTag = Translator.tr("ui.admin.region.setting.title.unknown")?.string ?: "Unknown"
-            val settingTag = Translator.tr("ui.admin.region.setting.title.setting")?.string ?: "Region Settings"
+        ): Component {
+            val nullTag = Translator.tr("ui.admin.region.setting.title.unknown").string ?: "Unknown"
+            val settingTag = Translator.tr("ui.admin.region.setting.title.setting").string ?: "Region Settings"
             var menuTitle = (community.getRegion()?.name ?: nullTag) + settingTag
             if (scope != null) menuTitle += " - ${scope.scopeName}"
             if (playerProfile != null) menuTitle += " - ${playerProfile.name}"
-            return Text.of(menuTitle)
+            return Component.literal(menuTitle)
         }
     }
 }

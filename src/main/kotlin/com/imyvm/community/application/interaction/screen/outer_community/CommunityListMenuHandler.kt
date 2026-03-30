@@ -3,12 +3,12 @@ package com.imyvm.community.application.interaction.screen.outer_community
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.model.community.CommunityListFilterType
 import com.imyvm.community.entrypoint.screen.outer_community.CommunityListMenu
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 
 fun runSwitchFilterMode(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     mode: CommunityListFilterType,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     CommunityMenuOpener.open(player) { syncId ->
         CommunityListMenu(

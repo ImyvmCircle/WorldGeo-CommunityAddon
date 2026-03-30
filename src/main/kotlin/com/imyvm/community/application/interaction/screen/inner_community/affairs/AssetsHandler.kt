@@ -13,16 +13,16 @@ import com.imyvm.community.entrypoint.screen.inner_community.affairs.assets.Trea
 import com.imyvm.community.entrypoint.screen.inner_community.CommunityMenu
 import com.imyvm.community.util.Translator
 import com.imyvm.economy.EconomyMod
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 import java.util.*
 
-fun runOpenAssetsMenu(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit) {
+fun runOpenAssetsMenu(player: ServerPlayer, community: Community, runBackGrandfather: (ServerPlayer) -> Unit) {
     CommunityMenuOpener.open(player) { syncId ->
         CommunityAssetsMenu(syncId, player, community) { runBackToCommunityMenu(player, community, runBackGrandfather) }
     }
 }
 
-fun runOpenDonationMenu(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit) {
+fun runOpenDonationMenu(player: ServerPlayer, community: Community, runBackGrandfather: (ServerPlayer) -> Unit) {
     CommunityPermissionPolicy.executeWithPermission(
         player,
         { CommunityPermissionPolicy.canDonate(player, community) }
@@ -30,28 +30,28 @@ fun runOpenDonationMenu(player: ServerPlayerEntity, community: Community, runBac
         CommunityMenuOpener.open(player) { syncId ->
             DonationMenu(syncId, player, community) { runOpenAssetsMenu(player, community, runBackGrandfather) }
         }
-    } ?: player.closeHandledScreen()
+    } ?: player.closeContainer()
 }
 
-fun runOpenDonorListMenu(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit) {
+fun runOpenDonorListMenu(player: ServerPlayer, community: Community, runBackGrandfather: (ServerPlayer) -> Unit) {
     CommunityMenuOpener.open(player) { syncId ->
         DonorListMenu(syncId, community, player, 0) { runOpenAssetsMenu(player, community, runBackGrandfather) }
     }
 }
 
-fun runOpenDonorDetailsMenu(player: ServerPlayerEntity, community: Community, donorUUID: UUID, runBackGrandfather: (ServerPlayerEntity) -> Unit) {
+fun runOpenDonorDetailsMenu(player: ServerPlayer, community: Community, donorUUID: UUID, runBackGrandfather: (ServerPlayer) -> Unit) {
     CommunityMenuOpener.open(player) { syncId ->
         DonorDetailsMenu(syncId, player, community, donorUUID) { runOpenDonorListMenu(player, community, runBackGrandfather) }
     }
 }
 
-fun runOpenTreasuryLedgerMenu(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit) {
+fun runOpenTreasuryLedgerMenu(player: ServerPlayer, community: Community, runBackGrandfather: (ServerPlayer) -> Unit) {
     CommunityMenuOpener.open(player) { syncId ->
         TreasuryLedgerMenu(syncId, community, player, 0) { runOpenAssetsMenu(player, community, runBackGrandfather) }
     }
 }
 
-fun onDonateConfirm(player: ServerPlayerEntity, community: Community, amount: Long, runBackGrandfather: (ServerPlayerEntity) -> Unit) {
+fun onDonateConfirm(player: ServerPlayer, community: Community, amount: Long, runBackGrandfather: (ServerPlayer) -> Unit) {
     CommunityPermissionPolicy.executeWithPermission(
         player,
         { CommunityPermissionPolicy.canDonate(player, community) }
@@ -59,15 +59,15 @@ fun onDonateConfirm(player: ServerPlayerEntity, community: Community, amount: Lo
         val playerAccount = EconomyMod.data.getOrCreate(player)
         
         if (playerAccount.money < amount) {
-            player.sendMessage(Translator.tr("ui.community.assets.donate.error.insufficient_funds"))
-            player.closeHandledScreen()
+            player.sendSystemMessage(Translator.tr("ui.community.assets.donate.error.insufficient_funds"))
+            player.closeContainer()
             return@executeWithPermission
         }
 
         val memberAccount = community.member[player.uuid]
         if (memberAccount == null) {
-            player.sendMessage(Translator.tr("ui.community.assets.donate.error.not_member"))
-            player.closeHandledScreen()
+            player.sendSystemMessage(Translator.tr("ui.community.assets.donate.error.not_member"))
+            player.closeContainer()
             return@executeWithPermission
         }
 
@@ -75,13 +75,13 @@ fun onDonateConfirm(player: ServerPlayerEntity, community: Community, amount: Lo
         memberAccount.turnover.add(Turnover(amount, System.currentTimeMillis(), TurnoverSource.PLAYER, "community.treasury.desc.donation", listOf(player.name.string)))
 
         val amountFormatted = "%.2f".format(amount / 100.0)
-        player.sendMessage(Translator.tr("ui.community.assets.donate.success", amountFormatted))
+        player.sendSystemMessage(Translator.tr("ui.community.assets.donate.success", amountFormatted))
         
         runOpenAssetsMenu(player, community, runBackGrandfather)
-    } ?: player.closeHandledScreen()
+    } ?: player.closeContainer()
 }
 
-private fun runBackToCommunityMenu(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit) {
+private fun runBackToCommunityMenu(player: ServerPlayer, community: Community, runBackGrandfather: (ServerPlayer) -> Unit) {
     CommunityMenuOpener.open(player) { syncId ->
         CommunityMenu(syncId, player, community, runBackGrandfather)
     }

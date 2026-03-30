@@ -43,16 +43,17 @@ import com.imyvm.iwg.domain.component.RuleKey
 import com.imyvm.iwg.inter.api.PlayerInteractionApi
 import com.imyvm.iwg.inter.api.RegionDataApi
 import com.mojang.authlib.GameProfile
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.ClickEvent
-import net.minecraft.text.Text
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.ClickEvent
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.HoverEvent
 
 fun runExecuteRegion(
-    playerExecutor: ServerPlayerEntity,
+    playerExecutor: ServerPlayer,
     community: Community,
     geographicFunctionType: GeographicFunctionType,
     playerObject: GameProfile? = null,
-    runBackGrandfatherMenu: (ServerPlayerEntity) -> Unit
+    runBackGrandfatherMenu: (ServerPlayer) -> Unit
 ) {
     if (geographicFunctionType == GeographicFunctionType.GEOMETRY_MODIFICATION) {
         CommunityMenuOpener.open(playerExecutor) { syncId ->
@@ -75,8 +76,8 @@ fun runExecuteRegion(
         val region = community.getRegion()
         val mainScope = region?.geometryScope?.firstOrNull()
         if (mainScope == null) {
-            playerExecutor.closeHandledScreen()
-            playerExecutor.sendMessage(Translator.tr("ui.community.button.interaction.teleport.execution.error.no_scope"))
+            playerExecutor.closeContainer()
+            playerExecutor.sendSystemMessage(Translator.tr("ui.community.button.interaction.teleport.execution.error.no_scope"))
             return
         }
         CommunityMenuOpener.open(playerExecutor) { syncId ->
@@ -98,12 +99,12 @@ fun runExecuteRegion(
             val cooldownMs = community.nameChangeCooldowns[nameKey] ?: 0L
             val daysSince = (System.currentTimeMillis() - cooldownMs) / (1000L * 60 * 60 * 24)
             if (daysSince < 30) {
-                playerExecutor.closeHandledScreen()
-                playerExecutor.sendMessage(Translator.tr("community.rename.error.cooldown", (30 - daysSince).toString(), nameKey))
+                playerExecutor.closeContainer()
+                playerExecutor.sendSystemMessage(Translator.tr("community.rename.error.cooldown", (30 - daysSince).toString(), nameKey))
                 community.regionNumberId?.let { regionId ->
-                    playerExecutor.sendMessage(
-                        Translator.tr("ui.button.return_to_menu")?.copy()?.styled { style ->
-                            style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/community open_rename_menu $regionId"))
+                    playerExecutor.sendSystemMessage(
+                        Translator.tr("ui.button.return_to_menu").copy().withStyle { style ->
+                            style.withClickEvent(ClickEvent.RunCommand( "/community open_rename_menu $regionId"))
                         }
                     )
                 }
@@ -120,9 +121,9 @@ fun runExecuteRegion(
 }
 
 fun runOpenScopeCreationMenu(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     community: Community,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     CommunityMenuOpener.open(player) { syncId ->
         CommunityScopeCreationMenu(
@@ -135,22 +136,22 @@ fun runOpenScopeCreationMenu(
 }
 
 fun runConfirmScopeCreation(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     community: Community,
     scopeName: String,
     geoShapeType: GeoShapeType
 ) {
-    player.closeHandledScreen()
+    player.closeContainer()
     onCreateScopeRequest(player, community, scopeName, geoShapeType)
 }
 
-fun runUnimplementedGeometryGlobalAction(player: ServerPlayerEntity) {
-    player.closeHandledScreen()
-    player.sendMessage(Translator.tr("ui.admin.region.global.unimplemented"))
+fun runUnimplementedGeometryGlobalAction(player: ServerPlayer) {
+    player.closeContainer()
+    player.sendSystemMessage(Translator.tr("ui.admin.region.global.unimplemented"))
 }
 
 private fun onCreateScopeRequest(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     community: Community,
     scopeName: String,
     geoShapeType: GeoShapeType
@@ -158,13 +159,13 @@ private fun onCreateScopeRequest(
     val regionId = community.regionNumberId ?: return 0
     val existingPending = com.imyvm.community.WorldGeoCommunityAddon.pendingOperations[regionId]
     if (existingPending != null && existingPending.type == PendingOperationType.MODIFY_SCOPE_CONFIRMATION) {
-        player.sendMessage(Translator.tr("community.modification.confirmation.pending"))
+        player.sendSystemMessage(Translator.tr("community.modification.confirmation.pending"))
         return 0
     }
 
     val communityRegion = community.getRegion()
     if (communityRegion == null) {
-        player.sendMessage(Translator.tr("community.modification.error.no_region"))
+        player.sendSystemMessage(Translator.tr("community.modification.error.no_region"))
         return 0
     }
 
@@ -178,7 +179,7 @@ private fun onCreateScopeRequest(
                 is CreationError.IntersectionBetweenScopes -> "community.modification.error.overlap_detected"
                 else -> "community.modification.error.unknown"
             }
-            player.sendMessage(Translator.tr(errorKey) ?: Text.literal("Scope creation error"))
+            player.sendSystemMessage(Translator.tr(errorKey) ?: Component.literal("Scope creation error"))
             return 0
         }
         is AreaEstimationResult.Success -> areaEstimation.area
@@ -215,7 +216,7 @@ private fun onCreateScopeRequest(
     val currentAssets = community.getTotalAssets()
 
     if (excessCount > 0) {
-        player.sendMessage(Translator.tr(
+        player.sendSystemMessage(Translator.tr(
             "community.scope_add.warning.soft_limit_surcharge",
             excessCount.toString(),
             maxScopesAllowed.toString(),
@@ -242,7 +243,7 @@ private fun onCreateScopeRequest(
         formalMemberCount = formalMemberCount,
         multiplier = multiplier
     )
-    confirmationMessages.forEach { msg -> player.sendMessage(msg) }
+    confirmationMessages.forEach { msg -> player.sendSystemMessage(msg) }
 
     addPendingOperation(
         regionId = regionId,
@@ -264,37 +265,37 @@ private fun onCreateScopeRequest(
     return 1
 }
 
-fun onConfirmRename(player: ServerPlayerEntity, regionNumberId: Int, nameKey: String): Int {
+fun onConfirmRename(player: ServerPlayer, regionNumberId: Int, nameKey: String): Int {
     val pendingOp = com.imyvm.community.WorldGeoCommunityAddon.pendingOperations[regionNumberId]
     if (pendingOp == null || pendingOp.type != PendingOperationType.RENAME_CONFIRMATION) {
-        player.sendMessage(Translator.tr("community.modification.confirmation.not_found"))
+        player.sendSystemMessage(Translator.tr("community.modification.confirmation.not_found"))
         return 0
     }
     val renameData = pendingOp.renameData ?: return 0
     if (renameData.executorUUID != player.uuid) {
-        player.sendMessage(Translator.tr("community.modification.confirmation.not_yours"))
+        player.sendSystemMessage(Translator.tr("community.modification.confirmation.not_yours"))
         return 0
     }
     if (renameData.nameKey != nameKey) {
-        player.sendMessage(Translator.tr("community.modification.confirmation.not_found"))
+        player.sendSystemMessage(Translator.tr("community.modification.confirmation.not_found"))
         return 0
     }
     if (System.currentTimeMillis() > pendingOp.expireAt) {
-        player.sendMessage(Translator.tr("community.modification.confirmation.expired"))
+        player.sendSystemMessage(Translator.tr("community.modification.confirmation.expired"))
         com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
         return 0
     }
 
     val community = CommunityDatabase.getCommunityById(regionNumberId)
     if (community == null) {
-        player.sendMessage(Translator.tr("community.modification.error.community_not_found"))
+        player.sendSystemMessage(Translator.tr("community.modification.error.community_not_found"))
         com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
         return 0
     }
 
     val currentAssets = community.getTotalAssets()
     if (renameData.cost > 0 && currentAssets < renameData.cost) {
-        player.sendMessage(Translator.tr(
+        player.sendSystemMessage(Translator.tr(
             "community.modification.error.insufficient_assets",
             String.format("%.2f", renameData.cost / 100.0),
             String.format("%.2f", currentAssets / 100.0)
@@ -304,7 +305,7 @@ fun onConfirmRename(player: ServerPlayerEntity, regionNumberId: Int, nameKey: St
 
     val communityRegion = community.getRegion()
     if (communityRegion == null) {
-        player.sendMessage(Translator.tr("community.modification.error.no_region"))
+        player.sendSystemMessage(Translator.tr("community.modification.error.no_region"))
         com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
         return 0
     }
@@ -328,11 +329,11 @@ fun onConfirmRename(player: ServerPlayerEntity, regionNumberId: Int, nameKey: St
         }
         com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
         CommunityDatabase.save()
-        player.sendMessage(Translator.tr("community.rename.success.global", oldName, renameData.newName))
+        player.sendSystemMessage(Translator.tr("community.rename.success.global", oldName, renameData.newName))
     } else {
         val scope = communityRegion.geometryScope.firstOrNull { it.scopeName == renameData.nameKey }
         if (scope == null) {
-            player.sendMessage(Translator.tr("community.rename.error.scope_not_found", renameData.nameKey))
+            player.sendSystemMessage(Translator.tr("community.rename.error.scope_not_found", renameData.nameKey))
             com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
             return 0
         }
@@ -355,38 +356,38 @@ fun onConfirmRename(player: ServerPlayerEntity, regionNumberId: Int, nameKey: St
         }
         com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
         CommunityDatabase.save()
-        player.sendMessage(Translator.tr("community.rename.success.scope", oldScopeName, renameData.newName))
+        player.sendSystemMessage(Translator.tr("community.rename.success.scope", oldScopeName, renameData.newName))
     }
     return 1
 }
 
-fun onCancelRename(player: ServerPlayerEntity, regionNumberId: Int, nameKey: String): Int {
+fun onCancelRename(player: ServerPlayer, regionNumberId: Int, nameKey: String): Int {
     val pendingOp = com.imyvm.community.WorldGeoCommunityAddon.pendingOperations[regionNumberId]
     if (pendingOp == null || pendingOp.type != PendingOperationType.RENAME_CONFIRMATION) {
-        player.sendMessage(Translator.tr("community.modification.confirmation.not_found"))
+        player.sendSystemMessage(Translator.tr("community.modification.confirmation.not_found"))
         return 0
     }
     val renameData = pendingOp.renameData ?: return 0
     if (renameData.executorUUID != player.uuid) {
-        player.sendMessage(Translator.tr("community.modification.confirmation.not_yours"))
+        player.sendSystemMessage(Translator.tr("community.modification.confirmation.not_yours"))
         return 0
     }
     if (renameData.nameKey != nameKey) {
-        player.sendMessage(Translator.tr("community.modification.confirmation.not_found"))
+        player.sendSystemMessage(Translator.tr("community.modification.confirmation.not_found"))
         return 0
     }
     com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
-    player.sendMessage(Translator.tr("community.rename.cancelled"))
+    player.sendSystemMessage(Translator.tr("community.rename.cancelled"))
     return 1
 }
 
 fun runExecuteScope(
-    playerExecutor: ServerPlayerEntity,
+    playerExecutor: ServerPlayer,
     community: Community,
     scope: GeoScope,
     geographicFunctionType: GeographicFunctionType,
     playerObject: GameProfile? = null,
-    runBackGrandfatherMenu: (ServerPlayerEntity) -> Unit
+    runBackGrandfatherMenu: (ServerPlayer) -> Unit
 ) {
     when (geographicFunctionType){
         GeographicFunctionType.GEOMETRY_MODIFICATION -> {
@@ -408,8 +409,8 @@ fun runExecuteScope(
                     community.regionNumberId?.let { id ->
                         SelectionReturnContext.setModifyContext(playerExecutor.uuid, id, scope.scopeName)
                     }
-                    playerExecutor.closeHandledScreen()
-                    playerExecutor.sendMessage(Translator.tr("ui.territory.modify.scope_started", scope.scopeName))
+                    playerExecutor.closeContainer()
+                    playerExecutor.sendSystemMessage(Translator.tr("ui.territory.modify.scope_started", scope.scopeName))
                 }
             }
         }
@@ -436,11 +437,11 @@ fun runExecuteScope(
         }
         GeographicFunctionType.TELEPORT_POINT_EXECUTION -> {
             if (!canUseCommunityTeleport(playerExecutor, community, scope)) {
-                playerExecutor.closeHandledScreen()
-                playerExecutor.sendMessage(Translator.tr("ui.community.button.interaction.teleport.execution.error.not_public"))
+                playerExecutor.closeContainer()
+                playerExecutor.sendSystemMessage(Translator.tr("ui.community.button.interaction.teleport.execution.error.not_public"))
                 return
             }
-            playerExecutor.closeHandledScreen()
+            playerExecutor.closeContainer()
             startCommunityTeleportExecution(playerExecutor, community, scope)
         }
         GeographicFunctionType.NAME_MODIFICATION -> {
@@ -452,12 +453,12 @@ fun runExecuteScope(
                 val cooldownMs = community.nameChangeCooldowns[nameKey] ?: 0L
                 val daysSince = (System.currentTimeMillis() - cooldownMs) / (1000L * 60 * 60 * 24)
                 if (daysSince < 30) {
-                    playerExecutor.closeHandledScreen()
-                    playerExecutor.sendMessage(Translator.tr("community.rename.error.cooldown", (30 - daysSince).toString(), nameKey))
+                    playerExecutor.closeContainer()
+                    playerExecutor.sendSystemMessage(Translator.tr("community.rename.error.cooldown", (30 - daysSince).toString(), nameKey))
                     community.regionNumberId?.let { regionId ->
-                        playerExecutor.sendMessage(
-                            Translator.tr("ui.button.return_to_menu")?.copy()?.styled { style ->
-                                style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/community open_rename_menu $regionId"))
+                        playerExecutor.sendSystemMessage(
+                            Translator.tr("ui.button.return_to_menu").copy().withStyle { style ->
+                                style.withClickEvent(ClickEvent.RunCommand( "/community open_rename_menu $regionId"))
                             }
                         )
                     }
@@ -508,10 +509,10 @@ fun runExecuteScope(
 }
 
 fun runOpenScopeModificationConfirmation(
-    playerExecutor: ServerPlayerEntity,
+    playerExecutor: ServerPlayer,
     community: Community,
     scope: GeoScope,
-    runBackToScopeList: (ServerPlayerEntity) -> Unit
+    runBackToScopeList: (ServerPlayer) -> Unit
 ) {
     CommunityMenuOpener.open(playerExecutor) { syncId ->
         com.imyvm.community.entrypoint.screen.inner_community.multi_parent.ScopeGeometryModificationConfirmMenu(
@@ -525,22 +526,22 @@ fun runOpenScopeModificationConfirmation(
 }
 
 fun runToggleScopeMod(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     community: Community,
     scope: GeoScope,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     PlayerInteractionApi.stopSelection(player)
     SelectionReturnContext.clearContext(player.uuid)
-    player.sendMessage(Translator.tr("community.selection_mode.disabled"))
+    player.sendSystemMessage(Translator.tr("community.selection_mode.disabled"))
     runBack(player)
 }
 
 private fun runBackRegionScopeMenu(
-    playerExecutor: ServerPlayerEntity,
+    playerExecutor: ServerPlayer,
     community: Community,
     geographicFunctionType: GeographicFunctionType,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     CommunityMenuOpener.open(playerExecutor) { syncId ->
         CommunityRegionScopeMenu(
@@ -553,39 +554,29 @@ private fun runBackRegionScopeMenu(
     }
 }
 
-private fun sendInteractiveScopeModificationConfirmation(player: ServerPlayerEntity, regionNumberId: Int, scopeName: String) {
+private fun sendInteractiveScopeModificationConfirmation(player: ServerPlayer, regionNumberId: Int, scopeName: String) {
     val quotedScopeName = if (!scopeName.all { it.isLetterOrDigit() && it.code < 128 }) "\"$scopeName\"" else scopeName
-    val confirmButton = Text.literal("§a§l[CONFIRM]§r")
-        .styled { style ->
-            style.withClickEvent(net.minecraft.text.ClickEvent(
-                net.minecraft.text.ClickEvent.Action.RUN_COMMAND,
-                "/_commun confirm_modification $regionNumberId $quotedScopeName"
-            ))
-            .withHoverEvent(net.minecraft.text.HoverEvent(
-                net.minecraft.text.HoverEvent.Action.SHOW_TEXT,
-                Text.literal("§aClick to confirm modification")
+    val confirmButton = Component.literal("§a§l[CONFIRM]§r")
+        .withStyle { style ->
+            style.withClickEvent(ClickEvent.RunCommand("/_commun confirm_modification $regionNumberId $quotedScopeName"))
+            .withHoverEvent(HoverEvent.ShowText(Component.literal("§aClick to confirm modification")
             ))
         }
 
-    val cancelButton = Text.literal("§c§l[CANCEL]§r")
-        .styled { style ->
-            style.withClickEvent(net.minecraft.text.ClickEvent(
-                net.minecraft.text.ClickEvent.Action.RUN_COMMAND,
-                "/_commun cancel_modification $regionNumberId $quotedScopeName"
-            ))
-            .withHoverEvent(net.minecraft.text.HoverEvent(
-                net.minecraft.text.HoverEvent.Action.SHOW_TEXT,
-                Text.literal("§cClick to cancel modification")
+    val cancelButton = Component.literal("§c§l[CANCEL]§r")
+        .withStyle { style ->
+            style.withClickEvent(ClickEvent.RunCommand("/_commun cancel_modification $regionNumberId $quotedScopeName"))
+            .withHoverEvent(HoverEvent.ShowText(Component.literal("§cClick to cancel modification")
             ))
         }
 
-    val promptMessage = Text.empty()
-        .append(Text.literal("§e§l[ACTION REQUIRED]§r §ePlease confirm within §c§l5 minutes§r§e: "))
+    val promptMessage = Component.empty()
+        .append(Component.literal("§e§l[ACTION REQUIRED]§r §ePlease confirm within §c§l5 minutes§r§e: "))
         .append(confirmButton)
-        .append(Text.literal(" "))
+        .append(Component.literal(" "))
         .append(cancelButton)
 
-    player.sendMessage(promptMessage)
+    player.sendSystemMessage(promptMessage)
 }
 
 private fun calculateRegionSettingsCostChanges(
@@ -697,14 +688,14 @@ private fun calculateScopeSettingsCostChanges(
 }
 
 internal fun executeScopeModification(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     community: Community,
     scope: GeoScope
 ) {
     val communityRegion = community.getRegion()
     if (communityRegion == null) {
-        player.sendMessage(Translator.tr("community.modification.error.no_region"))
-        player.closeHandledScreen()
+        player.sendSystemMessage(Translator.tr("community.modification.error.no_region"))
+        player.closeContainer()
         return
     }
 
@@ -719,15 +710,15 @@ internal fun executeScopeModification(
                 is CreationError.IntersectionBetweenScopes -> "community.modification.error.overlap_detected"
                 else -> "community.modification.error.unknown"
             }
-            player.sendMessage(Translator.tr(errorKey) ?: Text.literal("Modification error"))
+            player.sendSystemMessage(Translator.tr(errorKey) ?: Component.literal("Modification error"))
             community.regionNumberId?.let { regionId ->
-                player.sendMessage(
-                    Translator.tr("ui.button.return_to_menu")?.copy()?.styled { style ->
-                        style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/community open_modify_menu $regionId"))
+                player.sendSystemMessage(
+                    Translator.tr("ui.button.return_to_menu").copy().withStyle { style ->
+                        style.withClickEvent(ClickEvent.RunCommand( "/community open_modify_menu $regionId"))
                     }
                 )
             }
-            player.closeHandledScreen()
+            player.closeContainer()
         }
         is AreaEstimationResult.Success -> {
             val areaChange = areaEstimation.area
@@ -742,15 +733,15 @@ internal fun executeScopeModification(
             val currentAssets = community.getTotalAssets()
 
             if (totalCost > 0 && currentAssets < totalCost) {
-                player.sendMessage(Translator.tr("community.modification.error.insufficient_assets",
+                player.sendSystemMessage(Translator.tr("community.modification.error.insufficient_assets",
                     String.format("%.2f", totalCost / 100.0),
                     String.format("%.2f", currentAssets / 100.0)
-                ) ?: Text.literal("Insufficient assets"))
-                player.closeHandledScreen()
+                ) ?: Component.literal("Insufficient assets"))
+                player.closeContainer()
                 return
             }
 
-            player.closeHandledScreen()
+            player.closeContainer()
 
             SelectionReturnContext.clearContext(player.uuid)
             generateModificationConfirmationMessage(
@@ -759,7 +750,7 @@ internal fun executeScopeModification(
                 isManor = isManor,
                 currentAssets = currentAssets,
                 settingChanges = allSettingChanges
-            ).forEach { player.sendMessage(it) }
+            ).forEach { player.sendSystemMessage(it) }
 
             addPendingOperation(
                 regionId = community.regionNumberId!!,
@@ -779,27 +770,27 @@ internal fun executeScopeModification(
 }
 
 internal fun executeScopeDeletion(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     community: Community,
     scope: GeoScope
 ) {
     val communityRegion = community.getRegion()
     if (communityRegion == null) {
-        player.sendMessage(Translator.tr("community.modification.error.no_region"))
-        player.closeHandledScreen()
+        player.sendSystemMessage(Translator.tr("community.modification.error.no_region"))
+        player.closeContainer()
         return
     }
 
     val existingPending = com.imyvm.community.WorldGeoCommunityAddon.pendingOperations[community.regionNumberId]
     if (existingPending != null) {
-        player.sendMessage(Translator.tr("community.modification.confirmation.pending"))
-        player.closeHandledScreen()
+        player.sendSystemMessage(Translator.tr("community.modification.confirmation.pending"))
+        player.closeContainer()
         return
     }
 
     if (communityRegion.geometryScope.size <= 1) {
-        player.sendMessage(Translator.tr("community.scope_delete.error.last_scope"))
-        player.closeHandledScreen()
+        player.sendSystemMessage(Translator.tr("community.scope_delete.error.last_scope"))
+        player.closeContainer()
         return
     }
 
@@ -814,7 +805,7 @@ internal fun executeScopeDeletion(
     val totalCost = costResult.cost + allSettingChanges.sumOf { it.costChange }
     val currentAssets = community.getTotalAssets()
 
-    player.closeHandledScreen()
+    player.closeContainer()
 
     generateScopeDeletionConfirmationMessage(
         scopeName = scope.scopeName,
@@ -823,7 +814,7 @@ internal fun executeScopeDeletion(
         isManor = isManor,
         currentAssets = currentAssets,
         settingChanges = allSettingChanges
-    ).forEach { player.sendMessage(it) }
+    ).forEach { player.sendSystemMessage(it) }
 
     addPendingOperation(
         regionId = community.regionNumberId!!,
@@ -841,37 +832,27 @@ internal fun executeScopeDeletion(
     sendInteractiveScopeDeletionConfirmation(player, community.regionNumberId!!, scope.scopeName)
 }
 
-private fun sendInteractiveScopeDeletionConfirmation(player: ServerPlayerEntity, regionNumberId: Int, scopeName: String) {
+private fun sendInteractiveScopeDeletionConfirmation(player: ServerPlayer, regionNumberId: Int, scopeName: String) {
     val quotedScopeName = if (!scopeName.all { it.isLetterOrDigit() && it.code < 128 }) "\"$scopeName\"" else scopeName
-    val confirmButton = Text.literal("§a§l[CONFIRM]§r")
-        .styled { style ->
-            style.withClickEvent(net.minecraft.text.ClickEvent(
-                net.minecraft.text.ClickEvent.Action.RUN_COMMAND,
-                "/_commun confirm_delete_scope $regionNumberId $quotedScopeName"
-            ))
-            .withHoverEvent(net.minecraft.text.HoverEvent(
-                net.minecraft.text.HoverEvent.Action.SHOW_TEXT,
-                Text.literal("§aClick to confirm selling scope")
+    val confirmButton = Component.literal("§a§l[CONFIRM]§r")
+        .withStyle { style ->
+            style.withClickEvent(ClickEvent.RunCommand("/_commun confirm_delete_scope $regionNumberId $quotedScopeName"))
+            .withHoverEvent(HoverEvent.ShowText(Component.literal("§aClick to confirm selling scope")
             ))
         }
 
-    val cancelButton = Text.literal("§c§l[CANCEL]§r")
-        .styled { style ->
-            style.withClickEvent(net.minecraft.text.ClickEvent(
-                net.minecraft.text.ClickEvent.Action.RUN_COMMAND,
-                "/_commun cancel_delete_scope $regionNumberId $quotedScopeName"
-            ))
-            .withHoverEvent(net.minecraft.text.HoverEvent(
-                net.minecraft.text.HoverEvent.Action.SHOW_TEXT,
-                Text.literal("§cClick to cancel")
+    val cancelButton = Component.literal("§c§l[CANCEL]§r")
+        .withStyle { style ->
+            style.withClickEvent(ClickEvent.RunCommand("/_commun cancel_delete_scope $regionNumberId $quotedScopeName"))
+            .withHoverEvent(HoverEvent.ShowText(Component.literal("§cClick to cancel")
             ))
         }
 
-    val promptMessage = Text.empty()
-        .append(Text.literal("§e§l[ACTION REQUIRED]§r §ePlease confirm within §c§l5 minutes§r§e: "))
+    val promptMessage = Component.empty()
+        .append(Component.literal("§e§l[ACTION REQUIRED]§r §ePlease confirm within §c§l5 minutes§r§e: "))
         .append(confirmButton)
-        .append(Text.literal(" "))
+        .append(Component.literal(" "))
         .append(cancelButton)
 
-    player.sendMessage(promptMessage)
+    player.sendSystemMessage(promptMessage)
 }

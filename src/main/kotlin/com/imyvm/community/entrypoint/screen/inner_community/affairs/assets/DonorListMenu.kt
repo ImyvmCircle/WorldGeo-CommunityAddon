@@ -8,15 +8,15 @@ import com.imyvm.community.entrypoint.screen.component.createPlayerHeadItemStack
 import com.imyvm.community.entrypoint.screen.component.getLoreButton
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.inter.api.UtilApi
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.Component
 
 class DonorListMenu(
     syncId: Int,
     val community: Community,
-    val playerExecutor: ServerPlayerEntity,
+    val playerExecutor: ServerPlayer,
     page: Int = 0,
-    val runBack: ((ServerPlayerEntity) -> Unit)
+    val runBack: ((ServerPlayer) -> Unit)
 ) : AbstractListMenu(
     syncId = syncId,
     menuTitle = Translator.tr("ui.community.assets.donor_list.title"),
@@ -39,7 +39,7 @@ class DonorListMenu(
                 slot = slot,
                 itemStack = getLoreButton(
                     createPlayerHeadItemStack(donorName, donorUUID),
-                    listOf(Translator.tr("ui.community.assets.donor_list.lore.total", donationFormatted) ?: Text.of("§7Total: $donationFormatted"))
+                    listOf(Translator.tr("ui.community.assets.donor_list.lore.total", donationFormatted) ?: Component.literal("§7Total: $donationFormatted"))
                 ),
                 name = donorName
             ) {
@@ -49,7 +49,7 @@ class DonorListMenu(
         handlePageWithSize(donorList.size, donorsPerPage)
     }
 
-    override fun openNewPage(player: ServerPlayerEntity, newPage: Int) {
+    override fun openNewPage(player: ServerPlayer, newPage: Int) {
         CommunityMenuOpener.open(player) { syncId ->
             DonorListMenu(syncId, community, playerExecutor, newPage, runBack)
         }

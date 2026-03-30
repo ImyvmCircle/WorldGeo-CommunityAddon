@@ -24,13 +24,13 @@ import com.imyvm.iwg.inter.api.PlayerInteractionApi
 import com.imyvm.iwg.inter.api.RegionDataApi
 import com.imyvm.iwg.inter.api.UtilApi
 import com.mojang.authlib.GameProfile
-import net.minecraft.item.Item
-import net.minecraft.item.ItemStack
+import net.minecraft.world.item.Item
+import net.minecraft.world.item.ItemStack
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.ClickEvent
-import net.minecraft.text.HoverEvent
-import net.minecraft.text.Text
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.ClickEvent
+import net.minecraft.network.chat.HoverEvent
+import net.minecraft.network.chat.Component
 import java.util.UUID
 
 fun getPermissionButtonItemStack(
@@ -42,7 +42,7 @@ fun getPermissionButtonItemStack(
 ): ItemStack {
     val itemStack = ItemStack(item)
 
-    val loreLines = mutableListOf<Text>()
+    val loreLines = mutableListOf<Component>()
     val hasPermission = community.getRegion()?.let {
         RegionDataApi.getPermissionValueRegion(
             it,
@@ -52,29 +52,29 @@ fun getPermissionButtonItemStack(
         )
     }
     if (hasPermission != null) {
-        loreLines.add(Translator.tr("ui.admin.member.setting.lore.permission", hasPermission.toString()) ?: Text.literal("Permission: $hasPermission"))
+        loreLines.add(Translator.tr("ui.admin.member.setting.lore.permission", hasPermission.toString()) ?: Component.literal("Permission: $hasPermission"))
         scope?.let {
-            loreLines.add(Translator.tr("ui.admin.member.setting.lore.scope", scope.scopeName) ?: Text.literal("Scope: ${scope.scopeName}"))
+            loreLines.add(Translator.tr("ui.admin.member.setting.lore.scope", scope.scopeName) ?: Component.literal("Scope: ${scope.scopeName}"))
         }
         playerObject?.let {
-            loreLines.add(Translator.tr("ui.admin.member.setting.lore.player", playerObject.name) ?: Text.literal("Player: ${playerObject.name}"))
+            loreLines.add(Translator.tr("ui.admin.member.setting.lore.player", playerObject.name) ?: Component.literal("Player: ${playerObject.name}"))
         }
     }
     val unitPrice = TerritoryPricing.getPermissionCoefficientPerUnit(permissionKey)
     if (unitPrice > 0) {
-        loreLines.add(Translator.tr("ui.admin.region.setting.lore.unit_price", String.format("%.2f", unitPrice / 100.0)) ?: Text.literal("Unit price: ${String.format("%.2f", unitPrice / 100.0)} per 10000m²"))
+        loreLines.add(Translator.tr("ui.admin.region.setting.lore.unit_price", String.format("%.2f", unitPrice / 100.0)) ?: Component.literal("Unit price: ${String.format("%.2f", unitPrice / 100.0)} per 10000m²"))
     }
 
     return getLoreButton(itemStack, loreLines)
 }
 
 fun runTogglingPermissionSetting(
-    playerExecutor: ServerPlayerEntity,
+    playerExecutor: ServerPlayer,
     community: Community,
     scope: GeoScope?,
     playerObject: GameProfile?,
     permissionKey: PermissionKey,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     val permission = com.imyvm.community.domain.policy.permission.AdminPrivilege.MODIFY_REGION_SETTINGS
     com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.executeWithPermission(
@@ -85,8 +85,8 @@ fun runTogglingPermissionSetting(
         val regionId = community.regionNumberId ?: return@executeWithPermission
 
         if (WorldGeoCommunityAddon.pendingOperations.containsKey(regionId)) {
-            playerExecutor.closeHandledScreen()
-            playerExecutor.sendMessage(Translator.tr("community.modification.confirmation.pending"))
+            playerExecutor.closeContainer()
+            playerExecutor.sendSystemMessage(Translator.tr("community.modification.confirmation.pending"))
             return@executeWithPermission
         }
 
@@ -108,7 +108,7 @@ fun runTogglingPermissionSetting(
             )
         } else 0L
 
-        playerExecutor.closeHandledScreen()
+        playerExecutor.closeContainer()
 
         addPendingOperation(
             regionId = regionId,
@@ -138,27 +138,27 @@ fun getRuleButtonItemStack(
     ruleKey: RuleKey
 ): ItemStack {
     val itemStack = ItemStack(item)
-    val loreLines = mutableListOf<Text>()
+    val loreLines = mutableListOf<Component>()
     val currentValue = community.getRegion()?.let {
         RegionDataApi.getRuleValueForRegion(it, scope, ruleKey)
     }
     if (currentValue != null) {
-        loreLines.add(Translator.tr("ui.admin.member.setting.lore.permission", currentValue.toString()) ?: Text.literal("Permission: $currentValue"))
+        loreLines.add(Translator.tr("ui.admin.member.setting.lore.permission", currentValue.toString()) ?: Component.literal("Permission: $currentValue"))
         scope?.let {
-            loreLines.add(Translator.tr("ui.admin.member.setting.lore.scope", scope.scopeName) ?: Text.literal("Scope: ${scope.scopeName}"))
+            loreLines.add(Translator.tr("ui.admin.member.setting.lore.scope", scope.scopeName) ?: Component.literal("Scope: ${scope.scopeName}"))
         }
     }
     val unitPrice = TerritoryPricing.getRuleCoefficientPerUnit(ruleKey)
-    loreLines.add(Translator.tr("ui.admin.region.setting.lore.unit_price", String.format("%.2f", unitPrice / 100.0)) ?: Text.literal("Unit price: ${String.format("%.2f", unitPrice / 100.0)} per 10000m²"))
+    loreLines.add(Translator.tr("ui.admin.region.setting.lore.unit_price", String.format("%.2f", unitPrice / 100.0)) ?: Component.literal("Unit price: ${String.format("%.2f", unitPrice / 100.0)} per 10000m²"))
     return getLoreButton(itemStack, loreLines)
 }
 
 fun runTogglingRuleSetting(
-    playerExecutor: ServerPlayerEntity,
+    playerExecutor: ServerPlayer,
     community: Community,
     scope: GeoScope?,
     ruleKey: RuleKey,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     val privilege = com.imyvm.community.domain.policy.permission.AdminPrivilege.MODIFY_REGION_SETTINGS
     com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.executeWithPermission(
@@ -169,8 +169,8 @@ fun runTogglingRuleSetting(
         val regionId = community.regionNumberId ?: return@executeWithPermission
 
         if (WorldGeoCommunityAddon.pendingOperations.containsKey(regionId)) {
-            playerExecutor.closeHandledScreen()
-            playerExecutor.sendMessage(Translator.tr("community.modification.confirmation.pending"))
+            playerExecutor.closeContainer()
+            playerExecutor.sendSystemMessage(Translator.tr("community.modification.confirmation.pending"))
             return@executeWithPermission
         }
 
@@ -191,7 +191,7 @@ fun runTogglingRuleSetting(
             )
         } else 0L
 
-        playerExecutor.closeHandledScreen()
+        playerExecutor.closeContainer()
 
         addPendingOperation(
             regionId = regionId,
@@ -215,23 +215,23 @@ fun runTogglingRuleSetting(
     }
 }
 
-fun onConfirmSettingChange(playerExecutor: ServerPlayerEntity, regionNumberId: Int): Int {
+fun onConfirmSettingChange(playerExecutor: ServerPlayer, regionNumberId: Int): Int {
     val pendingOperation = WorldGeoCommunityAddon.pendingOperations[regionNumberId]
     val request = pendingOperation?.settingData
     if (pendingOperation == null ||
         pendingOperation.type != PendingOperationType.SETTING_CONFIRMATION ||
         request == null
     ) {
-        playerExecutor.sendMessage(Translator.tr("community.setting.confirmation.not_found"))
+        playerExecutor.sendSystemMessage(Translator.tr("community.setting.confirmation.not_found"))
         return 0
     }
     if (request.executorUUID != playerExecutor.uuid) {
-        playerExecutor.sendMessage(Translator.tr("community.setting.confirmation.not_yours"))
+        playerExecutor.sendSystemMessage(Translator.tr("community.setting.confirmation.not_yours"))
         return 0
     }
     if (System.currentTimeMillis() > pendingOperation.expireAt) {
         WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
-        playerExecutor.sendMessage(Translator.tr("community.setting.confirmation.expired"))
+        playerExecutor.sendSystemMessage(Translator.tr("community.setting.confirmation.expired"))
         return 0
     }
 
@@ -239,7 +239,7 @@ fun onConfirmSettingChange(playerExecutor: ServerPlayerEntity, regionNumberId: I
     val region = community?.getRegion()
     if (community == null || region == null) {
         WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
-        playerExecutor.sendMessage(Translator.tr("community.not_found.region"))
+        playerExecutor.sendSystemMessage(Translator.tr("community.not_found.region"))
         return 0
     }
 
@@ -258,13 +258,13 @@ fun onConfirmSettingChange(playerExecutor: ServerPlayerEntity, regionNumberId: I
         }
         if (hasIdenticalRuleSetting) {
             WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
-            playerExecutor.sendMessage(Translator.tr("community.setting.confirmation.already_set"))
+            playerExecutor.sendSystemMessage(Translator.tr("community.setting.confirmation.already_set"))
             return 0
         }
 
         if (request.cost > 0 && community.getTotalAssets() < request.cost) {
             WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
-            playerExecutor.sendMessage(
+            playerExecutor.sendSystemMessage(
                 Translator.tr(
                     "community.modification.error.insufficient_assets",
                     String.format("%.2f", request.cost / 100.0),
@@ -295,7 +295,7 @@ fun onConfirmSettingChange(playerExecutor: ServerPlayerEntity, regionNumberId: I
         }
         CommunityDatabase.save()
 
-        playerExecutor.sendMessage(
+        playerExecutor.sendSystemMessage(
             Translator.tr(
                 "community.setting.confirmation.completed",
                 getRuleKeyDisplayName(ruleKey),
@@ -310,12 +310,12 @@ fun onConfirmSettingChange(playerExecutor: ServerPlayerEntity, regionNumberId: I
             getRuleKeyDisplayName(ruleKey),
             (!request.newValue).toString(),
             newValueStr,
-            request.scopeName ?: (Translator.tr("community.setting.confirmation.layer.region")?.string ?: ""),
-            Translator.tr("community.setting.confirmation.target.global")?.string ?: "",
+            request.scopeName ?: (Translator.tr("community.setting.confirmation.layer.region").string ?: ""),
+            Translator.tr("community.setting.confirmation.target.global").string ?: "",
             playerExecutor.name.string,
             communityName
-        ) ?: Text.literal("Setting changed")
-        notifyFormalMembers(community, playerExecutor.server, notification)
+        ) ?: Component.literal("Setting changed")
+        notifyFormalMembers(community, playerExecutor.level().server, notification)
 
         return 1
     }
@@ -340,13 +340,13 @@ fun onConfirmSettingChange(playerExecutor: ServerPlayerEntity, regionNumberId: I
     }
     if (hasIdenticalSetting) {
         WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
-        playerExecutor.sendMessage(Translator.tr("community.setting.confirmation.already_set"))
+        playerExecutor.sendSystemMessage(Translator.tr("community.setting.confirmation.already_set"))
         return 0
     }
 
     if (request.cost > 0 && community.getTotalAssets() < request.cost) {
         WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
-        playerExecutor.sendMessage(
+        playerExecutor.sendSystemMessage(
             Translator.tr(
                 "community.modification.error.insufficient_assets",
                 String.format("%.2f", request.cost / 100.0),
@@ -356,7 +356,7 @@ fun onConfirmSettingChange(playerExecutor: ServerPlayerEntity, regionNumberId: I
         return 0
     }
 
-    val targetPlayerIdStr = request.targetPlayerUUID?.let { UtilApi.getPlayerName(playerExecutor.server, it) }
+    val targetPlayerIdStr = request.targetPlayerUUID?.let { UtilApi.getPlayerName(playerExecutor.level().server, it) }
     val newValueStr = request.newValue.toString()
     if (scope == null) {
         PlayerInteractionApi.removeSettingRegion(playerExecutor, region, request.permissionKeyStr, targetPlayerIdStr)
@@ -378,7 +378,7 @@ fun onConfirmSettingChange(playerExecutor: ServerPlayerEntity, regionNumberId: I
     }
     CommunityDatabase.save()
 
-    playerExecutor.sendMessage(
+    playerExecutor.sendSystemMessage(
         Translator.tr(
             "community.setting.confirmation.completed",
             getPermissionKeyDisplayName(permissionKey),
@@ -393,12 +393,12 @@ fun onConfirmSettingChange(playerExecutor: ServerPlayerEntity, regionNumberId: I
         getPermissionKeyDisplayName(permissionKey),
         (!request.newValue).toString(),
         newValueStr,
-        request.scopeName ?: (Translator.tr("community.setting.confirmation.layer.region")?.string ?: ""),
-        request.targetPlayerUUID?.let { UtilApi.getPlayerName(playerExecutor.server, it) } ?: (Translator.tr("community.setting.confirmation.target.global")?.string ?: ""),
+        request.scopeName ?: (Translator.tr("community.setting.confirmation.layer.region").string ?: ""),
+        request.targetPlayerUUID?.let { UtilApi.getPlayerName(playerExecutor.level().server, it) } ?: (Translator.tr("community.setting.confirmation.target.global").string ?: ""),
         playerExecutor.name.string,
         communityName
-    ) ?: Text.literal("Setting changed")
-    notifyFormalMembers(community, playerExecutor.server, notification)
+    ) ?: Component.literal("Setting changed")
+    notifyFormalMembers(community, playerExecutor.level().server, notification)
 
     if (scope == null && request.targetPlayerUUID == null &&
         permissionKey != PermissionKey.PVP && permissionKey != PermissionKey.FLY) {
@@ -411,27 +411,27 @@ fun onConfirmSettingChange(playerExecutor: ServerPlayerEntity, regionNumberId: I
     return 1
 }
 
-fun onCancelSettingChange(playerExecutor: ServerPlayerEntity, regionNumberId: Int): Int {
+fun onCancelSettingChange(playerExecutor: ServerPlayer, regionNumberId: Int): Int {
     val pendingOperation = WorldGeoCommunityAddon.pendingOperations[regionNumberId]
     val request = pendingOperation?.settingData
     if (pendingOperation == null ||
         pendingOperation.type != PendingOperationType.SETTING_CONFIRMATION ||
         request == null
     ) {
-        playerExecutor.sendMessage(Translator.tr("community.setting.confirmation.not_found"))
+        playerExecutor.sendSystemMessage(Translator.tr("community.setting.confirmation.not_found"))
         return 0
     }
     if (request.executorUUID != playerExecutor.uuid) {
-        playerExecutor.sendMessage(Translator.tr("community.setting.confirmation.not_yours"))
+        playerExecutor.sendSystemMessage(Translator.tr("community.setting.confirmation.not_yours"))
         return 0
     }
 
     WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
-    playerExecutor.sendMessage(Translator.tr("community.setting.confirmation.cancelled"))
+    playerExecutor.sendSystemMessage(Translator.tr("community.setting.confirmation.cancelled"))
     return 1
 }
 
-fun autoGrantDefaultPermissions(newMemberUUID: UUID, executorPlayer: ServerPlayerEntity, community: Community) {
+fun autoGrantDefaultPermissions(newMemberUUID: UUID, executorPlayer: ServerPlayer, community: Community) {
     val region = community.getRegion() ?: return
 
     for (permissionKey in PermissionKey.entries) {
@@ -450,7 +450,7 @@ fun autoGrantDefaultPermissions(newMemberUUID: UUID, executorPlayer: ServerPlaye
 
         if (alreadyHasPersonalSetting) continue
 
-        val newMemberName = UtilApi.getPlayerName(executorPlayer.server, newMemberUUID)
+        val newMemberName = UtilApi.getPlayerName(executorPlayer.level().server, newMemberUUID)
         if (newMemberName == newMemberUUID.toString()) continue
 
         PlayerInteractionApi.addSettingRegion(
@@ -474,7 +474,7 @@ fun revokeGrantedPermissions(memberUUID: UUID, community: Community) {
 private fun autoGrantExistingMembersOnSettingChange(
     permissionKey: PermissionKey,
     defaultValue: Boolean,
-    executorPlayer: ServerPlayerEntity,
+    executorPlayer: ServerPlayer,
     community: Community,
     region: Region
 ) {
@@ -488,7 +488,7 @@ private fun autoGrantExistingMembersOnSettingChange(
 
         if (alreadyHasPersonalSetting) return@forEach
 
-        val memberName = UtilApi.getPlayerName(executorPlayer.server, memberUUID)
+        val memberName = UtilApi.getPlayerName(executorPlayer.level().server, memberUUID)
         if (memberName == memberUUID.toString()) return@forEach
 
         PlayerInteractionApi.addSettingRegion(
@@ -504,24 +504,24 @@ private fun autoGrantExistingMembersOnSettingChange(
             getPermissionKeyDisplayName(permissionKey),
             defaultValue.toString(),
             region.name
-        ) ?: Text.literal("Your ${permissionKey.toString().lowercase()} permission was auto-adjusted in ${region.name}")
-        executorPlayer.server.playerManager.getPlayer(memberUUID)?.sendMessage(notification)
+        ) ?: Component.literal("Your ${permissionKey.toString().lowercase()} permission was auto-adjusted in ${region.name}")
+        executorPlayer.level().server.playerList.getPlayer(memberUUID)?.sendSystemMessage(notification)
         memberAccount.mail.add(notification)
     }
 }
 
 private fun getPermissionKeyDisplayName(permissionKey: PermissionKey): String {
     val key = "community.permission.key.${permissionKey.toString().lowercase()}"
-    return Translator.tr(key)?.string ?: permissionKey.toString().lowercase().replace("_", " ")
+    return Translator.tr(key).string ?: permissionKey.toString().lowercase().replace("_", " ")
 }
 
 private fun getRuleKeyDisplayName(ruleKey: RuleKey): String {
     val key = "community.rule.key.${ruleKey.toString().lowercase()}"
-    return Translator.tr(key)?.string ?: ruleKey.toString().lowercase().replace("_", " ")
+    return Translator.tr(key).string ?: ruleKey.toString().lowercase().replace("_", " ")
 }
 
 private fun sendSettingOrderSummary(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     community: Community,
     scope: GeoScope?,
     playerObject: GameProfile?,
@@ -535,24 +535,24 @@ private fun sendSettingOrderSummary(
     val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
     val permissionName = getPermissionKeyDisplayName(permissionKey)
 
-    player.sendMessage(Translator.tr("community.setting.confirmation.header") ?: Text.literal("§6§l====== SETTING MODIFICATION CONFIRMATION ======§r"))
-    player.sendMessage(Translator.tr("community.setting.confirmation.community", communityName) ?: Text.literal("§eCommunity: §f$communityName"))
-    player.sendMessage(Translator.tr("community.setting.confirmation.permission", permissionName) ?: Text.literal("§ePermission: §f$permissionName"))
+    player.sendSystemMessage(Translator.tr("community.setting.confirmation.header") ?: Component.literal("§6§l====== SETTING MODIFICATION CONFIRMATION ======§r"))
+    player.sendSystemMessage(Translator.tr("community.setting.confirmation.community", communityName) ?: Component.literal("§eCommunity: §f$communityName"))
+    player.sendSystemMessage(Translator.tr("community.setting.confirmation.permission", permissionName) ?: Component.literal("§ePermission: §f$permissionName"))
 
     if (scope != null) {
-        player.sendMessage(Translator.tr("community.setting.confirmation.layer.scope", scope.scopeName) ?: Text.literal("§eLayer: §fScope - ${scope.scopeName}"))
+        player.sendSystemMessage(Translator.tr("community.setting.confirmation.layer.scope", scope.scopeName) ?: Component.literal("§eLayer: §fScope - ${scope.scopeName}"))
     } else {
-        player.sendMessage(Translator.tr("community.setting.confirmation.layer.region") ?: Text.literal("§eLayer: §fRegion"))
+        player.sendSystemMessage(Translator.tr("community.setting.confirmation.layer.region") ?: Component.literal("§eLayer: §fRegion"))
     }
 
     if (playerObject != null) {
-        player.sendMessage(Translator.tr("community.setting.confirmation.target.player", playerObject.name) ?: Text.literal("§eTarget: §f${playerObject.name}"))
+        player.sendSystemMessage(Translator.tr("community.setting.confirmation.target.player", playerObject.name) ?: Component.literal("§eTarget: §f${playerObject.name}"))
     } else {
-        player.sendMessage(Translator.tr("community.setting.confirmation.target.global") ?: Text.literal("§eTarget: §fAll members"))
+        player.sendSystemMessage(Translator.tr("community.setting.confirmation.target.global") ?: Component.literal("§eTarget: §fAll members"))
     }
 
-    player.sendMessage(Translator.tr("community.setting.confirmation.change", oldValue.toString(), newValue.toString()) ?: Text.literal("§eChange: §c$oldValue §e-> §a$newValue"))
-    player.sendMessage(Translator.tr("community.setting.confirmation.area", String.format("%.2f", area)) ?: Text.literal("§eArea: §f${String.format("%.2f", area)} m²"))
+    player.sendSystemMessage(Translator.tr("community.setting.confirmation.change", oldValue.toString(), newValue.toString()) ?: Component.literal("§eChange: §c$oldValue §e-> §a$newValue"))
+    player.sendSystemMessage(Translator.tr("community.setting.confirmation.area", String.format("%.2f", area)) ?: Component.literal("§eArea: §f${String.format("%.2f", area)} m²"))
 
     if (cost != 0L) {
         val isManor = community.isManor()
@@ -563,37 +563,37 @@ private fun sendSettingOrderSummary(
         val denominator = if (playerObject != null) PricingConfig.PERMISSION_TARGET_PLAYER_DENOMINATOR.value else 1L
         TerritoryPricing.forEachSettingBracket(0.0, area, coefficientPerUnit, unitSize.toDouble(), freeArea) { tierNum, low, high, areaIn, mult, rawCost ->
             val unitPrice = settingN * mult.toDouble() / 100.0
-            player.sendMessage(Translator.tr("community.pricing.bracket_line",
+            player.sendSystemMessage(Translator.tr("community.pricing.bracket_line",
                 tierNum.toString(), String.format("%.2f", low), String.format("%.2f", high),
                 String.format("%.2f", areaIn), String.format("%.3f", unitPrice), String.format("%.2f", rawCost / 100.0)
-            ) ?: Text.literal("  Tier $tierNum (${String.format("%.2f", low)} ~ ${String.format("%.2f", high)} m²): ${String.format("%.2f", areaIn)} m² ×${String.format("%.3f", unitPrice)}/m² = ${String.format("%.2f", rawCost / 100.0)}"))
+            ) ?: Component.literal("  Tier $tierNum (${String.format("%.2f", low)} ~ ${String.format("%.2f", high)} m²): ${String.format("%.2f", areaIn)} m² ×${String.format("%.3f", unitPrice)}/m² = ${String.format("%.2f", rawCost / 100.0)}"))
         }
         if (denominator > 1L) {
-            player.sendMessage(
+            player.sendSystemMessage(
                 Translator.tr("community.setting.confirmation.player_factor", denominator.toString())
-                    ?: Text.literal("§7  Player factor: §fx1/$denominator")
+                    ?: Component.literal("§7  Player factor: §fx1/$denominator")
             )
         }
         if (cost < 0) {
             val refundPct = (PricingConfig.AREA_REFUND_RATE.value * 100).toInt()
-            player.sendMessage(Translator.tr("community.pricing.refund_summary", refundPct.toString(), String.format("%.2f", -cost / 100.0))
-                ?: Text.literal("  × $refundPct% refund = ${String.format("%.2f", -cost / 100.0)}"))
+            player.sendSystemMessage(Translator.tr("community.pricing.refund_summary", refundPct.toString(), String.format("%.2f", -cost / 100.0))
+                ?: Component.literal("  × $refundPct% refund = ${String.format("%.2f", -cost / 100.0)}"))
         }
         val totalKey = if (cost < 0) "community.setting.confirmation.refund_total" else "community.setting.confirmation.total_cost"
-        player.sendMessage(
+        player.sendSystemMessage(
             Translator.tr(totalKey, String.format("%.2f", Math.abs(cost) / 100.0))
-                ?: Text.literal("§eCost: §c§l${String.format("%.2f", cost / 100.0)}§r")
+                ?: Component.literal("§eCost: §c§l${String.format("%.2f", cost / 100.0)}§r")
         )
     } else {
-        player.sendMessage(Translator.tr("community.setting.confirmation.free") ?: Text.literal("§eCost: §a§lFree§r §7(restoring to default)"))
+        player.sendSystemMessage(Translator.tr("community.setting.confirmation.free") ?: Component.literal("§eCost: §a§lFree§r §7(restoring to default)"))
     }
 
     val assetsAfter = community.getTotalAssets() - cost
-    player.sendMessage(Translator.tr("community.setting.confirmation.assets", String.format("%.2f", community.getTotalAssets() / 100.0), String.format("%.2f", assetsAfter / 100.0)) ?: Text.literal("§eCommunity Assets: §f${String.format("%.2f", community.getTotalAssets() / 100.0)} §e-> §f${String.format("%.2f", assetsAfter / 100.0)}"))
+    player.sendSystemMessage(Translator.tr("community.setting.confirmation.assets", String.format("%.2f", community.getTotalAssets() / 100.0), String.format("%.2f", assetsAfter / 100.0)) ?: Component.literal("§eCommunity Assets: §f${String.format("%.2f", community.getTotalAssets() / 100.0)} §e-> §f${String.format("%.2f", assetsAfter / 100.0)}"))
 }
 
 private fun sendRuleSettingOrderSummary(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     community: Community,
     scope: GeoScope?,
     ruleKey: RuleKey,
@@ -605,19 +605,19 @@ private fun sendRuleSettingOrderSummary(
     val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
     val ruleName = getRuleKeyDisplayName(ruleKey)
 
-    player.sendMessage(Translator.tr("community.setting.confirmation.header") ?: Text.literal("§6§l====== SETTING MODIFICATION CONFIRMATION ======§r"))
-    player.sendMessage(Translator.tr("community.setting.confirmation.community", communityName) ?: Text.literal("§eCommunity: §f$communityName"))
-    player.sendMessage(Translator.tr("community.setting.confirmation.rule", ruleName) ?: Text.literal("§eRule: §f$ruleName"))
+    player.sendSystemMessage(Translator.tr("community.setting.confirmation.header") ?: Component.literal("§6§l====== SETTING MODIFICATION CONFIRMATION ======§r"))
+    player.sendSystemMessage(Translator.tr("community.setting.confirmation.community", communityName) ?: Component.literal("§eCommunity: §f$communityName"))
+    player.sendSystemMessage(Translator.tr("community.setting.confirmation.rule", ruleName) ?: Component.literal("§eRule: §f$ruleName"))
 
     if (scope != null) {
-        player.sendMessage(Translator.tr("community.setting.confirmation.layer.scope", scope.scopeName) ?: Text.literal("§eLayer: §fScope - ${scope.scopeName}"))
+        player.sendSystemMessage(Translator.tr("community.setting.confirmation.layer.scope", scope.scopeName) ?: Component.literal("§eLayer: §fScope - ${scope.scopeName}"))
     } else {
-        player.sendMessage(Translator.tr("community.setting.confirmation.layer.region") ?: Text.literal("§eLayer: §fRegion"))
+        player.sendSystemMessage(Translator.tr("community.setting.confirmation.layer.region") ?: Component.literal("§eLayer: §fRegion"))
     }
 
-    player.sendMessage(Translator.tr("community.setting.confirmation.target.global") ?: Text.literal("§eTarget: §fAll members"))
-    player.sendMessage(Translator.tr("community.setting.confirmation.change", oldValue.toString(), newValue.toString()) ?: Text.literal("§eChange: §c$oldValue §e-> §a$newValue"))
-    player.sendMessage(Translator.tr("community.setting.confirmation.area", String.format("%.2f", area)) ?: Text.literal("§eArea: §f${String.format("%.2f", area)} m²"))
+    player.sendSystemMessage(Translator.tr("community.setting.confirmation.target.global") ?: Component.literal("§eTarget: §fAll members"))
+    player.sendSystemMessage(Translator.tr("community.setting.confirmation.change", oldValue.toString(), newValue.toString()) ?: Component.literal("§eChange: §c$oldValue §e-> §a$newValue"))
+    player.sendSystemMessage(Translator.tr("community.setting.confirmation.area", String.format("%.2f", area)) ?: Component.literal("§eArea: §f${String.format("%.2f", area)} m²"))
 
     val isManor = community.isManor()
     val freeArea = if (isManor) PricingConfig.MANOR_FREE_AREA.value else PricingConfig.REALM_FREE_AREA.value
@@ -627,58 +627,58 @@ private fun sendRuleSettingOrderSummary(
     if (cost != 0L) {
         TerritoryPricing.forEachSettingBracket(0.0, area, coefficientPerUnit, unitSize.toDouble(), freeArea) { tierNum, low, high, areaIn, mult, rawCost ->
             val unitPrice = ruleN * mult.toDouble() / 100.0
-            player.sendMessage(Translator.tr("community.pricing.bracket_line",
+            player.sendSystemMessage(Translator.tr("community.pricing.bracket_line",
                 tierNum.toString(), String.format("%.2f", low), String.format("%.2f", high),
                 String.format("%.2f", areaIn), String.format("%.3f", unitPrice), String.format("%.2f", rawCost / 100.0)
-            ) ?: Text.literal("  Tier $tierNum (${String.format("%.2f", low)} ~ ${String.format("%.2f", high)} m²): ${String.format("%.2f", areaIn)} m² ×${String.format("%.3f", unitPrice)}/m² = ${String.format("%.2f", rawCost / 100.0)}"))
+            ) ?: Component.literal("  Tier $tierNum (${String.format("%.2f", low)} ~ ${String.format("%.2f", high)} m²): ${String.format("%.2f", areaIn)} m² ×${String.format("%.3f", unitPrice)}/m² = ${String.format("%.2f", rawCost / 100.0)}"))
         }
         if (cost < 0) {
             val refundPct = (PricingConfig.AREA_REFUND_RATE.value * 100).toInt()
-            player.sendMessage(Translator.tr("community.pricing.refund_summary", refundPct.toString(), String.format("%.2f", -cost / 100.0))
-                ?: Text.literal("  × $refundPct% refund = ${String.format("%.2f", -cost / 100.0)}"))
+            player.sendSystemMessage(Translator.tr("community.pricing.refund_summary", refundPct.toString(), String.format("%.2f", -cost / 100.0))
+                ?: Component.literal("  × $refundPct% refund = ${String.format("%.2f", -cost / 100.0)}"))
         }
         val totalKey = if (cost < 0) "community.setting.confirmation.refund_total" else "community.setting.confirmation.total_cost"
-        player.sendMessage(
+        player.sendSystemMessage(
             Translator.tr(totalKey, String.format("%.2f", Math.abs(cost) / 100.0))
-                ?: Text.literal("§eCost: §c§l${String.format("%.2f", cost / 100.0)}§r")
+                ?: Component.literal("§eCost: §c§l${String.format("%.2f", cost / 100.0)}§r")
         )
     } else {
-        player.sendMessage(Translator.tr("community.setting.confirmation.free") ?: Text.literal("§eCost: §a§lFree§r"))
+        player.sendSystemMessage(Translator.tr("community.setting.confirmation.free") ?: Component.literal("§eCost: §a§lFree§r"))
     }
 
     val assetsAfter = community.getTotalAssets() - cost
-    player.sendMessage(Translator.tr("community.setting.confirmation.assets", String.format("%.2f", community.getTotalAssets() / 100.0), String.format("%.2f", assetsAfter / 100.0)) ?: Text.literal("§eCommunity Assets: §f${String.format("%.2f", community.getTotalAssets() / 100.0)} §e-> §f${String.format("%.2f", assetsAfter / 100.0)}"))
+    player.sendSystemMessage(Translator.tr("community.setting.confirmation.assets", String.format("%.2f", community.getTotalAssets() / 100.0), String.format("%.2f", assetsAfter / 100.0)) ?: Component.literal("§eCommunity Assets: §f${String.format("%.2f", community.getTotalAssets() / 100.0)} §e-> §f${String.format("%.2f", assetsAfter / 100.0)}"))
 }
 
-private fun sendInteractiveSettingConfirmation(player: ServerPlayerEntity, regionNumberId: Int) {
-    val confirmText = Translator.tr("community.setting.confirmation.confirm_button") ?: Text.literal("§a§l[CONFIRM]§r")
-    val cancelText = Translator.tr("community.setting.confirmation.cancel_button") ?: Text.literal("§c§l[CANCEL]§r")
+private fun sendInteractiveSettingConfirmation(player: ServerPlayer, regionNumberId: Int) {
+    val confirmText = Translator.tr("community.setting.confirmation.confirm_button") ?: Component.literal("§a§l[CONFIRM]§r")
+    val cancelText = Translator.tr("community.setting.confirmation.cancel_button") ?: Component.literal("§c§l[CANCEL]§r")
 
-    val confirmButton = confirmText.copy().styled { style ->
-        style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/_commun confirm_setting $regionNumberId"))
-            .withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, Translator.tr("community.setting.confirmation.confirm_hover")))
+    val confirmButton = confirmText.copy().withStyle { style ->
+        style.withClickEvent(ClickEvent.RunCommand( "/_commun confirm_setting $regionNumberId"))
+            .withHoverEvent(HoverEvent.ShowText( Translator.tr("community.setting.confirmation.confirm_hover")))
     }
 
-    val cancelButton = cancelText.copy().styled { style ->
-        style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/_commun cancel_setting $regionNumberId"))
-            .withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_TEXT, Translator.tr("community.setting.confirmation.cancel_hover")))
+    val cancelButton = cancelText.copy().withStyle { style ->
+        style.withClickEvent(ClickEvent.RunCommand( "/_commun cancel_setting $regionNumberId"))
+            .withHoverEvent(HoverEvent.ShowText( Translator.tr("community.setting.confirmation.cancel_hover")))
     }
 
-    val prompt = (Translator.tr("community.setting.confirmation.prompt") ?: Text.literal("§e§l[ACTION REQUIRED]§r"))
+    val prompt = (Translator.tr("community.setting.confirmation.prompt") ?: Component.literal("§e§l[ACTION REQUIRED]§r"))
         .copy()
-        .append(Text.literal(" "))
+        .append(Component.literal(" "))
         .append(confirmButton)
-        .append(Text.literal(" "))
+        .append(Component.literal(" "))
         .append(cancelButton)
-    player.sendMessage(prompt)
+    player.sendSystemMessage(prompt)
 }
 
-private fun notifyFormalMembers(community: Community, server: MinecraftServer, message: Text) {
+private fun notifyFormalMembers(community: Community, server: MinecraftServer, message: Component) {
     community.member.forEach { (memberUUID, memberAccount) ->
         if (memberAccount.basicRoleType == MemberRoleType.APPLICANT || memberAccount.basicRoleType == MemberRoleType.REFUSED) {
             return@forEach
         }
-        server.playerManager.getPlayer(memberUUID)?.sendMessage(message)
+        server.playerList.getPlayer(memberUUID)?.sendSystemMessage(message)
         memberAccount.mail.add(message)
     }
 }

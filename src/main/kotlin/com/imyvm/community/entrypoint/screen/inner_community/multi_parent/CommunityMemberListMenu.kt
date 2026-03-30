@@ -7,16 +7,16 @@ import com.imyvm.community.entrypoint.screen.AbstractListMenu
 import com.imyvm.community.entrypoint.screen.component.createPlayerHeadItemStack
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.inter.api.UtilApi
-import net.minecraft.item.Items
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.world.item.Items
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.Component
 
 class CommunityMemberListMenu(
     syncId: Int,
     val community: Community,
-    val playerExecutor: ServerPlayerEntity,
+    val playerExecutor: ServerPlayer,
     page: Int = 0,
-    val runBack : ((ServerPlayerEntity) -> Unit)
+    val runBack : ((ServerPlayer) -> Unit)
 ) : AbstractListMenu(
     syncId = syncId,
     menuTitle = generateCommunityMemberListMenuTitle(community),
@@ -44,7 +44,7 @@ class CommunityMemberListMenu(
     private fun addOwnerButton() {
         addButton(
             slot = 10,
-            name = (Translator.tr("ui.admin.member_list.owner")?.string ?: "Owner") + ":",
+            name = (Translator.tr("ui.admin.member_list.owner").string ?: "Owner") + ":",
             item = Items.COMMAND_BLOCK
         ) {}
 
@@ -60,7 +60,7 @@ class CommunityMemberListMenu(
     private fun addAdminButtons() {
         addButton(
             slot = 19,
-            name = (Translator.tr("ui.admin.member_list.admin")?.string ?: "Admins") + ":",
+            name = (Translator.tr("ui.admin.member_list.admin").string ?: "Admins") + ":",
             item = Items.COMMAND_BLOCK_MINECART
         ) {}
 
@@ -78,7 +78,7 @@ class CommunityMemberListMenu(
     private fun addMembersForPage0() {
         addButton(
             slot = 28,
-            name = (Translator.tr("ui.admin.member_list.member")?.string ?: "Members") + ":",
+            name = (Translator.tr("ui.admin.member_list.member").string ?: "Members") + ":",
             item = Items.VILLAGER_SPAWN_EGG
         ) {}
 
@@ -108,7 +108,7 @@ class CommunityMemberListMenu(
         }
     }
 
-    override fun openNewPage(player: ServerPlayerEntity, newPage: Int) {
+    override fun openNewPage(player: ServerPlayer, newPage: Int) {
         CommunityMenuOpener.open(player) { syncId ->
             CommunityMemberListMenu(syncId, community, player, newPage, runBack)
         }
@@ -119,9 +119,9 @@ class CommunityMemberListMenu(
     }
 
     companion object {
-        fun generateCommunityMemberListMenuTitle(community: Community): Text =
-            Text.of(community.generateCommunityMark()
-                    + (Translator.tr("ui.admin.member_list.title")?.string ?: "- Member List")
+        fun generateCommunityMemberListMenuTitle(community: Community): Component =
+            Component.literal(community.generateCommunityMark()
+                    + (Translator.tr("ui.admin.member_list.title").string ?: "- Member List")
             )
     }
 }

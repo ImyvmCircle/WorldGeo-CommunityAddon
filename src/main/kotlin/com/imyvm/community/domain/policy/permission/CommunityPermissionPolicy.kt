@@ -2,13 +2,13 @@ package com.imyvm.community.domain.policy.permission
 
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.community.MemberRoleType
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 import java.util.*
 
 object CommunityPermissionPolicy {
 
     fun canTransferOwnership(
-        executor: ServerPlayerEntity,
+        executor: ServerPlayer,
         community: Community,
         targetUUID: UUID
     ): PermissionResult {
@@ -27,11 +27,11 @@ object CommunityPermissionPolicy {
         return PermissionResult.Allowed
     }
 
-    fun canRenameCommunity(executor: ServerPlayerEntity, community: Community): PermissionResult =
+    fun canRenameCommunity(executor: ServerPlayer, community: Community): PermissionResult =
         canExecuteAdministration(executor, community, AdminPrivilege.RENAME_COMMUNITY)
 
     fun canExecuteAdministration(
-        executor: ServerPlayerEntity,
+        executor: ServerPlayer,
         community: Community,
         privilege: AdminPrivilege? = null
     ): PermissionResult {
@@ -62,7 +62,7 @@ object CommunityPermissionPolicy {
     }
 
     fun canExecuteOperationInProto(
-        executor: ServerPlayerEntity,
+        executor: ServerPlayer,
         community: Community,
         privilege: AdminPrivilege
     ): PermissionResult {
@@ -80,7 +80,7 @@ object CommunityPermissionPolicy {
     }
 
     fun canManageMember(
-        executor: ServerPlayerEntity,
+        executor: ServerPlayer,
         community: Community,
         targetUUID: UUID
     ): PermissionResult {
@@ -102,7 +102,7 @@ object CommunityPermissionPolicy {
     }
 
     fun canPromoteMember(
-        executor: ServerPlayerEntity,
+        executor: ServerPlayer,
         community: Community,
         targetUUID: UUID
     ): PermissionResult {
@@ -117,7 +117,7 @@ object CommunityPermissionPolicy {
     }
 
     fun canDemoteMember(
-        executor: ServerPlayerEntity,
+        executor: ServerPlayer,
         community: Community,
         targetUUID: UUID
     ): PermissionResult {
@@ -132,7 +132,7 @@ object CommunityPermissionPolicy {
     }
 
     fun canRemoveMember(
-        executor: ServerPlayerEntity,
+        executor: ServerPlayer,
         community: Community,
         targetUUID: UUID
     ): PermissionResult {
@@ -146,7 +146,7 @@ object CommunityPermissionPolicy {
         return PermissionResult.Allowed
     }
 
-    fun canAuditApplications(executor: ServerPlayerEntity, community: Community): PermissionResult {
+    fun canAuditApplications(executor: ServerPlayer, community: Community): PermissionResult {
         if (isRevokedCommunity(community)) return PermissionResult.Denied("community.permission.error.revoked")
 
         val executorRole = community.getMemberRole(executor.uuid)
@@ -177,7 +177,7 @@ object CommunityPermissionPolicy {
     }
 
     fun canAcceptApplicant(
-        executor: ServerPlayerEntity,
+        executor: ServerPlayer,
         community: Community,
         targetUUID: UUID
     ): PermissionResult {
@@ -193,12 +193,12 @@ object CommunityPermissionPolicy {
     }
 
     fun canRefuseApplicant(
-        executor: ServerPlayerEntity,
+        executor: ServerPlayer,
         community: Community,
         targetUUID: UUID
     ): PermissionResult = canAcceptApplicant(executor, community, targetUUID)
 
-    fun canChangeJoinPolicy(executor: ServerPlayerEntity, community: Community): PermissionResult {
+    fun canChangeJoinPolicy(executor: ServerPlayer, community: Community): PermissionResult {
         if (isRevokedCommunity(community)) return PermissionResult.Denied("community.permission.error.revoked")
 
         val executorRole = community.getMemberRole(executor.uuid)
@@ -214,7 +214,7 @@ object CommunityPermissionPolicy {
         return canExecuteAdministration(executor, community, AdminPrivilege.CHANGE_JOIN_POLICY)
     }
 
-    fun canQuitCommunity(executor: ServerPlayerEntity, community: Community): PermissionResult {
+    fun canQuitCommunity(executor: ServerPlayer, community: Community): PermissionResult {
         if (isRevokedCommunity(community)) return PermissionResult.Denied("community.permission.error.revoked")
 
         if (!isProtoCommunity(community) && !isActiveCommunity(community))
@@ -231,7 +231,7 @@ object CommunityPermissionPolicy {
         return PermissionResult.Allowed
     }
 
-    fun canViewCommunity(executor: ServerPlayerEntity, community: Community): PermissionResult {
+    fun canViewCommunity(executor: ServerPlayer, community: Community): PermissionResult {
         if (isRevokedCommunity(community)) return PermissionResult.Denied("community.permission.error.revoked")
 
         val executorRole = community.getMemberRole(executor.uuid)
@@ -243,7 +243,7 @@ object CommunityPermissionPolicy {
         return PermissionResult.Allowed
     }
 
-    fun canDonate(executor: ServerPlayerEntity, community: Community): PermissionResult {
+    fun canDonate(executor: ServerPlayer, community: Community): PermissionResult {
         if (isRevokedCommunity(community)) return PermissionResult.Denied("community.permission.error.revoked")
 
         val executorRole = community.getMemberRole(executor.uuid)
@@ -256,7 +256,7 @@ object CommunityPermissionPolicy {
         return PermissionResult.Allowed
     }
 
-    fun canManageAdminPrivileges(executor: ServerPlayerEntity, community: Community): PermissionResult {
+    fun canManageAdminPrivileges(executor: ServerPlayer, community: Community): PermissionResult {
         if (isRevokedCommunity(community)) return PermissionResult.Denied("community.permission.error.revoked")
 
         val executorRole = community.getMemberRole(executor.uuid)
@@ -274,7 +274,7 @@ object CommunityPermissionPolicy {
         }
 
     inline fun <T> executeWithPermission(
-        executor: ServerPlayerEntity,
+        executor: ServerPlayer,
         permissionCheck: () -> PermissionResult,
         action: () -> T
     ): T? {
@@ -282,8 +282,8 @@ object CommunityPermissionPolicy {
         return if (result.isAllowed()) {
             action()
         } else {
-            executor.closeHandledScreen()
-            result.sendFeedback(executor)
+            executor.closeContainer()
+            result.sendSuccess(executor)
             null
         }
     }

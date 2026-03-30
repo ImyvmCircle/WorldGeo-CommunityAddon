@@ -10,18 +10,18 @@ import com.imyvm.community.util.Translator
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.component.HypotheticalShape
 import com.mojang.authlib.GameProfile
-import net.minecraft.item.Items
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.world.item.Items
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.Component
 
 class CommunityRegionScopeMenu(
     syncId: Int,
-    val playerExecutor: ServerPlayerEntity,
+    val playerExecutor: ServerPlayer,
     val community: Community,
     private val geographicFunctionType: GeographicFunctionType,
     val playerObject: GameProfile? = null,
     page: Int = 0,
-    val runBack: ((ServerPlayerEntity) -> Unit)
+    val runBack: ((ServerPlayer) -> Unit)
 ): AbstractListMenu(
     syncId,
     menuTitle = generateMenuTitle(community, geographicFunctionType, playerObject, playerExecutor),
@@ -50,10 +50,10 @@ class CommunityRegionScopeMenu(
         val globalName = when (geographicFunctionType) {
             GeographicFunctionType.TELEPORT_POINT_EXECUTION,
             GeographicFunctionType.TELEPORT_POINT_LOCATING ->
-                Translator.tr("ui.admin.region.teleport.global_main")?.string ?: "Main Teleport Point"
+                Translator.tr("ui.admin.region.teleport.global_main").string ?: "Main Teleport Point"
             GeographicFunctionType.NAME_MODIFICATION ->
-                Translator.tr("ui.admin.region.name.global")?.string ?: "Community Name (Global)"
-            else -> Translator.tr("ui.admin.region.global")?.string ?: "Region Global"
+                Translator.tr("ui.admin.region.name.global").string ?: "Community Name (Global)"
+            else -> Translator.tr("ui.admin.region.global").string ?: "Region Global"
         }
         val globalItem = when (geographicFunctionType) {
             GeographicFunctionType.TELEPORT_POINT_EXECUTION,
@@ -117,7 +117,7 @@ class CommunityRegionScopeMenu(
         return (listSize + 2 + unitsPerPage - 1) / unitsPerPage
     }
 
-    override fun openNewPage(playerExecutor: ServerPlayerEntity, newPage: Int) {
+    override fun openNewPage(playerExecutor: ServerPlayer, newPage: Int) {
         CommunityMenuOpener.open(playerExecutor) { syncId ->
             CommunityRegionScopeMenu(
                 syncId = syncId,
@@ -132,49 +132,49 @@ class CommunityRegionScopeMenu(
     }
 
     companion object {
-        fun generateMenuTitle(community: Community, geographicFunctionType: GeographicFunctionType, playerObject: GameProfile?, playerExecutor: ServerPlayerEntity): Text {
+        fun generateMenuTitle(community: Community, geographicFunctionType: GeographicFunctionType, playerObject: GameProfile?, playerExecutor: ServerPlayer): Component {
             val baseTitle = community.generateCommunityMark() + " - "
             val specificTitle = when (geographicFunctionType) {
                 GeographicFunctionType.GEOMETRY_MODIFICATION -> {
                     val hypotheticalShape = ImyvmWorldGeo.pointSelectingPlayers[playerExecutor.uuid]?.hypotheticalShape
                     if (hypotheticalShape is HypotheticalShape.ModifyExisting) {
                         val scopeName = hypotheticalShape.scope.scopeName
-                        val hint = Translator.tr("ui.admin.region.geometry.title.modifying")?.string ?: "Modifying"
+                        val hint = Translator.tr("ui.admin.region.geometry.title.modifying").string ?: "Modifying"
                         "$hint: $scopeName"
                     } else {
-                        Translator.tr("ui.admin.region.geometry.title")?.string
+                        Translator.tr("ui.admin.region.geometry.title").string
                             ?: "Choose scale modifying geographic shape"
                     }
                 }
                 GeographicFunctionType.SETTING_ADJUSTMENT -> {
-                    Translator.tr("ui.admin.region.setting.manage.title")?.string
+                    Translator.tr("ui.admin.region.setting.manage.title").string
                         ?: "Choose scale modifying region settings"
                 }
                 GeographicFunctionType.TELEPORT_POINT_LOCATING -> {
-                    Translator.tr("ui.admin.region.teleport.title")?.string
+                    Translator.tr("ui.admin.region.teleport.title").string
                         ?: "Choose scale managing teleport point"
                 }
                 GeographicFunctionType.TELEPORT_POINT_EXECUTION -> {
-                    Translator.tr("ui.admin.region.teleport.execution.title")?.string
+                    Translator.tr("ui.admin.region.teleport.execution.title").string
                         ?: "Choose scale teleporting to"
                 }
                 GeographicFunctionType.NAME_MODIFICATION -> {
-                    Translator.tr("ui.admin.region.name.title")?.string
+                    Translator.tr("ui.admin.region.name.title").string
                         ?: "Choose scope to rename"
                 }
                 GeographicFunctionType.SCOPE_DELETION -> {
-                    Translator.tr("ui.admin.region.deletion.title")?.string
+                    Translator.tr("ui.admin.region.deletion.title").string
                         ?: "Choose scope to delete"
                 }
                 GeographicFunctionType.SCOPE_TRANSFER -> {
-                    Translator.tr("ui.admin.region.transfer.scope.title")?.string
+                    Translator.tr("ui.admin.region.transfer.scope.title").string
                         ?: "Choose scope to transfer"
                 }
             }
             return if (playerObject != null) {
-                Text.of("$baseTitle$specificTitle: ${playerObject.name}")
+                Component.literal("$baseTitle$specificTitle: ${playerObject.name}")
             } else {
-                Text.of("$baseTitle$specificTitle")
+                Component.literal("$baseTitle$specificTitle")
             }
         }
     }

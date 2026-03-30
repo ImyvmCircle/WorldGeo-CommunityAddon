@@ -19,16 +19,16 @@ import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.inter.api.PlayerInteractionApi
 import com.imyvm.iwg.inter.api.RegionDataApi
 import com.imyvm.community.util.Translator
-import net.minecraft.entity.effect.StatusEffectInstance
-import net.minecraft.entity.effect.StatusEffects
-import net.minecraft.particle.ParticleTypes
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.ClickEvent
+import net.minecraft.world.effect.MobEffectInstance
+import net.minecraft.world.effect.MobEffects
+import net.minecraft.core.particles.ParticleTypes
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.ClickEvent
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.UUID
 
-fun runOpenOperationMenu(player: ServerPlayerEntity, community: Community, runBackGrandfather : ((ServerPlayerEntity) -> Unit)) {
+fun runOpenOperationMenu(player: ServerPlayer, community: Community, runBackGrandfather : ((ServerPlayer) -> Unit)) {
     CommunityMenuOpener.open(player) { syncId ->
         CommunityAdministrationMenu(
             syncId,
@@ -45,26 +45,26 @@ fun runOpenOperationMenu(player: ServerPlayerEntity, community: Community, runBa
     }
 }
 
-fun runSendingCommunityDescription(player: ServerPlayerEntity, community: Community) {
+fun runSendingCommunityDescription(player: ServerPlayer, community: Community) {
     community.sendCommunityRegionDescription(player)
     val regionId = community.regionNumberId
     if (regionId != null) {
-        player.sendMessage(
-            Translator.tr("ui.button.return_to_menu")?.copy()?.styled { style ->
-                style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/community open_menu $regionId"))
+        player.sendSystemMessage(
+            Translator.tr("ui.button.return_to_menu").copy().withStyle { style ->
+                style.withClickEvent(ClickEvent.RunCommand( "/community open_menu $regionId"))
             }
         )
     }
-    player.closeHandledScreen()
+    player.closeContainer()
 }
 
-fun runOpenMemberListMenu(player: ServerPlayerEntity, community: Community, runBackGrandfather : ((ServerPlayerEntity) -> Unit)) {
+fun runOpenMemberListMenu(player: ServerPlayer, community: Community, runBackGrandfather : ((ServerPlayer) -> Unit)) {
     CommunityMenuOpener.open(player) { syncId ->
         CommunityMemberListMenu(syncId, community, player) { runBackToCommunityMenu(player, community, runBackGrandfather) }
     }
 }
 
-fun runOpenSettingMenu(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit) {
+fun runOpenSettingMenu(player: ServerPlayer, community: Community, runBackGrandfather: (ServerPlayer) -> Unit) {
     CommunityMenuOpener.open(player) { syncId ->
         CommunitySettingMenu(syncId, player, community) {
             runBackToCommunityMenu(
@@ -76,44 +76,44 @@ fun runOpenSettingMenu(player: ServerPlayerEntity, community: Community, runBack
     }
 }
 
-fun canUseCommunityTeleport(player: ServerPlayerEntity, community: Community, scope: GeoScope): Boolean {
+fun canUseCommunityTeleport(player: ServerPlayer, community: Community, scope: GeoScope): Boolean {
     val role = community.getMemberRole(player.uuid)
     val isFormalMember = role == MemberRoleType.OWNER || role == MemberRoleType.ADMIN || role == MemberRoleType.MEMBER
     if (isFormalMember) return true
     return RegionDataApi.inquireTeleportPointAccessibility(scope)
 }
 
-fun runTeleportCommunity(player: ServerPlayerEntity, community: Community) {
-    player.closeHandledScreen()
+fun runTeleportCommunity(player: ServerPlayer, community: Community) {
+    player.closeContainer()
 
     val region = community.getRegion()
     if (region == null) {
-        player.sendMessage(Translator.tr("ui.community.button.interaction.teleport.execution.error.no_region"))
+        player.sendSystemMessage(Translator.tr("ui.community.button.interaction.teleport.execution.error.no_region"))
         return
     }
 
     val mainScope = region.geometryScope.firstOrNull()
     if (mainScope == null) {
-        player.sendMessage(Translator.tr("ui.community.button.interaction.teleport.execution.error.no_scope"),)
+        player.sendSystemMessage(Translator.tr("ui.community.button.interaction.teleport.execution.error.no_scope"),)
         return
     }
 
     if (!canUseCommunityTeleport(player, community, mainScope)) {
-        player.sendMessage(Translator.tr("ui.community.button.interaction.teleport.execution.error.not_public"))
+        player.sendSystemMessage(Translator.tr("ui.community.button.interaction.teleport.execution.error.not_public"))
         return
     }
 
     startCommunityTeleportExecution(player, community, mainScope)
 }
 
-fun startCommunityTeleportExecution(player: ServerPlayerEntity, community: Community, scope: GeoScope): Int {
+fun startCommunityTeleportExecution(player: ServerPlayer, community: Community, scope: GeoScope): Int {
     val region = community.getRegion()
     if (region == null) {
-        player.sendMessage(Translator.tr("ui.community.button.interaction.teleport.execution.error.no_region"))
+        player.sendSystemMessage(Translator.tr("ui.community.button.interaction.teleport.execution.error.no_region"))
         return 0
     }
     if (!canUseCommunityTeleport(player, community, scope)) {
-        player.sendMessage(Translator.tr("ui.community.button.interaction.teleport.execution.error.not_public"))
+        player.sendSystemMessage(Translator.tr("ui.community.button.interaction.teleport.execution.error.not_public"))
         return 0
     }
 
@@ -144,7 +144,7 @@ fun startCommunityTeleportExecution(player: ServerPlayerEntity, community: Commu
     if (cost > 0) {
         val playerAccount = EconomyMod.data.getOrCreate(player)
         if (playerAccount.money < cost) {
-            player.sendMessage(
+            player.sendSystemMessage(
                 Translator.tr(
                     "community.teleport.execution.error.insufficient_balance",
                     String.format("%.2f", cost / 100.0),
@@ -170,7 +170,7 @@ fun startCommunityTeleportExecution(player: ServerPlayerEntity, community: Commu
         startY = player.y,
         startZ = player.z
     )
-    player.sendMessage(
+    player.sendSystemMessage(
         Translator.tr(
             "community.teleport.execution.pending",
             scope.scopeName,
@@ -186,7 +186,7 @@ fun processPendingTeleportExecutions() {
     val now = System.currentTimeMillis()
     while (iterator.hasNext()) {
         val (_, pending) = iterator.next()
-        val player = com.imyvm.community.WorldGeoCommunityAddon.server?.playerManager?.getPlayer(pending.playerUUID)
+        val player = com.imyvm.community.WorldGeoCommunityAddon.server?.playerList?.getPlayer(pending.playerUUID)
         if (player == null) {
             iterator.remove()
             continue
@@ -197,15 +197,15 @@ fun processPendingTeleportExecutions() {
             continue
         }
 
-        val moved = player.squaredDistanceTo(pending.startX, pending.startY, pending.startZ) > 0.01
+        val moved = player.distanceToSqr(pending.startX, pending.startY, pending.startZ) > 0.01
         if (moved) {
-            player.sendMessage(Translator.tr("community.teleport.execution.cancelled.moved"))
+            player.sendSystemMessage(Translator.tr("community.teleport.execution.cancelled.moved"))
             iterator.remove()
             continue
         }
 
         if (player.hurtTime > 0) {
-            player.sendMessage(Translator.tr("community.teleport.execution.cancelled.attacked"))
+            player.sendSystemMessage(Translator.tr("community.teleport.execution.cancelled.attacked"))
             iterator.remove()
             continue
         }
@@ -216,7 +216,7 @@ fun processPendingTeleportExecutions() {
 
         val scope = community.getRegion()?.geometryScope?.firstOrNull { it.scopeName.equals(pending.scopeName, ignoreCase = true) }
         if (scope == null) {
-            player.sendMessage(Translator.tr("ui.community.button.interaction.teleport.execution.error.no_scope"))
+            player.sendSystemMessage(Translator.tr("ui.community.button.interaction.teleport.execution.error.no_scope"))
             iterator.remove()
             continue
         }
@@ -227,7 +227,7 @@ fun processPendingTeleportExecutions() {
 }
 
 private fun executeCommunityTeleport(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     community: Community,
     scope: GeoScope,
     usageKey: String,
@@ -235,14 +235,14 @@ private fun executeCommunityTeleport(
 ): Int {
     val region = community.getRegion() ?: return 0
     if (!canUseCommunityTeleport(player, community, scope)) {
-        player.sendMessage(Translator.tr("ui.community.button.interaction.teleport.execution.error.not_public"))
+        player.sendSystemMessage(Translator.tr("ui.community.button.interaction.teleport.execution.error.not_public"))
         return 0
     }
 
     if (cost > 0) {
         val playerAccount = EconomyMod.data.getOrCreate(player)
         if (playerAccount.money < cost) {
-            player.sendMessage(Translator.tr("community.teleport.execution.cancelled.balance_changed"))
+            player.sendSystemMessage(Translator.tr("community.teleport.execution.cancelled.balance_changed"))
             return 0
         }
         playerAccount.money -= cost
@@ -251,8 +251,8 @@ private fun executeCommunityTeleport(
     PlayerInteractionApi.teleportPlayerToScope(player, region, scope)
     teleportUsageByDay[usageKey] = (teleportUsageByDay[usageKey] ?: 0) + 1
 
-    player.addStatusEffect(StatusEffectInstance(StatusEffects.NAUSEA, CommunityConfig.TELEPORT_POST_EFFECT_TICKS.value, 0, false, false, true))
-    player.serverWorld.spawnParticles(
+    player.addEffect(MobEffectInstance(MobEffects.NAUSEA, CommunityConfig.TELEPORT_POST_EFFECT_TICKS.value, 0, false, false, true))
+    player.level().sendParticles(
         ParticleTypes.CRIT,
         player.x,
         player.y + 0.1,
@@ -263,7 +263,7 @@ private fun executeCommunityTeleport(
         0.9,
         0.02
     )
-    player.sendMessage(
+    player.sendSystemMessage(
         Translator.tr(
             "community.teleport.execution.completed",
             scope.scopeName,
@@ -293,7 +293,7 @@ private data class PendingTeleportExecution(
 private val teleportUsageByDay: MutableMap<String, Int> = mutableMapOf()
 private val pendingTeleportExecutions: MutableMap<UUID, PendingTeleportExecution> = mutableMapOf()
 
-fun runTeleportToScope(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit) {
+fun runTeleportToScope(player: ServerPlayer, community: Community, runBackGrandfather: (ServerPlayer) -> Unit) {
     CommunityMenuOpener.open(player) { syncId ->
         CommunityRegionScopeMenu(
             syncId = syncId,
@@ -304,16 +304,16 @@ fun runTeleportToScope(player: ServerPlayerEntity, community: Community, runBack
     }
 }
 
-fun runShowLeaveConfirmMenu(player: ServerPlayerEntity, community: Community, runBackGrandfather: (ServerPlayerEntity) -> Unit) {
+fun runShowLeaveConfirmMenu(player: ServerPlayer, community: Community, runBackGrandfather: (ServerPlayer) -> Unit) {
     val permissionResult = CommunityPermissionPolicy.canQuitCommunity(player, community)
     if (!permissionResult.isAllowed()) {
-        permissionResult.sendFeedback(player)
+        permissionResult.sendSuccess(player)
         return
     }
 
     val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
     val cautions = listOf(
-        com.imyvm.community.util.Translator.tr("ui.confirm.leave.caution", communityName)?.string
+        com.imyvm.community.util.Translator.tr("ui.confirm.leave.caution", communityName).string
             ?: "Leave $communityName? You cannot undo this action."
     )
 
@@ -329,7 +329,7 @@ fun runShowLeaveConfirmMenu(player: ServerPlayerEntity, community: Community, ru
     }
 }
 
-fun runBackToCommunityMenu(player: ServerPlayerEntity, community: Community, runBackGrandfather : ((ServerPlayerEntity) -> Unit)) {
+fun runBackToCommunityMenu(player: ServerPlayer, community: Community, runBackGrandfather : ((ServerPlayer) -> Unit)) {
     CommunityMenuOpener.open(player) { syncId ->
         CommunityMenu(
             syncId = syncId,
@@ -340,8 +340,8 @@ fun runBackToCommunityMenu(player: ServerPlayerEntity, community: Community, run
     }
 }
 
-fun runLikeCommunity(player: ServerPlayerEntity, community: Community) {
-    player.closeHandledScreen()
+fun runLikeCommunity(player: ServerPlayer, community: Community) {
+    player.closeContainer()
 
     val timezone = ZoneId.of(CommunityConfig.TIMEZONE.value)
     val today = LocalDate.now(timezone)
@@ -353,7 +353,7 @@ fun runLikeCommunity(player: ServerPlayerEntity, community: Community) {
         val lastLikeDate = java.time.Instant.ofEpochMilli(lastLikeTimestamp)
             .atZone(timezone).toLocalDate()
         if (!today.isAfter(lastLikeDate)) {
-            player.sendMessage(Translator.tr("community.like.already_liked"))
+            player.sendSystemMessage(Translator.tr("community.like.already_liked"))
             sendReturnToMenuButton(player, regionId)
             return
         }
@@ -363,15 +363,15 @@ fun runLikeCommunity(player: ServerPlayerEntity, community: Community) {
     community.lastLikedBy[player.uuid] = System.currentTimeMillis()
 
     val rank = calculateCommunityLikeRank(community)
-    player.sendMessage(Translator.tr("community.like.success", communityName, community.likeCount, rank))
+    player.sendSystemMessage(Translator.tr("community.like.success", communityName, community.likeCount, rank))
     sendReturnToMenuButton(player, regionId)
 }
 
-private fun sendReturnToMenuButton(player: ServerPlayerEntity, regionId: Int?) {
+private fun sendReturnToMenuButton(player: ServerPlayer, regionId: Int?) {
     if (regionId != null) {
-        player.sendMessage(
-            Translator.tr("ui.button.return_to_menu")?.copy()?.styled { style ->
-                style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/community open_menu $regionId"))
+        player.sendSystemMessage(
+            Translator.tr("ui.button.return_to_menu").copy().withStyle { style ->
+                style.withClickEvent(ClickEvent.RunCommand( "/community open_menu $regionId"))
             }
         )
     }

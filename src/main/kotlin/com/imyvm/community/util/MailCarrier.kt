@@ -1,12 +1,12 @@
 package com.imyvm.community.util
 
 import com.imyvm.community.domain.model.Community
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.Component
 
 fun constructAndSendMail(
-    mailBox: MutableList<Text>,
-    playerExecutor: ServerPlayerEntity,
+    mailBox: MutableList<Component>,
+    playerExecutor: ServerPlayer,
     community: Community,
     content: String
 ): Boolean {

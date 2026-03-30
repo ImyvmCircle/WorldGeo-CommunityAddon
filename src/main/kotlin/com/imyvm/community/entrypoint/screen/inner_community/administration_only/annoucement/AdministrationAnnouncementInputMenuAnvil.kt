@@ -4,13 +4,13 @@ import com.imyvm.community.application.interaction.screen.inner_community.affair
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.entrypoint.screen.AbstractRenameMenuAnvil
 import com.imyvm.community.util.Translator
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.Component
 
 class AdministrationAnnouncementInputMenuAnvil(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     val community: Community,
-    val runBack: ((ServerPlayerEntity) -> Unit)
+    val runBack: ((ServerPlayer) -> Unit)
 ) : AbstractRenameMenuAnvil(player, "") {
 
     override fun isNameValid(name: String): Boolean = name.isNotBlank()
@@ -23,7 +23,7 @@ class AdministrationAnnouncementInputMenuAnvil(
         onCreateAnnouncementConfirm(player, community, finalName, runBack)
     }
     
-    override fun getMenuTitle(): Text {
-        return Translator.tr("ui.admin.announcement_input.title") ?: Text.of("Create Announcement")
+    override fun getMenuTitle(): Component {
+        return Translator.tr("ui.admin.announcement_input.title") ?: Component.literal("Create Announcement")
     }
 }

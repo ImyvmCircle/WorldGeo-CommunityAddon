@@ -8,17 +8,17 @@ import com.imyvm.community.entrypoint.screen.component.getLoreButton
 import com.imyvm.community.util.Translator
 import com.imyvm.community.util.getFormattedMillsHour
 import com.imyvm.iwg.inter.api.UtilApi
-import net.minecraft.item.ItemStack
-import net.minecraft.item.Items
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.Items
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.Component
 
 class MemberAnnouncementListMenu(
     syncId: Int,
     val community: Community,
-    val player: ServerPlayerEntity,
+    val player: ServerPlayer,
     page: Int = 0,
-    val runBack: ((ServerPlayerEntity) -> Unit)
+    val runBack: ((ServerPlayer) -> Unit)
 ) : AbstractListMenu(
     syncId = syncId,
     menuTitle = Translator.tr("ui.community.announcement_list.title"),
@@ -42,20 +42,20 @@ class MemberAnnouncementListMenu(
                 itemStack = getLoreButton(
                     ItemStack(if (isRead) Items.PAPER else Items.WRITABLE_BOOK),
                     listOf(
-                        if (isRead) Translator.tr("ui.community.announcement_list.lore.read") ?: Text.of("[READ]") 
-                        else Translator.tr("ui.community.announcement_list.lore.unread") ?: Text.of("[UNREAD]"),
-                        Translator.tr("ui.community.announcement_list.lore.author", authorName) ?: Text.of("By: $authorName"),
-                        Translator.tr("ui.community.announcement_list.lore.time", timeFormatted) ?: Text.of("Time: $timeFormatted"),
-                        Translator.tr("ui.community.announcement_list.lore.preview", preview) ?: Text.of(preview)
+                        if (isRead) Translator.tr("ui.community.announcement_list.lore.read") ?: Component.literal("[READ]") 
+                        else Translator.tr("ui.community.announcement_list.lore.unread") ?: Component.literal("[UNREAD]"),
+                        Translator.tr("ui.community.announcement_list.lore.author", authorName) ?: Component.literal("By: $authorName"),
+                        Translator.tr("ui.community.announcement_list.lore.time", timeFormatted) ?: Component.literal("Time: $timeFormatted"),
+                        Translator.tr("ui.community.announcement_list.lore.preview", preview) ?: Component.literal(preview)
                     )
                 ),
-                name = Translator.tr("ui.community.announcement_list.item")?.string ?: "Announcement"
+                name = Translator.tr("ui.community.announcement_list.item").string ?: "Announcement"
             ) { onViewMemberAnnouncementListItem(player, community, announcement.id, runBack) }
         }
         handlePageWithSize(announcements.size, announcementsPerPage)
     }
 
-    override fun openNewPage(player: ServerPlayerEntity, newPage: Int) {
+    override fun openNewPage(player: ServerPlayer, newPage: Int) {
         CommunityMenuOpener.open(player) { syncId ->
             MemberAnnouncementListMenu(syncId, community, player, newPage, runBack)
         }

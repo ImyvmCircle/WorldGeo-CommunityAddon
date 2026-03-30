@@ -5,7 +5,7 @@ import com.imyvm.community.domain.policy.territory.SettingItemCostChange
 import com.imyvm.community.domain.policy.territory.TerritoryConfirmationMessage
 import com.imyvm.community.domain.policy.territory.TerritoryPricing
 import com.imyvm.iwg.domain.component.GeoShapeType
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 
 fun calculateModificationCost(areaChange: Double, currentTotalArea: Double, isManor: Boolean): ModificationCostResult {
     return TerritoryPricing.calculateModificationCost(areaChange, currentTotalArea, isManor)
@@ -17,7 +17,7 @@ fun generateModificationConfirmationMessage(
     isManor: Boolean,
     currentAssets: Long,
     settingChanges: List<SettingItemCostChange> = emptyList()
-): List<Text> {
+): List<Component> {
     return TerritoryConfirmationMessage.generateModificationConfirmation(
         scopeName, costResult, isManor, currentAssets, settingChanges
     )
@@ -31,7 +31,7 @@ fun generateScopeDeletionConfirmationMessage(
     isManor: Boolean,
     currentAssets: Long,
     settingChanges: List<SettingItemCostChange> = emptyList()
-): List<Text> {
+): List<Component> {
     return TerritoryConfirmationMessage.generateScopeDeletionConfirmation(
         scopeName, scopeArea, costResult, isManor, currentAssets, settingChanges
     )
@@ -54,7 +54,7 @@ fun generateScopeAdditionConfirmationMessage(
     maxScopesAllowed: Int = 0,
     formalMemberCount: Int = 0,
     multiplier: Double = 1.5
-): List<Text> {
+): List<Component> {
     return TerritoryConfirmationMessage.generateScopeAdditionConfirmation(
         scopeName, shapeType, area, fixedCostBase, landCostChange, settingChanges, isManor, currentAssets,
         currentTotalArea, rawTotal, adjustedTotal, excessCount, maxScopesAllowed, formalMemberCount, multiplier

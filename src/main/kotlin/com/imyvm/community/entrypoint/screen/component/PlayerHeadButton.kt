@@ -4,11 +4,11 @@ import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.util.Translator
 import com.mojang.authlib.properties.PropertyMap
-import net.minecraft.component.DataComponentTypes
-import net.minecraft.component.type.ProfileComponent
-import net.minecraft.item.ItemStack
-import net.minecraft.item.Items
-import net.minecraft.text.Text
+import net.minecraft.core.component.DataComponents
+import net.minecraft.world.item.component.ResolvableProfile
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.Items
+import net.minecraft.network.chat.Component
 import java.util.*
 
 fun getPlayerHeadButtonItemStackCommunity(community: Community): ItemStack{
@@ -16,7 +16,7 @@ fun getPlayerHeadButtonItemStackCommunity(community: Community): ItemStack{
     val displayName = community.generateCommunityMark()
     val itemStack = createPlayerHeadItemStack(displayName, ownerUuid)
 
-    val loreLines = mutableListOf<Text>()
+    val loreLines = mutableListOf<Component>()
     fun addEntry(key: String, value: Any?) =
         Translator.tr(key, value)?.let { loreLines.add(it) }
     addEntry("ui.list.button.lore.id", community.regionNumberId)
@@ -31,12 +31,10 @@ fun getPlayerHeadButtonItemStackCommunity(community: Community): ItemStack{
 
 fun createPlayerHeadItemStack(name: String, uuid: UUID): ItemStack {
     val headStack = ItemStack(Items.PLAYER_HEAD)
-    headStack.set(DataComponentTypes.CUSTOM_NAME, Text.literal(name))
+    headStack.set(DataComponents.CUSTOM_NAME, Component.literal(name))
 
-    val profileComponent = ProfileComponent(Optional.empty(), Optional.of(uuid), PropertyMap())
-    profileComponent.future.thenAccept { fullProfile ->
-        headStack.set(DataComponentTypes.PROFILE, fullProfile)
-    }
+    val profileComponent = ResolvableProfile.createUnresolved(uuid)
+    headStack.set(DataComponents.PROFILE, profileComponent)
 
     return headStack
 }

@@ -14,11 +14,11 @@ import com.imyvm.community.entrypoint.screen.inner_community.affairs.annoucement
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.TextParser
 import com.imyvm.community.util.Translator
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.ClickEvent
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.ClickEvent
 import java.util.*
 
-fun runOpenAnnouncementListMenu(player: ServerPlayerEntity, community: Community, runBack: (ServerPlayerEntity) -> Unit) {
+fun runOpenAnnouncementListMenu(player: ServerPlayer, community: Community, runBack: (ServerPlayer) -> Unit) {
     CommunityPermissionPolicy.executeWithPermission(
         player,
         { 
@@ -30,14 +30,14 @@ fun runOpenAnnouncementListMenu(player: ServerPlayerEntity, community: Community
         CommunityMenuOpener.open(player) { syncId ->
             AdministrationAnnouncementListMenu(syncId, community, player, 0, runBack)
         }
-    } ?: player.closeHandledScreen()
+    } ?: player.closeContainer()
 }
 
 fun runOpenAnnouncementDetailsMenu(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     community: Community,
     announcementId: UUID,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     CommunityPermissionPolicy.executeWithPermission(
         player,
@@ -52,10 +52,10 @@ fun runOpenAnnouncementDetailsMenu(
                 runOpenAnnouncementListMenu(player, community, runBack)
             }
         }
-    } ?: player.closeHandledScreen()
+    } ?: player.closeContainer()
 }
 
-fun runCreateAnnouncement(player: ServerPlayerEntity, community: Community, runBack: (ServerPlayerEntity) -> Unit) {
+fun runCreateAnnouncement(player: ServerPlayer, community: Community, runBack: (ServerPlayer) -> Unit) {
     CommunityPermissionPolicy.executeWithPermission(
         player,
         { 
@@ -64,16 +64,16 @@ fun runCreateAnnouncement(player: ServerPlayerEntity, community: Community, runB
             CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdminPrivilege.MANAGE_ANNOUNCEMENTS)
         }
     ) {
-        player.closeHandledScreen()
+        player.closeContainer()
         AdministrationAnnouncementInputMenuAnvil(player, community, runBack).open()
     }
 }
 
 fun onCreateAnnouncementConfirm(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     community: Community,
     content: String,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     CommunityPermissionPolicy.executeWithPermission(
         player,
@@ -84,8 +84,8 @@ fun onCreateAnnouncementConfirm(
         }
     ) {
         if (content.isBlank()) {
-            player.sendMessage(Translator.tr("ui.admin.announcement.error.empty"))
-            player.closeHandledScreen()
+            player.sendSystemMessage(Translator.tr("ui.admin.announcement.error.empty"))
+            player.closeContainer()
             return@executeWithPermission
         }
 
@@ -100,16 +100,16 @@ fun onCreateAnnouncementConfirm(
 
         notifyMembersOfNewAnnouncement(community, announcement)
 
-        player.sendMessage(Translator.tr("ui.admin.announcement.created"))
+        player.sendSystemMessage(Translator.tr("ui.admin.announcement.created"))
         runBack(player)
-    } ?: player.closeHandledScreen()
+    } ?: player.closeContainer()
 }
 
 fun onDeleteAnnouncement(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     community: Community,
     announcementId: UUID,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     CommunityPermissionPolicy.executeWithPermission(
         player,
@@ -121,15 +121,15 @@ fun onDeleteAnnouncement(
     ) {
         if (community.softDeleteAnnouncement(announcementId)) {
             CommunityDatabase.save()
-            player.sendMessage(Translator.tr("ui.admin.announcement.deleted"))
+            player.sendSystemMessage(Translator.tr("ui.admin.announcement.deleted"))
         } else {
-            player.sendMessage(Translator.tr("ui.admin.announcement.error.not_found"))
+            player.sendSystemMessage(Translator.tr("ui.admin.announcement.error.not_found"))
         }
         runBack(player)
     }
 }
 
-fun runOpenMemberAnnouncementListMenu(player: ServerPlayerEntity, community: Community, runBack: (ServerPlayerEntity) -> Unit) {
+fun runOpenMemberAnnouncementListMenu(player: ServerPlayer, community: Community, runBack: (ServerPlayer) -> Unit) {
     CommunityPermissionPolicy.executeWithPermission(
         player,
         { CommunityPermissionPolicy.canViewCommunity(player, community) }
@@ -137,14 +137,14 @@ fun runOpenMemberAnnouncementListMenu(player: ServerPlayerEntity, community: Com
         CommunityMenuOpener.open(player) { syncId ->
             MemberAnnouncementListMenu(syncId, community, player, 0, runBack)
         }
-    } ?: player.closeHandledScreen()
+    } ?: player.closeContainer()
 }
 
 fun runOpenMemberAnnouncementDetailsMenu(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     community: Community,
     announcementId: UUID,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     CommunityPermissionPolicy.executeWithPermission(
         player,
@@ -155,42 +155,42 @@ fun runOpenMemberAnnouncementDetailsMenu(
                 runOpenMemberAnnouncementListMenu(player, community, runBack)
             }
         }
-    } ?: player.closeHandledScreen()
+    } ?: player.closeContainer()
 }
 
 fun onViewAnnouncementContent(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     community: Community,
     announcement: Announcement
 ) {
-    player.sendMessage(Translator.tr("ui.admin.announcement_details.header"))
-    player.sendMessage(announcement.content)
-    player.sendMessage(Translator.tr("ui.admin.announcement_details.footer"))
+    player.sendSystemMessage(Translator.tr("ui.admin.announcement_details.header"))
+    player.sendSystemMessage(announcement.content)
+    player.sendSystemMessage(Translator.tr("ui.admin.announcement_details.footer"))
     val regionId = community.regionNumberId
     if (regionId != null) {
-        player.sendMessage(
-            Translator.tr("ui.button.return_to_menu")?.copy()?.styled { style ->
-                style.withClickEvent(ClickEvent(ClickEvent.Action.RUN_COMMAND, "/community open_announcements $regionId"))
+        player.sendSystemMessage(
+            Translator.tr("ui.button.return_to_menu").copy().withStyle { style ->
+                style.withClickEvent(ClickEvent.RunCommand( "/community open_announcements $regionId"))
             }
         )
     }
-    player.closeHandledScreen()
+    player.closeContainer()
 }
 
 fun onViewMemberAnnouncementListItem(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     community: Community,
     announcementId: UUID,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     runOpenMemberAnnouncementDetailsMenu(player, community, announcementId, runBack)
 }
 
 fun onViewAdministrationAnnouncementListItem(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     community: Community,
     announcementId: UUID,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ) {
     runOpenAnnouncementDetailsMenu(player, community, announcementId, runBack)
 }
@@ -199,10 +199,10 @@ private fun notifyMembersOfNewAnnouncement(community: Community, announcement: A
     val server = WorldGeoCommunityAddon.server ?: return
     
     for (memberUUID in community.member.keys) {
-        val player = server.playerManager.getPlayer(memberUUID)
+        val player = server.playerList.getPlayer(memberUUID)
         if (player != null) {
-            player.sendMessage(Translator.tr("announcement.notification.new"))
-            player.sendMessage(announcement.content)
+            player.sendSystemMessage(Translator.tr("announcement.notification.new"))
+            player.sendSystemMessage(announcement.content)
         }
     }
 }

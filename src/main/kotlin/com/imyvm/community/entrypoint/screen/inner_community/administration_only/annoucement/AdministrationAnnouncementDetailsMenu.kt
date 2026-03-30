@@ -9,18 +9,18 @@ import com.imyvm.community.entrypoint.screen.component.getLoreButton
 import com.imyvm.community.util.Translator
 import com.imyvm.community.util.getFormattedMillsHour
 import com.imyvm.iwg.inter.api.UtilApi
-import net.minecraft.item.ItemStack
-import net.minecraft.item.Items
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.world.item.ItemStack
+import net.minecraft.world.item.Items
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.Component
 import java.util.*
 
 class AdministrationAnnouncementDetailsMenu(
     syncId: Int,
     val community: Community,
-    val playerExecutor: ServerPlayerEntity,
+    val playerExecutor: ServerPlayer,
     val announcementId: UUID,
-    val runBack: ((ServerPlayerEntity) -> Unit)
+    val runBack: ((ServerPlayer) -> Unit)
 ) : AbstractMenu(
     syncId,
     menuTitle = Translator.tr("ui.admin.announcement_details.title"),
@@ -45,19 +45,19 @@ class AdministrationAnnouncementDetailsMenu(
             itemStack = getLoreButton(
                 ItemStack(Items.PAPER),
                 listOf(
-                    Translator.tr("ui.admin.announcement_details.lore.author", authorName) ?: Text.of("By: $authorName"),
-                    Translator.tr("ui.admin.announcement_details.lore.time", timeFormatted) ?: Text.of("Time: $timeFormatted"),
-                    Translator.tr("ui.admin.announcement_details.lore.read", readCount, totalMembers) ?: Text.of("Read: $readCount/$totalMembers")
+                    Translator.tr("ui.admin.announcement_details.lore.author", authorName) ?: Component.literal("By: $authorName"),
+                    Translator.tr("ui.admin.announcement_details.lore.time", timeFormatted) ?: Component.literal("Time: $timeFormatted"),
+                    Translator.tr("ui.admin.announcement_details.lore.read", readCount, totalMembers) ?: Component.literal("Read: $readCount/$totalMembers")
                 )
             ),
-            name = Translator.tr("ui.admin.announcement_details.content")?.string ?: "Content"
+            name = Translator.tr("ui.admin.announcement_details.content").string ?: "Content"
         ) { onViewAnnouncementContent(playerExecutor, community, announcement) }
     }
 
     private fun addDeleteButton(announcement: Announcement) {
         addButton(
             slot = 31,
-            name = Translator.tr("ui.admin.announcement_details.delete")?.string ?: "Delete",
+            name = Translator.tr("ui.admin.announcement_details.delete").string ?: "Delete",
             item = Items.BARRIER
         ) {
             onDeleteAnnouncement(playerExecutor, community, announcement.id, runBack)

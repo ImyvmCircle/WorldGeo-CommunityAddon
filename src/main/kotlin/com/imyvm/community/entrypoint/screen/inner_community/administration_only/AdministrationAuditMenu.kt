@@ -6,16 +6,16 @@ import com.imyvm.community.domain.model.Community
 import com.imyvm.community.entrypoint.screen.AbstractMenu
 import com.imyvm.community.util.Translator
 import com.mojang.authlib.GameProfile
-import net.minecraft.item.Items
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.world.item.Items
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.Component
 
 class AdministrationAuditMenu(
     syncId: Int,
     community: Community,
-    private val playerExecutor: ServerPlayerEntity,
+    private val playerExecutor: ServerPlayer,
     playerObject: GameProfile,
-    runBack: (ServerPlayerEntity) -> Unit
+    runBack: (ServerPlayer) -> Unit
 ): AbstractMenu(
     syncId,
     menuTitle = generateAdministrationAuditMenuTitle(playerObject),
@@ -35,7 +35,7 @@ class AdministrationAuditMenu(
         ) { runRefuse(community, playerExecutor, playerObject) }
     }
     companion object {
-        fun generateAdministrationAuditMenuTitle(playerObject: GameProfile): Text =
-            Text.of((Translator.tr("ui.admin.audit.title")?.string ?: "Audit") + playerObject.name)
+        fun generateAdministrationAuditMenuTitle(playerObject: GameProfile): Component =
+            Component.literal((Translator.tr("ui.admin.audit.title").string ?: "Audit") + playerObject.name)
     }
 }

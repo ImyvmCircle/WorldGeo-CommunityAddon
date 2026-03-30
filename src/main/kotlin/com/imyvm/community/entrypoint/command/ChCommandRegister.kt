@@ -5,11 +5,11 @@ import com.imyvm.community.entrypoint.command.helper.ALL_COMMUNITY_PROVIDER
 import com.imyvm.community.entrypoint.command.helper.identifierHandler
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.StringArgumentType
-import net.minecraft.server.command.CommandManager.argument
-import net.minecraft.server.command.CommandManager.literal
-import net.minecraft.server.command.ServerCommandSource
+import net.minecraft.commands.Commands.argument
+import net.minecraft.commands.Commands.literal
+import net.minecraft.commands.CommandSourceStack
 
-fun registerCh(dispatcher: CommandDispatcher<ServerCommandSource>) {
+fun registerCh(dispatcher: CommandDispatcher<CommandSourceStack>) {
     dispatcher.register(
         literal("ch")
             .then(

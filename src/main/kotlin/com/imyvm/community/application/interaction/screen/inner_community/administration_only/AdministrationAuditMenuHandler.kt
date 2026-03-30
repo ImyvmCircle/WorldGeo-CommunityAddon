@@ -8,11 +8,11 @@ import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.util.Translator.trMenu
 import com.imyvm.community.util.constructAndSendMail
 import com.mojang.authlib.GameProfile
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 
 fun runAccept(
     community: Community,
-    playerExecutor: ServerPlayerEntity,
+    playerExecutor: ServerPlayer,
     playerObject: GameProfile
 ) {
     CommunityPermissionPolicy.executeWithPermission(
@@ -20,7 +20,7 @@ fun runAccept(
         { CommunityPermissionPolicy.canAcceptApplicant(playerExecutor, community, playerObject.id) }
     ) {
         if (!com.imyvm.community.application.interaction.common.checkMemberNumberManor(playerExecutor, community)) {
-            playerExecutor.closeHandledScreen()
+            playerExecutor.closeContainer()
             return@executeWithPermission
         }
         
@@ -32,14 +32,14 @@ fun runAccept(
                     else PricingConfig.COMMUNITY_JOIN_COST_REALM.value
                 
                 if (community.getTotalAssets() < cost) {
-                    playerExecutor.sendMessage(
+                    playerExecutor.sendSystemMessage(
                         com.imyvm.community.util.Translator.tr(
                             "community.audit.error.insufficient_assets",
                             playerObject.name,
                             cost / 100.0
                         )
                     )
-                    playerExecutor.closeHandledScreen()
+                    playerExecutor.closeContainer()
                     return@executeWithPermission
                 }
                 
@@ -74,9 +74,9 @@ fun runAccept(
                 targetNotificationKey,
                 communityName,
                 playerExecutor.name.string
-            ) ?: net.minecraft.text.Text.literal("You have been accepted to $communityName by ${playerExecutor.name.string}")
+            ) ?: net.minecraft.network.chat.Component.literal("You have been accepted to $communityName by ${playerExecutor.name.string}")
             com.imyvm.community.application.interaction.common.notifyTargetPlayer(
-                playerExecutor.server, playerObject.id, targetNotification, community
+                playerExecutor.level().server, playerObject.id, targetNotification, community
             )
             
             constructAndSendMail(
@@ -92,8 +92,8 @@ fun runAccept(
             )
             
             val notification = com.imyvm.community.util.Translator.tr("community.notification.member_accepted", playerObject.name, playerExecutor.name.string, communityName)
-                ?: net.minecraft.text.Text.literal("${playerObject.name} has been accepted to $communityName by ${playerExecutor.name.string}")
-            notifyOfficials(community, playerExecutor.server, notification, playerExecutor)
+                ?: net.minecraft.network.chat.Component.literal("${playerObject.name} has been accepted to $communityName by ${playerExecutor.name.string}")
+            notifyOfficials(community, playerExecutor.level().server, notification, playerExecutor)
             
             com.imyvm.community.infra.CommunityDatabase.save()
             
@@ -102,15 +102,15 @@ fun runAccept(
     }
 }
 
-private fun notifyOfficials(community: Community, server: net.minecraft.server.MinecraftServer, message: net.minecraft.text.Text, executor: ServerPlayerEntity? = null) {
+private fun notifyOfficials(community: Community, server: net.minecraft.server.MinecraftServer, message: net.minecraft.network.chat.Component, executor: ServerPlayer? = null) {
     for ((memberUUID, memberAccount) in community.member) {
         val isOfficial = memberAccount.basicRoleType == com.imyvm.community.domain.model.community.MemberRoleType.OWNER ||
                         memberAccount.basicRoleType == com.imyvm.community.domain.model.community.MemberRoleType.ADMIN
         
         if (isOfficial && (executor == null || memberUUID != executor.uuid)) {
-            val officialPlayer = server.playerManager.getPlayer(memberUUID)
+            val officialPlayer = server.playerList.getPlayer(memberUUID)
             if (officialPlayer != null) {
-                officialPlayer.sendMessage(message)
+                officialPlayer.sendSystemMessage(message)
             }
             memberAccount.mail.add(message)
         }
@@ -119,7 +119,7 @@ private fun notifyOfficials(community: Community, server: net.minecraft.server.M
 
 fun runRefuse(
     community: Community,
-    playerExecutor: ServerPlayerEntity,
+    playerExecutor: ServerPlayer,
     playerObject: GameProfile
 ) {
     CommunityPermissionPolicy.executeWithPermission(
@@ -137,22 +137,22 @@ fun runRefuse(
                     "community.notification.target.invitation_refused",
                     communityName,
                     playerExecutor.name.string
-                ) ?: net.minecraft.text.Text.literal("Your invitation to $communityName was refused by ${playerExecutor.name.string}")
+                ) ?: net.minecraft.network.chat.Component.literal("Your invitation to $communityName was refused by ${playerExecutor.name.string}")
                 
-                val applicantPlayer = playerExecutor.server.playerManager.getPlayer(playerObject.id)
+                val applicantPlayer = playerExecutor.level().server.playerList.getPlayer(playerObject.id)
                 if (applicantPlayer != null) {
-                    applicantPlayer.sendMessage(targetNotification)
+                    applicantPlayer.sendSystemMessage(targetNotification)
                 }
             } else {
                 val cost = if (community.isManor()) 
                     PricingConfig.COMMUNITY_JOIN_COST_MANOR.value 
                     else PricingConfig.COMMUNITY_JOIN_COST_REALM.value
                 
-                val applicantPlayer = playerExecutor.server.playerManager.getPlayer(playerObject.id)
+                val applicantPlayer = playerExecutor.level().server.playerList.getPlayer(playerObject.id)
                 if (applicantPlayer != null) {
                     val playerData = com.imyvm.economy.EconomyMod.data.getOrCreate(applicantPlayer)
                     playerData.money += cost
-                    applicantPlayer.sendMessage(
+                    applicantPlayer.sendSystemMessage(
                         com.imyvm.community.util.Translator.tr(
                             "community.join.refund",
                             cost / 100.0
@@ -167,9 +167,9 @@ fun runRefuse(
                     "community.notification.target.application_refused",
                     communityName,
                     playerExecutor.name.string
-                ) ?: net.minecraft.text.Text.literal("Your application to $communityName was refused by ${playerExecutor.name.string}")
+                ) ?: net.minecraft.network.chat.Component.literal("Your application to $communityName was refused by ${playerExecutor.name.string}")
                 com.imyvm.community.application.interaction.common.notifyTargetPlayer(
-                    playerExecutor.server, playerObject.id, targetNotification, community
+                    playerExecutor.level().server, playerObject.id, targetNotification, community
                 )
                 
                 constructAndSendMail(
@@ -190,8 +190,8 @@ fun runRefuse(
                 playerObject.name,
                 playerExecutor.name.string,
                 communityName
-            ) ?: net.minecraft.text.Text.literal("${playerObject.name}'s application to $communityName was refused by ${playerExecutor.name.string}")
-            notifyOfficials(community, playerExecutor.server, notification, playerExecutor)
+            ) ?: net.minecraft.network.chat.Component.literal("${playerObject.name}'s application to $communityName was refused by ${playerExecutor.name.string}")
+            notifyOfficials(community, playerExecutor.level().server, notification, playerExecutor)
             
             com.imyvm.community.infra.CommunityDatabase.save()
         }

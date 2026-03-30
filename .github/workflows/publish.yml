@@ -20,24 +20,28 @@ jobs:
       - name: setup jdk
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
-          distribution: 'microsoft'
+          java-version: '25'
+          distribution: 'temurin'
 
       - name: make gradle wrapper executable
         run: chmod +x ./gradlew
 
       - name: build
         run: ./gradlew build
+        env:
+          GITHUB_USERNAME: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: publish package
         run: ./gradlew publish
         env:
+          GITHUB_USERNAME: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
           S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
 
       - name: publish release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           name: "Release ${{ github.ref_name }}"
           prerelease: ${{ contains(github.event.head_commit.message, '[pre-release]') }}
