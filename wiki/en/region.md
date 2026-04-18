@@ -10,6 +10,8 @@ But a community's territory rarely looks like a single tidy rectangle. It may be
 
 **A Geoscope is the building block of a Region.** The actual territory of a Region is the union of all its Geoscopes. Everything you see highlighted on the map as belonging to a community — every chunk of land under that community's flag — is defined by the Geoscopes that community has established.
 
+Area in the Overworld, Nether, and End is recorded separately, forming a cross-dimensional territorial ledger.
+
 ---
 
 ## How a Community's Territory Is Formed
@@ -65,6 +67,8 @@ Base cost for adding a new Geoscope:
 | Realm | $1,000.00 |
 
 Area-based fees also apply proportionally to the Geoscope's footprint.
+
+If the new Geoscope stands in the Nether, fees tied directly to that scope are settled at ×8. If it stands in the End, they are settled at ×2. The Overworld remains ×1. Region-wide land and setting costs are calculated per dimension and then summed.
 
 **Soft scope limit:** The recommended maximum number of Geoscopes is `ceil(formal_members / 2)` (formal members = owner, admin, and member roles; e.g., 1 member → limit 1, 2 members → limit 1, 3 members → limit 2). Exceeding this limit does **not** block creation; instead, a **soft-limit surcharge** is applied: the entire creation cost (fixed fee + area fee + any settings adjustments) is multiplied by **1.5^N**, where N is the number of scopes beyond the limit. For example, with a limit of 2 and 2 existing Geoscopes, adding a 3rd (N=1) multiplies the total creation cost by ×1.5; adding a 4th (N=2) multiplies it by ×2.25. This surcharge applies **only to new Geoscope creation** — it does not affect charges or refunds from modifying the geometry of existing Geoscopes (those use cumulative total area independently). When a surcharge applies, a notice appears before the confirmation dialog, and the confirmation itself shows the full formula (e.g., `rawTotal × 1.5^N = adjustedTotal`); the final deduction message also notes the surcharge amount.
 
@@ -123,6 +127,8 @@ You can redefine the boundaries of any existing Geoscope. The system calculates 
 - Expanding a Geoscope: pay the area-price difference.
 - Shrinking a Geoscope: receive a **50%** refund of the cost difference.
 
+The confirmation screen lists area in each dimension before and after the change, and marks the dimension that actually changed together with the exact delta.
+
 > **Note:** Only **active** communities may modify Geoscope boundaries. Communities in RECRUITING or PENDING status cannot perform this operation.
 
 > **Note:** Requires the **Region Geometry** administration privilege.
@@ -165,6 +171,8 @@ Permissions govern what non-owner players may do within the Geoscope. Each permi
 
 Each permission has an area-based cost when activated. Restoring the default refunds **50%** of that cost. Per-player targeting costs **1/5** of the Geoscope-wide rate.
 
+Permissions attached to the full Region are priced by dimension and then combined. Permissions attached to a single Geoscope inherit that Geoscope's dimension multiplier.
+
 ### Rules
 
 Rules control automatic behaviors within the Geoscope (not tied to specific player actions).
@@ -182,6 +190,8 @@ Rules control automatic behaviors within the Geoscope (not tied to specific play
 | **Piston Movement** | Allow pistons to push blocks within the Geoscope |
 
 Rules also carry area-based costs when enabled.
+
+Setting confirmations list the current area in each dimension.
 
 ### Setting Costs
 
@@ -232,4 +242,3 @@ Setting costs scale progressively with territory size (bracketed by the communit
 ---
 
 > **See also:** [Economy](economy.md#area-based-pricing) · [Administration](administration.md) · [Teleport](teleport.md)
-

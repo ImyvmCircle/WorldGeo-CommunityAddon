@@ -40,6 +40,7 @@ object TerritoryConfirmationMessage {
             Translator.tr("community.create.confirm.area", String.format("%.2f", costResult.area))
                 ?: Component.literal("Area: ${String.format("%.2f", costResult.area)} m²")
         )
+        appendAreaSnapshot(messages, "community.pricing.area.breakdown.header", costResult.areaByDimension)
         addDimensionLegend(messages, costResult.dimensionCosts.map { it.dimensionId })
 
         if (costResult.areaCost > 0) {
@@ -61,7 +62,10 @@ object TerritoryConfirmationMessage {
     }
 
     fun generateModificationConfirmation(
+        regionName: String,
         scopeName: String,
+        scopeAreaBefore: Double,
+        scopeAreaAfter: Double,
         costResult: ModificationCostResult,
         isManor: Boolean,
         currentAssets: Long,
@@ -74,20 +78,21 @@ object TerritoryConfirmationMessage {
             Translator.tr("community.modification.confirm.header")
                 ?: Component.literal("====== TERRITORY MODIFICATION CONFIRMATION ======")
         )
+        messages.add(Translator.tr("community.modification.confirm.region", regionName) ?: Component.literal("Region: $regionName"))
         messages.add(Translator.tr("community.modification.confirm.scope", scopeName) ?: Component.literal("Administrative District: $scopeName"))
-        messages.add(
-            Translator.tr("community.modification.confirm.area_before", String.format("%.2f", costResult.areaBefore))
-                ?: Component.literal("Area Before: ${String.format("%.2f", costResult.areaBefore)} m²")
+        appendAreaSummary(
+            messages = messages,
+            headerKey = "community.pricing.scope_area.header",
+            areaBefore = scopeAreaBefore,
+            areaAfter = scopeAreaAfter
         )
-        messages.add(
-            Translator.tr("community.modification.confirm.area_after", String.format("%.2f", costResult.areaAfter))
-                ?: Component.literal("Area After: ${String.format("%.2f", costResult.areaAfter)} m²")
+        appendAreaSummary(
+            messages = messages,
+            headerKey = "community.pricing.region_total.header",
+            areaBefore = costResult.areaBefore,
+            areaAfter = costResult.areaAfter
         )
-        val changeSign = if (costResult.isIncrease) "+" else ""
-        messages.add(
-            Translator.tr("community.modification.confirm.area_change", "$changeSign${String.format("%.2f", costResult.areaChange)}")
-                ?: Component.literal("Area Change: $changeSign${String.format("%.2f", costResult.areaChange)} m²")
-        )
+        appendChangedDimensions(messages, costResult.areaBeforeByDimension, costResult.areaAfterByDimension)
         addDimensionLegend(messages, costResult.dimensionCosts.map { it.dimensionId })
 
         if (costResult.isIncrease) {
@@ -120,11 +125,10 @@ object TerritoryConfirmationMessage {
                         change.settingKeyName,
                         layer,
                         target,
-                        String.format("%.2f", change.areaOld),
-                        String.format("%.2f", change.areaNew),
                         "$sign${String.format("%.2f", change.costChange / 100.0)}"
-                    ) ?: Component.literal("  ${change.settingKeyName} [$layer/$target]: ${String.format("%.2f", change.areaOld)}→${String.format("%.2f", change.areaNew)} m², $sign${String.format("%.2f", change.costChange / 100.0)}")
+                    ) ?: Component.literal("  ${change.settingKeyName} [$layer/$target]: $sign${String.format("%.2f", change.costChange / 100.0)}")
                 )
+                appendChangedDimensions(messages, change.areaOldByDimension, change.areaNewByDimension, nested = true)
             }
         }
 
@@ -153,6 +157,7 @@ object TerritoryConfirmationMessage {
     }
 
     fun generateScopeDeletionConfirmation(
+        regionName: String,
         scopeName: String,
         scopeArea: Double,
         costResult: ModificationCostResult,
@@ -164,11 +169,21 @@ object TerritoryConfirmationMessage {
         val config = TerritoryPricing.getPricingConfig(isManor)
 
         messages.add(Translator.tr("community.scope_delete.confirm.header") ?: Component.literal("====== SELL SCOPE CONFIRMATION ======"))
+        messages.add(Translator.tr("community.scope_delete.confirm.region", regionName) ?: Component.literal("Region: $regionName"))
         messages.add(Translator.tr("community.scope_delete.confirm.scope", scopeName) ?: Component.literal("Administrative District: $scopeName"))
-        messages.add(
-            Translator.tr("community.scope_delete.confirm.area", String.format("%.2f", scopeArea))
-                ?: Component.literal("Scope Area: ${String.format("%.2f", scopeArea)} m²")
+        appendAreaSummary(
+            messages = messages,
+            headerKey = "community.pricing.scope_area.header",
+            areaBefore = scopeArea,
+            areaAfter = 0.0
         )
+        appendAreaSummary(
+            messages = messages,
+            headerKey = "community.pricing.region_total.header",
+            areaBefore = costResult.areaBefore,
+            areaAfter = costResult.areaAfter
+        )
+        appendChangedDimensions(messages, costResult.areaBeforeByDimension, costResult.areaAfterByDimension)
         addDimensionLegend(messages, costResult.dimensionCosts.map { it.dimensionId })
 
         messages.add(
@@ -191,11 +206,10 @@ object TerritoryConfirmationMessage {
                         change.settingKeyName,
                         layer,
                         target,
-                        String.format("%.2f", change.areaOld),
-                        String.format("%.2f", change.areaNew),
                         "$sign${String.format("%.2f", change.costChange / 100.0)}"
-                    ) ?: Component.literal("  ${change.settingKeyName} [$layer/$target]: ${String.format("%.2f", change.areaOld)}→${String.format("%.2f", change.areaNew)} m², $sign${String.format("%.2f", change.costChange / 100.0)}")
+                    ) ?: Component.literal("  ${change.settingKeyName} [$layer/$target]: $sign${String.format("%.2f", change.costChange / 100.0)}")
                 )
+                appendChangedDimensions(messages, change.areaOldByDimension, change.areaNewByDimension, nested = true)
             }
         }
 
@@ -214,6 +228,7 @@ object TerritoryConfirmationMessage {
     }
 
     fun generateScopeAdditionConfirmation(
+        regionName: String,
         scopeName: String,
         shapeType: GeoShapeType,
         area: Double,
@@ -242,9 +257,22 @@ object TerritoryConfirmationMessage {
         val totalCost = if (excessCount > 0) adjustedTotal else rawTotal
 
         messages.add(Translator.tr("community.scope_add.confirm.header") ?: Component.literal("====== SCOPE CREATION CONFIRMATION ======"))
+        messages.add(Translator.tr("community.scope_add.confirm.region", regionName) ?: Component.literal("Region: $regionName"))
         messages.add(Translator.tr("community.scope_add.confirm.scope", scopeName) ?: Component.literal("Administrative District: $scopeName"))
         messages.add(Translator.tr("community.scope_add.confirm.shape", shapeText) ?: Component.literal("Shape: $shapeText"))
-        messages.add(Translator.tr("community.scope_add.confirm.area", String.format("%.2f", area)) ?: Component.literal("Area: ${String.format("%.2f", area)} m²"))
+        appendAreaSummary(
+            messages = messages,
+            headerKey = "community.pricing.new_scope_area.header",
+            areaBefore = 0.0,
+            areaAfter = area
+        )
+        appendAreaSummary(
+            messages = messages,
+            headerKey = "community.pricing.region_total.header",
+            areaBefore = landCostResult.areaBefore,
+            areaAfter = landCostResult.areaAfter
+        )
+        appendChangedDimensions(messages, landCostResult.areaBeforeByDimension, landCostResult.areaAfterByDimension)
         messages.add(Translator.tr("community.scope_add.confirm.base_cost", String.format("%.2f", fixedCostBase / 100.0)) ?: Component.literal("Base Cost: ${String.format("%.2f", fixedCostBase / 100.0)}"))
         addDimensionLegend(messages, landCostResult.dimensionCosts.map { it.dimensionId } + scopeDimensionId)
 
@@ -269,11 +297,10 @@ object TerritoryConfirmationMessage {
                         "community.scope_add.confirm.setting_change_line",
                         change.settingKeyName,
                         target,
-                        String.format("%.2f", change.areaOld),
-                        String.format("%.2f", change.areaNew),
                         "$sign${String.format("%.2f", change.costChange / 100.0)}"
-                    ) ?: Component.literal("  ${change.settingKeyName} [$target]: ${String.format("%.2f", change.areaOld)}→${String.format("%.2f", change.areaNew)} m², $sign${String.format("%.2f", change.costChange / 100.0)}")
+                    ) ?: Component.literal("  ${change.settingKeyName} [$target]: $sign${String.format("%.2f", change.costChange / 100.0)}")
                 )
+                appendChangedDimensions(messages, change.areaOldByDimension, change.areaNewByDimension, nested = true)
             }
         }
 
@@ -306,16 +333,7 @@ object TerritoryConfirmationMessage {
 
     private fun addDimensionLegend(messages: MutableList<Component>, dimensionIds: Collection<String>) {
         if (dimensionIds.isEmpty()) return
-        val orderedIds = dimensionIds.map(TerritoryPricing::normalizeDimensionId).distinct().sortedWith(
-            compareBy<String> {
-                when (it) {
-                    TerritoryPricing.DIMENSION_OVERWORLD -> 0
-                    TerritoryPricing.DIMENSION_NETHER -> 1
-                    TerritoryPricing.DIMENSION_END -> 2
-                    else -> 3
-                }
-            }.thenBy { it }
-        )
+        val orderedIds = TerritoryPricing.orderedDimensionIds(dimensionIds)
         val parts = orderedIds.map { dimensionId ->
             val key = when (dimensionId) {
                 TerritoryPricing.DIMENSION_NETHER -> "community.pricing.dimension.multiplier.nether"
@@ -328,6 +346,97 @@ object TerritoryConfirmationMessage {
             Translator.tr("community.pricing.dimension.legend", parts.joinToString("§7, "))
                 ?: Component.literal("§7Dimension multipliers: ${parts.joinToString(", ")}")
         )
+    }
+
+    private fun appendAreaSummary(
+        messages: MutableList<Component>,
+        headerKey: String,
+        areaBefore: Double,
+        areaAfter: Double
+    ) {
+        messages.add(Translator.tr(headerKey) ?: Component.literal("Area summary:"))
+        messages.add(
+            Translator.tr("community.pricing.area.summary.before", String.format("%.2f", areaBefore))
+                ?: Component.literal("  Before ${String.format("%.2f", areaBefore)} m²")
+        )
+        messages.add(
+            Translator.tr("community.pricing.area.summary.after", String.format("%.2f", areaAfter))
+                ?: Component.literal("  After ${String.format("%.2f", areaAfter)} m²")
+        )
+        messages.add(
+            Translator.tr("community.pricing.area.summary.change", formatSignedArea(areaAfter - areaBefore))
+                ?: Component.literal("  Change ${formatSignedArea(areaAfter - areaBefore)} m²")
+        )
+    }
+
+    private fun appendAreaSnapshot(
+        messages: MutableList<Component>,
+        headerKey: String,
+        areaByDimension: Map<String, Double>
+    ) {
+        if (areaByDimension.isEmpty()) return
+        messages.add(
+            Translator.tr(headerKey)
+                ?: Component.literal("Area by dimension:")
+        )
+        for (dimensionId in TerritoryPricing.orderedDimensionIds(areaByDimension.keys)) {
+            val area = areaByDimension[dimensionId] ?: continue
+            val dimensionName = Translator.tr(TerritoryPricing.getDimensionDisplayKey(dimensionId))?.string ?: dimensionId
+            messages.add(
+                Translator.tr(
+                    "community.pricing.area.line",
+                    dimensionName,
+                    String.format("%.2f", area)
+                ) ?: Component.literal("  $dimensionName: ${String.format("%.2f", area)} m²")
+            )
+        }
+    }
+
+    private fun appendChangedDimensions(
+        messages: MutableList<Component>,
+        areaBeforeByDimension: Map<String, Double>,
+        areaAfterByDimension: Map<String, Double>,
+        nested: Boolean = false
+    ) {
+        val changedDimensionIds = TerritoryPricing.orderedDimensionIds(areaBeforeByDimension.keys + areaAfterByDimension.keys)
+            .filter { String.format("%.2f", areaBeforeByDimension[it] ?: 0.0) != String.format("%.2f", areaAfterByDimension[it] ?: 0.0) }
+        if (changedDimensionIds.isEmpty()) return
+        messages.add(Translator.tr(if (nested) "community.pricing.area.nested.changed.header" else "community.pricing.area.changed.header")
+            ?: Component.literal("Changed dimensions:"))
+        for (dimensionId in changedDimensionIds) {
+            val areaBefore = areaBeforeByDimension[dimensionId] ?: 0.0
+            val areaAfter = areaAfterByDimension[dimensionId] ?: 0.0
+            val dimensionName = Translator.tr(TerritoryPricing.getDimensionDisplayKey(dimensionId))?.string ?: dimensionId
+            messages.add(
+                Translator.tr(
+                    if (nested) "community.pricing.area.nested.changed.dimension" else "community.pricing.area.changed.dimension",
+                    dimensionName
+                ) ?: Component.literal("  $dimensionName")
+            )
+            messages.add(
+                Translator.tr(
+                    if (nested) "community.pricing.area.nested.before" else "community.pricing.area.before",
+                    String.format("%.2f", areaBefore),
+                ) ?: Component.literal("    Before ${String.format("%.2f", areaBefore)} m²")
+            )
+            messages.add(
+                Translator.tr(
+                    if (nested) "community.pricing.area.nested.after" else "community.pricing.area.after",
+                    String.format("%.2f", areaAfter),
+                ) ?: Component.literal("    After ${String.format("%.2f", areaAfter)} m²")
+            )
+            messages.add(
+                Translator.tr(
+                    if (nested) "community.pricing.area.nested.change" else "community.pricing.area.change",
+                    formatSignedArea(areaAfter - areaBefore)
+                ) ?: Component.literal("    Change ${formatSignedArea(areaAfter - areaBefore)} m²")
+            )
+        }
+    }
+
+    private fun formatSignedArea(area: Double): String {
+        val sign = if (area >= 0.0) "+" else ""
+        return "$sign${String.format("%.2f", area)}"
     }
 
     private fun appendDimensionBreakdowns(

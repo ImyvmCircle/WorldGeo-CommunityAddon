@@ -20,19 +20,23 @@ fun calculateModificationCost(
 }
 
 fun generateModificationConfirmationMessage(
+    regionName: String,
     scopeName: String,
+    scopeAreaBefore: Double,
+    scopeAreaAfter: Double,
     costResult: ModificationCostResult,
     isManor: Boolean,
     currentAssets: Long,
     settingChanges: List<SettingItemCostChange> = emptyList()
 ): List<Component> {
     return TerritoryConfirmationMessage.generateModificationConfirmation(
-        scopeName, costResult, isManor, currentAssets, settingChanges
+        regionName, scopeName, scopeAreaBefore, scopeAreaAfter, costResult, isManor, currentAssets, settingChanges
     )
 }
 
 
 fun generateScopeDeletionConfirmationMessage(
+    regionName: String,
     scopeName: String,
     scopeArea: Double,
     costResult: ModificationCostResult,
@@ -41,12 +45,13 @@ fun generateScopeDeletionConfirmationMessage(
     settingChanges: List<SettingItemCostChange> = emptyList()
 ): List<Component> {
     return TerritoryConfirmationMessage.generateScopeDeletionConfirmation(
-        scopeName, scopeArea, costResult, isManor, currentAssets, settingChanges
+        regionName, scopeName, scopeArea, costResult, isManor, currentAssets, settingChanges
     )
 }
 
 
 fun generateScopeAdditionConfirmationMessage(
+    regionName: String,
     scopeName: String,
     shapeType: GeoShapeType,
     area: Double,
@@ -65,7 +70,7 @@ fun generateScopeAdditionConfirmationMessage(
     multiplier: Double = 1.5
 ): List<Component> {
     return TerritoryConfirmationMessage.generateScopeAdditionConfirmation(
-        scopeName, shapeType, area, fixedCostBase, landCostResult, settingChanges, isManor, currentAssets,
+        regionName, scopeName, shapeType, area, fixedCostBase, landCostResult, settingChanges, isManor, currentAssets,
         currentTotalArea, scopeDimensionId, rawTotal, adjustedTotal, excessCount, maxScopesAllowed, formalMemberCount, multiplier
     )
 }

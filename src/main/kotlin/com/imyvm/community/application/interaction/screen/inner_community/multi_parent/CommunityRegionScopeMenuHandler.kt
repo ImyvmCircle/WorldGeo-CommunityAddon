@@ -232,6 +232,7 @@ private fun onCreateScopeRequest(
     }
 
     val confirmationMessages = generateScopeAdditionConfirmationMessage(
+        regionName = communityRegion.name,
         scopeName = scopeName,
         shapeType = geoShapeType,
         area = newScopeArea,
@@ -634,7 +635,9 @@ private fun calculateRegionSettingsCostChanges(
             playerName = null,
             areaOld = currentTotalArea,
             areaNew = newTotalArea,
-            costChange = costChange
+            costChange = costChange,
+            areaOldByDimension = currentAreaByDimension,
+            areaNewByDimension = areaAfterByDimension
         )
     }
 }
@@ -688,7 +691,9 @@ private fun calculateScopeSettingsCostChanges(
             playerName = null,
             areaOld = currentScopeArea,
             areaNew = newScopeArea,
-            costChange = costChange
+            costChange = costChange,
+            areaOldByDimension = TerritoryPricing.buildAreaMap(dimensionId, currentScopeArea),
+            areaNewByDimension = TerritoryPricing.buildAreaMap(dimensionId, newScopeArea)
         )
     }
 }
@@ -757,7 +762,10 @@ internal fun executeScopeModification(
 
             SelectionReturnContext.clearContext(player.uuid)
             generateModificationConfirmationMessage(
+                regionName = communityRegion.name,
                 scopeName = scope.scopeName,
+                scopeAreaBefore = currentScopeArea,
+                scopeAreaAfter = currentScopeArea + areaChange,
                 costResult = costResult,
                 isManor = isManor,
                 currentAssets = currentAssets,
@@ -825,6 +833,7 @@ internal fun executeScopeDeletion(
     player.closeContainer()
 
     generateScopeDeletionConfirmationMessage(
+        regionName = communityRegion.name,
         scopeName = scope.scopeName,
         scopeArea = scopeArea,
         costResult = costResult,

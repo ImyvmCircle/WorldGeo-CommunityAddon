@@ -559,6 +559,7 @@ private fun sendSettingOrderSummary(
 
     player.sendSystemMessage(Translator.tr("community.setting.confirmation.change", oldValue.toString(), newValue.toString()) ?: Component.literal("§eChange: §c$oldValue §e-> §a$newValue"))
     player.sendSystemMessage(Translator.tr("community.setting.confirmation.area", String.format("%.2f", area)) ?: Component.literal("§eArea: §f${String.format("%.2f", area)} m²"))
+    sendAreaSnapshot(player, costResult.areaByDimension)
     sendDimensionLegend(player, costResult.dimensionCosts.map { it.dimensionId })
 
     if (cost != 0L) {
@@ -616,6 +617,7 @@ private fun sendRuleSettingOrderSummary(
     player.sendSystemMessage(Translator.tr("community.setting.confirmation.target.global") ?: Component.literal("§eTarget: §fAll members"))
     player.sendSystemMessage(Translator.tr("community.setting.confirmation.change", oldValue.toString(), newValue.toString()) ?: Component.literal("§eChange: §c$oldValue §e-> §a$newValue"))
     player.sendSystemMessage(Translator.tr("community.setting.confirmation.area", String.format("%.2f", area)) ?: Component.literal("§eArea: §f${String.format("%.2f", area)} m²"))
+    sendAreaSnapshot(player, costResult.areaByDimension)
     sendDimensionLegend(player, costResult.dimensionCosts.map { it.dimensionId })
 
     val coefficientPerUnit = TerritoryPricing.getRuleCoefficientPerUnit(ruleKey)
@@ -650,14 +652,7 @@ private fun getPricingAreaByDimension(region: Region, scope: GeoScope?): Map<Str
 
 private fun sendDimensionLegend(player: ServerPlayer, dimensionIds: Collection<String>) {
     if (dimensionIds.isEmpty()) return
-    val orderedIds = dimensionIds.distinct().sortedBy {
-        when (TerritoryPricing.normalizeDimensionId(it)) {
-            TerritoryPricing.DIMENSION_OVERWORLD -> 0
-            TerritoryPricing.DIMENSION_NETHER -> 1
-            TerritoryPricing.DIMENSION_END -> 2
-            else -> 3
-        }
-    }
+    val orderedIds = TerritoryPricing.orderedDimensionIds(dimensionIds)
     val parts = orderedIds.map {
         val normalized = TerritoryPricing.normalizeDimensionId(it)
         val multiplierKey = when (normalized) {
@@ -672,6 +667,25 @@ private fun sendDimensionLegend(player: ServerPlayer, dimensionIds: Collection<S
         Translator.tr("community.pricing.dimension.legend", parts.joinToString("§7, "))
             ?: Component.literal("§7Dimension multipliers: ${parts.joinToString(", ")}")
     )
+}
+
+private fun sendAreaSnapshot(player: ServerPlayer, areaByDimension: Map<String, Double>) {
+    if (areaByDimension.isEmpty()) return
+    player.sendSystemMessage(
+        Translator.tr("community.pricing.area.breakdown.header")
+            ?: Component.literal("§7Area by dimension:")
+    )
+    for (dimensionId in TerritoryPricing.orderedDimensionIds(areaByDimension.keys)) {
+        val area = areaByDimension[dimensionId] ?: continue
+        val dimensionName = Translator.tr(TerritoryPricing.getDimensionDisplayKey(dimensionId))?.string ?: dimensionId
+        player.sendSystemMessage(
+            Translator.tr(
+                "community.pricing.area.line",
+                dimensionName,
+                String.format("%.2f", area)
+            ) ?: Component.literal("§7  $dimensionName: ${String.format("%.2f", area)} m²")
+        )
+    }
 }
 
 private fun sendDimensionBreakdown(

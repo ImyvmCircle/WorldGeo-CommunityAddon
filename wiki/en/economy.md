@@ -19,6 +19,10 @@ Communities involve several types of in-game currency transactions. This page co
 | Additional teleport point | Doubles per additional | Doubles per additional |
 | Modify existing teleport point | $1,000.00 | $1,000.00 |
 
+> **Dimensional ledger**  
+> Fees tied directly to a Geoscope are settled by that scope's home dimension. Overworld ×1. Nether ×8. End ×2.  
+> Region-wide land and setting costs are priced per dimension and then summed.
+
 ## Creation Costs
 
 When creating a community, you pay a **base creation fee** plus an **area surcharge** for territory above the free threshold.
@@ -26,6 +30,8 @@ When creating a community, you pay a **base creation fee** plus an **area surcha
 ### Area-Based Pricing
 
 The area surcharge uses a **tiered bracket system** (progressive, like a tax bracket). Only the area within each bracket is charged at that bracket's rate. The unit multiplier doubles with each tier.
+
+Those brackets are evaluated separately for the Overworld, Nether, and End before the final total is assembled.
 
 #### Manor (first 10,000 m² free; base rate: $200 per 10,000 m²)
 
@@ -51,6 +57,8 @@ The area surcharge uses a **tiered bracket system** (progressive, like a tax bra
 ### Refund Policy
 
 When **reducing** territory area, you receive a **50% refund** of the cost difference. When **selling** a scope to the system, you receive a **50% refund** of the corresponding land cost and setting cost difference (base cost is not refunded).
+
+Confirmation messages list area by dimension and identify the dimension that changed, together with the exact increase or decrease.
 
 ---
 

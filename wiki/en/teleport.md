@@ -46,6 +46,9 @@ Once the free quota is exhausted, each additional use costs more and adds a dela
 
 > **Tip:** Moving or taking damage during the delay **cancels** the teleport (no fee charged). Insufficient balance at the moment of execution also cancels the teleport.
 
+> **Dimension multiplier**  
+> Paid teleports aimed at a specific Geoscope read the destination dimension. Overworld ×1. Nether ×8. End ×2.
+
 ---
 
 ## Managing Teleport Points (Admins)
@@ -80,6 +83,9 @@ Teleport points are set per-scope from **Administration Menu → Teleport Points
 | Modifying an existing point | $3,000.00 |
 
 > **Note:** The teleport point costs are deducted from the **community treasury**, not the admin's personal balance. Ensure the treasury has sufficient funds before setting points.
+>
+> **Dimension multiplier**  
+> If the hosting scope is in the Nether, the above prices are settled at ×8. If it is in the End, they are settled at ×2. The Overworld remains ×1.
 
 > **Note:** Requires the **Manage Teleport Points** admin privilege.
 

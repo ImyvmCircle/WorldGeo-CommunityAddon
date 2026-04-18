@@ -42,7 +42,8 @@ data class FixedPriceResult(
 data class SettingCostResult(
     val cost: Long,
     val denominator: Long,
-    val dimensionCosts: List<DimensionCostBreakdown>
+    val dimensionCosts: List<DimensionCostBreakdown>,
+    val areaByDimension: Map<String, Double> = emptyMap()
 )
 
 data class CreationCostResult(
@@ -50,7 +51,8 @@ data class CreationCostResult(
     val areaCost: Long,
     val totalCost: Long,
     val area: Double,
-    val dimensionCosts: List<DimensionCostBreakdown> = emptyList()
+    val dimensionCosts: List<DimensionCostBreakdown> = emptyList(),
+    val areaByDimension: Map<String, Double> = emptyMap()
 )
 
 data class ModificationCostResult(
@@ -59,7 +61,9 @@ data class ModificationCostResult(
     val areaAfter: Double,
     val cost: Long,
     val isIncrease: Boolean,
-    val dimensionCosts: List<DimensionCostBreakdown> = emptyList()
+    val dimensionCosts: List<DimensionCostBreakdown> = emptyList(),
+    val areaBeforeByDimension: Map<String, Double> = emptyMap(),
+    val areaAfterByDimension: Map<String, Double> = emptyMap()
 )
 
 data class SettingItemCostChange(
@@ -68,7 +72,9 @@ data class SettingItemCostChange(
     val playerName: String?,
     val areaOld: Double,
     val areaNew: Double,
-    val costChange: Long
+    val costChange: Long,
+    val areaOldByDimension: Map<String, Double> = emptyMap(),
+    val areaNewByDimension: Map<String, Double> = emptyMap()
 )
 
 object TerritoryPricing {
@@ -78,6 +84,8 @@ object TerritoryPricing {
     const val DIMENSION_END = "minecraft:the_end"
 
     private val DIMENSION_ORDER = listOf(DIMENSION_OVERWORLD, DIMENSION_NETHER, DIMENSION_END)
+
+    fun orderedDimensionIds(dimensionIds: Collection<String>): List<String> = sortDimensionIds(dimensionIds)
 
     fun forEachLandBracket(
         fromArea: Double,
@@ -318,15 +326,17 @@ object TerritoryPricing {
     }
 
     fun calculateCreationCost(areaByDimension: Map<String, Double>, totalArea: Double, isManor: Boolean): CreationCostResult {
+        val orderedAreaByDimension = orderAreaMap(areaByDimension)
         val baseCost = if (isManor) PricingConfig.PRICE_MANOR.value else PricingConfig.PRICE_REALM.value
-        val dimensionCosts = calculateLandCostBreakdown(areaByDimension, isManor)
+        val dimensionCosts = calculateLandCostBreakdown(orderedAreaByDimension, isManor)
         val areaCost = dimensionCosts.sumOf { it.subtotal }
         return CreationCostResult(
             baseCost = baseCost,
             areaCost = areaCost,
             totalCost = baseCost + areaCost,
             area = roundArea(totalArea),
-            dimensionCosts = dimensionCosts
+            dimensionCosts = dimensionCosts,
+            areaByDimension = orderedAreaByDimension
         )
     }
 
@@ -344,12 +354,14 @@ object TerritoryPricing {
         isManor: Boolean
     ): ModificationCostResult {
         val config = getPricingConfig(isManor)
-        val isIncrease = sumArea(areaAfterByDimension) >= sumArea(areaBeforeByDimension)
+        val orderedAreaBeforeByDimension = orderAreaMap(areaBeforeByDimension)
+        val orderedAreaAfterByDimension = orderAreaMap(areaAfterByDimension)
+        val isIncrease = sumArea(orderedAreaAfterByDimension) >= sumArea(orderedAreaBeforeByDimension)
         val dimensionCosts = mutableListOf<DimensionCostBreakdown>()
 
-        for (dimensionId in sortDimensionIds(areaBeforeByDimension.keys + areaAfterByDimension.keys)) {
-            val areaBefore = roundArea(areaBeforeByDimension[dimensionId] ?: 0.0)
-            val areaAfter = roundArea(areaAfterByDimension[dimensionId] ?: 0.0)
+        for (dimensionId in sortDimensionIds(orderedAreaBeforeByDimension.keys + orderedAreaAfterByDimension.keys)) {
+            val areaBefore = roundArea(orderedAreaBeforeByDimension[dimensionId] ?: 0.0)
+            val areaAfter = roundArea(orderedAreaAfterByDimension[dimensionId] ?: 0.0)
             if (areaBefore == areaAfter) continue
 
             val dimensionMultiplier = getDimensionMultiplier(dimensionId)
@@ -398,12 +410,14 @@ object TerritoryPricing {
         }
 
         return ModificationCostResult(
-            areaChange = roundArea(sumArea(areaAfterByDimension) - sumArea(areaBeforeByDimension)),
-            areaBefore = roundArea(sumArea(areaBeforeByDimension)),
-            areaAfter = roundArea(sumArea(areaAfterByDimension)),
+            areaChange = roundArea(sumArea(orderedAreaAfterByDimension) - sumArea(orderedAreaBeforeByDimension)),
+            areaBefore = roundArea(sumArea(orderedAreaBeforeByDimension)),
+            areaAfter = roundArea(sumArea(orderedAreaAfterByDimension)),
             cost = dimensionCosts.sumOf { it.subtotal },
             isIncrease = isIncrease,
-            dimensionCosts = dimensionCosts
+            dimensionCosts = dimensionCosts,
+            areaBeforeByDimension = orderedAreaBeforeByDimension,
+            areaAfterByDimension = orderedAreaAfterByDimension
         )
     }
 
@@ -574,10 +588,11 @@ object TerritoryPricing {
         freeArea: Double
     ): SettingCostResult {
         val denominator = if (isPlayerTarget) PricingConfig.PERMISSION_TARGET_PLAYER_DENOMINATOR.value else 1L
-        if (coefficientPerUnit == 0L) return SettingCostResult(0L, denominator, emptyList())
+        val orderedAreaByDimension = orderAreaMap(areaByDimension)
+        if (coefficientPerUnit == 0L) return SettingCostResult(0L, denominator, emptyList(), orderedAreaByDimension)
 
         val result = mutableListOf<DimensionCostBreakdown>()
-        for ((dimensionId, area) in orderAreaMap(areaByDimension)) {
+        for ((dimensionId, area) in orderedAreaByDimension) {
             if (area <= 0.0) continue
             val dimensionMultiplier = getDimensionMultiplier(dimensionId)
             val brackets = mutableListOf<DimensionBracketCost>()
@@ -603,7 +618,8 @@ object TerritoryPricing {
         return SettingCostResult(
             cost = result.sumOf { it.subtotal } / denominator,
             denominator = denominator,
-            dimensionCosts = result
+            dimensionCosts = result,
+            areaByDimension = orderedAreaByDimension
         )
     }
 
