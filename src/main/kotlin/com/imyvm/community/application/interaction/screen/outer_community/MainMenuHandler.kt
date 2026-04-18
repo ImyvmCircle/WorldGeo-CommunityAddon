@@ -11,6 +11,8 @@ import com.imyvm.community.entrypoint.screen.outer_community.MainMenu
 import com.imyvm.community.entrypoint.screen.outer_community.MyCommunityListMenu
 import com.imyvm.community.entrypoint.screen.outer_community.TerritoryMenu
 import com.imyvm.community.util.Translator
+import com.imyvm.community.util.getColoredDimensionName
+import com.imyvm.community.util.getPlayerDimensionId
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.application.interaction.onToggleActionBar
 import com.imyvm.iwg.inter.api.PlayerInteractionApi
@@ -79,6 +81,7 @@ fun runToggleSelectionMode(player: ServerPlayer) {
     } else {
         PlayerInteractionApi.startSelection(player)
         player.sendSystemMessage(Translator.tr("community.selection_mode.enabled"))
+        player.sendSystemMessage(Translator.tr("community.selection_mode.dimension_hint", getColoredDimensionName(getPlayerDimensionId(player))))
     }
     runBackOrRefreshMainMenu(player)
 }

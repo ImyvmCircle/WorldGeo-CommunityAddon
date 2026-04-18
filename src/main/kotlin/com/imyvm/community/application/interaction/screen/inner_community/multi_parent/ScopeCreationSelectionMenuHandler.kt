@@ -6,6 +6,8 @@ import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.Commun
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityScopeCreationRenameMenuAnvil
 import com.imyvm.community.util.SelectionReturnContext
 import com.imyvm.community.util.Translator
+import com.imyvm.community.util.getColoredDimensionName
+import com.imyvm.community.util.getPlayerDimensionId
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.HypotheticalShape
@@ -46,6 +48,7 @@ fun runToggleSelectionModeInScopeCreation(
             SelectionReturnContext.setCreateContext(player.uuid, id, currentName)
         }
         player.sendSystemMessage(Translator.tr("community.selection_mode.enabled"))
+        player.sendSystemMessage(Translator.tr("community.selection_mode.dimension_hint", getColoredDimensionName(getPlayerDimensionId(player))))
     }
     CommunityMenuOpener.open(player) { syncId ->
         CommunityScopeCreationMenu(syncId, community, currentName, player, runBack)

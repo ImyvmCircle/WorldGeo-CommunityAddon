@@ -30,6 +30,8 @@ import com.imyvm.community.infra.PricingConfig
 import com.imyvm.community.domain.model.TurnoverSource
 import com.imyvm.community.util.SelectionReturnContext
 import com.imyvm.community.util.Translator
+import com.imyvm.community.util.getColoredDimensionName
+import com.imyvm.community.util.getPlayerDimensionId
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.AreaEstimationResult
 import com.imyvm.iwg.domain.CreationError
@@ -403,11 +405,31 @@ fun runExecuteScope(
                 { com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy.canExecuteAdministration(playerExecutor, community, AdminPrivilege.MODIFY_REGION_GEOMETRY) }
             ) {
                 val hypotheticalShape = ImyvmWorldGeo.pointSelectingPlayers[playerExecutor.uuid]?.hypotheticalShape
-                if (hypotheticalShape is HypotheticalShape.ModifyExisting && hypotheticalShape.scope.scopeName == scope.scopeName) {
+                    if (hypotheticalShape is HypotheticalShape.ModifyExisting && hypotheticalShape.scope.scopeName == scope.scopeName) {
+                        if (!isPlayerInScopeDimension(playerExecutor, scope)) {
+                            sendCrossDimensionModifyError(
+                                player = playerExecutor,
+                                community = community,
+                                scope = scope,
+                                messageKey = "ui.territory.modify.dimension_mismatch.confirm",
+                                returnCommand = getModifyMenuReturnCommand(community)
+                            )
+                            return@executeWithPermission
+                        }
                     runOpenScopeModificationConfirmation(playerExecutor, community, scope) { p ->
                         runBackRegionScopeMenu(p, community, geographicFunctionType, runBackGrandfatherMenu)
                     }
                 } else {
+                    if (!isPlayerInScopeDimension(playerExecutor, scope)) {
+                        sendCrossDimensionModifyError(
+                            player = playerExecutor,
+                            community = community,
+                            scope = scope,
+                            messageKey = "ui.territory.modify.dimension_mismatch.start",
+                            returnCommand = getModifyMenuReturnCommand(community)
+                        )
+                        return@executeWithPermission
+                    }
                     if (ImyvmWorldGeo.pointSelectingPlayers.containsKey(playerExecutor.uuid)) {
                         PlayerInteractionApi.stopSelection(playerExecutor)
                         SelectionReturnContext.clearContext(playerExecutor.uuid)
@@ -417,7 +439,13 @@ fun runExecuteScope(
                         SelectionReturnContext.setModifyContext(playerExecutor.uuid, id, scope.scopeName)
                     }
                     playerExecutor.closeContainer()
-                    playerExecutor.sendSystemMessage(Translator.tr("ui.territory.modify.scope_started", scope.scopeName))
+                    playerExecutor.sendSystemMessage(
+                        Translator.tr(
+                            "ui.territory.modify.scope_started",
+                            scope.scopeName,
+                            getColoredDimensionName(TerritoryPricing.getScopeDimensionId(scope))
+                        )
+                    )
                 }
             }
         }
@@ -542,6 +570,48 @@ fun runToggleScopeMod(
     SelectionReturnContext.clearContext(player.uuid)
     player.sendSystemMessage(Translator.tr("community.selection_mode.disabled"))
     runBack(player)
+}
+
+private fun isPlayerInScopeDimension(player: ServerPlayer, scope: GeoScope): Boolean {
+    return getPlayerDimensionId(player) == TerritoryPricing.getScopeDimensionId(scope)
+}
+
+private fun getModifyMenuReturnCommand(community: Community): String {
+    return community.regionNumberId?.let { "/community open_modify_menu $it" } ?: "/community"
+}
+
+private fun sendCrossDimensionModifyError(
+    player: ServerPlayer,
+    community: Community,
+    scope: GeoScope,
+    messageKey: String,
+    returnCommand: String
+) {
+    player.closeContainer()
+    val scopeDimensionName = getColoredDimensionName(TerritoryPricing.getScopeDimensionId(scope))
+    val playerDimensionName = getColoredDimensionName(getPlayerDimensionId(player))
+    player.sendSystemMessage(
+        Translator.tr(messageKey, scope.scopeName, scopeDimensionName, playerDimensionName)
+            ?: Component.literal("Dimension mismatch while modifying ${scope.scopeName}")
+    )
+
+    val returnButton = (Translator.tr("ui.territory.modify.dimension_mismatch.return_button")
+        ?: Component.literal("§b§l[RETURN]§r")).copy().withStyle { style ->
+        style.withClickEvent(ClickEvent.RunCommand(returnCommand))
+            .withHoverEvent(
+                HoverEvent.ShowText(
+                    Translator.tr(
+                        "ui.territory.modify.dimension_mismatch.return_hover",
+                        community.getRegion()?.name ?: ""
+                    ) ?: Component.literal("Return")
+                )
+            )
+    }
+    val prompt = (Translator.tr("ui.territory.modify.dimension_mismatch.return_prompt")
+        ?: Component.literal("§7Back to interface")).copy()
+        .append(Component.literal(" "))
+        .append(returnButton)
+    player.sendSystemMessage(prompt)
 }
 
 private fun runBackRegionScopeMenu(
@@ -707,6 +777,16 @@ internal fun executeScopeModification(
     if (communityRegion == null) {
         player.sendSystemMessage(Translator.tr("community.modification.error.no_region"))
         player.closeContainer()
+        return
+    }
+    if (!isPlayerInScopeDimension(player, scope)) {
+        sendCrossDimensionModifyError(
+            player = player,
+            community = community,
+            scope = scope,
+            messageKey = "ui.territory.modify.dimension_mismatch.execute",
+            returnCommand = "/community"
+        )
         return
     }
 

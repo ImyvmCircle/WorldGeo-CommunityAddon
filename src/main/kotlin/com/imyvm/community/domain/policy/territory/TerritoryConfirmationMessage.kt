@@ -2,6 +2,7 @@ package com.imyvm.community.domain.policy.territory
 
 import com.imyvm.community.infra.PricingConfig
 import com.imyvm.community.util.Translator
+import com.imyvm.community.util.getColoredDimensionName
 import com.imyvm.iwg.domain.component.GeoShapeType
 import net.minecraft.network.chat.Component
 import kotlin.math.abs
@@ -31,6 +32,12 @@ object TerritoryConfirmationMessage {
         }
         val shapeText = Translator.tr(shapeKey) ?: Component.literal(geoShapeType.toString())
         messages.add(Translator.tr("community.create.confirm.shape", shapeText.string) ?: Component.literal("Shape: ${shapeText.string}"))
+        val creationDimensionId = TerritoryPricing.orderedDimensionIds(costResult.areaByDimension.keys).firstOrNull()
+            ?: TerritoryPricing.DIMENSION_OVERWORLD
+        messages.add(
+            Translator.tr("community.create.confirm.dimension", getColoredDimensionName(creationDimensionId))
+                ?: Component.literal("Dimension: ${getColoredDimensionName(creationDimensionId)}")
+        )
 
         messages.add(
             Translator.tr("community.create.confirm.base_cost", String.format("%.2f", costResult.baseCost / 100.0))
@@ -260,6 +267,10 @@ object TerritoryConfirmationMessage {
         messages.add(Translator.tr("community.scope_add.confirm.region", regionName) ?: Component.literal("Region: $regionName"))
         messages.add(Translator.tr("community.scope_add.confirm.scope", scopeName) ?: Component.literal("Administrative District: $scopeName"))
         messages.add(Translator.tr("community.scope_add.confirm.shape", shapeText) ?: Component.literal("Shape: $shapeText"))
+        messages.add(
+            Translator.tr("community.scope_add.confirm.dimension", getColoredDimensionName(scopeDimensionId))
+                ?: Component.literal("Dimension: ${getColoredDimensionName(scopeDimensionId)}")
+        )
         appendAreaSummary(
             messages = messages,
             headerKey = "community.pricing.new_scope_area.header",

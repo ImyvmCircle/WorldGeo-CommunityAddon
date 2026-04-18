@@ -53,11 +53,14 @@ Both paths open the **Scope Creation Screen**. Here you can:
 
 1. **Enable Selection Mode** and head into the world to place boundary points.
    - The menu title guides you through each step ("→ Enable Selection Mode First" → "→ Select Points In-World").
+   - Chat first marks the current creation dimension: green for the Overworld, red for the Nether, pale gold-white for the End.
    - Once you have enough points, a **name** button and a **confirm creation** button appear.
 2. **Switch the shape** (rectangle / circle / polygon).
 3. After placing points, **exit the menu** to continue in the world — or **Close Selection Mode** to cancel.
 4. To start over with fresh points, click **Reset Points**.
 5. Once named and ready, click **Confirm Creation** to generate a cost summary; confirm in chat to finalize.
+
+The creation confirmation repeats the destination dimension, so the new territory is tied to its world in plain sight from the first quote onward.
 
 Base cost for adding a new Geoscope:
 
@@ -120,6 +123,8 @@ You can redefine the boundaries of any existing Geoscope. The system calculates 
 1. Administration Menu → **Region Geometry** → select the Geoscope you want to reshape;
 2. Modify mode activates; menu closes with a prompt;
 3. Follow steps 4–6 above.
+
+No matter which entry path is used, both starting Modify mode and entering modification confirmation require standing in the **same dimension as the target Geoscope**. If the selection is made from another dimension, the menu closes, chat states both the Geoscope's dimension and the current one, and a clickable **return** button is provided.
 
 > **Visual feedback:** Once Modify mode is active, **orange dust particles** trace the full perimeter of the existing Geoscope boundary, so you can clearly see the shape you are replacing while placing new points.
 

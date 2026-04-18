@@ -6,6 +6,8 @@ import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.model.community.CommunityListFilterType
 import com.imyvm.community.entrypoint.command.helper.*
 import com.imyvm.community.entrypoint.screen.outer_community.MainMenu
+import com.imyvm.community.util.getColoredDimensionName
+import com.imyvm.community.util.getPlayerDimensionId
 import com.imyvm.community.util.SelectionReturnContext
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.ImyvmWorldGeo
@@ -367,6 +369,7 @@ private fun runStartSelect(context: CommandContext<CommandSourceStack>): Int {
     val result = startSelection(player)
     if (result == 1) {
         player.sendSystemMessage(Translator.tr("community.selection_mode.enabled"))
+        player.sendSystemMessage(Translator.tr("community.selection_mode.dimension_hint", getColoredDimensionName(getPlayerDimensionId(player))))
     }
     return result
 }

@@ -55,7 +55,9 @@ Opens the **Community Creation Screen**, which integrates point selection direct
 4. Re-open the Territory Menu → **Create Community** to return to the screen with your points loaded.
 5. Optionally switch shape, set a name, choose type, then click **Confirm Creation**.
 
-> **Tip:** Use `/community select start` and `/community select stop` as command alternatives for toggling selection mode.
+> **Tip:** When Selection Mode opens, chat also names the dimension where the creation will take place. The Overworld is shown in green, the Nether in red, and the End in a pale gold-white highlight. The creation confirmation keeps that same dimension reminder visible.
+
+> **Tip:** Use `/community select start` and `/community select stop` as command alternatives for toggling selection mode. The command path shows the same current-dimension hint.
 
 ### Add Scope (增加辖区)
 
@@ -67,6 +69,8 @@ Opens the scope creation flow:
 
 > **Warning:** If you are currently in **ModifyExisting** selection mode (i.e. modifying an existing scope), you must complete or cancel that operation before adding a scope.
 
+> **Tip:** Opening Selection Mode for a new scope also names the dimension that scope is being drawn in, and the later confirmation repeats that dimension so cross-dimensional planning stays clear.
+
 ### Modify Territory (修改地块)
 
 Opens the scope modification flow:
@@ -77,6 +81,8 @@ Opens the scope modification flow:
 4. Select new boundary points in the world, then re-open the Territory Menu → **Modify Territory** to confirm.
 
 > **Warning:** If you are in **Normal** (creation) selection mode, the menu closes with a warning to exit that mode first.
+
+> **Note:** Modification can begin only while standing in the **same dimension as the target scope**, and the same rule applies when entering modification confirmation. If the scope is clicked from another dimension, the menu closes, chat explains the mismatch, and a clickable **return** button appears to reopen the previous interface.
 
 > **Note:** Requires the **Region Geometry** admin privilege.
 
@@ -142,7 +148,7 @@ Clicking **My Communities** opens a list of all communities you belong to. Click
 
 ## Selection Mode
 
-Selection mode is a special state in which right-clicking a block while holding a **Nether Star** registers that location as a boundary point for a new or modified region; left-clicking with the Nether Star removes the last placed point (undo). It is toggled from within the **Community Creation Screen** or **Scope Creation Screen** (reached via the Territory Menu), not from the main menu.
+Selection mode is a special state in which right-clicking a block while holding a **Nether Star** registers that location as a boundary point for a new or modified region; left-clicking with the Nether Star removes the last placed point (undo). It is toggled from within the **Community Creation Screen** or **Scope Creation Screen** (reached via the Territory Menu), not from the main menu. Each time it opens for creation, chat first marks the current dimension so the new territory's anchor world is explicit.
 
 | Action | Command |
 |---|---|

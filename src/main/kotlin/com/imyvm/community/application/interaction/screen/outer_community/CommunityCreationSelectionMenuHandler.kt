@@ -4,6 +4,8 @@ import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.entrypoint.screen.outer_community.CommunityCreationRenameMenuAnvil
 import com.imyvm.community.entrypoint.screen.outer_community.CommunityCreationSelectionMenu
 import com.imyvm.community.util.Translator
+import com.imyvm.community.util.getColoredDimensionName
+import com.imyvm.community.util.getPlayerDimensionId
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.HypotheticalShape
@@ -36,6 +38,7 @@ fun runToggleSelectionModeInCreation(
     } else {
         PlayerInteractionApi.startSelection(player, GeoShapeType.RECTANGLE)
         player.sendSystemMessage(Translator.tr("community.selection_mode.enabled"))
+        player.sendSystemMessage(Translator.tr("community.selection_mode.dimension_hint", getColoredDimensionName(getPlayerDimensionId(player))))
     }
     CommunityMenuOpener.open(player) { syncId ->
         CommunityCreationSelectionMenu(syncId, currentName, isManor, player, runBack)
