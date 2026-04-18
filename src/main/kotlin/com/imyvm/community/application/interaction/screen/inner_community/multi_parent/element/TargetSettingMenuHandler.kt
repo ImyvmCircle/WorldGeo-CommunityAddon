@@ -8,6 +8,7 @@ import com.imyvm.community.domain.model.SettingConfirmationData
 import com.imyvm.community.domain.model.Turnover
 import com.imyvm.community.domain.model.TurnoverSource
 import com.imyvm.community.domain.model.community.MemberRoleType
+import com.imyvm.community.domain.policy.territory.SettingCostResult
 import com.imyvm.community.domain.policy.territory.TerritoryPricing
 import com.imyvm.community.entrypoint.screen.component.getLoreButton
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.element.TargetSettingMenu
@@ -93,20 +94,22 @@ fun runTogglingPermissionSetting(
         val oldValue = RegionDataApi.getPermissionValueRegion(region, scope, playerObject?.id, permissionKey)
         val newValue = !oldValue
 
-        val area = if (scope == null) region.calculateTotalArea().toDouble() else RegionDataApi.getScopeArea(scope) ?: 0.0
+        val areaByDimension = getPricingAreaByDimension(region, scope)
+        val area = areaByDimension.values.sum()
 
         val defaultValue = RegionDataApi.getPermissionValueRegion(null, null, null, permissionKey)
         val isRestoringDefault = (newValue == defaultValue)
-        val cost = if (area > 0) {
-            TerritoryPricing.calculatePermissionSettingCost(
-                area = area,
-                permissionKey = permissionKey,
-                isManor = community.isManor(),
-                isScope = scope != null,
-                isPlayerTarget = playerObject != null,
-                isRestoringDefault = isRestoringDefault
-            )
-        } else 0L
+        val costResult = TerritoryPricing.calculatePermissionSettingCostResult(
+            areaByDimension = areaByDimension,
+            permissionKey = permissionKey,
+            isManor = community.isManor(),
+            isPlayerTarget = playerObject != null
+        )
+        val cost = if (isRestoringDefault) {
+            -(costResult.cost * PricingConfig.AREA_REFUND_RATE.value).toLong()
+        } else {
+            costResult.cost
+        }
 
         playerExecutor.closeContainer()
 
@@ -126,7 +129,7 @@ fun runTogglingPermissionSetting(
             )
         )
 
-        sendSettingOrderSummary(playerExecutor, community, scope, playerObject, permissionKey, oldValue, newValue, area, cost, defaultValue)
+        sendSettingOrderSummary(playerExecutor, community, scope, playerObject, permissionKey, oldValue, newValue, area, cost, defaultValue, costResult)
         sendInteractiveSettingConfirmation(playerExecutor, regionId)
     }
 }
@@ -177,19 +180,21 @@ fun runTogglingRuleSetting(
         val oldValue = RegionDataApi.getRuleValueForRegion(region, scope, ruleKey) ?: false
         val newValue = !oldValue
 
-        val area = if (scope == null) region.calculateTotalArea().toDouble() else RegionDataApi.getScopeArea(scope) ?: 0.0
+        val areaByDimension = getPricingAreaByDimension(region, scope)
+        val area = areaByDimension.values.sum()
 
         val defaultValue = RegionDataApi.getRuleValueForRegion(null, null, ruleKey) ?: false
         val isRestoringDefault = (newValue == defaultValue)
-        val cost = if (area > 0) {
-            TerritoryPricing.calculateRuleSettingCost(
-                area = area,
-                ruleKey = ruleKey,
-                isManor = community.isManor(),
-                isScope = scope != null,
-                isRestoringDefault = isRestoringDefault
-            )
-        } else 0L
+        val costResult = TerritoryPricing.calculateRuleSettingCostResult(
+            areaByDimension = areaByDimension,
+            ruleKey = ruleKey,
+            isManor = community.isManor()
+        )
+        val cost = if (isRestoringDefault) {
+            -(costResult.cost * PricingConfig.AREA_REFUND_RATE.value).toLong()
+        } else {
+            costResult.cost
+        }
 
         playerExecutor.closeContainer()
 
@@ -210,7 +215,7 @@ fun runTogglingRuleSetting(
             )
         )
 
-        sendRuleSettingOrderSummary(playerExecutor, community, scope, ruleKey, oldValue, newValue, area, cost)
+        sendRuleSettingOrderSummary(playerExecutor, community, scope, ruleKey, oldValue, newValue, area, cost, costResult)
         sendInteractiveSettingConfirmation(playerExecutor, regionId)
     }
 }
@@ -530,7 +535,8 @@ private fun sendSettingOrderSummary(
     newValue: Boolean,
     area: Double,
     cost: Long,
-    defaultValue: Boolean
+    defaultValue: Boolean,
+    costResult: SettingCostResult
 ) {
     val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
     val permissionName = getPermissionKeyDisplayName(permissionKey)
@@ -553,25 +559,16 @@ private fun sendSettingOrderSummary(
 
     player.sendSystemMessage(Translator.tr("community.setting.confirmation.change", oldValue.toString(), newValue.toString()) ?: Component.literal("§eChange: §c$oldValue §e-> §a$newValue"))
     player.sendSystemMessage(Translator.tr("community.setting.confirmation.area", String.format("%.2f", area)) ?: Component.literal("§eArea: §f${String.format("%.2f", area)} m²"))
+    sendDimensionLegend(player, costResult.dimensionCosts.map { it.dimensionId })
 
     if (cost != 0L) {
-        val isManor = community.isManor()
-        val freeArea = if (isManor) PricingConfig.MANOR_FREE_AREA.value else PricingConfig.REALM_FREE_AREA.value
         val coefficientPerUnit = TerritoryPricing.getPermissionCoefficientPerUnit(permissionKey)
         val unitSize = PricingConfig.PERMISSION_COEFFICIENT_UNIT_SIZE.value
-        val settingN = coefficientPerUnit.toDouble() / unitSize
-        val denominator = if (playerObject != null) PricingConfig.PERMISSION_TARGET_PLAYER_DENOMINATOR.value else 1L
-        TerritoryPricing.forEachSettingBracket(0.0, area, coefficientPerUnit, unitSize.toDouble(), freeArea) { tierNum, low, high, areaIn, mult, rawCost ->
-            val unitPrice = settingN * mult.toDouble() / 100.0
-            player.sendSystemMessage(Translator.tr("community.pricing.bracket_line",
-                tierNum.toString(), String.format("%.2f", low), String.format("%.2f", high),
-                String.format("%.2f", areaIn), String.format("%.3f", unitPrice), String.format("%.2f", rawCost / 100.0)
-            ) ?: Component.literal("  Tier $tierNum (${String.format("%.2f", low)} ~ ${String.format("%.2f", high)} m²): ${String.format("%.2f", areaIn)} m² ×${String.format("%.3f", unitPrice)}/m² = ${String.format("%.2f", rawCost / 100.0)}"))
-        }
-        if (denominator > 1L) {
+        sendDimensionBreakdown(player, costResult, coefficientPerUnit.toDouble() / unitSize)
+        if (costResult.denominator > 1L) {
             player.sendSystemMessage(
-                Translator.tr("community.setting.confirmation.player_factor", denominator.toString())
-                    ?: Component.literal("§7  Player factor: §fx1/$denominator")
+                Translator.tr("community.setting.confirmation.player_factor", costResult.denominator.toString())
+                    ?: Component.literal("§7  Player factor: §fx1/${costResult.denominator}")
             )
         }
         if (cost < 0) {
@@ -600,7 +597,8 @@ private fun sendRuleSettingOrderSummary(
     oldValue: Boolean,
     newValue: Boolean,
     area: Double,
-    cost: Long
+    cost: Long,
+    costResult: SettingCostResult
 ) {
     val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
     val ruleName = getRuleKeyDisplayName(ruleKey)
@@ -618,20 +616,12 @@ private fun sendRuleSettingOrderSummary(
     player.sendSystemMessage(Translator.tr("community.setting.confirmation.target.global") ?: Component.literal("§eTarget: §fAll members"))
     player.sendSystemMessage(Translator.tr("community.setting.confirmation.change", oldValue.toString(), newValue.toString()) ?: Component.literal("§eChange: §c$oldValue §e-> §a$newValue"))
     player.sendSystemMessage(Translator.tr("community.setting.confirmation.area", String.format("%.2f", area)) ?: Component.literal("§eArea: §f${String.format("%.2f", area)} m²"))
+    sendDimensionLegend(player, costResult.dimensionCosts.map { it.dimensionId })
 
-    val isManor = community.isManor()
-    val freeArea = if (isManor) PricingConfig.MANOR_FREE_AREA.value else PricingConfig.REALM_FREE_AREA.value
     val coefficientPerUnit = TerritoryPricing.getRuleCoefficientPerUnit(ruleKey)
     val unitSize = PricingConfig.PERMISSION_COEFFICIENT_UNIT_SIZE.value
-    val ruleN = coefficientPerUnit.toDouble() / unitSize
     if (cost != 0L) {
-        TerritoryPricing.forEachSettingBracket(0.0, area, coefficientPerUnit, unitSize.toDouble(), freeArea) { tierNum, low, high, areaIn, mult, rawCost ->
-            val unitPrice = ruleN * mult.toDouble() / 100.0
-            player.sendSystemMessage(Translator.tr("community.pricing.bracket_line",
-                tierNum.toString(), String.format("%.2f", low), String.format("%.2f", high),
-                String.format("%.2f", areaIn), String.format("%.3f", unitPrice), String.format("%.2f", rawCost / 100.0)
-            ) ?: Component.literal("  Tier $tierNum (${String.format("%.2f", low)} ~ ${String.format("%.2f", high)} m²): ${String.format("%.2f", areaIn)} m² ×${String.format("%.3f", unitPrice)}/m² = ${String.format("%.2f", rawCost / 100.0)}"))
-        }
+        sendDimensionBreakdown(player, costResult, coefficientPerUnit.toDouble() / unitSize)
         if (cost < 0) {
             val refundPct = (PricingConfig.AREA_REFUND_RATE.value * 100).toInt()
             player.sendSystemMessage(Translator.tr("community.pricing.refund_summary", refundPct.toString(), String.format("%.2f", -cost / 100.0))
@@ -648,6 +638,74 @@ private fun sendRuleSettingOrderSummary(
 
     val assetsAfter = community.getTotalAssets() - cost
     player.sendSystemMessage(Translator.tr("community.setting.confirmation.assets", String.format("%.2f", community.getTotalAssets() / 100.0), String.format("%.2f", assetsAfter / 100.0)) ?: Component.literal("§eCommunity Assets: §f${String.format("%.2f", community.getTotalAssets() / 100.0)} §e-> §f${String.format("%.2f", assetsAfter / 100.0)}"))
+}
+
+private fun getPricingAreaByDimension(region: Region, scope: GeoScope?): Map<String, Double> {
+    return if (scope == null) {
+        TerritoryPricing.getRegionAreaByDimension(region)
+    } else {
+        TerritoryPricing.getScopeAreaByDimension(scope, RegionDataApi.getScopeArea(scope) ?: 0.0)
+    }
+}
+
+private fun sendDimensionLegend(player: ServerPlayer, dimensionIds: Collection<String>) {
+    if (dimensionIds.isEmpty()) return
+    val orderedIds = dimensionIds.distinct().sortedBy {
+        when (TerritoryPricing.normalizeDimensionId(it)) {
+            TerritoryPricing.DIMENSION_OVERWORLD -> 0
+            TerritoryPricing.DIMENSION_NETHER -> 1
+            TerritoryPricing.DIMENSION_END -> 2
+            else -> 3
+        }
+    }
+    val parts = orderedIds.map {
+        val normalized = TerritoryPricing.normalizeDimensionId(it)
+        val multiplierKey = when (normalized) {
+            TerritoryPricing.DIMENSION_NETHER -> "community.pricing.dimension.multiplier.nether"
+            TerritoryPricing.DIMENSION_END -> "community.pricing.dimension.multiplier.end"
+            else -> "community.pricing.dimension.multiplier.overworld"
+        }
+        Translator.tr(multiplierKey, TerritoryPricing.getDimensionMultiplier(normalized).toString())?.string
+            ?: "$normalized x${TerritoryPricing.getDimensionMultiplier(normalized)}"
+    }
+    player.sendSystemMessage(
+        Translator.tr("community.pricing.dimension.legend", parts.joinToString("§7, "))
+            ?: Component.literal("§7Dimension multipliers: ${parts.joinToString(", ")}")
+    )
+}
+
+private fun sendDimensionBreakdown(
+    player: ServerPlayer,
+    costResult: SettingCostResult,
+    baseUnitPrice: Double
+) {
+    for (dimensionCost in costResult.dimensionCosts) {
+        val dimensionKey = TerritoryPricing.getDimensionDisplayKey(dimensionCost.dimensionId)
+        val dimensionName = Translator.tr(dimensionKey)?.string ?: dimensionCost.dimensionId
+        player.sendSystemMessage(
+            Translator.tr(
+                "community.pricing.dimension.header",
+                dimensionName,
+                String.format("%.2f", dimensionCost.areaAfter),
+                dimensionCost.dimensionMultiplier.toString(),
+                String.format("%.2f", dimensionCost.grossCost / 100.0)
+            ) ?: Component.literal("§7  $dimensionName: ${String.format("%.2f", dimensionCost.areaAfter)} m² ×${dimensionCost.dimensionMultiplier} = ${String.format("%.2f", dimensionCost.grossCost / 100.0)}")
+        )
+        for (bracket in dimensionCost.brackets) {
+            val unitPrice = baseUnitPrice * bracket.bracketMultiplier.toDouble() * dimensionCost.dimensionMultiplier.toDouble() / 100.0
+            player.sendSystemMessage(
+                Translator.tr(
+                    "community.pricing.bracket_line",
+                    bracket.tierNum.toString(),
+                    String.format("%.2f", bracket.bracketLow),
+                    String.format("%.2f", bracket.bracketHigh),
+                    String.format("%.2f", bracket.areaInBracket),
+                    String.format("%.3f", unitPrice),
+                    String.format("%.2f", bracket.cost / 100.0)
+                ) ?: Component.literal("  Tier ${bracket.tierNum} (${String.format("%.2f", bracket.bracketLow)} ~ ${String.format("%.2f", bracket.bracketHigh)} m²): ${String.format("%.2f", bracket.areaInBracket)} m² ×${String.format("%.3f", unitPrice)}/m² = ${String.format("%.2f", bracket.cost / 100.0)}")
+            )
+        }
+    }
 }
 
 private fun sendInteractiveSettingConfirmation(player: ServerPlayer, regionNumberId: Int) {
@@ -682,4 +740,3 @@ private fun notifyFormalMembers(community: Community, server: MinecraftServer, m
         memberAccount.mail.add(message)
     }
 }
-

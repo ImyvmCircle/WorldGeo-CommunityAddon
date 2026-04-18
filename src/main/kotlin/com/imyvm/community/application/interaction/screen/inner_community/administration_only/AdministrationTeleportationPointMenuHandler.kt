@@ -13,6 +13,7 @@ import com.imyvm.community.entrypoint.screen.component.getLoreButton
 import com.imyvm.community.entrypoint.screen.inner_community.administration_only.AdministrationTeleportPointMenu
 import com.imyvm.community.infra.PricingConfig
 import com.imyvm.community.infra.CommunityDatabase
+import com.imyvm.community.domain.policy.territory.TerritoryPricing
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.GeoScope
@@ -165,6 +166,19 @@ fun runSettingTeleportPoint(playerExecutor: ServerPlayer, community: Community, 
             )
         )
 
+        val dimensionId = TerritoryPricing.getScopeDimensionId(scope)
+        val multiplierKey = when (dimensionId) {
+            TerritoryPricing.DIMENSION_NETHER -> "community.pricing.dimension.multiplier.nether"
+            TerritoryPricing.DIMENSION_END -> "community.pricing.dimension.multiplier.end"
+            else -> "community.pricing.dimension.multiplier.overworld"
+        }
+        playerExecutor.sendSystemMessage(
+            Translator.tr(
+                "community.pricing.dimension.legend",
+                Translator.tr(multiplierKey, TerritoryPricing.getDimensionMultiplier(dimensionId).toString())?.string
+                    ?: "$dimensionId x${TerritoryPricing.getDimensionMultiplier(dimensionId)}"
+            )
+        )
         playerExecutor.sendSystemMessage(
             Translator.tr(
                 "community.teleport_point.confirmation.summary",
@@ -307,7 +321,10 @@ fun runTeleportToPoint(playerExecutor: ServerPlayer, community: Community, scope
 private fun calculateTeleportPointSettingCost(region: Region, scope: GeoScope): Pair<Long, String> {
     val currentPoint = PlayerInteractionApi.getTeleportPoint(scope)
     if (currentPoint != null) {
-        return PricingConfig.TELEPORT_POINT_MODIFY_COST.value to "community.teleport_point.cost_reason.modify_existing"
+        return TerritoryPricing.applyGeoscopePriceMultiplier(
+            PricingConfig.TELEPORT_POINT_MODIFY_COST.value,
+            TerritoryPricing.getScopeDimensionId(scope)
+        ).totalCost to "community.teleport_point.cost_reason.modify_existing"
     }
 
     val activeCount = region.geometryScope.count { PlayerInteractionApi.getTeleportPoint(it) != null }
@@ -317,7 +334,10 @@ private fun calculateTeleportPointSettingCost(region: Region, scope: GeoScope): 
 
     val exponent = (activeCount - 1).coerceAtMost(20)
     val multiplier = 1L shl exponent
-    return PricingConfig.TELEPORT_POINT_SECOND_POINT_BASE_COST.value * multiplier to "community.teleport_point.cost_reason.new_additional"
+    return TerritoryPricing.applyGeoscopePriceMultiplier(
+        PricingConfig.TELEPORT_POINT_SECOND_POINT_BASE_COST.value * multiplier,
+        TerritoryPricing.getScopeDimensionId(scope)
+    ).totalCost to "community.teleport_point.cost_reason.new_additional"
 }
 
 private fun sendInteractiveTeleportPointConfirmation(player: ServerPlayer, regionNumberId: Int, scopeName: String) {

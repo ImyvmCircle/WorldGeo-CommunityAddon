@@ -4,6 +4,7 @@ import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.GeographicFunctionType
 import com.imyvm.community.domain.model.community.MemberRoleType
+import com.imyvm.community.domain.policy.territory.TerritoryPricing
 import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.entrypoint.screen.ConfirmMenu
 import com.imyvm.community.entrypoint.screen.component.ConfirmTaskType
@@ -130,10 +131,11 @@ fun startCommunityTeleportExecution(player: ServerPlayer, community: Community, 
 
     val paidTier = (usedTimes - freeUses).coerceAtLeast(0)
     val multiplier = 1L shl paidTier.coerceAtMost(20)
+    val dimensionId = TerritoryPricing.getScopeDimensionId(scope)
     val cost = if (usedTimes < freeUses) {
         0L
     } else {
-        PricingConfig.TELEPORT_PAID_BASE_COST.value * multiplier
+        TerritoryPricing.applyGeoscopePriceMultiplier(PricingConfig.TELEPORT_PAID_BASE_COST.value * multiplier, dimensionId).totalCost
     }
     val delaySeconds = if (usedTimes < freeUses) {
         0
@@ -142,6 +144,7 @@ fun startCommunityTeleportExecution(player: ServerPlayer, community: Community, 
     }
 
     if (cost > 0) {
+        sendTeleportDimensionLegend(player, dimensionId)
         val playerAccount = EconomyMod.data.getOrCreate(player)
         if (playerAccount.money < cost) {
             player.sendSystemMessage(
@@ -276,6 +279,21 @@ private fun executeCommunityTeleport(
 private fun getTeleportUsageKey(playerUUID: UUID, regionNumberId: Int): String {
     val day = LocalDate.now(ZoneId.systemDefault()).toString()
     return "$day:$playerUUID:$regionNumberId"
+}
+
+private fun sendTeleportDimensionLegend(player: ServerPlayer, dimensionId: String) {
+    val multiplierKey = when (TerritoryPricing.normalizeDimensionId(dimensionId)) {
+        TerritoryPricing.DIMENSION_NETHER -> "community.pricing.dimension.multiplier.nether"
+        TerritoryPricing.DIMENSION_END -> "community.pricing.dimension.multiplier.end"
+        else -> "community.pricing.dimension.multiplier.overworld"
+    }
+    player.sendSystemMessage(
+        Translator.tr(
+            "community.pricing.dimension.legend",
+            Translator.tr(multiplierKey, TerritoryPricing.getDimensionMultiplier(dimensionId).toString())?.string
+                ?: "$dimensionId x${TerritoryPricing.getDimensionMultiplier(dimensionId)}"
+        )
+    )
 }
 
 private data class PendingTeleportExecution(

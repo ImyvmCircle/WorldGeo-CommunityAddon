@@ -123,6 +123,26 @@ class PricingConfig : HokiConfig("Pricing.conf") {
             obj.getDouble(path)
         }
 
+        @JvmField
+        @ConfigOption
+        val DIMENSION_PRICE_MULTIPLIER_NETHER = Option(
+            "economy.dimension_price_multiplier_nether",
+            8L,
+            "the price multiplier applied to geoscope-related prices in the nether."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val DIMENSION_PRICE_MULTIPLIER_END = Option(
+            "economy.dimension_price_multiplier_end",
+            2L,
+            "the price multiplier applied to geoscope-related prices in the end."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
+
         // Scope addition
 
         @JvmField

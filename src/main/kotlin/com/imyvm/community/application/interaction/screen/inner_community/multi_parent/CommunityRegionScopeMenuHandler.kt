@@ -185,17 +185,22 @@ private fun onCreateScopeRequest(
         is AreaEstimationResult.Success -> areaEstimation.area
     }
 
-    val currentTotalArea = communityRegion.calculateTotalArea()
     val isManor = community.isManor()
-    val landCostChange = calculateModificationCost(newScopeArea, currentTotalArea, isManor).cost
+    val currentAreaByDimension = TerritoryPricing.getRegionAreaByDimension(communityRegion)
+    val newScopeDimensionId = TerritoryPricing.normalizeDimensionId(player.level().dimension().toString())
+    val areaAfterByDimension = TerritoryPricing.applyAreaChange(currentAreaByDimension, newScopeDimensionId, newScopeArea)
+    val landCostResult = calculateModificationCost(currentAreaByDimension, areaAfterByDimension, isManor)
+    val landCostChange = landCostResult.cost
     val fixedCostBase = if (isManor) {
         PricingConfig.SCOPE_ADDITION_BASE_COST_MANOR.value
     } else {
         PricingConfig.SCOPE_ADDITION_BASE_COST_REALM.value
     }
+    val fixedCostResult = TerritoryPricing.applyGeoscopePriceMultiplier(fixedCostBase, newScopeDimensionId)
 
-    val settingChanges = calculateRegionSettingsCostChanges(communityRegion, newScopeArea, isManor)
+    val settingChanges = calculateRegionSettingsCostChanges(communityRegion, areaAfterByDimension, isManor)
     val settingTotal = settingChanges.sumOf { it.costChange }
+    val currentTotalArea = communityRegion.calculateTotalArea()
 
     val formalMemberCount = community.member.count {
         it.value.basicRoleType != MemberRoleType.APPLICANT && it.value.basicRoleType != MemberRoleType.REFUSED
@@ -207,7 +212,7 @@ private fun onCreateScopeRequest(
     val multiplier = PricingConfig.SCOPE_ADDITION_SOFT_LIMIT_MULTIPLIER.value
 
     // Surcharge applies to the entire creation cost (base + land + settings)
-    val rawTotal = fixedCostBase + landCostChange + settingTotal
+    val rawTotal = fixedCostResult.totalCost + landCostChange + settingTotal
     val adjustedTotal = if (excessCount > 0) {
         (rawTotal * Math.pow(multiplier, excessCount.toDouble())).toLong()
     } else rawTotal
@@ -230,12 +235,13 @@ private fun onCreateScopeRequest(
         scopeName = scopeName,
         shapeType = geoShapeType,
         area = newScopeArea,
-        fixedCostBase = fixedCostBase,
-        landCostChange = landCostChange,
+        fixedCostBase = fixedCostResult.totalCost,
+        landCostResult = landCostResult,
         settingChanges = settingChanges,
         isManor = isManor,
         currentAssets = currentAssets,
         currentTotalArea = currentTotalArea,
+        scopeDimensionId = newScopeDimensionId,
         rawTotal = rawTotal,
         adjustedTotal = adjustedTotal,
         excessCount = excessCount,
@@ -581,11 +587,12 @@ private fun sendInteractiveScopeModificationConfirmation(player: ServerPlayer, r
 
 private fun calculateRegionSettingsCostChanges(
     communityRegion: Region,
-    areaChange: Double,
+    areaAfterByDimension: Map<String, Double>,
     isManor: Boolean
 ): List<SettingItemCostChange> {
+    val currentAreaByDimension = TerritoryPricing.getRegionAreaByDimension(communityRegion)
     val currentTotalArea = communityRegion.calculateTotalArea()
-    val newTotalArea = currentTotalArea + areaChange
+    val newTotalArea = areaAfterByDimension.values.sum()
     val freeArea = if (isManor) PricingConfig.MANOR_FREE_AREA.value else PricingConfig.REALM_FREE_AREA.value
     val refundRate = PricingConfig.AREA_REFUND_RATE.value
 
@@ -613,8 +620,8 @@ private fun calculateRegionSettingsCostChanges(
         val unitSize = PricingConfig.PERMISSION_COEFFICIENT_UNIT_SIZE.value.toDouble()
 
         val costChange = TerritoryPricing.calculateSettingCostChange(
-            areaOld = currentTotalArea,
-            areaNew = newTotalArea,
+            areaOldByDimension = currentAreaByDimension,
+            areaNewByDimension = areaAfterByDimension,
             coefficientPerUnit = coefficientPerUnit,
             unitSize = unitSize,
             isPlayerTarget = isPlayerTarget,
@@ -633,9 +640,8 @@ private fun calculateRegionSettingsCostChanges(
 }
 
 private fun calculateScopeSettingsCostChanges(
-    communityRegion: Region,
     scope: GeoScope,
-    areaChange: Double,
+    newScopeArea: Double,
     isManor: Boolean
 ): List<SettingItemCostChange> {
     val freeArea = if (isManor) PricingConfig.MANOR_FREE_AREA.value else PricingConfig.REALM_FREE_AREA.value
@@ -665,11 +671,11 @@ private fun calculateScopeSettingsCostChanges(
         val unitSize = PricingConfig.PERMISSION_COEFFICIENT_UNIT_SIZE.value.toDouble()
 
         val currentScopeArea = RegionDataApi.getScopeArea(scope) ?: 0.0
-        val newScopeArea = currentScopeArea + areaChange
+        val dimensionId = TerritoryPricing.getScopeDimensionId(scope)
 
         val costChange = TerritoryPricing.calculateSettingCostChange(
-            areaOld = currentScopeArea,
-            areaNew = newScopeArea,
+            areaOldByDimension = TerritoryPricing.buildAreaMap(dimensionId, currentScopeArea),
+            areaNewByDimension = TerritoryPricing.buildAreaMap(dimensionId, newScopeArea),
             coefficientPerUnit = coefficientPerUnit,
             unitSize = unitSize,
             isPlayerTarget = isPlayerTarget,
@@ -722,12 +728,18 @@ internal fun executeScopeModification(
         }
         is AreaEstimationResult.Success -> {
             val areaChange = areaEstimation.area
-            val currentTotalArea = communityRegion.calculateTotalArea()
             val isManor = community.isManor()
+            val currentAreaByDimension = TerritoryPricing.getRegionAreaByDimension(communityRegion)
+            val areaAfterByDimension = TerritoryPricing.applyAreaChange(
+                currentAreaByDimension,
+                TerritoryPricing.getScopeDimensionId(scope),
+                areaChange
+            )
+            val currentScopeArea = RegionDataApi.getScopeArea(scope) ?: 0.0
 
-            val costResult = calculateModificationCost(areaChange, currentTotalArea, isManor)
-            val regionSettingChanges = calculateRegionSettingsCostChanges(communityRegion, areaChange, isManor)
-            val scopeSettingChanges = calculateScopeSettingsCostChanges(communityRegion, scope, areaChange, isManor)
+            val costResult = calculateModificationCost(currentAreaByDimension, areaAfterByDimension, isManor)
+            val regionSettingChanges = calculateRegionSettingsCostChanges(communityRegion, areaAfterByDimension, isManor)
+            val scopeSettingChanges = calculateScopeSettingsCostChanges(scope, currentScopeArea + areaChange, isManor)
             val allSettingChanges = regionSettingChanges + scopeSettingChanges
             val totalCost = costResult.cost + allSettingChanges.sumOf { it.costChange }
             val currentAssets = community.getTotalAssets()
@@ -795,12 +807,17 @@ internal fun executeScopeDeletion(
     }
 
     val scopeArea = RegionDataApi.getScopeArea(scope) ?: 0.0
-    val currentTotalArea = communityRegion.calculateTotalArea()
     val isManor = community.isManor()
+    val currentAreaByDimension = TerritoryPricing.getRegionAreaByDimension(communityRegion)
+    val areaAfterByDimension = TerritoryPricing.applyAreaChange(
+        currentAreaByDimension,
+        TerritoryPricing.getScopeDimensionId(scope),
+        -scopeArea
+    )
 
-    val costResult = calculateModificationCost(-scopeArea, currentTotalArea, isManor)
-    val regionSettingChanges = calculateRegionSettingsCostChanges(communityRegion, -scopeArea, isManor)
-    val scopeSettingChanges = calculateScopeSettingsCostChanges(communityRegion, scope, -scopeArea, isManor)
+    val costResult = calculateModificationCost(currentAreaByDimension, areaAfterByDimension, isManor)
+    val regionSettingChanges = calculateRegionSettingsCostChanges(communityRegion, areaAfterByDimension, isManor)
+    val scopeSettingChanges = calculateScopeSettingsCostChanges(scope, 0.0, isManor)
     val allSettingChanges = regionSettingChanges + scopeSettingChanges
     val totalCost = costResult.cost + allSettingChanges.sumOf { it.costChange }
     val currentAssets = community.getTotalAssets()

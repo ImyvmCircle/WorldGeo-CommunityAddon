@@ -11,6 +11,7 @@ This major version introduces community economical profits.
 ### 1.1.0
 
 - chore: upgrade to MC 26.1
+- feat: calculate region land and setting prices per dimension, with geoscope prices at ×8 in the Nether and ×2 in the End
 
 ## Features
 
@@ -82,6 +83,8 @@ A **community creation request** may be initialized spontaneously by any player 
         * **Realm** (first 40,000 m² free, base rate 600 per 40,000 m²):
             * Tier 1: \[40,000, 160,000\) m² at ×1 rate;
             * Tier 2: \[160,000, 640,000\) m² at ×2 rate; and so on;
+        * If a community spans multiple dimensions, each dimension is priced independently with the same bracket rules and then summed together;
+        * Geoscope-related prices use dimension multipliers: **Overworld ×1**, **Nether ×8**, **End ×2**. This applies to land fees, setting fees, refunds, geoscope renames, teleport point management, and teleport usage.
 
 When criteria above are achieved, a player may **initialize the creation request**, and the player
 
@@ -227,6 +230,7 @@ The **Community Region Scope Menu** provides tools for managing geographical asp
 - `TELEPORT_POINT_EXECUTION` - Teleport to previously established destinations.
 
 Communities support both **global** settings that apply to the entire region, and **local** settings for named sub-scopes within the community (managed through the `geometryScope` list). Each scope is represented visually in the menu interface with distinct items such as armor trim templates and item frames.
+All region-level land and setting prices are calculated separately for each dimension represented by the community's scopes, then added together. Scope-specific prices continue to follow the scope's own dimension, using the same Overworld / Nether / End multipliers listed above.
 
 #### Permission Settings
 
@@ -284,9 +288,11 @@ Effect settings (applying potion effects to players within the territory) are pl
 Setting modifications are charged from community assets using **tiered bracket pricing**:
 
 - **Area-based fee** uses progressive brackets; each tier has a linear multiplier (×1, ×2, ×3, …) applied only to the area within that bracket;
+- For region-level operations, each dimension is bracketed independently before the subtotals are added together;
 - Tier boundaries are based on the community's free area threshold (manor: 10,000 m², realm: 40,000 m²): Tier 1 covers \[0, free area\), Tier 2 covers \[free area, 4×free area\), and so on;
 - **Player-specific** settings cost 20% of the global rate;
-- **Restoring a setting to its default value** is refunded at 50% of the original cost.
+- **Restoring a setting to its default value** is refunded at 50% of the original cost;
+- Scope-related setting, rename, teleport-point, and teleport-use prices follow the dimension multiplier of that scope (**Overworld ×1**, **Nether ×8**, **End ×2**).
 
 The base rate per 10,000 m² for each setting type:
 

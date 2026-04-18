@@ -11,6 +11,14 @@ fun calculateModificationCost(areaChange: Double, currentTotalArea: Double, isMa
     return TerritoryPricing.calculateModificationCost(areaChange, currentTotalArea, isManor)
 }
 
+fun calculateModificationCost(
+    areaBeforeByDimension: Map<String, Double>,
+    areaAfterByDimension: Map<String, Double>,
+    isManor: Boolean
+): ModificationCostResult {
+    return TerritoryPricing.calculateModificationCost(areaBeforeByDimension, areaAfterByDimension, isManor)
+}
+
 fun generateModificationConfirmationMessage(
     scopeName: String,
     costResult: ModificationCostResult,
@@ -43,11 +51,12 @@ fun generateScopeAdditionConfirmationMessage(
     shapeType: GeoShapeType,
     area: Double,
     fixedCostBase: Long,
-    landCostChange: Long,
+    landCostResult: ModificationCostResult,
     settingChanges: List<SettingItemCostChange>,
     isManor: Boolean,
     currentAssets: Long,
     currentTotalArea: Double,
+    scopeDimensionId: String,
     rawTotal: Long = 0L,
     adjustedTotal: Long = 0L,
     excessCount: Int = 0,
@@ -56,7 +65,7 @@ fun generateScopeAdditionConfirmationMessage(
     multiplier: Double = 1.5
 ): List<Component> {
     return TerritoryConfirmationMessage.generateScopeAdditionConfirmation(
-        scopeName, shapeType, area, fixedCostBase, landCostChange, settingChanges, isManor, currentAssets,
-        currentTotalArea, rawTotal, adjustedTotal, excessCount, maxScopesAllowed, formalMemberCount, multiplier
+        scopeName, shapeType, area, fixedCostBase, landCostResult, settingChanges, isManor, currentAssets,
+        currentTotalArea, scopeDimensionId, rawTotal, adjustedTotal, excessCount, maxScopesAllowed, formalMemberCount, multiplier
     )
 }

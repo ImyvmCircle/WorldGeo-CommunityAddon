@@ -5,6 +5,7 @@ import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.PendingOperationType
 import com.imyvm.community.domain.model.RenameConfirmationData
+import com.imyvm.community.domain.policy.territory.TerritoryPricing
 import com.imyvm.community.entrypoint.screen.AbstractRenameMenuAnvil
 import com.imyvm.community.infra.PricingConfig
 import com.imyvm.community.util.Translator
@@ -32,7 +33,19 @@ class AdministrationRenameMenuAnvil(
     override fun processRenaming(finalName: String) {
         val regionId = community.regionNumberId ?: return
         val nameKey = scopeName ?: "global"
-        val cost = if (scopeName == null) PricingConfig.RENAME_GLOBAL_COST.value else PricingConfig.RENAME_SCOPE_COST.value
+        val scopeDimensionId = if (scopeName == null) {
+            null
+        } else {
+            community.regionNumberId?.let { RegionDataApi.getRegion(it) }
+                ?.geometryScope
+                ?.firstOrNull { it.scopeName.equals(scopeName, ignoreCase = true) }
+                ?.let(TerritoryPricing::getScopeDimensionId)
+        }
+        val cost = if (scopeDimensionId == null) {
+            PricingConfig.RENAME_GLOBAL_COST.value
+        } else {
+            TerritoryPricing.applyGeoscopePriceMultiplier(PricingConfig.RENAME_SCOPE_COST.value, scopeDimensionId).totalCost
+        }
 
         val cooldownMs = community.nameChangeCooldowns[nameKey] ?: 0L
         val daysSince = (System.currentTimeMillis() - cooldownMs) / (1000L * 60 * 60 * 24)
@@ -75,7 +88,7 @@ class AdministrationRenameMenuAnvil(
         )
 
         player.closeContainer()
-        sendInteractiveRenameConfirmation(player, regionId, nameKey, finalName, cost)
+        sendInteractiveRenameConfirmation(player, regionId, nameKey, finalName, cost, scopeDimensionId)
     }
 
     override fun reopenWith(errorHint: String?, currentInput: String) {
@@ -91,8 +104,22 @@ class AdministrationRenameMenuAnvil(
         return buildTitle(base)
     }
 
-    private fun sendInteractiveRenameConfirmation(player: ServerPlayer, regionNumberId: Int, nameKey: String, newName: String, cost: Long) {
+    private fun sendInteractiveRenameConfirmation(player: ServerPlayer, regionNumberId: Int, nameKey: String, newName: String, cost: Long, scopeDimensionId: String?) {
         val costDisplay = String.format("%.2f", cost / 100.0)
+        if (scopeDimensionId != null) {
+            val multiplierKey = when (TerritoryPricing.normalizeDimensionId(scopeDimensionId)) {
+                TerritoryPricing.DIMENSION_NETHER -> "community.pricing.dimension.multiplier.nether"
+                TerritoryPricing.DIMENSION_END -> "community.pricing.dimension.multiplier.end"
+                else -> "community.pricing.dimension.multiplier.overworld"
+            }
+            player.sendSystemMessage(
+                Translator.tr(
+                    "community.pricing.dimension.legend",
+                    Translator.tr(multiplierKey, TerritoryPricing.getDimensionMultiplier(scopeDimensionId).toString())?.string
+                        ?: "${scopeDimensionId} x${TerritoryPricing.getDimensionMultiplier(scopeDimensionId)}"
+                )
+            )
+        }
         player.sendSystemMessage(Translator.tr("community.rename.bill", nameKey, newName, costDisplay))
         val quotedNameKey = if (!nameKey.all { it.isLetterOrDigit() && it.code < 128 }) "\"$nameKey\"" else nameKey
 

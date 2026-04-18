@@ -53,8 +53,7 @@ fun onCreateCommunityRequest(
     }
 
     val isManor = communityType.equals("manor", ignoreCase = true)
-    val area = region.calculateTotalArea()
-    val costResult = calculateCreationCost(area, isManor)
+    val costResult = calculateCreationCost(region, isManor)
 
     val playerAccount = EconomyMod.data.getOrCreate(player)
     if (playerAccount.money < costResult.totalCost) {
