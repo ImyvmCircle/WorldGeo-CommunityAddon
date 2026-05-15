@@ -1,3 +1,7 @@
+---
+applyTo: "src/main/kotlin/com/imyvm/community/domain/model/community/**,src/main/kotlin/com/imyvm/community/infra/**"
+---
+
 # 数据兼容性原则
 
 当向 `Community` 类添加新的成员变量、或向 `CommunityDatabase` 添加对应的读写逻辑时，**必须保证旧存档依然能够完整加载所有聚落**。
