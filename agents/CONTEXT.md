@@ -19,6 +19,7 @@
 6. 完成后给一条符合项目既有格式的 commit 描述建议。
 7. 不自行更新 tag、版本号或发布版本。
 8. 原则上不新建 class，不添加 comments，除非 prompt 要求。
+9. 与 IMYVMWorldGeo Core 高度协作，互相参考。
 
 ## 规则选择
 
