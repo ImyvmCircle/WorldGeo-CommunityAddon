@@ -533,6 +533,36 @@ class PricingConfig : HokiConfig("Pricing.conf") {
 
         @JvmField
         @ConfigOption
+        val RULE_RPG_NATURAL_REGEN_COEFFICIENT_PER_UNIT = Option(
+            "economy.rule.rpg_natural_regen.coefficient_per_unit",
+            7000L,
+            "the pricing coefficient for RPG_NATURAL_REGEN rule per unit area."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val RULE_RPG_FIRE_SPREAD_COEFFICIENT_PER_UNIT = Option(
+            "economy.rule.rpg_fire_spread.coefficient_per_unit",
+            7000L,
+            "the pricing coefficient for RPG_FIRE_SPREAD rule per unit area."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val RULE_RPG_HUNGER_COEFFICIENT_PER_UNIT = Option(
+            "economy.rule.rpg_hunger.coefficient_per_unit",
+            7000L,
+            "the pricing coefficient for RPG_HUNGER rule per unit area."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
+
+        @JvmField
+        @ConfigOption
         val PERMISSION_COEFFICIENT_UNIT_SIZE = Option(
             "economy.permission.coefficient_unit_size",
             10000,

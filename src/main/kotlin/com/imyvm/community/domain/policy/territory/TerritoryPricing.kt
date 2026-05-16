@@ -547,6 +547,9 @@ object TerritoryPricing {
             RuleKey.DISPENSER -> PricingConfig.RULE_DISPENSER_COEFFICIENT_PER_UNIT.value
             RuleKey.PRESSURE_PLATE -> PricingConfig.RULE_PRESSURE_PLATE_COEFFICIENT_PER_UNIT.value
             RuleKey.PISTON -> PricingConfig.RULE_PISTON_COEFFICIENT_PER_UNIT.value
+            RuleKey.RPG_NATURAL_REGEN -> PricingConfig.RULE_RPG_NATURAL_REGEN_COEFFICIENT_PER_UNIT.value
+            RuleKey.RPG_FIRE_SPREAD -> PricingConfig.RULE_RPG_FIRE_SPREAD_COEFFICIENT_PER_UNIT.value
+            RuleKey.RPG_HUNGER -> PricingConfig.RULE_RPG_HUNGER_COEFFICIENT_PER_UNIT.value
         }
     }
 
