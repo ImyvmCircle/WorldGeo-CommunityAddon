@@ -20,4 +20,4 @@ applyTo: "**"
 - `menus-screens.instructions.md`：菜单、按钮、列表、返回逻辑和玩家头颅。
 - `commands-suggestions.instructions.md`：命令注册、参数和非 ASCII 名称建议。
 - `documentation-validation.instructions.md`：README、wiki、changelog、git、测试和 IMYVMWorldGeo API。
-- `player-documentation-perspective.instructions.md`：README 与 wiki 的玩家机制文档视角。
+- `player-documentation-perspective.instructions.md`：README 与 wiki 的用户侧机制文档视角。
