@@ -20,12 +20,12 @@ Communities involve several types of in-game currency transactions. This page co
 | Modify existing teleport point | $1,000.00 | $1,000.00 |
 
 > **Dimensional ledger**  
-> Fees tied directly to a Geoscope are settled by that scope's home dimension. Overworld ×1. Nether ×8. End ×2.  
+> Fees tied directly to a scope are settled by that scope's home dimension. Overworld x1. Nether x8. End x2.
 > Region-wide land and setting costs are priced per dimension and then summed.
 
 ## Creation Costs
 
-When creating a community, you pay a **base creation fee** plus an **area surcharge** for territory above the free threshold.
+When creating a community, the creator pays a **base creation fee** plus an **area surcharge** for territory above the free threshold.
 
 ### Area-Based Pricing
 
@@ -52,11 +52,11 @@ Those brackets are evaluated separately for the Overworld, Nether, and End befor
 | 3 | 640,000 – 2,560,000 m² | ×4 | $0.060 / m² |
 | … | … | doubles | … |
 
-> **Tip:** Realms have a lower per-m² rate than manors at every tier, making large territory significantly cheaper for realms.
+Realms have a lower per-square-meter rate than manors at every tier, making large territory cheaper for realms.
 
 ### Refund Policy
 
-When **reducing** territory area, you receive a **50% refund** of the cost difference. When **selling** a scope to the system, you receive a **50% refund** of the corresponding land cost and setting cost difference (base cost is not refunded).
+When **reducing** territory area, the community receives a **50% refund** of the cost difference. When **selling** a scope to the system, the community receives a **50% refund** of the corresponding land cost and setting cost difference. Base cost is not refunded.
 
 Confirmation messages list area by dimension and identify the dimension that changed, together with the exact increase or decrease.
 
@@ -122,9 +122,9 @@ Any formal member (Owner, Admin, Member) can donate to the community treasury.
 1. Open the [Community Menu](community-menu.md).
 2. Click **Donate** (slot 30, Emerald) — or click **Donate** inside the Treasury Menu.
 3. In the **Donation Menu**, select or enter the amount.
-4. Confirm to transfer funds from your personal balance to the treasury.
+4. Confirm to transfer funds from the member's personal balance to the treasury.
 
-The donation is recorded in your member account and contributes to the treasury total.
+The donation is recorded under that member and contributes to the treasury total.
 
 ---
 

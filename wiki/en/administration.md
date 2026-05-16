@@ -15,7 +15,7 @@ The **Community Administration Menu** is accessible from the **Administration** 
 | 12 | Paper | **Announcements** | Create and manage community announcements |
 | 13 | Gold Ingot | **Treasury Grant** | Send coins from this community's treasury to another community's treasury |
 | 14 | Item Frame | **Advancement** | *(Planned feature)* |
-| 19 | Name Tag | **Community Name** | Rename the community globally or rename individual Geoscopes |
+| 19 | Name Tag | **Community Name** | Rename the community globally or rename individual scopes |
 | 20 | Map | **Region Geometry** | Modify the territory's geographic shape |
 | 21 | Heart of the Sea | **Region Settings** | Adjust territory permissions and rules |
 | 22 | Ender Pearl | **Teleport Points** | Set, configure, and manage teleport destinations |
@@ -25,10 +25,10 @@ The **Community Administration Menu** is accessible from the **Administration** 
 
 ## Community Name
 
-Clicking **Community Name** (slot 19, name tag icon) opens the **Scope Selector** where you choose either:
+Clicking **Community Name** (slot 19, name tag icon) opens the **Scope Selector** with two target types:
 
 - **Global** — renames the community's overall name; or
-- A specific **Geoscope** — renames that Geoscope only.
+- A specific **scope** — renames that scope only.
 
 After selection, an anvil interface opens with the current name pre-filled. Enter the new name and take the output item. The system sends an interactive billing confirmation in chat:
 
@@ -42,15 +42,13 @@ The confirmation prompt expires after **5 minutes**.
 | Target | Cost | Cooldown |
 |---|---|---|
 | Global community name | $2,000.00 | 30 days (real-time) per community |
-| Individual Geoscope name | $100.00 | 30 days (real-time) per Geoscope |
+| Individual scope name | $100.00 | 30 days (real-time) per scope |
 
-If a name was changed within the last 30 days, clicking the rename button is blocked immediately (before the anvil opens) and the remaining cooldown days are shown. Cooldowns are tracked per name key and persist across server restarts. The community's global name has its own independent cooldown, and each Geoscope name has its own. After renaming a Geoscope (e.g., A → B), the cooldown transfers to the **new name B** — the old name A's cooldown is released and B's 30-day cooldown starts from the date of that rename.
+If a name was changed within the last 30 days, clicking the rename button is blocked immediately before the anvil opens, and the remaining cooldown days are shown. Cooldowns persist across server restarts. The community's global name has its own independent cooldown, and each scope name has its own. After renaming a scope from A to B, the cooldown transfers to **B**; the old name A is released and B's 30-day cooldown starts from the rename date.
 
-> **Note:** This action requires the **Rename Community** privilege to be enabled for your Admin role (Owners are always exempt from privilege checks).
+> **Note:** This action requires the **Rename Community** privilege for administrators. Owners are always exempt from privilege checks.
 
-**Command equivalents:**
-- `/commun confirm_rename <regionId> <nameKey>` — confirm a rename
-- `/commun cancel_rename <regionId> <nameKey>` — cancel a rename
+Rename confirmation and cancellation are handled through chat buttons.
 
 ---
 
@@ -82,7 +80,7 @@ The **Owner** can individually toggle each privilege for any Admin. Privileges a
 
 | Privilege | Description |
 |---|---|
-| **Rename Community** | Allow admin to rename the community's global name and individual Geoscope names |
+| **Rename Community** | Allow admin to rename the community's global name and individual scope names |
 | **Manage Members** | Allow admin to promote/demote/remove members |
 | **Audit Applications** | Allow admin to accept or refuse applicants |
 | **Manage Announcements** | Allow admin to create and delete announcements |
@@ -106,7 +104,7 @@ Clicking **Audit Applications** opens the **Applicant List Menu**, listing all p
 ### Accept
 
 - The applicant is promoted to **Member**.
-- They receive a mail notification.
+- The accepted player receives a mail notification.
 - If the applicant was **invited**, the join fee is deducted from the community treasury. If the community cannot afford it, the audit is blocked.
 - If the applicant applied directly (**Application** policy), their fee was already paid at application time.
 
@@ -152,19 +150,16 @@ Clicking **Treasury Grant** (slot 13, Gold Ingot) opens the **Grant Target List 
 1. Click a target community in the list;
 2. Select the grant amount in the **Grant Amount Menu**;
 3. The system posts a confirmation request in chat with clickable **[Accept]** / **[Decline]** / **[Cancel]** buttons:
-   - **[Accept]** (clicked by an eligible admin or owner of the **target** community) — confirms the grant; the amount is deducted from this community's treasury and credited to the target community's treasury;
-   - **[Decline]** (clicked by an eligible admin or owner of the **target** community) — rejects the request;
-   - **[Cancel]** (clicked by an eligible admin or owner of the **source** community) — withdraws the request.
+   - **[Accept]** by an eligible admin or owner of the **target** community confirms the grant; the amount is deducted from the source community's treasury and credited to the target community's treasury;
+   - **[Decline]** by an eligible admin or owner of the **target** community rejects the request;
+   - **[Cancel]** by an eligible admin or owner of the **source** community withdraws the request.
 4. The confirmation prompt expires after **5 minutes**.
 
 The grant is recorded as an **expenditure** in the source community treasury and as an **incoming grant** in the target community treasury, affecting the **Total Assets** of both.
 
 > **Note:** Both the initiating and the accepting party require the **Grant Coins from Treasury** privilege (Owners are always exempt from privilege checks).
 
-**Command equivalents:**
-- `/commun accept_treasury_grant <regionId>` — accept on behalf of your community
-- `/commun decline_treasury_grant <regionId>` — decline on behalf of your community
-- `/commun cancel_treasury_grant <regionId>` — cancel your community's outgoing grant request
+Treasury grant acceptance, decline, and cancellation are handled through chat buttons.
 
 ---
 
@@ -184,7 +179,7 @@ The **Join Policy** button (slot 28) cycles through the three policies each time
 
 ## Region Geometry, Region Settings, Teleport Points
 
-These three buttons open the **Scope Selection Menu**, where you choose which geographic scope to operate on. See the dedicated pages:
+These three buttons open the **Scope Selection Menu**, where the target geographic scope is selected. See the dedicated pages:
 
 - [Region](region.md) — Geometry and Settings
 - [Teleport](teleport.md) — Teleport Points

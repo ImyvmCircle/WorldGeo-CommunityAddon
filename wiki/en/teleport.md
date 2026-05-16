@@ -44,32 +44,32 @@ Once the free quota is exhausted, each additional use costs more and adds a dela
 | 3rd paid | $40.00 | 8 seconds |
 | nth paid | $10.00 × 2^(n-1) | 2 × 2^(n-1) seconds |
 
-> **Tip:** Moving or taking damage during the delay **cancels** the teleport (no fee charged). Insufficient balance at the moment of execution also cancels the teleport.
+Moving or taking damage during the delay **cancels** the teleport, and no fee is charged. Insufficient balance at the moment of execution also cancels the teleport.
 
 > **Dimension multiplier**  
-> Paid teleports aimed at a specific Geoscope read the destination dimension. Overworld ×1. Nether ×8. End ×2.
+> Paid teleports aimed at a specific scope use the destination dimension. Overworld x1. Nether x8. End x2.
 
 ---
 
 ## Managing Teleport Points (Admins)
 
-Teleport points are set per-scope from **Administration Menu → Teleport Points** (slot 21, Ender Pearl). Clicking this button opens the **Scope Selection Menu** — select a scope to open its **Teleport Point Menu**.
+Teleport points are set per scope from **Administration Menu -> Teleport Points** (slot 21, Ender Pearl). Clicking this button opens the **Scope Selection Menu**; selecting a scope opens its **Teleport Point Menu**.
 
 ### Teleport Point Menu
 
 | Action | Description |
 |---|---|
 | **Inquire** | Displays the current teleport point coordinates in chat |
-| **Set Teleport Point** | Sets your current standing position as the teleport point (with cost confirmation) |
+| **Set Teleport Point** | Sets the player's current standing position as the teleport point, with cost confirmation |
 | **Toggle Public/Private** | Switches the point between Public and Private access |
 | **Reset** | Removes the teleport point from the scope |
 
 ### Setting a Teleport Point
 
 1. Stand at the desired destination.
-2. Open **Administration → Teleport Points → [scope]**.
+2. Open **Administration -> Teleport Points -> [scope]**.
 3. Click **Set Teleport Point**.
-4. A cost summary is shown in chat. An interactive **[CONFIRM]** / **[CANCEL]** prompt appears. You have **5 minutes** to confirm.
+4. A cost summary is shown in chat. An interactive **[CONFIRM]** / **[CANCEL]** prompt appears and remains valid for **5 minutes**.
 5. On confirmation, the cost is deducted from the **community treasury** and the point is saved.
 
 ### Costs
@@ -80,17 +80,16 @@ Teleport points are set per-scope from **Administration Menu → Teleport Points
 | 2nd active point (base) | $2,000.00 |
 | 3rd active point | $4,000.00 |
 | nth active point | $2,000.00 × 2^(n-2) |
-| Modifying an existing point | $3,000.00 |
+| Modifying an existing point | $1,000.00 |
 
-> **Note:** The teleport point costs are deducted from the **community treasury**, not the admin's personal balance. Ensure the treasury has sufficient funds before setting points.
+> **Note:** Teleport point costs are deducted from the **community treasury**, not the admin's personal balance. If the treasury lacks the required funds, the point is not saved.
 >
 > **Dimension multiplier**  
-> If the hosting scope is in the Nether, the above prices are settled at ×8. If it is in the End, they are settled at ×2. The Overworld remains ×1.
+> If the hosting scope is in the Nether, the above prices are settled at x8. If it is in the End, they are settled at x2. The Overworld remains x1.
 
 > **Note:** Requires the **Manage Teleport Points** admin privilege.
 
-**Command equivalents:**
-- `/commun confirm_teleport_point_set <regionId> <scopeName>` — confirm setting a teleport point
+Teleport point confirmation and cancellation are handled through chat buttons.
 
 ---
 
@@ -103,7 +102,7 @@ Each teleport point can be toggled between **Public** and **Private**:
 | **Public** | All players (including non-members) |
 | **Private** | Formal members only (Owner, Admin, Member) |
 
-Toggle using the **Toggle Public/Private** button in the Teleport Point Menu.
+Toggle using the **Toggle Public/Private** button in the Teleport Point Menu. This visibility switch does not charge a fee.
 
 ---
 

@@ -4,13 +4,11 @@
 
 ---
 
-所有领域命令均使用根命令 `/community`。GUI 菜单是主要界面；命令提供了触发相同操作的替代或补充途径。
-
-> **注意：** 所有由系统自动生成于聊天框中的**交互确认命令**（例如确认创建、确认改名、接受赠予等）使用单独的根命令 `/_commun`，而非 `/community`。
+所有领域命令均使用根命令 `/community`。GUI 菜单是主要界面；命令提供快速入口。创建、改名、地理修改、传送点设置、邀请响应和赠予响应等限时操作，通过聊天框中的可点击按钮确认或取消。
 
 `<communityIdentifier>` 可使用领域的**名称**或其**数字 ID**。
 
-> **名称引号规则：** 仅由 ASCII 字母与数字（a–z、A–Z、0–9）组成的名称可直接输入。凡包含其他字符的名称——包括空格、中文、日文、韩文、带重音字母、符号等——在命令中输入时**必须用英文双引号括起来**，例如 `"我的领地"` 或 `"My Realm"`。此规则同时适用于 `<communityIdentifier>` 和所有 `<scopeName>` 参数。使用 Tab 键自动补全时，系统会自动为此类名称添加引号。
+> **名称引号规则：** 仅由 ASCII 字母与数字（a-z、A-Z、0-9）组成的名称可直接输入。凡包含其他字符的名称，包括空格、中文、日文、韩文、带重音字母、符号等，在命令中输入时**必须用英文双引号括起来**，例如 `"示例领地"` 或 `"My Realm"`。此规则同时适用于 `<communityIdentifier>` 和所有 `<scopeName>` 参数。使用 Tab 键自动补全时，系统会自动为此类名称添加引号。
 
 ## 通用命令
 
@@ -29,9 +27,9 @@
 
 | 命令 | 说明 | 对应菜单 |
 |---|---|---|
-| `/community select start` | 启用圈地模式 | 主菜单 → 圈地模式按钮 |
-| `/community select stop` | 禁用圈地模式 | 主菜单 → 圈地模式按钮 |
-| `/community select reset` | 清除所有已选点位 | 主菜单 → 重置圈地选择按钮 |
+| `/community select start` | 启用圈地模式 | 创建或辖区菜单中的圈地模式按钮 |
+| `/community select stop` | 禁用圈地模式 | 主菜单或创建菜单中的关闭圈地模式按钮 |
+| `/community select reset` | 清除所有已选点位 | 主菜单或创建菜单中的重置选点按钮 |
 
 ---
 
@@ -40,8 +38,8 @@
 | 命令 | 说明 | 对应菜单 |
 |---|---|---|
 | `/community create <shapeType> <communityType> <name>` | 初始化领域创建请求 | 主菜单 → 创建领域 |
-| `/_commun confirm_creation <regionId>` | 确认并完成创建 | 聊天提示 [确认] 按钮 |
-| `/_commun cancel_creation <regionId>` | 取消待处理的创建请求 | 聊天提示 [取消] 按钮 |
+
+创建请求生成后，聊天框会出现确认和取消按钮。确认提示在 5 分钟内有效。
 
 **形状类型：** `RECTANGLE`（矩形）· `CIRCLE`（圆形）· `POLYGON`（多边形）  
 **领域类型：** `manor`（庄园）· `realm`（领地）
@@ -71,52 +69,10 @@
 
 | 命令 | 说明 | 所需角色 |
 |---|---|---|
-| `/community announcement create <id> <content>` | 创建新公告 | 行政助理 / 所有者 |
-| `/community announcement delete <id> <announcementId>` | 删除公告 | 行政助理 / 所有者 |
-| `/community announcement list <id>` | 列出所有有效公告 | 任意成员 |
-| `/community announcement view <id> <announcementId>` | 查看指定公告 | 任意成员 |
-
----
-
-## /_commun 交互确认命令
-
-这些命令由系统自动在聊天框中生成为可点击的提示，通常不需要手动输入。所有此类命令均使用 `/_commun` 前缀（而非 `/community`）。
-
-### 地理修改确认
-
-| 命令 | 说明 |
-|---|---|
-| `/_commun confirm_modification <regionId> <scopeName>` | 确认几何修改 |
-| `/_commun cancel_modification <regionId> <scopeName>` | 取消几何修改 |
-| `/_commun confirm_setting <regionId>` | 确认地块设置修改 |
-| `/_commun cancel_setting <regionId>` | 取消地块设置修改 |
-| `/_commun confirm_teleport_point_set <regionId> <scopeName>` | 确认设置传送点 |
-
-### 聚落改名确认
-
-| 命令 | 说明 |
-|---|---|
-| `/_commun confirm_rename <regionId> <nameKey>` | 确认改名 |
-| `/_commun cancel_rename <regionId> <nameKey>` | 取消改名 |
-
-### 国库赠予确认
-
-| 命令 | 说明 | 执行方 |
-|---|---|---|
-| `/_commun accept_treasury_grant <regionId>` | 代表本聚落接受赠予 | 目标聚落领主或具有该授权的行政助理 |
-| `/_commun decline_treasury_grant <regionId>` | 代表本聚落拒绝赠予 | 目标聚落领主或具有该授权的行政助理 |
-| `/_commun cancel_treasury_grant <regionId>` | 取消本聚落发起的赠予请求 | 发起聚落领主或具有该授权的行政助理 |
-
-国库赠予命令中，`<regionId>` 为**发起方聚落**的数字 ID。
-
-### 成员邀请响应
-
-| 命令 | 说明 | 执行方 |
-|---|---|---|
-| `/_commun accept_invitation <communityIdentifier>` | 接受待处理的邀请 | 被邀请的玩家 |
-| `/_commun reject_invitation <communityIdentifier>` | 拒绝待处理的邀请 | 被邀请的玩家 |
-
----
+| `/community announcement create <communityIdentifier> <content>` | 创建新公告 | 行政助理 / 所有者 |
+| `/community announcement delete <communityIdentifier> <announcementId>` | 删除公告 | 行政助理 / 所有者 |
+| `/community announcement list <communityIdentifier>` | 列出所有有效公告 | 任意成员 |
+| `/community announcement view <communityIdentifier> <announcementId>` | 查看指定公告 | 任意成员 |
 
 ## 服务器管理员命令
 

@@ -4,7 +4,7 @@
 
 ---
 
-Every community has a private **Chat Channel** visible only to its formal members (Owner, Admin, Member). Members can send and read community-internal messages without them appearing in the global chat.
+Every community has a private **Chat Channel** visible only to its formal members (Owner, Admin, Member). Formal members can send and read community-internal messages without them appearing in global chat.
 
 ## Opening the Chat Room
 
@@ -14,7 +14,7 @@ Click **Chat Channel** (slot 28, Writable Book) in the [Community Menu](communit
 
 | Button | Description |
 |---|---|
-| **Toggle Chat Channel** | Enable or disable the community chat channel as your default chat destination |
+| **Toggle Chat Channel** | Enable or disable the community chat channel as the active chat destination |
 | **View Chat History** | Browse past messages in this community |
 | **How to Send Messages** | Shows instructions |
 
@@ -22,26 +22,26 @@ The menu also displays the current **channel status** for this community:
 
 | Status | Meaning |
 |---|---|
-| **Active** (green) | Your typed messages go to this community's channel |
-| **Inactive** (grey) | Your messages go to global chat |
-| **Other channel** (yellow) | You have a different community's channel active |
+| **Active** (green) | Typed messages go to this community's channel |
+| **Inactive** (grey) | Messages go to global chat |
+| **Other channel** (yellow) | A different community channel is active |
 
 ---
 
 ## Sending Messages
 
-### Method 1 — Via Chat Channel (recommended)
+### Method 1 — Via Chat Channel
 
-1. Open the [Community Menu](community-menu.md) → **Chat Channel**.
-2. Click **Toggle Chat Channel** to set this community as your active channel.
+1. Open the [Community Menu](community-menu.md) -> **Chat Channel**.
+2. Click **Toggle Chat Channel** to set this community as the active channel.
 3. Close the menu and type normally in the chat bar — messages are sent to the community channel.
 4. To return to global chat, open the Chat Room Menu again and click **Toggle Chat Channel** to disable it.
 
-> **Note:** You can only have one community channel active at a time. Enabling a new channel automatically disables the previous one.
+> **Note:** Only one community channel can be active at a time. Enabling a new channel automatically disables the previous one. Active channel state is kept in server memory, so rejoining the server may require selecting the channel again.
 
 ### Method 2 — Via Command
 
-Send a one-off message without changing your active channel:
+Send a one-off message without changing the active channel:
 
 `/community chat <communityIdentifier> <message>`
 

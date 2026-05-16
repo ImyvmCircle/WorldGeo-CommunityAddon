@@ -465,9 +465,7 @@ After entering the new name and confirming payment, an **interactive billing con
 
 The confirmation prompt expires after 5 minutes.
 
-**Command equivalents:**
-- `/_commun confirm_rename <regionId> <nameKey>` — confirm a rename
-- `/_commun cancel_rename <regionId> <nameKey>` — cancel a rename
+Rename confirmation and cancellation are handled through chat buttons.
 
 #### Member Management
 
@@ -518,11 +516,7 @@ When invited, the target player receives an interactive chat message containing:
 - **[Accept]** button (green) - Click to accept the invitation;
 - **[Reject]** button (red) - Click to decline the invitation.
 
-The recipient may respond by:
-- Clicking the interactive buttons directly in chat; or
-- Using commands:
-  - `/_commun accept_invitation <communityIdentifier>` - Accept the invitation (where `communityIdentifier` can be the community name or region ID);
-  - `/_commun reject_invitation <communityIdentifier>` - Reject the invitation.
+The recipient responds by clicking the interactive buttons directly in chat.
 
 **Invitation Response:**
 - **Accepting** - The player is added to the community as an `APPLICANT` with a special `isInvited` flag, pending administrator audit. The invitee receives confirmation and is instructed to check the community list for audit status. The invitation remains active until audit decision is made;
@@ -584,10 +578,8 @@ Invited players follow a modified audit workflow:
 - Invitations must be sent to online players only.
 
 **Commands:**
-- `/_commun accept_invitation <communityIdentifier>` - Accept a pending invitation to join a community;
-- `/_commun reject_invitation <communityIdentifier>` - Reject a pending invitation to join a community;
 - `/community chat <communityIdentifier> <message>` - Send a message to the community chat room;
-- `/community chat_toggle <communityIdentifier>` - Toggle channel mode on/off (when enabled, all messages go to community chat).
+- `/community chat_channel <communityIdentifier>` - Toggle channel mode on/off (when enabled, all messages go to community chat).
 
 ### Membership
 
@@ -791,9 +783,9 @@ The community owner or an administrator with the `GRANT_COINS_FROM_TREASURY` pri
 - A `Turnover` record (source: `COMMUNITY_GRANT`) is appended to the target community's `communityIncome`.
 - Both communities' `getTotalAssets()` results are affected immediately.
 
-#### Technical Implementation
+#### Confirmation Rules
 
-The grant state is tracked via `TreasuryGrantConfirmationData` stored in the source community's `pendingOperations` map under key `sourceRegionId`. Only one pending treasury grant per community is allowed at a time. Eligibility for both initiating and accepting is checked via `isEligibleTreasuryGrantRecipient()`, which requires the `GRANT_COINS_FROM_TREASURY` privilege or the OWNER role. Confirmation commands are registered under the `/_commun` root (not `/community`): `accept_treasury_grant`, `decline_treasury_grant`, and `cancel_treasury_grant`.
+Only one pending treasury grant per source community is allowed at a time. Eligible owners or administrators use the chat buttons to accept, decline, or cancel the grant before the 5-minute prompt expires.
 
 ### Server Admin Treasury Operations
 

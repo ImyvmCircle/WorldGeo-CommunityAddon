@@ -4,9 +4,9 @@
 
 ---
 
-A **Community** is a player organization tied to an exclusive geographic region on the IMYVM server. Communities let players govern shared territory, communicate privately, build a collective economy, and collaborate under a structured membership system.
+A **Community** is a player organization tied to an exclusive geographic region on the IMYVM server. Communities let players govern shared territory, communicate privately, build a collective economy, set internal rules, and collaborate under formal roles.
 
-Run `/community` to open the **Community Main Menu** — the starting point for all community interactions. Every feature is accessible through the GUI chest-style menus; commands are available as an alternative entry point for the same operations.
+Players can run `/community` to open the **Community Main Menu**. Common operations are available through chest-style menus; commands serve as quick entry points, and chat confirmation buttons handle timed confirmations.
 
 ## Menu Navigation Map
 
@@ -17,7 +17,7 @@ Run `/community` to open the **Community Main Menu** — the starting point for 
     │   └── [click a community]
     │       ├── (non-member) → Non-Member View  (join / view info)
     │       └── (member)     → Community Menu ──────────────────┐
-    ├── Create Community → Community Creation Menu              │
+    ├── Territory → Create Community / Add Scope / Modify Land  │
     └── My Communities  → My Community List Menu                │
                           └── [click] → Community Menu ─────────┘
                                         │
@@ -48,8 +48,8 @@ Run `/community` to open the **Community Main Menu** — the starting point for 
 | Base Creation Cost | $5,000.00 | $10,000.00 |
 | Member Limit | 4 (default) | Unlimited |
 | Min. Members to Activate | — | 4 |
-| Join Cost | $1,500.00 | $500.00 |
-| Activation Path | Operator approval | Recruit 4+ members → Operator approval |
+| Join Cost | $450.00 | $500.00 |
+| Activation Path | Operator approval | Recruit 4 formal members within 48 hours, then operator approval |
 
 ## Community Status
 
@@ -60,6 +60,10 @@ Run `/community` to open the **Community Main Menu** — the starting point for 
 | **Active** | Both | Fully operational |
 | **Revoked** | Both | Deactivated; all actions blocked |
 
+Manors enter **Pending** after creation confirmation. Operator approval moves them to **Active**; denial or later revocation moves them to **Revoked**.
+
+Realms enter **Recruiting** after creation confirmation. The owner must bring the formal member count to 4 within 48 hours. Once that count is reached, the realm automatically enters **Pending** for operator approval. If recruitment expires, the realm is revoked and the creation fee is refunded to the owner.
+
 ## Member Roles
 
 | Role | Description |
@@ -67,8 +71,10 @@ Run `/community` to open the **Community Main Menu** — the starting point for 
 | **Owner** | Full authority; cannot leave |
 | **Administrator** | Delegated admin access (subject to owner-configured privileges) |
 | **Member** | Regular member; can donate, view, chat, invite, and leave |
-| **Applicant** | Pending membership review |
-| **Refused** | Rejected applicant |
+| **Applicant** | Waiting for audit after applying or accepting an invitation; not a formal member |
+| **Refused** | Record state after a denied application; not a formal member |
+
+Formal members are owners, administrators, and members. Chat access, donation access, member lists, teleport free-use counts, and realm recruitment counts use formal members only; applicants and refused applicants are excluded.
 
 ## Contents
 
