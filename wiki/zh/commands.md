@@ -8,7 +8,7 @@
 
 `<communityIdentifier>` 可使用领域的**名称**或其**数字 ID**。
 
-> **名称引号规则：** 仅由 ASCII 字母与数字（a-z、A-Z、0-9）组成的名称可直接输入。凡包含其他字符的名称，包括空格、中文、日文、韩文、带重音字母、符号等，在命令中输入时**必须用英文双引号括起来**，例如 `"示例领地"` 或 `"My Realm"`。此规则同时适用于 `<communityIdentifier>` 和所有 `<scopeName>` 参数。使用 Tab 键自动补全时，系统会自动为此类名称添加引号。
+> **名称引号规则** 仅由 ASCII 字母与数字组成的名称可直接输入，例如 a-z、A-Z、0-9。凡包含其他字符的名称，包括空格、中文、日文、韩文、带重音字母、符号等，在命令中输入时使用英文双引号包裹，例如 `"示例领地"` 或 `"My Realm"`。此规则同时适用于 `<communityIdentifier>` 和所有 `<scopeName>` 参数。使用 Tab 键自动补全时，系统会自动为此类名称添加引号。
 
 ## 通用命令
 
@@ -19,7 +19,7 @@
 | `/community list [type]` | 按类型筛选列出领域 | 浏览领域 |
 | `/community query <communityIdentifier>` | 显示领域的地块信息 | 领域菜单 → 地块信息 |
 
-**列表类型：** `all`（全部）· `joinable`（可加入）· `recruiting`（招募中）· `auditing`（审核中）· `active`（活跃）· `revoked`（已撤销）
+**列表类型** `all` 全部 · `joinable` 可加入 · `recruiting` 招募中 · `auditing` 审核中 · `active` 活跃 · `revoked` 已撤销
 
 ---
 
@@ -41,8 +41,8 @@
 
 创建请求生成后，聊天框会出现确认和取消按钮。确认提示在 5 分钟内有效。
 
-**形状类型：** `RECTANGLE`（矩形）· `CIRCLE`（圆形）· `POLYGON`（多边形）  
-**领域类型：** `manor`（庄园）· `realm`（领地）
+**形状类型** `RECTANGLE` 矩形 · `CIRCLE` 圆形 · `POLYGON` 多边形  
+**领域类型** `manor` 庄园 · `realm` 领地
 
 ---
 
@@ -89,7 +89,7 @@
 | `/community treasury deposit <communityIdentifier> <amount> [description]` | 向指定聚落国库充值（来源标记为"服务器管理员"） |
 | `/community treasury withdraw <communityIdentifier> <amount> [description]` | 从指定聚落国库提款（来源标记为"服务器管理员"） |
 
-- `<amount>` 为显示单位（如 `100.00` 即 $100.00）。
+- `<amount>` 为显示单位，例如 `100.00` 即 $100.00。
 - `[description]` 为可选说明，会记录在国库账单中。
 
 ---
