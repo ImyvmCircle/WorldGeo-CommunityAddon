@@ -24,11 +24,11 @@ enum class TurnoverSource(val value: Int) {
     SYSTEM(2),
     SERVER_ADMIN(3),
     UNKNOWN(4),
-    ADVENTURE_INSURANCE(5),
-    ADVENTURE_INDEX_POSITION(6),
-    ADVENTURE_RESEARCH(7),
-    ADVENTURE_COMPETITION(8),
-    ADVENTURE_SPONSORSHIP(9);
+    INSURANCE_UNDERWRITING(5),
+    MARKET_POSITION(6),
+    RESEARCH_FUNDING(7),
+    COMPETITION_POOL(8),
+    EXTERNAL_SPONSORSHIP(9);
 
     companion object {
         fun fromValue(value: Int): TurnoverSource =
