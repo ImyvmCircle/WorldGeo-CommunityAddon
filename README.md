@@ -12,6 +12,9 @@ This major version introduces community economical profits.
 
 - chore: upgrade to MC 26.1
 - feat: calculate region land and setting prices per dimension, with geoscope prices at ×8 in the Nether and ×2 in the End
+- feat: tag community-owned regions with `idMark=2` so they exclude wilderness scopes
+- feat: expose `CommunityApi` entrypoint with `getCommunityByRegion`, `listCommunities`, immediate treasury `deposit` / `withdraw`, and `snapshotDevelopment` for third-party mod integration
+- feat: extend `TurnoverSource` with `INSURANCE_UNDERWRITING`, `MARKET_POSITION`, `RESEARCH_FUNDING`, `COMPETITION_POOL`, `EXTERNAL_SPONSORSHIP` for external-integration treasury flows
 
 ## Features
 
