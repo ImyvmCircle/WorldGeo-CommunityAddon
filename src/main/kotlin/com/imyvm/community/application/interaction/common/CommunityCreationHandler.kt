@@ -46,7 +46,7 @@ fun onCreateCommunityRequest(
         else -> GeoShapeType.RECTANGLE
     }
 
-    val region = PlayerInteractionApi.createAndGetRegion(player, communityName)
+    val region = PlayerInteractionApi.createAndGetRegion(player, communityName, idMark = 2)
     if (region == null) {
         player.sendSystemMessage(Translator.tr("community.create.region.error"))
         return 0
