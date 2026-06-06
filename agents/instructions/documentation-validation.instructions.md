@@ -1,11 +1,11 @@
 ---
-applyTo: "README.md,wiki/**/*.md,agents/**/*.md"
+applyTo: "README.md,agents/**/*.md"
 ---
 
 # 文档与验证规则
 
 1. 正式文字先读取 `agents/WRITING_STYLE.md`。
-2. 用户侧机制变化同步 README、wiki 和 changelog。
+2. 用户侧机制变化同步 README 和 changelog。
 3. changelog 描述保持简洁；不自行新建版本，不自行更新版本号。
 4. 调用外部或并列项目 API 时，以 Gradle 解析的已发布制品为准。
 5. 不主动使用 git；prompt 要求 git、提交、推送、拉取或发布时，先同步远端，再遵循既有 commit 格式，不添加 co-author trailer。

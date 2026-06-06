@@ -19,5 +19,6 @@ applyTo: "**"
 - `permissions-administration.instructions.md`：成员身份、权限和聚落状态检查。
 - `menus-screens.instructions.md`：菜单、按钮、列表、返回逻辑和玩家头颅。
 - `commands-suggestions.instructions.md`：命令注册、参数和非 ASCII 名称建议。
-- `documentation-validation.instructions.md`：README、wiki、changelog、git、测试和 IMYVMWorldGeo API。
-- `player-documentation-perspective.instructions.md`：README 与 wiki 的用户侧机制文档视角。
+- `documentation-validation.instructions.md`：README、changelog、git、测试和 IMYVMWorldGeo API。
+- `analysis-iteration.instructions.md`：分析、批判、方向比较和阶段判断的五轮迭代规则。
+- `player-documentation-perspective.instructions.md`：README 的用户侧机制文档视角。

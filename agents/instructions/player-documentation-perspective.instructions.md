@@ -1,5 +1,5 @@
 ---
-applyTo: "README.md,wiki/**/*.md"
+applyTo: "README.md"
 ---
 
 # 用户侧文档规则
