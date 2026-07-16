@@ -19,6 +19,7 @@ fun dataLoad() {
         CommunityDatabase.load()
     } catch (e: Exception) {
         WorldGeoCommunityAddon.logger.error("Failed to load community database: ${e.message}", e)
+        throw IllegalStateException("Failed to load community database", e)
     }
 }
 
