@@ -62,4 +62,46 @@ class CoreMutationPersistenceTest {
         assertFalse(result)
         assertEquals(listOf("save", "restore", "rollback", "notify"), events)
     }
+
+
+    @Test
+    fun mutationFailureRestoresRollsBackAndNotifies() {
+        val events = mutableListOf<String>()
+
+        val result = runCommunityMutationOrRollback(
+            operationName = "test operation",
+            mutateCommunityState = {
+                events.add("mutate")
+                throw IllegalStateException("mutation failed")
+            },
+            restoreCommunityState = { events.add("restore") },
+            rollbackCoreState = { events.add("rollback") },
+            saveCommunityState = { events.add("save") },
+            notifyFailure = { events.add("notify") }
+        )
+
+        assertFalse(result)
+        assertEquals(listOf("mutate", "restore", "rollback", "notify"), events)
+    }
+
+    @Test
+    fun mutationSaveFailureRestoresRollsBackAndNotifies() {
+        val events = mutableListOf<String>()
+
+        val result = runCommunityMutationOrRollback(
+            operationName = "test operation",
+            mutateCommunityState = { events.add("mutate") },
+            restoreCommunityState = { events.add("restore") },
+            rollbackCoreState = { events.add("rollback") },
+            saveCommunityState = {
+                events.add("save")
+                throw IllegalStateException("save failed")
+            },
+            notifyFailure = { events.add("notify") }
+        )
+
+        assertFalse(result)
+        assertEquals(listOf("mutate", "save", "restore", "rollback", "notify"), events)
+    }
+
 }

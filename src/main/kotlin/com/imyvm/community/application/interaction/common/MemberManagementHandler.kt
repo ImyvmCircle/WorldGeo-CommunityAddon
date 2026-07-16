@@ -161,14 +161,34 @@ private fun joinUnderOpenPolicy(player: ServerPlayer, targetCommunity: Community
         )
         return 0
     }
-    
-    playerData.money -= cost
-    
-    targetCommunity.member[player.uuid] = MemberAccount(
+
+    val memberAccount = MemberAccount(
         joinedTime = System.currentTimeMillis(),
         basicRoleType = MemberRoleType.MEMBER
     )
-    
+    val operationName = Translator.tr("community.operation.join", targetCommunity.regionNumberId).string
+    if (!runCommunityMutationOrRollback(
+            operationName = operationName,
+            mutateCommunityState = {
+                playerData.money -= cost
+                targetCommunity.member[player.uuid] = memberAccount
+                com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.autoGrantDefaultPermissions(
+                    player.uuid, player, targetCommunity
+                )
+            },
+            restoreCommunityState = {
+                playerData.money += cost
+                targetCommunity.member.remove(player.uuid)
+            },
+            rollbackCoreState = {
+                com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.revokeGrantedPermissions(
+                    player.uuid, targetCommunity
+                )
+            },
+            saveCommunityState = { com.imyvm.community.infra.CommunityDatabase.save() },
+            notifyFailure = { player.sendSystemMessage(Translator.tr("community.operation.save_failed", operationName)) }
+        )) return 0
+
     player.sendSystemMessage(Translator.tr("community.join.success", targetCommunity.regionNumberId))
     player.sendSystemMessage(Translator.tr("community.join.payment.deducted", cost / 100.0))
     
@@ -176,12 +196,6 @@ private fun joinUnderOpenPolicy(player: ServerPlayer, targetCommunity: Community
     val notification = Translator.tr("community.notification.member_joined", player.name.string, communityName) 
         ?: net.minecraft.network.chat.Component.literal("${player.name.string} has joined $communityName")
     notifyOfficials(targetCommunity, player.level().server, notification, player)
-    
-    com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.autoGrantDefaultPermissions(
-        player.uuid, player, targetCommunity
-    )
-    
-    com.imyvm.community.infra.CommunityDatabase.save()
     
     com.imyvm.community.application.event.checkAndPromoteRecruitingRealm(targetCommunity)
     
@@ -203,13 +217,26 @@ private fun joinUnderApplicationPolicy(player: ServerPlayer, targetCommunity: Co
         )
         return 0
     }
-    
-    playerData.money -= cost
-    
-    targetCommunity.member[player.uuid] = MemberAccount(
+
+    val memberAccount = MemberAccount(
         joinedTime = System.currentTimeMillis(),
         basicRoleType = MemberRoleType.APPLICANT
     )
+    val operationName = Translator.tr("community.operation.join_application", targetCommunity.regionNumberId).string
+    if (!runCommunityMutationOrRollback(
+            operationName = operationName,
+            mutateCommunityState = {
+                playerData.money -= cost
+                targetCommunity.member[player.uuid] = memberAccount
+            },
+            restoreCommunityState = {
+                playerData.money += cost
+                targetCommunity.member.remove(player.uuid)
+            },
+            rollbackCoreState = {},
+            saveCommunityState = { com.imyvm.community.infra.CommunityDatabase.save() },
+            notifyFailure = { player.sendSystemMessage(Translator.tr("community.operation.save_failed", operationName)) }
+        )) return 0
     
     player.sendSystemMessage(targetCommunity.getRegion()
         ?.let { Translator.tr("community.join.applied", it.name ,targetCommunity.regionNumberId) } ?: Component.empty())
@@ -220,7 +247,6 @@ private fun joinUnderApplicationPolicy(player: ServerPlayer, targetCommunity: Co
         ?: net.minecraft.network.chat.Component.literal("${player.name.string} has applied to join $communityName")
     notifyOfficials(targetCommunity, player.level().server, notification, player)
     
-    com.imyvm.community.infra.CommunityDatabase.save()
     return 1
 }
 

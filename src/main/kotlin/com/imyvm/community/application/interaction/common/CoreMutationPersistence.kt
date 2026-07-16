@@ -42,3 +42,30 @@ internal fun saveCommunityStateOrRollback(
         false
     }
 }
+
+internal fun runCommunityMutationOrRollback(
+    operationName: String,
+    mutateCommunityState: () -> Unit,
+    restoreCommunityState: () -> Unit,
+    rollbackCoreState: () -> Unit,
+    saveCommunityState: () -> Unit,
+    notifyFailure: () -> Unit
+): Boolean {
+    return try {
+        mutateCommunityState()
+        saveCommunityState()
+        true
+    } catch (error: Exception) {
+        runCatching { restoreCommunityState() }
+            .onFailure { restoreError ->
+                WorldGeoCommunityAddon.logger.error("Failed to restore CommunityAddon state after $operationName failure", restoreError)
+            }
+        runCatching { rollbackCoreState() }
+            .onFailure { rollbackError ->
+                WorldGeoCommunityAddon.logger.error("Failed to rollback WorldGeo Core state after $operationName failure", rollbackError)
+            }
+        WorldGeoCommunityAddon.logger.error("Failed to complete $operationName", error)
+        notifyFailure()
+        false
+    }
+}

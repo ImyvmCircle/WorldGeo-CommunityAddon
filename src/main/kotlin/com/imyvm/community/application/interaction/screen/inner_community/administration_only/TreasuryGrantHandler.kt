@@ -3,6 +3,7 @@ package com.imyvm.community.application.interaction.screen.inner_community.admin
 import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.application.event.addPendingOperation
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
+import com.imyvm.community.application.interaction.common.runCommunityMutationOrRollback
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.PendingOperationType
 import com.imyvm.community.domain.model.Turnover
@@ -148,11 +149,33 @@ fun onAcceptTreasuryGrant(player: ServerPlayer, sourceRegionId: Int): Int {
     val now = System.currentTimeMillis()
     val sourceMark = sourceCommunity.generateCommunityMark()
     val targetMark = targetCommunity.generateCommunityMark()
-    sourceCommunity.expenditures.add(Turnover(grantData.amount, now, TurnoverSource.COMMUNITY_GRANT, "community.treasury.desc.grant_out", listOf(targetMark)))
-    targetCommunity.communityIncome.add(Turnover(grantData.amount, now, TurnoverSource.COMMUNITY_GRANT, "community.treasury.desc.grant_in", listOf(sourceMark)))
+    val sourceTurnover = Turnover(grantData.amount, now, TurnoverSource.COMMUNITY_GRANT, "community.treasury.desc.grant_out", listOf(targetMark))
+    val targetTurnover = Turnover(grantData.amount, now, TurnoverSource.COMMUNITY_GRANT, "community.treasury.desc.grant_in", listOf(sourceMark))
+    var removedPending: com.imyvm.community.domain.model.PendingOperation? = null
+    val operationName = Translator.tr("community.operation.treasury_grant", sourceMark).string
 
-    removePendingOperation(sourceRegionId, PendingOperationType.TREASURY_GRANT_CONFIRMATION)
-    CommunityDatabase.save()
+    if (!runCommunityMutationOrRollback(
+            operationName = operationName,
+            mutateCommunityState = {
+                sourceCommunity.expenditures.add(sourceTurnover)
+                targetCommunity.communityIncome.add(targetTurnover)
+                removedPending = removePendingOperation(sourceRegionId, PendingOperationType.TREASURY_GRANT_CONFIRMATION)
+            },
+            restoreCommunityState = {
+                sourceCommunity.expenditures.remove(sourceTurnover)
+                targetCommunity.communityIncome.remove(targetTurnover)
+                removedPending?.let {
+                    com.imyvm.community.application.event.restorePendingOperation(
+                        sourceRegionId,
+                        PendingOperationType.TREASURY_GRANT_CONFIRMATION,
+                        it
+                    )
+                }
+            },
+            rollbackCoreState = {},
+            saveCommunityState = { CommunityDatabase.save() },
+            notifyFailure = { player.sendSystemMessage(Translator.tr("community.operation.save_failed", operationName)) }
+        )) return 0
 
     val amountFormatted = "%.2f".format(grantData.amount / 100.0)
 
