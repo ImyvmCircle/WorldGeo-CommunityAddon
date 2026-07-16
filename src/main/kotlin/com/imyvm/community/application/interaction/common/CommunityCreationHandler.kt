@@ -149,10 +149,7 @@ fun onConfirmCommunityCreation(player: ServerPlayer, regionNumberId: Int): Int {
         removedConfirmation?.let { restorePendingOperation(regionNumberId, PendingOperationType.CREATE_COMMUNITY_CONFIRMATION, it) }
         playerAccount.addMoney(creationData.totalCost)
         WorldGeoCommunityAddon.logger.error("Failed to confirm community creation for region $regionNumberId: ${e.message}")
-        player.sendSystemMessage(
-            Translator.tr("community.create.confirmation.failed")
-                ?: Component.literal("Community creation failed. Please try again.")
-        )
+        player.sendSystemMessage(Translator.tr("community.create.confirmation.failed"))
         0
     }
 }
@@ -244,25 +241,25 @@ internal fun notifyOPsAndOwnerAboutCreationRequest(creator: ServerPlayer, region
 }
 
 private fun sendInteractiveConfirmation(player: ServerPlayer, regionNumberId: Int) {
-    val confirmButton = Component.literal("§a§l[CONFIRM]§r")
+    val confirmButton = Translator.tr("community.create.confirmation.button.confirm")
+        .copy()
         .withStyle { style ->
             style.withClickEvent(ClickEvent.RunCommand("/_commun confirm_creation $regionNumberId"))
-            .withHoverEvent(HoverEvent.ShowText(Component.literal("§aClick to confirm creation")
-            ))
+                .withHoverEvent(HoverEvent.ShowText(Translator.tr("community.create.confirmation.button.confirm.hover")))
         }
-    
-    val cancelButton = Component.literal("§c§l[CANCEL]§r")
+
+    val cancelButton = Translator.tr("community.create.confirmation.button.cancel")
+        .copy()
         .withStyle { style ->
             style.withClickEvent(ClickEvent.RunCommand("/_commun cancel_creation $regionNumberId"))
-            .withHoverEvent(HoverEvent.ShowText(Component.literal("§cClick to cancel creation")
-            ))
+                .withHoverEvent(HoverEvent.ShowText(Translator.tr("community.create.confirmation.button.cancel.hover")))
         }
-    
+
     val promptMessage = Component.empty()
-        .append(Component.literal("§e§l[ACTION REQUIRED]§r §ePlease confirm within §c§l5 minutes§r§e: "))
+        .append(Translator.tr("community.create.confirmation.interactive_prompt"))
         .append(confirmButton)
         .append(Component.literal(" "))
         .append(cancelButton)
-    
+
     player.sendSystemMessage(promptMessage)
 }
