@@ -4,13 +4,17 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.nio.file.Files
 import java.nio.file.Path
+import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.PendingOperation
+import com.imyvm.community.domain.model.PendingOperationType
 import com.imyvm.community.domain.model.MemberAccount
 import com.imyvm.community.domain.model.community.CommunityJoinPolicy
 import com.imyvm.community.domain.model.community.CommunityStatus
@@ -136,6 +140,34 @@ class CommunityDatabaseTest {
 
 
     @Test
+    fun backupDatabaseFileCreatesSuffixWhenBackupNameExists() {
+        val dir = Files.createTempDirectory("community-db-backup-suffix-test")
+        try {
+            val database = dir.resolve("iwg_community.db")
+            Files.writeString(database, "new-copy")
+            Files.writeString(dir.resolve("iwg_community.db.corrupt.55"), "old-copy")
+            val method = CommunityDatabase.javaClass.getDeclaredMethod(
+                "backupDatabaseFile",
+                Path::class.java,
+                String::class.java,
+                Long::class.javaPrimitiveType
+            )
+            method.isAccessible = true
+
+            val backup = method.invoke(CommunityDatabase, database, "corrupt", 55L) as Path
+
+            assertEquals("iwg_community.db.corrupt.55.1", backup.fileName.toString())
+            assertEquals("new-copy", Files.readString(backup))
+            assertEquals("old-copy", Files.readString(dir.resolve("iwg_community.db.corrupt.55")))
+        } finally {
+            Files.walk(dir)
+                .sorted(Comparator.reverseOrder())
+                .forEach(Files::deleteIfExists)
+        }
+    }
+
+
+    @Test
     fun backupLegacyDatabaseBeforeSaveCopiesOnlyOnce() {
         val dir = Files.createTempDirectory("community-db-legacy-backup-test")
         try {
@@ -166,6 +198,201 @@ class CommunityDatabaseTest {
                 .forEach(Files::deleteIfExists)
         }
     }
+
+
+    @Test
+    fun backupLegacyDatabaseBeforeLoadCopiesRawDatabaseAndSkipsSecondLegacyBackup() {
+        val dir = Files.createTempDirectory("community-db-legacy-load-backup-test")
+        try {
+            val database = dir.resolve("iwg_community.db")
+            Files.writeString(database, "legacy-load")
+            val createdField = CommunityDatabase.javaClass.getDeclaredField("legacyBackupCreated")
+            createdField.isAccessible = true
+            createdField.setBoolean(CommunityDatabase, false)
+
+            val loadBackupMethod = CommunityDatabase.javaClass.getDeclaredMethod(
+                "backupLegacyDatabaseBeforeLoad",
+                Path::class.java
+            )
+            loadBackupMethod.isAccessible = true
+            val saveBackupMethod = CommunityDatabase.javaClass.getDeclaredMethod(
+                "backupLegacyDatabaseBeforeSave",
+                Path::class.java
+            )
+            saveBackupMethod.isAccessible = true
+
+            val firstBackup = loadBackupMethod.invoke(CommunityDatabase, database) as Path
+            val secondBackup = saveBackupMethod.invoke(CommunityDatabase, database)
+
+            assertEquals(true, firstBackup.fileName.toString().startsWith("iwg_community.db.legacy."))
+            assertEquals("legacy-load", Files.readString(firstBackup))
+            assertEquals(null, secondBackup)
+        } finally {
+            Files.walk(dir)
+                .sorted(Comparator.reverseOrder())
+                .forEach(Files::deleteIfExists)
+        }
+    }
+
+    @Test
+    fun loadDatabaseFileWithoutTrailingSectionsClearsPendingOperations() {
+        val dir = Files.createTempDirectory("community-db-load-empty-test")
+        try {
+            val database = dir.resolve("iwg_community.db")
+            DataOutputStream(Files.newOutputStream(database)).use { stream ->
+                stream.writeInt(-3)
+                stream.writeInt(3)
+                stream.writeInt(0)
+            }
+            WorldGeoCommunityAddon.pendingOperations.clear()
+            WorldGeoCommunityAddon.pendingOperations[77L] = PendingOperation(
+                expireAt = 123L,
+                type = PendingOperationType.INVITATION
+            )
+            CommunityDatabase.communities = mutableListOf(Community(
+                regionNumberId = 7,
+                member = hashMapOf(),
+                joinPolicy = CommunityJoinPolicy.OPEN,
+                status = CommunityStatus.RECRUITING_REALM
+            ))
+            val method = CommunityDatabase.javaClass.getDeclaredMethod("loadDatabaseFile", Path::class.java)
+            method.isAccessible = true
+
+            method.invoke(CommunityDatabase, database)
+
+            assertEquals(0, CommunityDatabase.communities.size)
+            assertTrue(WorldGeoCommunityAddon.pendingOperations.isEmpty())
+        } finally {
+            WorldGeoCommunityAddon.pendingOperations.clear()
+            Files.walk(dir)
+                .sorted(Comparator.reverseOrder())
+                .forEach(Files::deleteIfExists)
+        }
+    }
+
+    @Test
+    fun loadDatabaseFileRestoresPreviousStateWhenRecordReadFails() {
+        val dir = Files.createTempDirectory("community-db-load-rollback-test")
+        try {
+            val database = dir.resolve("iwg_community.db")
+            DataOutputStream(Files.newOutputStream(database)).use { stream ->
+                stream.writeInt(-3)
+                stream.writeInt(3)
+                stream.writeInt(1)
+                stream.writeInt(16)
+                stream.writeInt(1)
+            }
+            val previousCommunity = Community(
+                regionNumberId = 88,
+                member = hashMapOf(),
+                joinPolicy = CommunityJoinPolicy.OPEN,
+                status = CommunityStatus.RECRUITING_REALM
+            )
+            CommunityDatabase.communities = mutableListOf(previousCommunity)
+            WorldGeoCommunityAddon.pendingOperations.clear()
+            WorldGeoCommunityAddon.pendingOperations[77L] = PendingOperation(
+                expireAt = 123L,
+                type = PendingOperationType.INVITATION
+            )
+            val method = CommunityDatabase.javaClass.getDeclaredMethod("loadDatabaseFile", Path::class.java)
+            method.isAccessible = true
+
+            assertFailsWith<java.lang.reflect.InvocationTargetException> {
+                method.invoke(CommunityDatabase, database)
+            }
+
+            assertEquals(listOf(previousCommunity), CommunityDatabase.communities)
+            assertEquals(setOf(77L), WorldGeoCommunityAddon.pendingOperations.keys)
+        } finally {
+            WorldGeoCommunityAddon.pendingOperations.clear()
+            Files.walk(dir)
+                .sorted(Comparator.reverseOrder())
+                .forEach(Files::deleteIfExists)
+        }
+    }
+
+
+    @Test
+    fun loadPendingOperationsDoesNotPublishPartialStateOnStrictFailure() {
+        WorldGeoCommunityAddon.pendingOperations.clear()
+        WorldGeoCommunityAddon.pendingOperations[77L] = PendingOperation(
+            expireAt = 123L,
+            type = PendingOperationType.INVITATION
+        )
+        val bytes = ByteArrayOutputStream()
+        DataOutputStream(bytes).use { stream ->
+            stream.writeInt(-2)
+            stream.writeInt(3)
+            stream.writeInt(1)
+        }
+        val method = CommunityDatabase.javaClass.getDeclaredMethod(
+            "loadPendingOperations",
+            DataInputStream::class.java,
+            Int::class.javaObjectType,
+            Boolean::class.javaPrimitiveType
+        )
+        method.isAccessible = true
+
+        try {
+            assertFailsWith<java.lang.reflect.InvocationTargetException> {
+                method.invoke(
+                    CommunityDatabase,
+                    DataInputStream(ByteArrayInputStream(bytes.toByteArray())),
+                    null,
+                    true
+                )
+            }
+            assertEquals(setOf(77L), WorldGeoCommunityAddon.pendingOperations.keys)
+        } finally {
+            WorldGeoCommunityAddon.pendingOperations.clear()
+        }
+    }
+
+
+    @Test
+    fun loadLegacyTrailingSectionsRecordsSectionFailures() {
+        CommunityDatabase.communities = mutableListOf()
+        val warningsField = CommunityDatabase.javaClass.getDeclaredField("legacyLoadWarnings")
+        warningsField.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        (warningsField.get(CommunityDatabase) as MutableList<String>).clear()
+
+        val bytes = ByteArrayOutputStream()
+        DataOutputStream(bytes).use { stream ->
+            stream.writeInt(1)
+            stream.writeInt(123)
+            stream.writeInt(-1)
+        }
+        val method = CommunityDatabase.javaClass.getDeclaredMethod(
+            "loadLegacyTrailingSections",
+            DataInputStream::class.java,
+            Int::class.javaPrimitiveType
+        )
+        method.isAccessible = true
+        method.invoke(CommunityDatabase, DataInputStream(ByteArrayInputStream(bytes.toByteArray())), 0)
+
+        val warnings = CommunityDatabase.getLegacyLoadWarnings()
+        assertEquals(1, warnings.size)
+        assertTrue(warnings.first().contains("name change cooldowns"))
+    }
+
+    @Test
+    fun readTurnoverListRejectsInvalidLegacyCount() {
+        val bytes = ByteArrayOutputStream()
+        DataOutputStream(bytes).use { stream ->
+            stream.writeInt(-99)
+        }
+        val method = CommunityDatabase.javaClass.getDeclaredMethod(
+            "readTurnoverList",
+            DataInputStream::class.java
+        )
+        method.isAccessible = true
+
+        assertFailsWith<java.lang.reflect.InvocationTargetException> {
+            method.invoke(CommunityDatabase, DataInputStream(ByteArrayInputStream(bytes.toByteArray())))
+        }
+    }
+
 
     @Test
     fun replaceDatabaseFilePublishesCompleteTempFile() {

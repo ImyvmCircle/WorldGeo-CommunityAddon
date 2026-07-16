@@ -42,8 +42,11 @@ object CommunityDatabase {
     private const val SECTION_COMMUNITY_INCOME = 4
     private const val MAX_SECTION_BYTES = 16 * 1024 * 1024
     private const val MAX_COMMUNITY_BYTES = 16 * 1024 * 1024
+    private const val MAX_COMMUNITIES = 100_000
+    private const val MAX_COLLECTION_ENTRIES = 1_000_000
     private var legacyDatabaseLoaded = false
     private var legacyBackupCreated = false
+    private val legacyLoadWarnings = mutableListOf<String>()
     lateinit var communities: MutableList<Community>
 
     @Throws(IOException::class)
@@ -172,49 +175,70 @@ object CommunityDatabase {
             try {
                 loadNameChangeCooldownsSection(stream)
             } catch (e: Exception) {
-                com.imyvm.community.WorldGeoCommunityAddon.logger.error("Failed to load name change cooldowns: ${e.message}")
+                recordLegacyLoadWarning("name change cooldowns", e)
             }
         }
         if (stream.available() > 0) {
             try {
                 loadLikesSection(stream)
             } catch (e: Exception) {
-                com.imyvm.community.WorldGeoCommunityAddon.logger.error("Failed to load likes data: ${e.message}")
+                recordLegacyLoadWarning("likes data", e)
             }
         }
         if (stream.available() > 0) {
             try {
                 loadCommunityIncomeSection(stream)
             } catch (e: Exception) {
-                com.imyvm.community.WorldGeoCommunityAddon.logger.error("Failed to load community income data: ${e.message}")
+                recordLegacyLoadWarning("community income data", e)
             }
         }
     }
 
     @Throws(IOException::class)
     fun load() {
-        val file = this.getDatabasePath()
+        loadDatabaseFile(this.getDatabasePath())
+    }
+
+    private fun loadDatabaseFile(file: Path) {
+        val previousCommunities = if (this::communities.isInitialized) communities else null
+        val previousPendingOperations = com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.toMap()
         legacyDatabaseLoaded = false
         legacyBackupCreated = false
-        if (!file.toFile().exists()) {
-            communities = mutableListOf()
-            return
-        }
-
-        DataInputStream(file.toFile().inputStream()).use { stream ->
-            val firstInt = stream.readInt()
-            val databaseVersion = if (firstInt == DATABASE_VERSION_MARKER) stream.readInt() else 1
-            require(databaseVersion in 1..DATABASE_VERSION) { "Unsupported community database version: $databaseVersion" }
-            legacyDatabaseLoaded = databaseVersion < DATABASE_VERSION
-            val size = if (databaseVersion == 1) firstInt else stream.readInt()
-            communities = ArrayList(size)
-            for (i in 0 until size) {
-                communities.add(loadCommunityRecord(stream, databaseVersion))
+        legacyLoadWarnings.clear()
+        try {
+            if (!file.toFile().exists()) {
+                communities = mutableListOf()
+                com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.clear()
+                return
             }
 
-            if (stream.available() > 0) {
-                loadTrailingSections(stream)
+            DataInputStream(file.toFile().inputStream()).use { stream ->
+                val firstInt = stream.readInt()
+                val databaseVersion = if (firstInt == DATABASE_VERSION_MARKER) stream.readInt() else 1
+                require(databaseVersion in 1..DATABASE_VERSION) { "Unsupported community database version: $databaseVersion" }
+                legacyDatabaseLoaded = databaseVersion < DATABASE_VERSION
+                if (legacyDatabaseLoaded) backupLegacyDatabaseBeforeLoad(file)
+                val size = requireCount(
+                    if (databaseVersion == 1) firstInt else stream.readInt(),
+                    "community",
+                    MAX_COMMUNITIES
+                )
+                val loadedCommunities = ArrayList<Community>(size)
+                for (i in 0 until size) {
+                    loadedCommunities.add(loadCommunityRecord(stream, databaseVersion))
+                }
+                communities = loadedCommunities
+                com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.clear()
+
+                if (stream.available() > 0) {
+                    loadTrailingSections(stream)
+                }
             }
+        } catch (e: Exception) {
+            if (previousCommunities != null) communities = previousCommunities
+            com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.clear()
+            com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.putAll(previousPendingOperations)
+            throw e
         }
     }
 
@@ -267,6 +291,14 @@ object CommunityDatabase {
         return backupDatabaseFile(getDatabasePath(), "corrupt", System.currentTimeMillis())
     }
 
+    fun getLegacyLoadWarnings(): List<String> = legacyLoadWarnings.toList()
+
+    private fun backupLegacyDatabaseBeforeLoad(databaseFile: Path): Path? {
+        val backupFile = backupDatabaseFile(databaseFile, "legacy", System.currentTimeMillis())
+        legacyBackupCreated = backupFile != null
+        return backupFile
+    }
+
     private fun backupLegacyDatabaseBeforeSave(databaseFile: Path): Path? {
         if (!legacyDatabaseLoaded || legacyBackupCreated) return null
         val backupFile = backupDatabaseFile(databaseFile, "legacy", System.currentTimeMillis())
@@ -276,8 +308,29 @@ object CommunityDatabase {
 
     private fun backupDatabaseFile(databaseFile: Path, label: String, timestamp: Long): Path? {
         if (!Files.exists(databaseFile)) return null
-        val backupFile = databaseFile.resolveSibling("${databaseFile.fileName}.$label.$timestamp")
+        val backupBase = databaseFile.resolveSibling("${databaseFile.fileName}.$label.$timestamp")
+        var backupFile = backupBase
+        var suffix = 1
+        while (Files.exists(backupFile)) {
+            backupFile = databaseFile.resolveSibling("${backupBase.fileName}.$suffix")
+            suffix++
+        }
         return Files.copy(databaseFile, backupFile)
+    }
+
+    private fun recordLegacyLoadWarning(section: String, error: Exception) {
+        val message = "Failed to load legacy $section: ${error.message ?: error::class.java.simpleName}"
+        legacyLoadWarnings.add(message)
+        com.imyvm.community.WorldGeoCommunityAddon.logger.error(message, error)
+    }
+
+    private fun readCount(stream: DataInputStream, label: String, max: Int = MAX_COLLECTION_ENTRIES): Int {
+        return requireCount(stream.readInt(), label, max)
+    }
+
+    private fun requireCount(count: Int, label: String, max: Int = MAX_COLLECTION_ENTRIES): Int {
+        require(count in 0..max) { "Invalid $label count: $count" }
+        return count
     }
 
     fun getCommunityById(regionId: Int): Community? {
@@ -338,6 +391,7 @@ object CommunityDatabase {
     }
 
     private fun loadMemberMap(stream: DataInputStream, memberCount: Int): HashMap<UUID, MemberAccount> {
+        requireCount(memberCount, "member")
         val memberMap = HashMap<UUID, MemberAccount>(memberCount)
         for (j in 0 until memberCount) {
             val uuid = UUID.fromString(stream.readUTF())
@@ -345,7 +399,7 @@ object CommunityDatabase {
             val joinedTime = stream.readLong()
             val role = MemberRoleType.fromValue(stream.readInt())
 
-            val mailSize = stream.readInt()
+            val mailSize = readCount(stream, "member mail")
             val communityMail = ArrayList<Component>(mailSize)
             for (k in 0 until mailSize) {
                 val mailString = stream.readUTF()
@@ -368,7 +422,7 @@ object CommunityDatabase {
 
             val adminPrivileges = try {
                 if (stream.readBoolean()) {
-                    val count = stream.readInt()
+                    val count = readCount(stream, "admin privilege")
                     val set = mutableSetOf<AdminPrivilege>()
                     for (k in 0 until count) {
                         val ordinal = stream.readInt()
@@ -411,7 +465,7 @@ object CommunityDatabase {
     }
 
     private fun loadCommunityAnnouncements(stream: DataInputStream): MutableList<Announcement> {
-        val announcementsSize = stream.readInt()
+        val announcementsSize = readCount(stream, "announcement")
         val announcements = mutableListOf<Announcement>()
         
         for (i in 0 until announcementsSize) {
@@ -422,7 +476,7 @@ object CommunityDatabase {
             val timestamp = stream.readLong()
             val isDeleted = stream.readBoolean()
 
-            val readBySize = stream.readInt()
+            val readBySize = readCount(stream, "announcement read")
             val readBy = mutableSetOf<UUID>()
             for (j in 0 until readBySize) {
                 readBy.add(UUID.fromString(stream.readUTF()))
@@ -481,7 +535,7 @@ object CommunityDatabase {
 
     private fun loadCommunityMessages(stream: DataInputStream, strict: Boolean): MutableList<CommunityMessage> {
         val messages = try {
-            val size = stream.readInt()
+            val size = readCount(stream, "message")
             val list = mutableListOf<CommunityMessage>()
             for (i in 0 until size) {
                 val id = UUID.fromString(stream.readUTF())
@@ -491,7 +545,7 @@ object CommunityDatabase {
                 val timestamp = stream.readLong()
                 val isDeleted = stream.readBoolean()
                 
-                val readBySize = stream.readInt()
+                val readBySize = readCount(stream, "message read")
                 val readBy = mutableSetOf<UUID>()
                 for (j in 0 until readBySize) {
                     readBy.add(UUID.fromString(stream.readUTF()))
@@ -552,8 +606,12 @@ object CommunityDatabase {
         try {
             val firstInt = firstStoredInt ?: stream.readInt()
             val version = if (firstInt == PENDING_SECTION_VERSION_MARKER) stream.readInt() else 1
-            val size = if (version == 1) firstInt else stream.readInt()
-            com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.clear()
+            require(version in 1..PENDING_SECTION_VERSION) { "Unsupported pending operation section version: $version" }
+            val size = requireCount(
+                if (version == 1) firstInt else stream.readInt(),
+                "pending operation"
+            )
+            val loadedOperations = mutableMapOf<Long, PendingOperation>()
 
             for (i in 0 until size) {
                 val storedKey = if (version >= 3) stream.readLong() else stream.readInt().toLong()
@@ -583,8 +641,10 @@ object CommunityDatabase {
                     transferData = transferData,
                     treasuryGrantData = treasuryGrantData
                 )
-                com.imyvm.community.WorldGeoCommunityAddon.pendingOperations[operationKey] = operation
+                loadedOperations[operationKey] = operation
             }
+            com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.clear()
+            com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.putAll(loadedOperations)
         } catch (e: Exception) {
             com.imyvm.community.WorldGeoCommunityAddon.logger.error("Failed to load pending operations: ${e.message}")
             if (strict) throw e
@@ -780,10 +840,10 @@ object CommunityDatabase {
     }
 
     private fun loadNameChangeCooldownsSection(stream: DataInputStream) {
-        val entryCount = stream.readInt()
+        val entryCount = readCount(stream, "name cooldown community")
         for (i in 0 until entryCount) {
             val regionId = stream.readInt()
-            val mapSize = stream.readInt()
+            val mapSize = readCount(stream, "name cooldown")
             val cooldowns = HashMap<String, Long>(mapSize)
             for (j in 0 until mapSize) {
                 val key = stream.readUTF()
@@ -809,11 +869,11 @@ object CommunityDatabase {
     }
 
     private fun loadLikesSection(stream: DataInputStream) {
-        val entryCount = stream.readInt()
+        val entryCount = readCount(stream, "likes community")
         for (i in 0 until entryCount) {
             val regionId = stream.readInt()
-            val likeCount = stream.readInt()
-            val mapSize = stream.readInt()
+            val likeCount = requireCount(stream.readInt(), "like")
+            val mapSize = readCount(stream, "likes player")
             val lastLikedBy = HashMap<UUID, Long>(mapSize)
             for (j in 0 until mapSize) {
                 val uuid = UUID.fromString(stream.readUTF())
@@ -837,7 +897,7 @@ object CommunityDatabase {
     }
 
     private fun loadCommunityIncomeSection(stream: DataInputStream) {
-        val entryCount = stream.readInt()
+        val entryCount = readCount(stream, "community income")
         for (i in 0 until entryCount) {
             val regionId = stream.readInt()
             val income = readTurnoverList(stream)
@@ -863,7 +923,7 @@ object CommunityDatabase {
     private fun readTurnoverList(stream: DataInputStream): ArrayList<Turnover> {
         val firstInt = stream.readInt()
         return if (firstInt == -1) {
-            val size = stream.readInt()
+            val size = readCount(stream, "turnover")
             val list = ArrayList<Turnover>(size)
             for (i in 0 until size) {
                 val amount = stream.readLong()
@@ -871,14 +931,15 @@ object CommunityDatabase {
                 val source = TurnoverSource.fromValue(stream.readInt())
                 val rawDescKey = stream.readUTF()
                 val descKey = if (rawDescKey.isEmpty()) null else rawDescKey
-                val argCount = stream.readInt()
+                val argCount = readCount(stream, "turnover description argument")
                 val args = (0 until argCount).map { stream.readUTF() }
                 list.add(Turnover(amount, timestamp, source, descKey, args))
             }
             list
         } else {
-            val list = ArrayList<Turnover>(firstInt)
-            for (i in 0 until firstInt) {
+            val size = requireCount(firstInt, "legacy turnover")
+            val list = ArrayList<Turnover>(size)
+            for (i in 0 until size) {
                 val amount = stream.readLong()
                 val timestamp = stream.readLong()
                 list.add(Turnover(amount, timestamp))
