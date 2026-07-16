@@ -128,7 +128,7 @@ object CommunityDatabase {
     private fun loadFramedSection(tag: Int, stream: DataInputStream): Boolean {
         return when (tag) {
             SECTION_PENDING_OPERATIONS -> {
-                loadPendingOperations(stream)
+                loadPendingOperations(stream, strict = true)
                 true
             }
             SECTION_NAME_CHANGE_COOLDOWNS -> {
@@ -498,7 +498,11 @@ object CommunityDatabase {
         }
     }
 
-    private fun loadPendingOperations(stream: DataInputStream, firstStoredInt: Int? = null) {
+    private fun loadPendingOperations(
+        stream: DataInputStream,
+        firstStoredInt: Int? = null,
+        strict: Boolean = false
+    ) {
         try {
             val firstInt = firstStoredInt ?: stream.readInt()
             val version = if (firstInt == PENDING_SECTION_VERSION_MARKER) stream.readInt() else 1
@@ -537,6 +541,7 @@ object CommunityDatabase {
             }
         } catch (e: Exception) {
             com.imyvm.community.WorldGeoCommunityAddon.logger.error("Failed to load pending operations: ${e.message}")
+            if (strict) throw e
         }
     }
 
