@@ -2,6 +2,7 @@ package com.imyvm.community.application.interaction.screen.inner_community.admin
 
 import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.application.event.addPendingOperation
+import com.imyvm.community.application.interaction.common.saveCommunityDatabaseOrRollback
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.PendingOperationType
@@ -27,6 +28,7 @@ import net.minecraft.network.chat.Component
 import com.imyvm.community.application.event.getPendingOperation
 import com.imyvm.community.application.event.hasPendingOperation
 import com.imyvm.community.application.event.removePendingOperation
+import com.imyvm.community.application.event.restorePendingOperation
 
 fun getTeleportPointInformationItemStack(
     item: Item,
@@ -235,14 +237,28 @@ fun onConfirmTeleportPointSetting(playerExecutor: ServerPlayer, regionNumberId: 
         return 0
     }
 
+    val oldPoint = PlayerInteractionApi.getTeleportPoint(scope)
     val result = PlayerInteractionApi.addTeleportPoint(playerExecutor, region, scope)
-    removePendingOperation(regionNumberId, PendingOperationType.TELEPORT_POINT_CONFIRMATION)
-    if (result == 0) return 0
-
-    if (request.cost > 0) {
-        community.expenditures.add(Turnover(request.cost, System.currentTimeMillis(), TurnoverSource.SYSTEM, "community.treasury.desc.teleport_point", listOf(scope.scopeName)))
+    val removedPending = removePendingOperation(regionNumberId, PendingOperationType.TELEPORT_POINT_CONFIRMATION)
+    if (result == 0) {
+        removedPending?.let { restorePendingOperation(regionNumberId, PendingOperationType.TELEPORT_POINT_CONFIRMATION, it) }
+        return 0
     }
-    CommunityDatabase.save()
+
+    val expenditure = if (request.cost > 0) {
+        Turnover(request.cost, System.currentTimeMillis(), TurnoverSource.SYSTEM, "community.treasury.desc.teleport_point", listOf(scope.scopeName))
+            .also { community.expenditures.add(it) }
+    } else null
+    val operationName = Translator.tr("community.operation.teleport_point_set", scope.scopeName).string
+    if (!saveCommunityDatabaseOrRollback(
+            player = playerExecutor,
+            operationName = operationName,
+            restoreCommunityState = {
+                expenditure?.let { community.expenditures.remove(it) }
+                removedPending?.let { restorePendingOperation(regionNumberId, PendingOperationType.TELEPORT_POINT_CONFIRMATION, it) }
+            },
+            rollbackCoreState = { restoreTeleportPoint(playerExecutor, region, scope, oldPoint) }
+        )) return 0
 
     val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
     val costText = String.format("%.2f", request.cost / 100.0)
@@ -294,8 +310,11 @@ fun runResetTeleportPoint(playerExecutor: ServerPlayer, community: Community, sc
 
         val region = community.getRegion()
         if (region != null) {
-            PlayerInteractionApi.resetTeleportPoint(playerExecutor, region, scope)
+            val oldPoint = PlayerInteractionApi.getTeleportPoint(scope)
+            val result = PlayerInteractionApi.resetTeleportPoint(playerExecutor, region, scope)
+            if (result == 0) return@executeWithPermission
 
+            val mailSnapshots = community.member.mapValues { it.value.mail.toList() }
             val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
             val notification = com.imyvm.community.util.Translator.tr(
                 "community.notification.teleport_point_reset",
@@ -305,7 +324,18 @@ fun runResetTeleportPoint(playerExecutor: ServerPlayer, community: Community, sc
             ) ?: net.minecraft.network.chat.Component.literal("Teleport point for scope ${scope.scopeName} was reset in $communityName by ${playerExecutor.name.string}")
             com.imyvm.community.application.interaction.common.notifyOfficials(community, playerExecutor.level().server, notification, playerExecutor)
 
-            com.imyvm.community.infra.CommunityDatabase.save()
+            val operationName = Translator.tr("community.operation.teleport_point_reset", scope.scopeName).string
+            saveCommunityDatabaseOrRollback(
+                player = playerExecutor,
+                operationName = operationName,
+                restoreCommunityState = {
+                    community.member.forEach { (uuid, account) ->
+                        account.mail.clear()
+                        mailSnapshots[uuid]?.let { account.mail.addAll(it) }
+                    }
+                },
+                rollbackCoreState = { restoreTeleportPoint(playerExecutor, region, scope, oldPoint) }
+            )
         } else {
             playerExecutor.sendSystemMessage(Translator.tr("community.not_found.region"))
         }
@@ -319,6 +349,19 @@ fun runTeleportToPoint(playerExecutor: ServerPlayer, community: Community, scope
         community = community,
         scope = scope
     )
+}
+
+private fun restoreTeleportPoint(
+    player: ServerPlayer,
+    region: Region,
+    scope: GeoScope,
+    oldPoint: net.minecraft.core.BlockPos?
+) {
+    if (oldPoint == null) {
+        PlayerInteractionApi.resetTeleportPoint(player, region, scope)
+    } else {
+        PlayerInteractionApi.addTeleportPoint(player, region, scope, oldPoint.x, oldPoint.y, oldPoint.z)
+    }
 }
 
 private fun calculateTeleportPointSettingCost(region: Region, scope: GeoScope): Pair<Long, String> {

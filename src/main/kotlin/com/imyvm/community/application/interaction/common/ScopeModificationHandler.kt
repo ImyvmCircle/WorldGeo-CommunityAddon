@@ -12,11 +12,13 @@ import com.imyvm.community.util.Translator
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.inter.api.PlayerInteractionApi
 import com.imyvm.iwg.inter.api.RegionDataApi
+import com.imyvm.iwg.infra.RegionDatabase
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.network.chat.Component
 import com.imyvm.community.application.event.getPendingOperation
 import com.imyvm.community.application.event.removePendingOperation
+import com.imyvm.community.application.event.restorePendingOperation
 
 private fun getAndValidatePendingOperation(player: ServerPlayer, regionNumberId: Int, scopeName: String): com.imyvm.community.domain.model.PendingOperation? {
     val pendingOp = getPendingOperation(regionNumberId, PendingOperationType.MODIFY_SCOPE_CONFIRMATION)
@@ -82,18 +84,27 @@ fun onConfirmScopeModification(player: ServerPlayer, regionNumberId: Int, scopeN
             PlayerInteractionApi.toggleTeleportPointAccessibility(createdScope)
         }
 
-        if (modificationData.cost > 0) {
-            community.expenditures.add(Turnover(
+        val expenditure = if (modificationData.cost > 0) {
+            Turnover(
                 amount = modificationData.cost,
                 timestamp = System.currentTimeMillis(),
                 source = TurnoverSource.SYSTEM,
                 descriptionKey = "community.treasury.desc.scope_creation",
                 descriptionArgs = listOf(scopeName)
-            ))
-        }
+            ).also { community.expenditures.add(it) }
+        } else null
 
-        removePendingOperation(regionNumberId, PendingOperationType.MODIFY_SCOPE_CONFIRMATION)
-        CommunityDatabase.save()
+        val removedPending = removePendingOperation(regionNumberId, PendingOperationType.MODIFY_SCOPE_CONFIRMATION)
+        val operationName = Translator.tr("community.operation.scope_creation", scopeName).string
+        if (!saveCommunityDatabaseOrRollback(
+                player = player,
+                operationName = operationName,
+                restoreCommunityState = {
+                    expenditure?.let { community.expenditures.remove(it) }
+                    removedPending?.let { restorePendingOperation(regionNumberId, PendingOperationType.MODIFY_SCOPE_CONFIRMATION, it) }
+                },
+                rollbackCoreState = { PlayerInteractionApi.deleteScope(player, communityRegion, createdScope.scopeName) }
+            )) return 0
 
         val costDisplay = String.format("%.2f", modificationData.cost / 100.0)
         val shapeText = when (shapeName.uppercase()) {
@@ -128,37 +139,57 @@ fun onConfirmScopeModification(player: ServerPlayer, regionNumberId: Int, scopeN
         return 1
     }
 
-    PlayerInteractionApi.modifyScope(player, communityRegion, scopeName)
-    if (ImyvmWorldGeo.pointSelectingPlayers.containsKey(player.uuid)) {
+    val scopeBeforeModification = communityRegion.geometryScope.firstOrNull { it.scopeName.equals(scopeName, ignoreCase = true) }
+    val oldShape = scopeBeforeModification?.geoShape
+    val modificationResult = PlayerInteractionApi.modifyScope(player, communityRegion, scopeName)
+    if (modificationResult == 0 || ImyvmWorldGeo.pointSelectingPlayers.containsKey(player.uuid)) {
         removePendingOperation(regionNumberId, PendingOperationType.MODIFY_SCOPE_CONFIRMATION)
         return 0
     }
 
+    var expenditure: Turnover? = null
+    var refundTurnover: Turnover? = null
+    var refundOwnerAccount: com.imyvm.community.domain.model.MemberAccount? = null
     if (modificationData.cost > 0) {
-        community.expenditures.add(Turnover(
+        expenditure = Turnover(
             amount = modificationData.cost,
             timestamp = System.currentTimeMillis(),
             source = TurnoverSource.SYSTEM,
             descriptionKey = "community.treasury.desc.scope_modification",
             descriptionArgs = listOf(scopeName)
-        ))
+        ).also { community.expenditures.add(it) }
     } else if (modificationData.cost < 0) {
         val refundAmount = -modificationData.cost
         val ownerUUID = community.getOwnerUUID()
         if (ownerUUID != null) {
-            val ownerAccount = community.member[ownerUUID]
-            ownerAccount?.turnover?.add(Turnover(
+            refundOwnerAccount = community.member[ownerUUID]
+            refundTurnover = Turnover(
                 amount = refundAmount,
                 timestamp = System.currentTimeMillis(),
                 source = TurnoverSource.SYSTEM,
                 descriptionKey = "community.treasury.desc.scope_refund",
                 descriptionArgs = listOf(scopeName)
-            ))
+            ).also { refundOwnerAccount?.turnover?.add(it) }
         }
     }
 
-    removePendingOperation(regionNumberId, PendingOperationType.MODIFY_SCOPE_CONFIRMATION)
-    CommunityDatabase.save()
+    val removedPending = removePendingOperation(regionNumberId, PendingOperationType.MODIFY_SCOPE_CONFIRMATION)
+    val operationName = Translator.tr("community.operation.scope_modification", scopeName).string
+    if (!saveCommunityDatabaseOrRollback(
+            player = player,
+            operationName = operationName,
+            restoreCommunityState = {
+                expenditure?.let { community.expenditures.remove(it) }
+                refundTurnover?.let { refundOwnerAccount?.turnover?.remove(it) }
+                removedPending?.let { restorePendingOperation(regionNumberId, PendingOperationType.MODIFY_SCOPE_CONFIRMATION, it) }
+            },
+            rollbackCoreState = {
+                if (scopeBeforeModification != null && oldShape != null) {
+                    scopeBeforeModification.geoShape = oldShape
+                    RegionDatabase.save()
+                }
+            }
+        )) return 0
 
     val costDisplay = String.format("%.2f", Math.abs(modificationData.cost) / 100.0)
 
@@ -246,22 +277,38 @@ fun onConfirmScopeDeletion(player: ServerPlayer, regionNumberId: Int, scopeName:
         return 0
     }
 
+    val scopesBeforeDeletion = communityRegion.geometryScope.toList()
+    val scopeToDelete = scopesBeforeDeletion.firstOrNull { it.scopeName.equals(scopeName, ignoreCase = true) } ?: return 0
     PlayerInteractionApi.deleteScope(player, communityRegion, scopeName)
 
+    var refundTurnover: Turnover? = null
+    var refundOwnerAccount: com.imyvm.community.domain.model.MemberAccount? = null
     if (modificationData.cost < 0) {
         val refundAmount = -modificationData.cost
         val ownerUUID = community.getOwnerUUID()
         if (ownerUUID != null) {
-            val ownerAccount = community.member[ownerUUID]
-            ownerAccount?.turnover?.add(Turnover(
+            refundOwnerAccount = community.member[ownerUUID]
+            refundTurnover = Turnover(
                 amount = refundAmount,
                 timestamp = System.currentTimeMillis()
-            ))
+            ).also { refundOwnerAccount?.turnover?.add(it) }
         }
     }
 
-    removePendingOperation(regionNumberId, PendingOperationType.DELETE_SCOPE_CONFIRMATION)
-    CommunityDatabase.save()
+    val removedPending = removePendingOperation(regionNumberId, PendingOperationType.DELETE_SCOPE_CONFIRMATION)
+    val operationName = Translator.tr("community.operation.scope_deletion", scopeName).string
+    if (!saveCommunityDatabaseOrRollback(
+            player = player,
+            operationName = operationName,
+            restoreCommunityState = {
+                refundTurnover?.let { refundOwnerAccount?.turnover?.remove(it) }
+                removedPending?.let { restorePendingOperation(regionNumberId, PendingOperationType.DELETE_SCOPE_CONFIRMATION, it) }
+            },
+            rollbackCoreState = {
+                communityRegion.geometryScope = scopesBeforeDeletion.toMutableList()
+                RegionDatabase.save()
+            }
+        )) return 0
 
     val refundDisplay = String.format("%.2f", Math.abs(modificationData.cost) / 100.0)
     player.sendSystemMessage(Translator.tr("community.scope_delete.success", scopeName, refundDisplay))
@@ -352,11 +399,21 @@ fun onAcceptTerritoryGrant(player: ServerPlayer, sourceRegionId: Int, scopeName:
         return 0
     }
 
+    val scopeToTransfer = sourceRegion.geometryScope.firstOrNull { it.scopeName.equals(scopeName, ignoreCase = true) } ?: return 0
     val result = PlayerInteractionApi.transferScope(player, sourceRegion, scopeName, targetRegion)
     if (result == 0) return 0
 
-    removePendingOperation(sourceRegionId, PendingOperationType.TRANSFER_SCOPE_CONFIRMATION)
-    CommunityDatabase.save()
+    val transferredScopeName = scopeToTransfer.scopeName
+    val removedPending = removePendingOperation(sourceRegionId, PendingOperationType.TRANSFER_SCOPE_CONFIRMATION)
+    val operationName = Translator.tr("community.operation.scope_transfer", scopeName).string
+    if (!saveCommunityDatabaseOrRollback(
+            player = player,
+            operationName = operationName,
+            restoreCommunityState = {
+                removedPending?.let { restorePendingOperation(sourceRegionId, PendingOperationType.TRANSFER_SCOPE_CONFIRMATION, it) }
+            },
+            rollbackCoreState = { PlayerInteractionApi.transferScope(player, targetRegion, transferredScopeName, sourceRegion) }
+        )) return 0
 
     val sourceName = sourceCommunity.generateCommunityMark()
     val targetName = targetCommunity.generateCommunityMark()
