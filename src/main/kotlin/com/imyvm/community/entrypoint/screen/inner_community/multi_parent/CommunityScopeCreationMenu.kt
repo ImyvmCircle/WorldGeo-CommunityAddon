@@ -19,7 +19,7 @@ import net.minecraft.network.chat.Component
 class CommunityScopeCreationMenu(
     syncId: Int,
     val community: Community,
-    val currentName: String = Translator.tr("ui.admin.region.global.add.default_name").string ?: "New-District",
+    val currentName: String = Translator.trStringOrFallback("ui.admin.region.global.add.default_name", "New-District"),
     val playerExecutor: ServerPlayer,
     val runBack: (ServerPlayer) -> Unit
 ) : AbstractMenu(
@@ -39,24 +39,24 @@ class CommunityScopeCreationMenu(
         if (isSelectionModeEnabled) {
             addButton(
                 slot = 10,
-                name = Translator.tr("ui.create.button.selection_mode.enable").string ?: "Selection Mode: On",
+                name = Translator.trStringOrFallback("ui.create.button.selection_mode.enable", "Selection Mode: On"),
                 item = Items.COMMAND_BLOCK
             ) { runToggleSelectionModeInScopeCreation(it, community, currentName, runBack) }
 
             addButton(
                 slot = 19,
-                name = Translator.tr("ui.main.button.selection_mode.reset").string ?: "Reset Point Selection",
+                name = Translator.trStringOrFallback("ui.main.button.selection_mode.reset", "Reset Point Selection"),
                 item = Items.TNT
             ) { runResetSelectionInScopeCreation(it, community, currentName, runBack) }
 
             if (isNormalSelectionMode) {
                 addButton(
                     slot = 12,
-                    name = (Translator.tr("ui.create.button.shape.prefix").string ?: "Current Shape(Click to change):")
+                    name = (Translator.trStringOrFallback("ui.create.button.shape.prefix", "Current Shape(Click to change):"))
                             + when (currentShape) {
-                                GeoShapeType.CIRCLE -> Translator.tr("community.shape.circle").string ?: "circle"
-                                GeoShapeType.POLYGON -> Translator.tr("community.shape.polygon").string ?: "polygon"
-                                else -> Translator.tr("community.shape.rectangle").string ?: "rectangle"
+                                GeoShapeType.CIRCLE -> Translator.trStringOrFallback("community.shape.circle", "circle")
+                                GeoShapeType.POLYGON -> Translator.trStringOrFallback("community.shape.polygon", "polygon")
+                                else -> Translator.trStringOrFallback("community.shape.rectangle", "rectangle")
                             },
                     item = when (currentShape) {
                         GeoShapeType.CIRCLE -> Items.CLOCK
@@ -68,14 +68,14 @@ class CommunityScopeCreationMenu(
 
                 addButton(
                     slot = 14,
-                    name = Translator.tr("ui.create.button.exit_to_select").string ?: "Exit Menu to Start Selecting",
+                    name = Translator.trStringOrFallback("ui.create.button.exit_to_select", "Exit Menu to Start Selecting"),
                     item = Items.ENDER_PEARL
                 ) { p -> p.closeContainer() }
             }
         } else {
             addButton(
                 slot = 10,
-                name = Translator.tr("ui.create.button.selection_mode.disable").string ?: "Selection Mode: Off",
+                name = Translator.trStringOrFallback("ui.create.button.selection_mode.disable", "Selection Mode: Off"),
                 item = Items.REDSTONE_BLOCK
             ) { runToggleSelectionModeInScopeCreation(it, community, currentName, runBack) }
         }
@@ -89,7 +89,7 @@ class CommunityScopeCreationMenu(
 
             addButton(
                 slot = 34,
-                name = Translator.tr("ui.admin.region.global.add.confirm").string ?: "Confirm District Creation",
+                name = Translator.trStringOrFallback("ui.admin.region.global.add.confirm", "Confirm District Creation"),
                 item = Items.EMERALD_BLOCK
             ) { runConfirmScopeCreationFromSelection(it, community, currentName) }
         }
@@ -106,16 +106,16 @@ class CommunityScopeCreationMenu(
             val isNormalSelectionMode = selectionState != null && hypotheticalShape is HypotheticalShape.Normal
             val pointCount = selectionState?.points?.size ?: 0
             val communityMark = community.generateCommunityMark()
-            val addTitle = Translator.tr("ui.admin.region.global.add.title").string ?: "Add"
+            val addTitle = Translator.trStringOrFallback("ui.admin.region.global.add.title", "Add")
             if (selectionState == null) {
-                val hint = Translator.tr("ui.admin.region.global.add.hint.start").string ?: "→ Enable Mode"
+                val hint = Translator.trStringOrFallback("ui.admin.region.global.add.hint.start", "→ Enable Mode")
                 return Component.literal("$communityMark | $addTitle $hint")
             }
             if (!isNormalSelectionMode || pointCount < 2) {
-                val hint = Translator.tr("ui.admin.region.global.add.hint.select").string ?: "→ Select Points"
+                val hint = Translator.trStringOrFallback("ui.admin.region.global.add.hint.select", "→ Select Points")
                 return Component.literal("$communityMark | $addTitle $hint")
             }
-            val currentShape = (hypotheticalShape as HypotheticalShape.Normal).shapeType
+            val currentShape = hypotheticalShape.shapeType
             val existingScopeNames = community.getRegion()?.geometryScope?.map { it.scopeName }?.toSet() ?: emptySet()
             val error = generateScopeCreationError(currentName, currentShape, playerEntity, existingScopeNames)
             return Component.literal("$communityMark | $currentName" + if (error.isNotEmpty()) " ($error)" else "")

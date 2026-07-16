@@ -31,8 +31,7 @@ class CommunityScopeCreationRenameMenuAnvil(
     }
 
     override fun getMenuTitle(): Component {
-        val base = Translator.tr("ui.admin.region.global.add.rename.title")
-            ?: Component.literal("Rename Administrative District")
+        val base = Translator.trOrFallback("ui.admin.region.global.add.rename.title", "Rename Administrative District")
         return buildTitle(base)
     }
 }

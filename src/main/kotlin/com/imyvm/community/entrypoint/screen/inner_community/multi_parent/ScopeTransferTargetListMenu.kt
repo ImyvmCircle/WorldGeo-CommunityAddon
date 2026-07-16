@@ -19,11 +19,12 @@ class ScopeTransferTargetListMenu(
     private val onCommunitySelected: (ServerPlayer, Community) -> Unit
 ) : AbstractListMenu(
     syncId = syncId,
-    menuTitle = Translator.tr(
+    menuTitle = Translator.trOrFallback(
         "ui.scope_transfer.target.title",
+        "Transfer: ${scope.scopeName} → Select Community",
         sourceCommunity.generateCommunityMark(),
         scope.scopeName
-    ) ?: Component.literal("Transfer: ${scope.scopeName} → Select Community"),
+    ),
     page = page,
     runBack = runBack
 ) {
@@ -44,8 +45,8 @@ class ScopeTransferTargetListMenu(
         handlePageWithSize(targetCommunities.size, communitiesPerPage)
     }
 
-    override fun openNewPage(playerExecutor: ServerPlayer, newPage: Int) {
-        CommunityMenuOpener.open(playerExecutor) { syncId ->
+    override fun openNewPage(player: ServerPlayer, newPage: Int) {
+        CommunityMenuOpener.open(player) { syncId ->
             ScopeTransferTargetListMenu(
                 syncId = syncId,
                 sourceCommunity = sourceCommunity,
