@@ -27,28 +27,35 @@ fun onForceDeleteCommunity(player: ServerPlayer, targetCommunity: Community): In
             .filterKeys { pendingOperationSubjectId(it) == regionId }
             .toMap()
     }
-    removePendingOperationsForSubject(regionId)
-
     val region = regionId?.let { RegionDataApi.getRegion(it) }
-    if (region != null) {
-        PlayerInteractionApi.deleteRegion(player, region)
-    }
 
+    removePendingOperationsForSubject(regionId)
     CommunityDatabase.removeCommunity(targetCommunity)
     try {
         CommunityDatabase.save()
     } catch (e: Exception) {
-        if (!CommunityDatabase.communities.contains(targetCommunity)) {
-            if (communityIndex in 0..CommunityDatabase.communities.size) {
-                CommunityDatabase.communities.add(communityIndex, targetCommunity)
-            } else {
-                CommunityDatabase.communities.add(targetCommunity)
-            }
-        }
-        WorldGeoCommunityAddon.pendingOperations.putAll(removedPending)
+        restoreForceDeletedCommunity(targetCommunity, communityIndex, removedPending)
         WorldGeoCommunityAddon.logger.error("Failed to save forced community deletion for region $regionId", e)
         player.sendSystemMessage(Translator.tr("community.operation.save_failed", "force_delete"))
         return 0
+    }
+
+    if (region != null) {
+        try {
+            PlayerInteractionApi.deleteRegion(player, region)
+            if (RegionDataApi.getRegion(regionId) != null) {
+                throw IllegalStateException("Core region $regionId still exists after forced deletion")
+            }
+        } catch (e: Exception) {
+            restoreForceDeletedCommunity(targetCommunity, communityIndex, removedPending)
+            runCatching { CommunityDatabase.save() }
+                .onFailure { restoreError ->
+                    WorldGeoCommunityAddon.logger.error("Failed to restore addon state after forced deletion rollback for region $regionId", restoreError)
+                }
+            WorldGeoCommunityAddon.logger.error("Failed to delete Core region for forced community deletion: $regionId", e)
+            player.sendSystemMessage(Translator.tr("community.operation.save_failed", "force_delete"))
+            return 0
+        }
     }
 
     if (region != null) {
@@ -60,6 +67,21 @@ fun onForceDeleteCommunity(player: ServerPlayer, targetCommunity: Community): In
     }
 
     return 1
+}
+
+private fun restoreForceDeletedCommunity(
+    targetCommunity: Community,
+    communityIndex: Int,
+    removedPending: Map<Long, com.imyvm.community.domain.model.PendingOperation>
+) {
+    if (!CommunityDatabase.communities.contains(targetCommunity)) {
+        if (communityIndex in 0..CommunityDatabase.communities.size) {
+            CommunityDatabase.communities.add(communityIndex, targetCommunity)
+        } else {
+            CommunityDatabase.communities.add(targetCommunity)
+        }
+    }
+    WorldGeoCommunityAddon.pendingOperations.putAll(removedPending)
 }
 
 fun onAudit(player: ServerPlayer, choice: String, targetCommunity: Community): Int {
