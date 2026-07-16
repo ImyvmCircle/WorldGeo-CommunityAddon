@@ -1,7 +1,15 @@
 package com.imyvm.community.infra
 
 import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.CreationConfirmationData
 import com.imyvm.community.domain.model.MemberAccount
+import com.imyvm.community.domain.model.PendingOperation
+import com.imyvm.community.domain.model.RenameConfirmationData
+import com.imyvm.community.domain.model.ScopeModificationConfirmationData
+import com.imyvm.community.domain.model.ScopeTransferConfirmationData
+import com.imyvm.community.domain.model.SettingConfirmationData
+import com.imyvm.community.domain.model.TeleportPointConfirmationData
+import com.imyvm.community.domain.model.TreasuryGrantConfirmationData
 import com.imyvm.community.domain.model.Turnover
 import com.imyvm.community.domain.model.TurnoverSource
 import com.imyvm.community.domain.model.community.*
@@ -18,6 +26,8 @@ import java.util.*
 object CommunityDatabase {
 
     private const val DATABASE_FILENAME = "iwg_community.db"
+    private const val PENDING_SECTION_VERSION_MARKER = -2
+    private const val PENDING_SECTION_VERSION = 2
     lateinit var communities: MutableList<Community>
 
     @Throws(IOException::class)
@@ -365,95 +375,239 @@ object CommunityDatabase {
     
     private fun savePendingOperations(stream: DataOutputStream) {
         val ops = com.imyvm.community.WorldGeoCommunityAddon.pendingOperations
+        stream.writeInt(PENDING_SECTION_VERSION_MARKER)
+        stream.writeInt(PENDING_SECTION_VERSION)
         stream.writeInt(ops.size)
         for ((regionId, operation) in ops) {
             stream.writeInt(regionId)
             stream.writeLong(operation.expireAt)
             stream.writeInt(operation.type.value)
-
-            val hasInviter = operation.inviterUUID != null
-            stream.writeBoolean(hasInviter)
-            if (hasInviter) {
-                stream.writeUTF(operation.inviterUUID.toString())
-            }
-
-            val hasInvitee = operation.inviteeUUID != null
-            stream.writeBoolean(hasInvitee)
-            if (hasInvitee) {
-                stream.writeUTF(operation.inviteeUUID.toString())
-            }
-
-            val hasCreationData = operation.creationData != null
-            stream.writeBoolean(hasCreationData)
-            if (hasCreationData) {
-                val data = operation.creationData!!
-                stream.writeUTF(data.communityName)
-                stream.writeUTF(data.communityType)
-                stream.writeUTF(data.shapeName)
-                stream.writeInt(data.regionNumberId)
-                stream.writeUTF(data.creatorUUID.toString())
-                stream.writeLong(data.totalCost)
-            }
-
+            writeNullableUUID(stream, operation.inviterUUID)
+            writeNullableUUID(stream, operation.inviteeUUID)
+            writeCreationData(stream, operation.creationData)
+            writeScopeModificationData(stream, operation.modificationData)
+            writeTeleportPointData(stream, operation.teleportPointData)
+            writeSettingData(stream, operation.settingData)
+            writeRenameData(stream, operation.renameData)
+            writeScopeTransferData(stream, operation.transferData)
+            writeTreasuryGrantData(stream, operation.treasuryGrantData)
         }
     }
-    
+
     private fun loadPendingOperations(stream: DataInputStream) {
         try {
-            val size = stream.readInt()
+            val firstInt = stream.readInt()
+            val version = if (firstInt == PENDING_SECTION_VERSION_MARKER) stream.readInt() else 1
+            val size = if (version == 1) firstInt else stream.readInt()
             com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.clear()
-            
+
             for (i in 0 until size) {
                 val regionId = stream.readInt()
                 val expireAt = stream.readLong()
                 val type = com.imyvm.community.domain.model.PendingOperationType.fromValue(stream.readInt())
+                val inviterUUID = readNullableUUID(stream)
+                val inviteeUUID = readNullableUUID(stream)
+                val creationData = readCreationData(stream)
+                val modificationData = if (version >= 2) readScopeModificationData(stream) else null
+                val teleportPointData = if (version >= 2) readTeleportPointData(stream) else null
+                val settingData = if (version >= 2) readSettingData(stream) else null
+                val renameData = if (version >= 2) readRenameData(stream) else null
+                val transferData = if (version >= 2) readScopeTransferData(stream) else null
+                val treasuryGrantData = if (version >= 2) readTreasuryGrantData(stream) else null
 
-                val hasInviter = stream.readBoolean()
-                val inviterUUID = if (hasInviter) {
-                    UUID.fromString(stream.readUTF())
-                } else {
-                    null
-                }
-
-                val hasInvitee = stream.readBoolean()
-                val inviteeUUID = if (hasInvitee) {
-                    UUID.fromString(stream.readUTF())
-                } else {
-                    null
-                }
-
-                val hasCreationData = stream.readBoolean()
-                val creationData = if (hasCreationData) {
-                    val communityName = stream.readUTF()
-                    val communityType = stream.readUTF()
-                    val shapeName = stream.readUTF()
-                    val creationRegionId = stream.readInt()
-                    val creatorUUID = UUID.fromString(stream.readUTF())
-                    val totalCost = stream.readLong()
-                    com.imyvm.community.domain.model.CreationConfirmationData(
-                        communityName = communityName,
-                        communityType = communityType,
-                        shapeName = shapeName,
-                        regionNumberId = creationRegionId,
-                        creatorUUID = creatorUUID,
-                        totalCost = totalCost
-                    )
-                } else {
-                    null
-                }
-
-                val operation = com.imyvm.community.domain.model.PendingOperation(
+                val operation = PendingOperation(
                     expireAt = expireAt,
                     type = type,
                     inviterUUID = inviterUUID,
                     inviteeUUID = inviteeUUID,
-                    creationData = creationData
+                    creationData = creationData,
+                    modificationData = modificationData,
+                    teleportPointData = teleportPointData,
+                    settingData = settingData,
+                    renameData = renameData,
+                    transferData = transferData,
+                    treasuryGrantData = treasuryGrantData
                 )
                 com.imyvm.community.WorldGeoCommunityAddon.pendingOperations[regionId] = operation
             }
         } catch (e: Exception) {
             com.imyvm.community.WorldGeoCommunityAddon.logger.error("Failed to load pending operations: ${e.message}")
         }
+    }
+
+    private fun writeNullableUUID(stream: DataOutputStream, uuid: UUID?) {
+        stream.writeBoolean(uuid != null)
+        if (uuid != null) stream.writeUTF(uuid.toString())
+    }
+
+    private fun readNullableUUID(stream: DataInputStream): UUID? {
+        return if (stream.readBoolean()) UUID.fromString(stream.readUTF()) else null
+    }
+
+    private fun writeNullableString(stream: DataOutputStream, value: String?) {
+        stream.writeBoolean(value != null)
+        if (value != null) stream.writeUTF(value)
+    }
+
+    private fun readNullableString(stream: DataInputStream): String? {
+        return if (stream.readBoolean()) stream.readUTF() else null
+    }
+
+    private fun writeCreationData(stream: DataOutputStream, data: CreationConfirmationData?) {
+        stream.writeBoolean(data != null)
+        if (data == null) return
+        stream.writeUTF(data.communityName)
+        stream.writeUTF(data.communityType)
+        stream.writeUTF(data.shapeName)
+        stream.writeInt(data.regionNumberId)
+        stream.writeUTF(data.creatorUUID.toString())
+        stream.writeLong(data.totalCost)
+    }
+
+    private fun readCreationData(stream: DataInputStream): CreationConfirmationData? {
+        if (!stream.readBoolean()) return null
+        return CreationConfirmationData(
+            communityName = stream.readUTF(),
+            communityType = stream.readUTF(),
+            shapeName = stream.readUTF(),
+            regionNumberId = stream.readInt(),
+            creatorUUID = UUID.fromString(stream.readUTF()),
+            totalCost = stream.readLong()
+        )
+    }
+
+    private fun writeScopeModificationData(stream: DataOutputStream, data: ScopeModificationConfirmationData?) {
+        stream.writeBoolean(data != null)
+        if (data == null) return
+        stream.writeInt(data.regionNumberId)
+        stream.writeUTF(data.scopeName)
+        stream.writeUTF(data.executorUUID.toString())
+        stream.writeLong(data.cost)
+        stream.writeBoolean(data.isScopeCreation)
+        writeNullableString(stream, data.shapeName)
+        stream.writeLong(data.softLimitSurcharge)
+        stream.writeBoolean(data.isScopeDeletion)
+    }
+
+    private fun readScopeModificationData(stream: DataInputStream): ScopeModificationConfirmationData? {
+        if (!stream.readBoolean()) return null
+        return ScopeModificationConfirmationData(
+            regionNumberId = stream.readInt(),
+            scopeName = stream.readUTF(),
+            executorUUID = UUID.fromString(stream.readUTF()),
+            cost = stream.readLong(),
+            isScopeCreation = stream.readBoolean(),
+            shapeName = readNullableString(stream),
+            softLimitSurcharge = stream.readLong(),
+            isScopeDeletion = stream.readBoolean()
+        )
+    }
+
+    private fun writeTeleportPointData(stream: DataOutputStream, data: TeleportPointConfirmationData?) {
+        stream.writeBoolean(data != null)
+        if (data == null) return
+        stream.writeInt(data.regionNumberId)
+        stream.writeUTF(data.scopeName)
+        stream.writeUTF(data.executorUUID.toString())
+        stream.writeLong(data.cost)
+        stream.writeUTF(data.reasonKey)
+    }
+
+    private fun readTeleportPointData(stream: DataInputStream): TeleportPointConfirmationData? {
+        if (!stream.readBoolean()) return null
+        return TeleportPointConfirmationData(
+            regionNumberId = stream.readInt(),
+            scopeName = stream.readUTF(),
+            executorUUID = UUID.fromString(stream.readUTF()),
+            cost = stream.readLong(),
+            reasonKey = stream.readUTF()
+        )
+    }
+
+    private fun writeSettingData(stream: DataOutputStream, data: SettingConfirmationData?) {
+        stream.writeBoolean(data != null)
+        if (data == null) return
+        stream.writeInt(data.regionNumberId)
+        writeNullableString(stream, data.scopeName)
+        stream.writeUTF(data.executorUUID.toString())
+        stream.writeUTF(data.permissionKeyStr)
+        stream.writeBoolean(data.newValue)
+        writeNullableUUID(stream, data.targetPlayerUUID)
+        stream.writeLong(data.cost)
+        stream.writeBoolean(data.isRuleSetting)
+    }
+
+    private fun readSettingData(stream: DataInputStream): SettingConfirmationData? {
+        if (!stream.readBoolean()) return null
+        return SettingConfirmationData(
+            regionNumberId = stream.readInt(),
+            scopeName = readNullableString(stream),
+            executorUUID = UUID.fromString(stream.readUTF()),
+            permissionKeyStr = stream.readUTF(),
+            newValue = stream.readBoolean(),
+            targetPlayerUUID = readNullableUUID(stream),
+            cost = stream.readLong(),
+            isRuleSetting = stream.readBoolean()
+        )
+    }
+
+    private fun writeRenameData(stream: DataOutputStream, data: RenameConfirmationData?) {
+        stream.writeBoolean(data != null)
+        if (data == null) return
+        stream.writeInt(data.regionNumberId)
+        stream.writeUTF(data.nameKey)
+        stream.writeUTF(data.newName)
+        stream.writeUTF(data.executorUUID.toString())
+        stream.writeLong(data.cost)
+    }
+
+    private fun readRenameData(stream: DataInputStream): RenameConfirmationData? {
+        if (!stream.readBoolean()) return null
+        return RenameConfirmationData(
+            regionNumberId = stream.readInt(),
+            nameKey = stream.readUTF(),
+            newName = stream.readUTF(),
+            executorUUID = UUID.fromString(stream.readUTF()),
+            cost = stream.readLong()
+        )
+    }
+
+    private fun writeScopeTransferData(stream: DataOutputStream, data: ScopeTransferConfirmationData?) {
+        stream.writeBoolean(data != null)
+        if (data == null) return
+        stream.writeInt(data.sourceRegionNumberId)
+        stream.writeUTF(data.scopeName)
+        stream.writeUTF(data.executorUUID.toString())
+        stream.writeInt(data.targetRegionNumberId)
+    }
+
+    private fun readScopeTransferData(stream: DataInputStream): ScopeTransferConfirmationData? {
+        if (!stream.readBoolean()) return null
+        return ScopeTransferConfirmationData(
+            sourceRegionNumberId = stream.readInt(),
+            scopeName = stream.readUTF(),
+            executorUUID = UUID.fromString(stream.readUTF()),
+            targetRegionNumberId = stream.readInt()
+        )
+    }
+
+    private fun writeTreasuryGrantData(stream: DataOutputStream, data: TreasuryGrantConfirmationData?) {
+        stream.writeBoolean(data != null)
+        if (data == null) return
+        stream.writeInt(data.sourceRegionNumberId)
+        stream.writeInt(data.targetRegionNumberId)
+        stream.writeUTF(data.executorUUID.toString())
+        stream.writeLong(data.amount)
+    }
+
+    private fun readTreasuryGrantData(stream: DataInputStream): TreasuryGrantConfirmationData? {
+        if (!stream.readBoolean()) return null
+        return TreasuryGrantConfirmationData(
+            sourceRegionNumberId = stream.readInt(),
+            targetRegionNumberId = stream.readInt(),
+            executorUUID = UUID.fromString(stream.readUTF()),
+            amount = stream.readLong()
+        )
     }
 
     private fun saveNameChangeCooldownsSection(stream: DataOutputStream) {
