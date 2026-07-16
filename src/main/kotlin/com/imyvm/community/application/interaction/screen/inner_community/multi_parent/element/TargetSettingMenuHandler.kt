@@ -5,6 +5,7 @@ import com.imyvm.community.application.event.getPendingOperation
 import com.imyvm.community.application.event.hasPendingOperation
 import com.imyvm.community.application.event.removePendingOperation
 import com.imyvm.community.application.event.restorePendingOperation
+import com.imyvm.community.application.interaction.common.runCommunityMutationOrRollback
 import com.imyvm.community.application.interaction.common.saveCommunityDatabaseOrRollback
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.PendingOperationType
@@ -387,39 +388,52 @@ fun onConfirmSettingChange(playerExecutor: ServerPlayer, regionNumberId: Int): I
     val newValueStr = request.newValue.toString()
     val regionSettingsBefore = region.settings.toList()
     val scopeSettingsBefore = scope?.settings?.toList()
-    if (scope == null) {
-        PlayerInteractionApi.removeSettingRegion(playerExecutor, region, request.permissionKeyStr, targetPlayerIdStr)
-        PlayerInteractionApi.addSettingRegion(playerExecutor, region, request.permissionKeyStr, newValueStr, targetPlayerIdStr)
-    } else {
-        PlayerInteractionApi.removeSettingScope(playerExecutor, region, scope.scopeName, request.permissionKeyStr, targetPlayerIdStr)
-        PlayerInteractionApi.addSettingScope(playerExecutor, region, scope.scopeName, request.permissionKeyStr, newValueStr, targetPlayerIdStr)
-    }
-
-    val removedPending = removePendingOperation(regionNumberId, PendingOperationType.SETTING_CONFIRMATION)
-
+    var removedPending: com.imyvm.community.domain.model.PendingOperation? = null
     var expenditure: Turnover? = null
     var refundTurnover: Turnover? = null
     var refundOwnerAccount: com.imyvm.community.domain.model.MemberAccount? = null
-    if (request.cost > 0) {
-        expenditure = Turnover(request.cost, System.currentTimeMillis(), TurnoverSource.SYSTEM, "community.treasury.desc.setting_change", listOf(request.permissionKeyStr))
-            .also { community.expenditures.add(it) }
-    } else if (request.cost < 0) {
-        val refundAmount = -request.cost
-        val ownerUUID = community.getOwnerUUID()
-        refundOwnerAccount = ownerUUID?.let { community.member[it] }
-        refundTurnover = Turnover(refundAmount, System.currentTimeMillis(), TurnoverSource.SYSTEM, "community.treasury.desc.setting_refund", listOf(request.permissionKeyStr))
-            .also { refundOwnerAccount?.turnover?.add(it) }
-    }
+
     val operationName = Translator.tr("community.operation.setting_change", request.permissionKeyStr).string
-    if (!saveCommunityDatabaseOrRollback(
-            player = playerExecutor,
+    if (!runCommunityMutationOrRollback(
             operationName = operationName,
+            mutateCommunityState = {
+                if (scope == null) {
+                    PlayerInteractionApi.removeSettingRegion(playerExecutor, region, request.permissionKeyStr, targetPlayerIdStr)
+                    PlayerInteractionApi.addSettingRegion(playerExecutor, region, request.permissionKeyStr, newValueStr, targetPlayerIdStr)
+                } else {
+                    PlayerInteractionApi.removeSettingScope(playerExecutor, region, scope.scopeName, request.permissionKeyStr, targetPlayerIdStr)
+                    PlayerInteractionApi.addSettingScope(playerExecutor, region, scope.scopeName, request.permissionKeyStr, newValueStr, targetPlayerIdStr)
+                }
+
+                if (scope == null && request.targetPlayerUUID == null &&
+                    permissionKey != PermissionKey.PVP && permissionKey != PermissionKey.FLY) {
+                    val defaultValue = RegionDataApi.getPermissionValueRegion(null, null, null, permissionKey)
+                    if (request.newValue != defaultValue) {
+                        autoGrantExistingMembersOnSettingChange(permissionKey, defaultValue, playerExecutor, community, region)
+                    }
+                }
+
+                removedPending = removePendingOperation(regionNumberId, PendingOperationType.SETTING_CONFIRMATION)
+
+                if (request.cost > 0) {
+                    expenditure = Turnover(request.cost, System.currentTimeMillis(), TurnoverSource.SYSTEM, "community.treasury.desc.setting_change", listOf(request.permissionKeyStr))
+                        .also { community.expenditures.add(it) }
+                } else if (request.cost < 0) {
+                    val refundAmount = -request.cost
+                    val ownerUUID = community.getOwnerUUID()
+                    refundOwnerAccount = ownerUUID?.let { community.member[it] }
+                    refundTurnover = Turnover(refundAmount, System.currentTimeMillis(), TurnoverSource.SYSTEM, "community.treasury.desc.setting_refund", listOf(request.permissionKeyStr))
+                        .also { refundOwnerAccount?.turnover?.add(it) }
+                }
+            },
             restoreCommunityState = {
                 expenditure?.let { community.expenditures.remove(it) }
                 refundTurnover?.let { refundOwnerAccount?.turnover?.remove(it) }
                 removedPending?.let { restorePendingOperation(regionNumberId, PendingOperationType.SETTING_CONFIRMATION, it) }
             },
-            rollbackCoreState = { restoreSettingSnapshots(region, scope, regionSettingsBefore, scopeSettingsBefore) }
+            rollbackCoreState = { restoreSettingSnapshots(region, scope, regionSettingsBefore, scopeSettingsBefore) },
+            saveCommunityState = { CommunityDatabase.save() },
+            notifyFailure = { playerExecutor.sendSystemMessage(Translator.tr("community.operation.save_failed", operationName)) }
         )) return 0
 
     playerExecutor.sendSystemMessage(
@@ -443,14 +457,6 @@ fun onConfirmSettingChange(playerExecutor: ServerPlayer, regionNumberId: Int): I
         communityName
     ) ?: Component.literal("Setting changed")
     notifyFormalMembers(community, playerExecutor.level().server, notification)
-
-    if (scope == null && request.targetPlayerUUID == null &&
-        permissionKey != PermissionKey.PVP && permissionKey != PermissionKey.FLY) {
-        val defaultValue = RegionDataApi.getPermissionValueRegion(null, null, null, permissionKey)
-        if (request.newValue != defaultValue) {
-            autoGrantExistingMembersOnSettingChange(permissionKey, defaultValue, playerExecutor, community, region)
-        }
-    }
 
     return 1
 }
@@ -505,6 +511,28 @@ fun autoGrantDefaultPermissions(newMemberUUID: UUID, executorPlayer: ServerPlaye
             newMemberName
         )
     }
+}
+
+fun snapshotGrantedPermissions(
+    memberUUID: UUID,
+    community: Community
+): Triple<Region, List<com.imyvm.iwg.domain.component.Setting>, Map<GeoScope, List<com.imyvm.iwg.domain.component.Setting>>>? {
+    val region = community.getRegion() ?: return null
+    return Triple(
+        region,
+        region.settings.toList(),
+        region.geometryScope.associateWith { it.settings.toList() }
+    )
+}
+
+fun restoreGrantedPermissions(
+    snapshot: Triple<Region, List<com.imyvm.iwg.domain.component.Setting>, Map<GeoScope, List<com.imyvm.iwg.domain.component.Setting>>>?
+) {
+    if (snapshot == null) return
+    val (region, regionSettings, scopeSettings) = snapshot
+    region.settings = regionSettings.toMutableList()
+    scopeSettings.forEach { (scope, settings) -> scope.settings = settings.toMutableList() }
+    RegionDatabase.save()
 }
 
 fun revokeGrantedPermissions(memberUUID: UUID, community: Community) {

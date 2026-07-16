@@ -1,5 +1,6 @@
 package com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element
 
+import com.imyvm.community.application.interaction.common.runCommunityMutationOrRollback
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.domain.model.Community
@@ -11,6 +12,7 @@ import com.imyvm.community.util.Translator
 import com.imyvm.community.util.Translator.trMenu
 import com.mojang.authlib.GameProfile
 import com.imyvm.community.domain.policy.permission.AdminPrivileges
+import com.imyvm.community.infra.CommunityDatabase
 import net.minecraft.server.level.ServerPlayer
 
 fun runOpenPlayerRegionScopeChoice(
@@ -45,6 +47,21 @@ fun runRemoveMember(
         { CommunityPermissionPolicy.canRemoveMember(playerExecutor, community, playerObject.id) }
     ) {
         val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
+        val removedAccount = community.member[playerObject.id] ?: return@executeWithPermission
+        val grantedPermissionSnapshot = snapshotGrantedPermissions(playerObject.id, community)
+        val operationName = Translator.tr("community.operation.remove_member", playerObject.name).string
+
+        if (!runCommunityMutationOrRollback(
+                operationName = operationName,
+                mutateCommunityState = {
+                    community.member.remove(playerObject.id)
+                    revokeGrantedPermissions(playerObject.id, community)
+                },
+                restoreCommunityState = { community.member[playerObject.id] = removedAccount },
+                rollbackCoreState = { restoreGrantedPermissions(grantedPermissionSnapshot) },
+                saveCommunityState = { CommunityDatabase.save() },
+                notifyFailure = { playerExecutor.sendSystemMessage(Translator.tr("community.operation.save_failed", operationName)) }
+            )) return@executeWithPermission
         
         val targetNotification = com.imyvm.community.util.Translator.tr(
             "community.notification.target.removed",
@@ -54,9 +71,6 @@ fun runRemoveMember(
         com.imyvm.community.application.interaction.common.notifyTargetPlayer(
             playerExecutor.level().server, playerObject.id, targetNotification, community
         )
-        
-        community.member.remove(playerObject.id)
-        com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.revokeGrantedPermissions(playerObject.id, community)
 
         trMenu(
             playerExecutor,
@@ -71,8 +85,6 @@ fun runRemoveMember(
             communityName
         ) ?: net.minecraft.network.chat.Component.literal("${playerObject.name} was removed from $communityName by ${playerExecutor.name.string}")
         com.imyvm.community.application.interaction.common.notifyOfficials(community, playerExecutor.level().server, notification, playerExecutor)
-        
-        com.imyvm.community.infra.CommunityDatabase.save()
     }
 }
 
@@ -119,10 +131,25 @@ private fun handleRolePromotion(
     ) {
         val memberValue = community.member[playerObject.id]
         if (memberValue != null) {
-            memberValue.basicRoleType = com.imyvm.community.domain.model.community.MemberRoleType.ADMIN
-            memberValue.adminPrivileges = AdminPrivileges()
-            
+            val previousRole = memberValue.basicRoleType
+            val previousPrivileges = memberValue.adminPrivileges
             val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
+            val operationName = Translator.tr("community.operation.promote_member", playerObject.name).string
+
+            if (!runCommunityMutationOrRollback(
+                    operationName = operationName,
+                    mutateCommunityState = {
+                        memberValue.basicRoleType = com.imyvm.community.domain.model.community.MemberRoleType.ADMIN
+                        memberValue.adminPrivileges = AdminPrivileges()
+                    },
+                    restoreCommunityState = {
+                        memberValue.basicRoleType = previousRole
+                        memberValue.adminPrivileges = previousPrivileges
+                    },
+                    rollbackCoreState = {},
+                    saveCommunityState = { CommunityDatabase.save() },
+                    notifyFailure = { playerExecutor.sendSystemMessage(Translator.tr("community.operation.save_failed", operationName)) }
+                )) return@executeWithPermission
             
             val targetNotification = com.imyvm.community.util.Translator.tr(
                 "community.notification.target.promoted",
@@ -146,8 +173,6 @@ private fun handleRolePromotion(
                 communityName
             ) ?: net.minecraft.network.chat.Component.literal("${playerObject.name} was promoted to Admin in $communityName by ${playerExecutor.name.string}")
             com.imyvm.community.application.interaction.common.notifyOfficials(community, playerExecutor.level().server, notification, playerExecutor)
-            
-            com.imyvm.community.infra.CommunityDatabase.save()
         }
     }
 }
@@ -163,10 +188,25 @@ private fun handleRoleDemotion(
     ) {
         val memberValue = community.member[playerObject.id]
         if (memberValue != null) {
-            memberValue.basicRoleType = com.imyvm.community.domain.model.community.MemberRoleType.MEMBER
-            memberValue.adminPrivileges = null
-            
+            val previousRole = memberValue.basicRoleType
+            val previousPrivileges = memberValue.adminPrivileges
             val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
+            val operationName = Translator.tr("community.operation.demote_member", playerObject.name).string
+
+            if (!runCommunityMutationOrRollback(
+                    operationName = operationName,
+                    mutateCommunityState = {
+                        memberValue.basicRoleType = com.imyvm.community.domain.model.community.MemberRoleType.MEMBER
+                        memberValue.adminPrivileges = null
+                    },
+                    restoreCommunityState = {
+                        memberValue.basicRoleType = previousRole
+                        memberValue.adminPrivileges = previousPrivileges
+                    },
+                    rollbackCoreState = {},
+                    saveCommunityState = { CommunityDatabase.save() },
+                    notifyFailure = { playerExecutor.sendSystemMessage(Translator.tr("community.operation.save_failed", operationName)) }
+                )) return@executeWithPermission
             
             val targetNotification = com.imyvm.community.util.Translator.tr(
                 "community.notification.target.demoted",
@@ -190,8 +230,6 @@ private fun handleRoleDemotion(
                 communityName
             ) ?: net.minecraft.network.chat.Component.literal("${playerObject.name} was demoted to Member in $communityName by ${playerExecutor.name.string}")
             com.imyvm.community.application.interaction.common.notifyOfficials(community, playerExecutor.level().server, notification, playerExecutor)
-            
-            com.imyvm.community.infra.CommunityDatabase.save()
         }
     }
 }

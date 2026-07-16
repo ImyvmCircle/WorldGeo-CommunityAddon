@@ -2,6 +2,7 @@ package com.imyvm.community.application.interaction.screen
 
 import com.imyvm.community.application.interaction.common.onCreateCommunityRequest
 import com.imyvm.community.application.interaction.common.onJoinCommunityDirectly
+import com.imyvm.community.application.interaction.common.runCommunityMutationOrRollback
 import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.entrypoint.screen.component.ConfirmTaskType
@@ -70,10 +71,28 @@ private fun runCommunityLeave(
         { CommunityPermissionPolicy.canQuitCommunity(playerExecutor, targetCommunity) }
     ) {
         val communityName = targetCommunity.getRegion()?.name ?: "Community #${targetCommunity.regionNumberId}"
-        
-        targetCommunity.member.remove(playerExecutor.uuid)
-        com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.revokeGrantedPermissions(playerExecutor.uuid, targetCommunity)
-        CommunityDatabase.save()
+        val removedAccount = targetCommunity.member[playerExecutor.uuid] ?: return@executeWithPermission
+        val grantedPermissionSnapshot = com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.snapshotGrantedPermissions(
+            playerExecutor.uuid,
+            targetCommunity
+        )
+        val operationName = Translator.tr("community.operation.leave", communityName).string
+
+        if (!runCommunityMutationOrRollback(
+                operationName = operationName,
+                mutateCommunityState = {
+                    targetCommunity.member.remove(playerExecutor.uuid)
+                    com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.revokeGrantedPermissions(playerExecutor.uuid, targetCommunity)
+                },
+                restoreCommunityState = { targetCommunity.member[playerExecutor.uuid] = removedAccount },
+                rollbackCoreState = {
+                    com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.restoreGrantedPermissions(
+                        grantedPermissionSnapshot
+                    )
+                },
+                saveCommunityState = { CommunityDatabase.save() },
+                notifyFailure = { playerExecutor.sendSystemMessage(Translator.tr("community.operation.save_failed", operationName)) }
+            )) return@executeWithPermission
         
         playerExecutor.sendSystemMessage(
             Translator.tr("community.leave.success", communityName)

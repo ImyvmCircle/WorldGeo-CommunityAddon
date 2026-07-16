@@ -399,11 +399,12 @@ fun onAcceptTerritoryGrant(player: ServerPlayer, sourceRegionId: Int, scopeName:
         return 0
     }
 
-    val scopeToTransfer = sourceRegion.geometryScope.firstOrNull { it.scopeName.equals(scopeName, ignoreCase = true) } ?: return 0
+    sourceRegion.geometryScope.firstOrNull { it.scopeName.equals(scopeName, ignoreCase = true) } ?: return 0
+    val sourceScopesBefore = sourceRegion.geometryScope.toList()
+    val targetScopesBefore = targetRegion.geometryScope.toList()
     val result = PlayerInteractionApi.transferScope(player, sourceRegion, scopeName, targetRegion)
     if (result == 0) return 0
 
-    val transferredScopeName = scopeToTransfer.scopeName
     val removedPending = removePendingOperation(sourceRegionId, PendingOperationType.TRANSFER_SCOPE_CONFIRMATION)
     val operationName = Translator.tr("community.operation.scope_transfer", scopeName).string
     if (!saveCommunityDatabaseOrRollback(
@@ -412,7 +413,11 @@ fun onAcceptTerritoryGrant(player: ServerPlayer, sourceRegionId: Int, scopeName:
             restoreCommunityState = {
                 removedPending?.let { restorePendingOperation(sourceRegionId, PendingOperationType.TRANSFER_SCOPE_CONFIRMATION, it) }
             },
-            rollbackCoreState = { PlayerInteractionApi.transferScope(player, targetRegion, transferredScopeName, sourceRegion) }
+            rollbackCoreState = {
+                sourceRegion.geometryScope = sourceScopesBefore.toMutableList()
+                targetRegion.geometryScope = targetScopesBefore.toMutableList()
+                RegionDatabase.save()
+            }
         )) return 0
 
     val sourceName = sourceCommunity.generateCommunityMark()
