@@ -344,5 +344,6 @@ fun addPendingOperationByKey(
         transferData = transferData,
         treasuryGrantData = treasuryGrantData
     )
+    if (WorldGeoCommunityAddon.server != null) CommunityDatabase.save()
     WorldGeoCommunityAddon.logger.info("Added pending operation: type=$type, operationKey=$operationKey, expireAt=$expireTime")
 }
