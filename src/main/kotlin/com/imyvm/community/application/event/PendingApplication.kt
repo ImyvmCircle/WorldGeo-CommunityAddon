@@ -28,6 +28,11 @@ fun removePendingOperation(subjectId: Int?, type: PendingOperationType): Pending
     return WorldGeoCommunityAddon.pendingOperations.remove(pendingOperationKey(subjectId, type))
 }
 
+fun restorePendingOperation(subjectId: Int?, type: PendingOperationType, operation: PendingOperation) {
+    if (subjectId == null) return
+    WorldGeoCommunityAddon.pendingOperations[pendingOperationKey(subjectId, type)] = operation
+}
+
 fun removePendingOperationsForSubject(subjectId: Int?) {
     if (subjectId == null) return
     WorldGeoCommunityAddon.pendingOperations.keys

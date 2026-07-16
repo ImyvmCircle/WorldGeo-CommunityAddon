@@ -26,6 +26,7 @@ import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.HoverEvent
 import com.imyvm.community.application.event.getPendingOperation
 import com.imyvm.community.application.event.removePendingOperation
+import com.imyvm.community.application.event.restorePendingOperation
 
 fun onCreateCommunityRequest(
     player: ServerPlayer,
@@ -128,15 +129,32 @@ fun onConfirmCommunityCreation(player: ServerPlayer, regionNumberId: Int): Int {
         return 0
     }
 
-    playerAccount.addMoney(-creationData.totalCost)
-    player.sendSystemMessage(Translator.tr("community.create.money.checked", creationData.totalCost / 100.0))
+    var createdCommunity: Community? = null
+    var removedConfirmation: com.imyvm.community.domain.model.PendingOperation? = null
+    var branchPendingType: PendingOperationType? = null
 
-    removePendingOperation(regionNumberId, PendingOperationType.CREATE_COMMUNITY_CONFIRMATION)
+    return try {
+        playerAccount.addMoney(-creationData.totalCost)
+        player.sendSystemMessage(Translator.tr("community.create.money.checked", creationData.totalCost / 100.0))
 
-    initialRequest(player, creationData.communityName, creationData.communityType, regionNumberId, creationData.totalCost)
-    handleRequestBranches(player, creationData.communityType, regionNumberId)
+        removedConfirmation = removePendingOperation(regionNumberId, PendingOperationType.CREATE_COMMUNITY_CONFIRMATION)
+        createdCommunity = initialRequest(player, creationData.communityName, creationData.communityType, regionNumberId, creationData.totalCost)
+        branchPendingType = handleRequestBranches(player, creationData.communityType, regionNumberId)
+        CommunityDatabase.save()
 
-    return 1
+        1
+    } catch (e: Exception) {
+        createdCommunity?.let { CommunityDatabase.removeCommunity(it) }
+        branchPendingType?.let { removePendingOperation(regionNumberId, it) }
+        removedConfirmation?.let { restorePendingOperation(regionNumberId, PendingOperationType.CREATE_COMMUNITY_CONFIRMATION, it) }
+        playerAccount.addMoney(creationData.totalCost)
+        WorldGeoCommunityAddon.logger.error("Failed to confirm community creation for region $regionNumberId: ${e.message}")
+        player.sendSystemMessage(
+            Translator.tr("community.create.confirmation.failed")
+                ?: Component.literal("Community creation failed. Please try again.")
+        )
+        0
+    }
 }
 
 fun onCancelCommunityCreation(player: ServerPlayer, regionNumberId: Int): Int {
@@ -168,7 +186,7 @@ private fun cancelCommunityCreation(player: ServerPlayer, regionNumberId: Int): 
     return 1
 }
 
-private fun initialRequest(player: ServerPlayer, name: String, communityType: String, regionNumberId: Int, creationCost: Long) {
+private fun initialRequest(player: ServerPlayer, name: String, communityType: String, regionNumberId: Int, creationCost: Long): Community {
     val community = Community(
         regionNumberId = regionNumberId,
         member = hashMapOf(player.uuid to MemberAccount(
@@ -186,9 +204,10 @@ private fun initialRequest(player: ServerPlayer, name: String, communityType: St
 
     CommunityDatabase.addCommunity(community)
     player.sendSystemMessage(Translator.tr("community.create.request.initial.success", name, community.regionNumberId))
+    return community
 }
 
-private fun handleRequestBranches(player: ServerPlayer, communityType: String, regionNumberId: Int) {
+private fun handleRequestBranches(player: ServerPlayer, communityType: String, regionNumberId: Int): PendingOperationType? {
     if (communityType.equals("manor", ignoreCase = true)) {
         player.sendSystemMessage(Translator.tr("community.create.request.sent"))
         addPendingOperation(
@@ -197,6 +216,7 @@ private fun handleRequestBranches(player: ServerPlayer, communityType: String, r
             expireHours = CommunityConfig.AUDITING_EXPIRE_HOURS.value
         )
         notifyOPsAndOwnerAboutCreationRequest(player, regionNumberId)
+        return PendingOperationType.AUDITING_COMMUNITY_REQUEST
     } else if (communityType.equals("realm", ignoreCase = true)) {
         player.sendSystemMessage(Translator.tr("community.create.request.recruitment", CommunityConfig.MIN_NUMBER_MEMBER_REALM.value))
         addPendingOperation(
@@ -204,7 +224,9 @@ private fun handleRequestBranches(player: ServerPlayer, communityType: String, r
             type = PendingOperationType.CREATE_COMMUNITY_REALM_REQUEST_RECRUITMENT,
             expireHours = CommunityConfig.REALM_REQUEST_EXPIRE_HOURS.value
         )
+        return PendingOperationType.CREATE_COMMUNITY_REALM_REQUEST_RECRUITMENT
     }
+    return null
 }
 
 internal fun notifyOPsAndOwnerAboutCreationRequest(creator: ServerPlayer, regionNumberId: Int) {
