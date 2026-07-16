@@ -15,22 +15,46 @@ import com.imyvm.community.application.event.getPendingOperation
 import com.imyvm.community.application.event.removePendingOperation
 import com.imyvm.community.application.event.removePendingOperationsForSubject
 import com.imyvm.community.domain.model.PendingOperationType
+import com.imyvm.community.domain.model.pendingOperationSubjectId
 
 fun onForceDeleteCommunity(player: ServerPlayer, targetCommunity: Community): Int {
-    removePendingOperationsForSubject(targetCommunity.regionNumberId)
+    val regionId = targetCommunity.regionNumberId
+    val communityIndex = CommunityDatabase.communities.indexOf(targetCommunity)
+    val removedPending = if (regionId == null) {
+        emptyMap()
+    } else {
+        WorldGeoCommunityAddon.pendingOperations
+            .filterKeys { pendingOperationSubjectId(it) == regionId }
+            .toMap()
+    }
+    removePendingOperationsForSubject(regionId)
 
-    val region = targetCommunity.regionNumberId?.let { RegionDataApi.getRegion(it) }
+    val region = regionId?.let { RegionDataApi.getRegion(it) }
     if (region != null) {
         PlayerInteractionApi.deleteRegion(player, region)
     }
 
     CommunityDatabase.removeCommunity(targetCommunity)
-    CommunityDatabase.save()
+    try {
+        CommunityDatabase.save()
+    } catch (e: Exception) {
+        if (!CommunityDatabase.communities.contains(targetCommunity)) {
+            if (communityIndex in 0..CommunityDatabase.communities.size) {
+                CommunityDatabase.communities.add(communityIndex, targetCommunity)
+            } else {
+                CommunityDatabase.communities.add(targetCommunity)
+            }
+        }
+        WorldGeoCommunityAddon.pendingOperations.putAll(removedPending)
+        WorldGeoCommunityAddon.logger.error("Failed to save forced community deletion for region $regionId", e)
+        player.sendSystemMessage(Translator.tr("community.operation.save_failed", "force_delete"))
+        return 0
+    }
 
     if (region != null) {
         player.sendSystemMessage(Translator.tr("community.delete.success",
             region.name,
-            targetCommunity.regionNumberId))
+            regionId))
     } else {
         player.sendSystemMessage(Translator.tr("community.delete.success.null_region"))
     }
