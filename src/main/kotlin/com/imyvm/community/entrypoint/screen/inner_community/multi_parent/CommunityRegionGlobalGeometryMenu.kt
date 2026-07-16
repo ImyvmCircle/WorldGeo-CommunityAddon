@@ -19,27 +19,26 @@ class CommunityRegionGlobalGeometryMenu(
     syncId = syncId,
     menuTitle = Component.literal(
         community.generateCommunityMark() + " - " +
-            (Translator.tr("ui.admin.region.geometry.global.title").string
-                ?: "Global Geographic Scope Operations")
+            Translator.trStringOrFallback("ui.admin.region.geometry.global.title", "Global Geographic Scope Operations")
     ),
     runBack = runBack
 ) {
     init {
         addButton(
             slot = 21,
-            name = Translator.tr("ui.admin.region.global.add").string ?: "Add Administrative District",
+            name = Translator.trStringOrFallback("ui.admin.region.global.add", "Add Administrative District"),
             item = Items.LIME_WOOL
         ) { runAddScopeForCommunity(it, community, runBack) }
 
         addButton(
             slot = 22,
-            name = Translator.tr("ui.admin.region.global.delete").string ?: "Delete Administrative District",
+            name = Translator.trStringOrFallback("ui.admin.region.global.delete", "Delete Administrative District"),
             item = Items.RED_WOOL
         ) { runDeleteScopeForCommunity(it, community, runBack) }
 
         addButton(
             slot = 23,
-            name = Translator.tr("ui.admin.region.global.transfer").string ?: "Transfer Administrative District",
+            name = Translator.trStringOrFallback("ui.admin.region.global.transfer", "Transfer Administrative District"),
             item = Items.YELLOW_WOOL
         ) { runTransferScopeFromGlobalMenu(it, community, runBack) }
     }

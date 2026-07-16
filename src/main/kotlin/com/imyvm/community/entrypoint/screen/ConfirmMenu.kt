@@ -22,7 +22,7 @@ class ConfirmMenu(
     syncId = syncId,
     menuTitle = getConfirmMenuTitle(
         cautions.firstOrNull()
-        ?: Translator.tr("ui.confirm.default").string ?: "<Error When Getting Target Operation>"),
+        ?: Translator.trStringOrFallback("ui.confirm.default", "<Error When Getting Target Operation>")),
     runBack = runBack
 ) {
 
@@ -45,7 +45,7 @@ class ConfirmMenu(
     private fun addConfirmButton() {
         addButton(
             slot = 35,
-            name = Translator.tr("ui.confirm.button.confirm").string ?: "Confirm",
+            name = Translator.trStringOrFallback("ui.confirm.button.confirm", "Confirm"),
             item = Items.GREEN_WOOL
         ) {
             runConfirmDispatcher(
@@ -61,8 +61,7 @@ class ConfirmMenu(
 
     companion object {
         private fun getConfirmMenuTitle(cautionTitle: String): Component {
-            return Translator.tr("ui.confirm.title", cautionTitle)
-                ?: Component.literal("Confirm: $cautionTitle")
+            return Translator.trOrFallback("ui.confirm.title", "Confirm: $cautionTitle", cautionTitle)
         }
     }
 }

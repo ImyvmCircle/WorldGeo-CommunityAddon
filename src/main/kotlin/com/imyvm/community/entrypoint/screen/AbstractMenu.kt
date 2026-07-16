@@ -77,7 +77,7 @@ abstract class AbstractMenu(
     private fun addDefaultCloseButton() {
         addButton(
             slot = 53,
-            name = Translator.tr("ui.general.button.close").string ?: "Close",
+            name = Translator.trStringOrFallback("ui.general.button.close", "Close"),
             item = Items.BARRIER
         ) { playerExecutor -> runClose(playerExecutor) }
     }
@@ -86,7 +86,7 @@ abstract class AbstractMenu(
         runBack?.let { backLogic ->
             addButton(
                 slot = 44,
-                name = Translator.tr("ui.general.button.back").string ?: "Back",
+                name = Translator.trStringOrFallback("ui.general.button.back", "Back"),
                 item = Items.ARROW
             ) { playerExecutor -> backLogic(playerExecutor) }
         }

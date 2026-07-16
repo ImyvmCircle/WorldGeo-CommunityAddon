@@ -49,13 +49,13 @@ abstract class AbstractListMenu(
 
     private fun addPageButtons(totalPages: Int) {
         if (page > 0) {
-            addButton(slot = 0, name = Translator.tr("ui.general.list.prev").string ?: "Previous", itemStack = ItemStack(Items.ARROW)) {
+            addButton(slot = 0, name = Translator.trStringOrFallback("ui.general.list.prev", "Previous"), itemStack = ItemStack(Items.ARROW)) {
                 openNewPage(it, page - 1)
             }
         }
 
         if (page < totalPages - 1) {
-            addButton(slot = 8, name = Translator.tr("ui.general.list.next").string ?: "Next", itemStack = ItemStack(Items.ARROW)) {
+            addButton(slot = 8, name = Translator.trStringOrFallback("ui.general.list.next", "Next"), itemStack = ItemStack(Items.ARROW)) {
                 openNewPage(it, page + 1)
             }
         }

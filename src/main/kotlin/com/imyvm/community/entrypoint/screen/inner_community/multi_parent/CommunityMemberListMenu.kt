@@ -44,7 +44,7 @@ class CommunityMemberListMenu(
     private fun addOwnerButton() {
         addButton(
             slot = 10,
-            name = (Translator.tr("ui.admin.member_list.owner").string ?: "Owner") + ":",
+            name = Translator.trStringOrFallback("ui.admin.member_list.owner", "Owner") + ":",
             item = Items.COMMAND_BLOCK
         ) {}
 
@@ -60,7 +60,7 @@ class CommunityMemberListMenu(
     private fun addAdminButtons() {
         addButton(
             slot = 19,
-            name = (Translator.tr("ui.admin.member_list.admin").string ?: "Admins") + ":",
+            name = Translator.trStringOrFallback("ui.admin.member_list.admin", "Admins") + ":",
             item = Items.COMMAND_BLOCK_MINECART
         ) {}
 
@@ -78,7 +78,7 @@ class CommunityMemberListMenu(
     private fun addMembersForPage0() {
         addButton(
             slot = 28,
-            name = (Translator.tr("ui.admin.member_list.member").string ?: "Members") + ":",
+            name = Translator.trStringOrFallback("ui.admin.member_list.member", "Members") + ":",
             item = Items.VILLAGER_SPAWN_EGG
         ) {}
 
@@ -120,8 +120,9 @@ class CommunityMemberListMenu(
 
     companion object {
         fun generateCommunityMemberListMenuTitle(community: Community): Component =
-            Component.literal(community.generateCommunityMark()
-                    + (Translator.tr("ui.admin.member_list.title").string ?: "- Member List")
+            Component.literal(
+                community.generateCommunityMark() +
+                    Translator.trStringOrFallback("ui.admin.member_list.title", "- Member List")
             )
     }
 }

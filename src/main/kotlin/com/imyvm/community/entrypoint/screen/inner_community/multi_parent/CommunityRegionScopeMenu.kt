@@ -50,10 +50,10 @@ class CommunityRegionScopeMenu(
         val globalName = when (geographicFunctionType) {
             GeographicFunctionType.TELEPORT_POINT_EXECUTION,
             GeographicFunctionType.TELEPORT_POINT_LOCATING ->
-                Translator.tr("ui.admin.region.teleport.global_main").string ?: "Main Teleport Point"
+                Translator.trStringOrFallback("ui.admin.region.teleport.global_main", "Main Teleport Point")
             GeographicFunctionType.NAME_MODIFICATION ->
-                Translator.tr("ui.admin.region.name.global").string ?: "Community Name (Global)"
-            else -> Translator.tr("ui.admin.region.global").string ?: "Region Global"
+                Translator.trStringOrFallback("ui.admin.region.name.global", "Community Name (Global)")
+            else -> Translator.trStringOrFallback("ui.admin.region.global", "Region Global")
         }
         val globalItem = when (geographicFunctionType) {
             GeographicFunctionType.TELEPORT_POINT_EXECUTION,
@@ -117,11 +117,11 @@ class CommunityRegionScopeMenu(
         return (listSize + 2 + unitsPerPage - 1) / unitsPerPage
     }
 
-    override fun openNewPage(playerExecutor: ServerPlayer, newPage: Int) {
-        CommunityMenuOpener.open(playerExecutor) { syncId ->
+    override fun openNewPage(player: ServerPlayer, newPage: Int) {
+        CommunityMenuOpener.open(player) { syncId ->
             CommunityRegionScopeMenu(
                 syncId = syncId,
-                playerExecutor = playerExecutor,
+                playerExecutor = player,
                 community = community,
                 geographicFunctionType = geographicFunctionType,
                 playerObject = playerObject,
@@ -139,36 +139,29 @@ class CommunityRegionScopeMenu(
                     val hypotheticalShape = ImyvmWorldGeo.pointSelectingPlayers[playerExecutor.uuid]?.hypotheticalShape
                     if (hypotheticalShape is HypotheticalShape.ModifyExisting) {
                         val scopeName = hypotheticalShape.scope.scopeName
-                        val hint = Translator.tr("ui.admin.region.geometry.title.modifying").string ?: "Modifying"
+                        val hint = Translator.trStringOrFallback("ui.admin.region.geometry.title.modifying", "Modifying")
                         "$hint: $scopeName"
                     } else {
-                        Translator.tr("ui.admin.region.geometry.title").string
-                            ?: "Choose scale modifying geographic shape"
+                        Translator.trStringOrFallback("ui.admin.region.geometry.title", "Choose scale modifying geographic shape")
                     }
                 }
                 GeographicFunctionType.SETTING_ADJUSTMENT -> {
-                    Translator.tr("ui.admin.region.setting.manage.title").string
-                        ?: "Choose scale modifying region settings"
+                    Translator.trStringOrFallback("ui.admin.region.setting.manage.title", "Choose scale modifying region settings")
                 }
                 GeographicFunctionType.TELEPORT_POINT_LOCATING -> {
-                    Translator.tr("ui.admin.region.teleport.title").string
-                        ?: "Choose scale managing teleport point"
+                    Translator.trStringOrFallback("ui.admin.region.teleport.title", "Choose scale managing teleport point")
                 }
                 GeographicFunctionType.TELEPORT_POINT_EXECUTION -> {
-                    Translator.tr("ui.admin.region.teleport.execution.title").string
-                        ?: "Choose scale teleporting to"
+                    Translator.trStringOrFallback("ui.admin.region.teleport.execution.title", "Choose scale teleporting to")
                 }
                 GeographicFunctionType.NAME_MODIFICATION -> {
-                    Translator.tr("ui.admin.region.name.title").string
-                        ?: "Choose scope to rename"
+                    Translator.trStringOrFallback("ui.admin.region.name.title", "Choose scope to rename")
                 }
                 GeographicFunctionType.SCOPE_DELETION -> {
-                    Translator.tr("ui.admin.region.deletion.title").string
-                        ?: "Choose scope to delete"
+                    Translator.trStringOrFallback("ui.admin.region.deletion.title", "Choose scope to delete")
                 }
                 GeographicFunctionType.SCOPE_TRANSFER -> {
-                    Translator.tr("ui.admin.region.transfer.scope.title").string
-                        ?: "Choose scope to transfer"
+                    Translator.trStringOrFallback("ui.admin.region.transfer.scope.title", "Choose scope to transfer")
                 }
             }
             return if (playerObject != null) {

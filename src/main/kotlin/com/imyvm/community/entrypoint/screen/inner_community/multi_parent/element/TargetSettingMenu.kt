@@ -40,14 +40,14 @@ class TargetSettingMenu(
         if (page > 0) {
             addButton(
                 slot = 0,
-                name = Translator.tr("ui.general.list.prev").string ?: "Previous",
+                name = Translator.trStringOrFallback("ui.general.list.prev", "Previous"),
                 item = Items.ARROW
             ) { openNewPage(it, page - 1) }
         }
         if (isGlobal && page < 1) {
             addButton(
                 slot = 8,
-                name = Translator.tr("ui.general.list.next").string ?: "Next",
+                name = Translator.trStringOrFallback("ui.general.list.next", "Next"),
                 item = Items.ARROW
             ) { openNewPage(it, page + 1) }
         }
@@ -70,7 +70,7 @@ class TargetSettingMenu(
     private fun addPermissionSettingButtons() {
         addButton(
             slot = 10,
-            name = Translator.tr("ui.admin.region.setting.permission.header").string ?: "Permissions",
+            name = Translator.trStringOrFallback("ui.admin.region.setting.permission.header", "Permissions"),
             item = Items.SHIELD
         ) {}
 
@@ -105,7 +105,7 @@ class TargetSettingMenu(
             val nameKey = "ui.admin.region.setting.permission.${key.toString().lowercase()}"
             addButton(
                 slot = slot,
-                name = Translator.tr(nameKey).string ?: key.toString().lowercase().replace("_", " "),
+                name = Translator.trStringOrFallback(nameKey, key.toString().lowercase().replace("_", " ")),
                 itemStack = getPermissionButtonItemStack(item, community, scope, playerObject, key)
             ) { runTogglingPermissionSetting(playerExecutor, community, scope, playerObject, key, runBack) }
         }
@@ -114,7 +114,7 @@ class TargetSettingMenu(
     private fun addRuleSettingButtons() {
         addButton(
             slot = 10,
-            name = Translator.tr("ui.admin.region.setting.rule.header").string ?: "Rules",
+            name = Translator.trStringOrFallback("ui.admin.region.setting.rule.header", "Rules"),
             item = Items.WRITABLE_BOOK
         ) {}
 
@@ -136,7 +136,7 @@ class TargetSettingMenu(
             val nameKey = "ui.admin.region.setting.rule.${key.toString().lowercase()}"
             addButton(
                 slot = slot,
-                name = Translator.tr(nameKey).string ?: key.toString().lowercase().replace("_", " "),
+                name = Translator.trStringOrFallback(nameKey, key.toString().lowercase().replace("_", " ")),
                 itemStack = getRuleButtonItemStack(item, community, scope, key)
             ) { runTogglingRuleSetting(playerExecutor, community, scope, key, runBack) }
         }
@@ -145,7 +145,7 @@ class TargetSettingMenu(
     private fun addEffectSettingButtons() {
         addButton(
             slot = 28,
-            name = Translator.tr("ui.admin.region.setting.effect.header").string ?: "Effects",
+            name = Translator.trStringOrFallback("ui.admin.region.setting.effect.header", "Effects"),
             item = Items.BEACON
         ) {}
 
@@ -167,11 +167,11 @@ class TargetSettingMenu(
             val nameKey = "ui.admin.region.setting.effect.${key.toString().lowercase()}"
             addButton(
                 slot = slot,
-                name = Translator.tr(nameKey).string ?: key.toString().lowercase().replace("_", " "),
+                name = Translator.trStringOrFallback(nameKey, key.toString().lowercase().replace("_", " ")),
                 item = item
             ) {
                 playerExecutor.closeContainer()
-                playerExecutor.sendSystemMessage(Translator.tr("community.setting.effect.coming_soon") ?: Component.literal("This feature is under development. Stay tuned!"))
+                playerExecutor.sendSystemMessage(Translator.trOrFallback("community.setting.effect.coming_soon", "This feature is under development. Stay tuned!"))
             }
         }
     }
@@ -182,8 +182,8 @@ class TargetSettingMenu(
             scope: GeoScope? = null,
             playerProfile: GameProfile? = null
         ): Component {
-            val nullTag = Translator.tr("ui.admin.region.setting.title.unknown").string ?: "Unknown"
-            val settingTag = Translator.tr("ui.admin.region.setting.title.setting").string ?: "Region Settings"
+            val nullTag = Translator.trStringOrFallback("ui.admin.region.setting.title.unknown", "Unknown")
+            val settingTag = Translator.trStringOrFallback("ui.admin.region.setting.title.setting", "Region Settings")
             var menuTitle = (community.getRegion()?.name ?: nullTag) + settingTag
             if (scope != null) menuTitle += " - ${scope.scopeName}"
             if (playerProfile != null) menuTitle += " - ${playerProfile.name}"

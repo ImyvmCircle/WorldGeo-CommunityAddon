@@ -7,7 +7,6 @@ import com.imyvm.community.entrypoint.screen.component.getPlayerHeadButtonItemSt
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.Translator
 import net.minecraft.server.level.ServerPlayer
-import net.minecraft.network.chat.Component
 
 class TreasuryGrantTargetListMenu(
     syncId: Int,
@@ -17,10 +16,11 @@ class TreasuryGrantTargetListMenu(
     private val onCommunitySelected: (ServerPlayer, Community) -> Unit
 ) : AbstractListMenu(
     syncId = syncId,
-    menuTitle = Translator.tr(
+    menuTitle = Translator.trOrFallback(
         "ui.treasury_grant.target.title",
+        "Grant Coins: ${sourceCommunity.generateCommunityMark()} → Select Target",
         sourceCommunity.generateCommunityMark()
-    ) ?: Component.literal("Grant Coins: ${sourceCommunity.generateCommunityMark()} → Select Target"),
+    ),
     page = page,
     runBack = runBack
 ) {
@@ -41,8 +41,8 @@ class TreasuryGrantTargetListMenu(
         handlePageWithSize(targetCommunities.size, communitiesPerPage)
     }
 
-    override fun openNewPage(playerExecutor: ServerPlayer, newPage: Int) {
-        CommunityMenuOpener.open(playerExecutor) { syncId ->
+    override fun openNewPage(player: ServerPlayer, newPage: Int) {
+        CommunityMenuOpener.open(player) { syncId ->
             TreasuryGrantTargetListMenu(
                 syncId = syncId,
                 sourceCommunity = sourceCommunity,
