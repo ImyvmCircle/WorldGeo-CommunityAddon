@@ -3,22 +3,42 @@ package com.imyvm.community.entrypoint.api
 import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.Turnover
+import com.imyvm.community.domain.model.community.CommunityJoinPolicy
+import com.imyvm.community.domain.model.community.CommunityStatus
+import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.domain.model.TurnoverSource
 import com.imyvm.community.domain.model.development.DevelopmentComponents
 import com.imyvm.community.domain.model.development.DevelopmentSnapshot
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.iwg.domain.RegionNaturalStatsResult
 import com.imyvm.iwg.inter.api.RegionDataApi
+import java.util.UUID
 import kotlin.math.ln
+
+data class CommunitySnapshot(
+    val regionNumberId: Int?,
+    val joinPolicy: CommunityJoinPolicy,
+    val status: CommunityStatus,
+    val memberRoles: Map<UUID, MemberRoleType>,
+    val ownerUUID: UUID?,
+    val adminUUIDs: List<UUID>,
+    val memberUUIDs: List<UUID>,
+    val totalAssets: Long,
+    val creationCost: Long,
+    val likeCount: Int,
+    val activeAnnouncementCount: Int,
+    val messageCount: Int,
+    val isManor: Boolean
+)
 
 object CommunityApi {
 
-    fun getCommunityByRegion(regionNumberId: Int): Community? {
-        return CommunityDatabase.getCommunityById(regionNumberId)
+    fun getCommunityByRegion(regionNumberId: Int): CommunitySnapshot? {
+        return CommunityDatabase.getCommunityById(regionNumberId)?.toSnapshot()
     }
 
-    fun listCommunities(): List<Community> {
-        return CommunityDatabase.communities.toList()
+    fun listCommunities(): List<CommunitySnapshot> {
+        return CommunityDatabase.communities.map { it.toSnapshot() }
     }
 
     fun deposit(
@@ -105,4 +125,20 @@ object CommunityApi {
             )
         )
     }
+
+private fun Community.toSnapshot(): CommunitySnapshot = CommunitySnapshot(
+    regionNumberId = regionNumberId,
+    joinPolicy = joinPolicy,
+    status = status,
+    memberRoles = member.mapValues { it.value.basicRoleType },
+    ownerUUID = getOwnerUUID(),
+    adminUUIDs = getAdminUUIDs(),
+    memberUUIDs = getMemberUUIDs(),
+    totalAssets = getTotalAssets(),
+    creationCost = creationCost,
+    likeCount = likeCount,
+    activeAnnouncementCount = getActiveAnnouncements().size,
+    messageCount = messages.count { !it.isDeleted },
+    isManor = isManor()
+)
 }
