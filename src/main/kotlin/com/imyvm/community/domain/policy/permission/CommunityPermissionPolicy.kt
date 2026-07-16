@@ -109,7 +109,8 @@ object CommunityPermissionPolicy {
         val manageResult = canManageMember(executor, community, targetUUID)
         if (manageResult.isDenied()) return manageResult
 
-        val targetRole = community.getMemberRole(targetUUID)!!
+        val targetRole = community.getMemberRole(targetUUID)
+            ?: return PermissionResult.Denied("community.permission.error.target_not_member")
         if (targetRole != MemberRoleType.MEMBER)
             return PermissionResult.Denied("community.permission.error.already_promoted")
 
@@ -124,7 +125,8 @@ object CommunityPermissionPolicy {
         val manageResult = canManageMember(executor, community, targetUUID)
         if (manageResult.isDenied()) return manageResult
 
-        val targetRole = community.getMemberRole(targetUUID)!!
+        val targetRole = community.getMemberRole(targetUUID)
+            ?: return PermissionResult.Denied("community.permission.error.target_not_member")
         if (targetRole != MemberRoleType.ADMIN)
             return PermissionResult.Denied("community.permission.error.not_admin")
 
@@ -139,7 +141,8 @@ object CommunityPermissionPolicy {
         val manageResult = canManageMember(executor, community, targetUUID)
         if (manageResult.isDenied()) return manageResult
 
-        val executorRole = community.getMemberRole(executor.uuid)!!
+        val executorRole = community.getMemberRole(executor.uuid)
+            ?: return PermissionResult.Denied("community.permission.error.not_member")
         if (executorRole == MemberRoleType.OWNER && executor.uuid == targetUUID)
             return PermissionResult.Denied("community.permission.error.owner_cannot_remove_self")
 
