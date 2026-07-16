@@ -242,10 +242,18 @@ fun addPendingOperation(
     transferData: com.imyvm.community.domain.model.ScopeTransferConfirmationData? = null,
     treasuryGrantData: com.imyvm.community.domain.model.TreasuryGrantConfirmationData? = null
 ) {
+    val now = System.currentTimeMillis()
     val expireTime = when {
-        expireHours != null -> System.currentTimeMillis() + expireHours * 3600 * 1000L
-        expireMinutes != null -> System.currentTimeMillis() + expireMinutes * 60 * 1000L
+        expireHours != null -> now + expireHours * 3600 * 1000L
+        expireMinutes != null -> now + expireMinutes * 60 * 1000L
         else -> throw IllegalArgumentException("Must specify either expireHours or expireMinutes")
+    }
+    val existing = WorldGeoCommunityAddon.pendingOperations[regionId]
+    if (existing != null && existing.expireAt > now) {
+        throw IllegalStateException("Pending operation already exists for regionId=$regionId, type=${existing.type}")
+    }
+    if (existing != null) {
+        WorldGeoCommunityAddon.pendingOperations.remove(regionId)
     }
     
     WorldGeoCommunityAddon.pendingOperations[regionId] = PendingOperation(
