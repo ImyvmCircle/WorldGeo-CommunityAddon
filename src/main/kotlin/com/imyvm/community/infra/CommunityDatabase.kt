@@ -32,7 +32,7 @@ object CommunityDatabase {
 
     private const val DATABASE_FILENAME = "iwg_community.db"
     private const val DATABASE_VERSION_MARKER = -3
-    private const val DATABASE_VERSION = 2
+    private const val DATABASE_VERSION = 3
     private const val PENDING_SECTION_VERSION_MARKER = -2
     private const val PENDING_SECTION_VERSION = 3
     private const val SECTION_FRAME_MARKER = -4
@@ -41,6 +41,7 @@ object CommunityDatabase {
     private const val SECTION_LIKES = 3
     private const val SECTION_COMMUNITY_INCOME = 4
     private const val MAX_SECTION_BYTES = 16 * 1024 * 1024
+    private const val MAX_COMMUNITY_BYTES = 16 * 1024 * 1024
     lateinit var communities: MutableList<Community>
 
     @Throws(IOException::class)
@@ -55,14 +56,7 @@ object CommunityDatabase {
                 stream.writeInt(DATABASE_VERSION)
                 stream.writeInt(communities.size)
                 for (community in communities) {
-                    saveCommunityRegionNumberId(stream,community)
-                    saveCommunityMember(stream,community)
-                    stream.writeInt(community.joinPolicy.value)
-                    stream.writeInt(community.status.value)
-                    saveCommunityAnnouncements(stream, community)
-                    saveCommunityExpenditures(stream, community)
-                    saveCommunityMessages(stream, community)
-                    stream.writeLong(community.creationCost)
+                    writeCommunityRecord(stream, community)
                 }
 
                 writeSection(stream, SECTION_PENDING_OPERATIONS) { savePendingOperations(it) }
@@ -82,6 +76,25 @@ object CommunityDatabase {
         } catch (_: IOException) {
             Files.move(tempFile, targetFile, StandardCopyOption.REPLACE_EXISTING)
         }
+    }
+
+    private fun writeCommunityRecord(stream: DataOutputStream, community: Community) {
+        val buffer = ByteArrayOutputStream()
+        DataOutputStream(buffer).use { communityStream -> saveCommunityBody(communityStream, community) }
+        val payload = buffer.toByteArray()
+        stream.writeInt(payload.size)
+        stream.write(payload)
+    }
+
+    private fun saveCommunityBody(stream: DataOutputStream, community: Community) {
+        saveCommunityRegionNumberId(stream, community)
+        saveCommunityMember(stream, community)
+        stream.writeInt(community.joinPolicy.value)
+        stream.writeInt(community.status.value)
+        saveCommunityAnnouncements(stream, community)
+        saveCommunityExpenditures(stream, community)
+        saveCommunityMessages(stream, community)
+        stream.writeLong(community.creationCost)
     }
 
     private fun writeSection(
@@ -190,42 +203,50 @@ object CommunityDatabase {
             val size = if (databaseVersion == 1) firstInt else stream.readInt()
             communities = ArrayList(size)
             for (i in 0 until size) {
-                val regionNumberId = loadCommunityRegionNumberId(stream)
-                val memberCount = stream.readInt()
-                val memberMap = loadMemberMap(stream, memberCount)
-                val joinPolicy = CommunityJoinPolicy.fromValue(stream.readInt())
-                val status = CommunityStatus.fromValue(stream.readInt())
-                val announcements = loadCommunityAnnouncements(stream)
-                val expenditures = loadCommunityExpenditures(stream, strict = databaseVersion >= 2)
-                val messages = loadCommunityMessages(stream, strict = databaseVersion >= 2)
-                
-                val creationCost = if (stream.available() > 0) {
-                    try {
-                        stream.readLong()
-                    } catch (e: Exception) {
-                        0L
-                    }
-                } else {
-                    0L
-                }
-
-                val community = Community(
-                    regionNumberId = regionNumberId,
-                    member = memberMap,
-                    joinPolicy = joinPolicy,
-                    status = status,
-                    announcements = announcements,
-                    expenditures = expenditures,
-                    messages = messages,
-                    creationCost = creationCost
-                )
-                communities.add(community)
+                communities.add(loadCommunityRecord(stream, databaseVersion))
             }
 
             if (stream.available() > 0) {
                 loadTrailingSections(stream)
             }
         }
+    }
+
+    private fun loadCommunityRecord(stream: DataInputStream, databaseVersion: Int): Community {
+        if (databaseVersion < 3) return loadCommunityBody(stream, databaseVersion)
+
+        val length = stream.readInt()
+        require(length in 0..MAX_COMMUNITY_BYTES) { "Invalid community record length: $length" }
+        val payload = stream.readNBytes(length)
+        require(payload.size == length) { "Truncated community record" }
+        DataInputStream(ByteArrayInputStream(payload)).use { communityStream ->
+            val community = loadCommunityBody(communityStream, databaseVersion)
+            require(communityStream.available() == 0) { "Unread bytes in community record" }
+            return community
+        }
+    }
+
+    private fun loadCommunityBody(stream: DataInputStream, databaseVersion: Int): Community {
+        val regionNumberId = loadCommunityRegionNumberId(stream)
+        val memberCount = stream.readInt()
+        val memberMap = loadMemberMap(stream, memberCount)
+        val joinPolicy = CommunityJoinPolicy.fromValue(stream.readInt())
+        val status = CommunityStatus.fromValue(stream.readInt())
+        val announcements = loadCommunityAnnouncements(stream)
+        val expenditures = loadCommunityExpenditures(stream, strict = databaseVersion >= 2)
+        val messages = loadCommunityMessages(stream, strict = databaseVersion >= 2)
+        val creationCost = if (databaseVersion >= 2) stream.readLong() else 0L
+
+        return Community(
+            regionNumberId = regionNumberId,
+            member = memberMap,
+            joinPolicy = joinPolicy,
+            status = status,
+            announcements = announcements,
+            expenditures = expenditures,
+            messages = messages,
+            creationCost = creationCost
+        )
     }
 
     fun addCommunity(community: Community) {

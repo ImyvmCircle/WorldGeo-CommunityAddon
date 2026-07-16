@@ -2,6 +2,7 @@ package com.imyvm.community.infra
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -9,6 +10,12 @@ import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.nio.file.Files
 import java.nio.file.Path
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.MemberAccount
+import com.imyvm.community.domain.model.community.CommunityJoinPolicy
+import com.imyvm.community.domain.model.community.CommunityStatus
+import com.imyvm.community.domain.model.community.MemberRoleType
+import java.util.UUID
 
 class CommunityDatabaseTest {
 
@@ -36,6 +43,71 @@ class CommunityDatabaseTest {
         assertEquals("payload", DataInputStream(ByteArrayInputStream(payload)).readUTF())
         assertEquals(0, input.available())
     }
+
+    @Test
+    fun writeCommunityRecordPrefixesPayloadWithLength() {
+        val bytes = ByteArrayOutputStream()
+        val stream = DataOutputStream(bytes)
+        val method = CommunityDatabase.javaClass.getDeclaredMethod(
+            "writeCommunityRecord",
+            DataOutputStream::class.java,
+            Community::class.java
+        )
+        method.isAccessible = true
+        val ownerUUID = UUID.fromString("00000000-0000-0000-0000-000000000001")
+        val community = Community(
+            regionNumberId = 123,
+            member = hashMapOf(ownerUUID to MemberAccount(
+                joinedTime = 456L,
+                basicRoleType = MemberRoleType.OWNER
+            )),
+            joinPolicy = CommunityJoinPolicy.OPEN,
+            status = CommunityStatus.RECRUITING_REALM,
+            creationCost = 789L
+        )
+        method.invoke(CommunityDatabase, stream, community)
+
+        val input = DataInputStream(ByteArrayInputStream(bytes.toByteArray()))
+        val length = input.readInt()
+        val payload = input.readNBytes(length)
+        assertEquals(0, input.available())
+
+        val loadMethod = CommunityDatabase.javaClass.getDeclaredMethod(
+            "loadCommunityBody",
+            DataInputStream::class.java,
+            Int::class.javaPrimitiveType
+        )
+        loadMethod.isAccessible = true
+        val loaded = loadMethod.invoke(
+            CommunityDatabase,
+            DataInputStream(ByteArrayInputStream(payload)),
+            3
+        ) as Community
+
+        assertEquals(123, loaded.regionNumberId)
+        assertEquals(789L, loaded.creationCost)
+        assertEquals(MemberRoleType.OWNER, loaded.member[ownerUUID]?.basicRoleType)
+    }
+
+    @Test
+    fun loadCommunityRecordRejectsTruncatedPayload() {
+        val bytes = ByteArrayOutputStream()
+        DataOutputStream(bytes).use { stream ->
+            stream.writeInt(8)
+            stream.writeInt(1)
+        }
+        val method = CommunityDatabase.javaClass.getDeclaredMethod(
+            "loadCommunityRecord",
+            DataInputStream::class.java,
+            Int::class.javaPrimitiveType
+        )
+        method.isAccessible = true
+
+        assertFailsWith<java.lang.reflect.InvocationTargetException> {
+            method.invoke(CommunityDatabase, DataInputStream(ByteArrayInputStream(bytes.toByteArray())), 3)
+        }
+    }
+
     @Test
     fun replaceDatabaseFilePublishesCompleteTempFile() {
         val dir = Files.createTempDirectory("community-db-test")
