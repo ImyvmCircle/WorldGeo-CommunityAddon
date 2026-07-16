@@ -20,7 +20,9 @@ import net.minecraft.network.chat.Component
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.IOException
+import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 import java.util.*
 
 object CommunityDatabase {
@@ -33,23 +35,39 @@ object CommunityDatabase {
     @Throws(IOException::class)
     fun save() {
         val file = this.getDatabasePath()
-        DataOutputStream(file.toFile().outputStream()).use { stream ->
-            stream.writeInt(communities.size)
-            for (community in communities) {
-                saveCommunityRegionNumberId(stream,community)
-                saveCommunityMember(stream,community)
-                stream.writeInt(community.joinPolicy.value)
-                stream.writeInt(community.status.value)
-                saveCommunityAnnouncements(stream, community)
-                saveCommunityExpenditures(stream, community)
-                saveCommunityMessages(stream, community)
-                stream.writeLong(community.creationCost)
-            }
+        val parent = file.parent
+        if (parent != null) Files.createDirectories(parent)
+        val tempFile = Files.createTempFile(parent, "${DATABASE_FILENAME}.", ".tmp")
+        try {
+            DataOutputStream(Files.newOutputStream(tempFile)).use { stream ->
+                stream.writeInt(communities.size)
+                for (community in communities) {
+                    saveCommunityRegionNumberId(stream,community)
+                    saveCommunityMember(stream,community)
+                    stream.writeInt(community.joinPolicy.value)
+                    stream.writeInt(community.status.value)
+                    saveCommunityAnnouncements(stream, community)
+                    saveCommunityExpenditures(stream, community)
+                    saveCommunityMessages(stream, community)
+                    stream.writeLong(community.creationCost)
+                }
 
-            savePendingOperations(stream)
-            saveNameChangeCooldownsSection(stream)
-            saveLikesSection(stream)
-            saveCommunityIncomeSection(stream)
+                savePendingOperations(stream)
+                saveNameChangeCooldownsSection(stream)
+                saveLikesSection(stream)
+                saveCommunityIncomeSection(stream)
+            }
+            replaceDatabaseFile(tempFile, file)
+        } finally {
+            Files.deleteIfExists(tempFile)
+        }
+    }
+
+    private fun replaceDatabaseFile(tempFile: Path, targetFile: Path) {
+        try {
+            Files.move(tempFile, targetFile, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+        } catch (_: IOException) {
+            Files.move(tempFile, targetFile, StandardCopyOption.REPLACE_EXISTING)
         }
     }
 
