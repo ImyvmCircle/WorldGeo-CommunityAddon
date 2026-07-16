@@ -32,5 +32,5 @@ class CommunityCreationRenameMenuAnvil(
         ).open()
     }
 
-    override fun getMenuTitle(): Component = buildTitle(Translator.tr("ui.create.rename.title") ?: Component.literal("Rename Community"))
+    override fun getMenuTitle(): Component = buildTitle(Translator.trOrFallback("ui.create.rename.title", "Rename Community"))
 }

@@ -36,12 +36,12 @@ class CommunityScopeSelectionMenu(
         handlePageWithSize(communities.size, communitiesPerPage)
     }
 
-    override fun openNewPage(playerExecutor: ServerPlayer, newPage: Int) {
-        CommunityMenuOpener.open(playerExecutor) { syncId ->
+    override fun openNewPage(player: ServerPlayer, newPage: Int) {
+        CommunityMenuOpener.open(player) { syncId ->
             CommunityScopeSelectionMenu(
                 syncId = syncId,
                 communities = communities,
-                player = player,
+                player = this.player,
                 title = menuTitle ?: Component.literal("Select Community"),
                 page = newPage,
                 runBack = runBack,
