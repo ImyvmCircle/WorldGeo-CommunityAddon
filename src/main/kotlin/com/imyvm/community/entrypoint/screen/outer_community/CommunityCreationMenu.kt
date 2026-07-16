@@ -14,7 +14,7 @@ import net.minecraft.network.chat.Component
 
 class CommunityCreationMenu(
     syncId: Int,
-    currentName: String = Translator.tr("ui.create.title").string ?: "New-Creating-Community",
+    currentName: String = Translator.trStringOrFallback("ui.create.title", "New-Creating-Community"),
     currentShape: GeoShapeType = GeoShapeType.RECTANGLE,
     isCurrentCommunityTypeManor: Boolean = true,
     playerExecutor: ServerPlayer,
@@ -33,7 +33,7 @@ class CommunityCreationMenu(
 
         addButton(
             slot = 13,
-            name = (Translator.tr("ui.create.button.shape.prefix").string ?: "Current Shape(Click to change):")
+            name = (Translator.trStringOrFallback("ui.create.button.shape.prefix", "Current Shape(Click to change):"))
                     + currentShape.toString(),
             item = when (currentShape) {
                 GeoShapeType.CIRCLE -> Items.CLOCK
@@ -45,14 +45,14 @@ class CommunityCreationMenu(
 
         addButton(
             slot = 16,
-            name = if (isCurrentCommunityTypeManor) Translator.tr("ui.create.button.type.manor").string ?: "Manor"
-            else Translator.tr("ui.create.button.type.realm").string ?: "Realm",
+            name = if (isCurrentCommunityTypeManor) Translator.trStringOrFallback("ui.create.button.type.manor", "Manor")
+            else Translator.trStringOrFallback("ui.create.button.type.realm", "Realm"),
             item = if (isCurrentCommunityTypeManor) Items.BIRCH_PLANKS else Items.CHERRY_PLANKS
         ) { runSwitchCommunityType(it, currentName, currentShape, isCurrentCommunityTypeManor, runBack) }
 
         addButton(
             slot = 35,
-            name = Translator.tr("ui.create.button.confirm").string ?: "Confirm Creation",
+            name = Translator.trStringOrFallback("ui.create.button.confirm", "Confirm Creation"),
             item = Items.EMERALD_BLOCK
         ) { runConfirmCommunityCreation(it, currentName, currentShape, isCurrentCommunityTypeManor) }
     }

@@ -23,36 +23,36 @@ class TerritoryMenu(
     init {
         addButton(
             slot = 10,
-            name = Translator.tr("ui.territory.button.create").string ?: "Create Community",
+            name = Translator.trStringOrFallback("ui.territory.button.create", "Create Community"),
             item = Items.DIAMOND_PICKAXE
         ) { runOpenCommunityCreation(it, runBack) }
 
         addButton(
             slot = 13,
-            name = Translator.tr("ui.territory.button.add_scope").string ?: "Add Scope",
+            name = Translator.trStringOrFallback("ui.territory.button.add_scope", "Add Scope"),
             item = Items.GRASS_BLOCK
         ) { runAddScope(it, runBack) }
 
         addButton(
             slot = 16,
-            name = Translator.tr("ui.territory.button.modify").string ?: "Modify Territory",
+            name = Translator.trStringOrFallback("ui.territory.button.modify", "Modify Territory"),
             item = Items.SHEARS
         ) { runModifyScope(it, runBack) }
     }
 
     companion object {
         private fun createMenuTitle(playerExecutor: ServerPlayer): Component {
-            val base = Translator.tr("ui.territory.title").string ?: "Territory"
+            val base = Translator.trStringOrFallback("ui.territory.title", "Territory")
             return when (val hypotheticalShape = ImyvmWorldGeo.pointSelectingPlayers[playerExecutor.uuid]?.hypotheticalShape) {
                 is HypotheticalShape.Normal -> {
-                    val hint = Translator.tr("ui.territory.title.hint.creating").string ?: "[Creating]"
+                    val hint = Translator.trStringOrFallback("ui.territory.title.hint.creating", "[Creating]")
                     Component.literal("$base $hint")
                 }
                 is HypotheticalShape.ModifyExisting -> {
-                    val prefix = Translator.tr("ui.territory.title.hint.modifying_prefix").string ?: "[Modifying: "
+                    val prefix = Translator.trStringOrFallback("ui.territory.title.hint.modifying_prefix", "[Modifying: ")
                     Component.literal("$base $prefix${hypotheticalShape.scope.scopeName}]")
                 }
-                else -> Translator.tr("ui.territory.title") ?: Component.literal("Territory")
+                else -> Translator.trOrFallback("ui.territory.title", "Territory")
             }
         }
     }

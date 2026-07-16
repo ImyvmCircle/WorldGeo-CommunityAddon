@@ -28,13 +28,24 @@ object Translator : HokiTranslator() {
     }
 
     fun tr(key: String?, vararg args: Any?): Component {
+        return format(key, args)?.let { TextParser.parse(it) } ?: Component.empty()
+    }
+
+    fun trOrFallback(key: String?, fallback: String, vararg args: Any?): Component {
+        return format(key, args)?.let { TextParser.parse(it) } ?: Component.literal(fallback)
+    }
+
+    fun trStringOrFallback(key: String?, fallback: String, vararg args: Any?): String {
+        return format(key, args)?.let { TextParser.parse(it).string } ?: fallback
+    }
+
+    private fun format(key: String?, args: Array<out Any?>): String? {
         val raw = key?.let { languageInstance.get(it) }
-        val formatted = if (args.isNotEmpty()) {
+        return if (args.isNotEmpty()) {
             raw?.let { java.text.MessageFormat.format(it, *args) }
         } else {
             raw
         }
-        return formatted?.let { TextParser.parse(it) } ?: Component.empty()
     }
 
     private fun createLanguage(languageId: String) = HokiLanguage.create(

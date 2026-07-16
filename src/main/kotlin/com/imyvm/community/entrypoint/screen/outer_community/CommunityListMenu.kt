@@ -11,7 +11,6 @@ import com.imyvm.community.entrypoint.screen.inner_community.CommunityMenu
 import com.imyvm.community.util.Translator
 import net.minecraft.world.item.Items
 import net.minecraft.server.level.ServerPlayer
-import net.minecraft.network.chat.Component
 
 class CommunityListMenu(
     syncId: Int,
@@ -20,7 +19,7 @@ class CommunityListMenu(
     val runBack: ((ServerPlayer) -> Unit)
 ) : AbstractListMenu(
     syncId = syncId,
-    menuTitle = Translator.tr("ui.list.title") ?: Component.literal("Community List"),
+    menuTitle = Translator.trOrFallback("ui.list.title", "Community List"),
     page = page,
     runBack = runBack
 ) {
@@ -118,14 +117,14 @@ class CommunityListMenu(
 
         addButton(
             slot = 45,
-            name = Translator.tr("ui.list.button.${mode.name.lowercase()}")?.string ?: mode.name,
+            name = Translator.trStringOrFallback("ui.list.button.${mode.name.lowercase()}", mode.name),
             item = selectedItem
         ) {}
 
         CommunityListFilterType.entries.forEachIndexed { index, filterType ->
             addButton(
                 slot = 47 + index,
-                name = Translator.tr("ui.list.button.${filterType.name.lowercase()}")?.string ?: filterType.name,
+                name = Translator.trStringOrFallback("ui.list.button.${filterType.name.lowercase()}", filterType.name),
                 item = modeColorMap[filterType] ?: Items.WHITE_WOOL
             ) { runSwitchFilterMode(it, filterType, runBack) }
         }
