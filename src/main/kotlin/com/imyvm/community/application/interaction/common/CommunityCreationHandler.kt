@@ -43,7 +43,7 @@ fun onCreateCommunityRequest(
     }
 
     if (requestedShapeType != null && ImyvmWorldGeo.pointSelectingPlayers.containsKey(player.uuid)) {
-        PlayerInteractionApi.setSelectionShape(player, requestedShapeType)
+        if (PlayerInteractionApi.setSelectionShape(player, requestedShapeType) == 0) return 0
     }
 
     val shapeType = when (val hs = ImyvmWorldGeo.pointSelectingPlayers[player.uuid]?.hypotheticalShape) {
@@ -68,10 +68,11 @@ fun onCreateCommunityRequest(
     }
 
     val regionNumberId = region.numberID
+    val actualShapeType = region.geometryScope.firstOrNull()?.geoShape?.geoShapeType ?: shapeType
 
     val confirmationMessages = generateCreationConfirmationMessage(
         communityName = communityName,
-        geoShapeType = shapeType,
+        geoShapeType = actualShapeType,
         isManor = isManor,
         costResult = costResult
     )
@@ -86,7 +87,7 @@ fun onCreateCommunityRequest(
         creationData = CreationConfirmationData(
             communityName = communityName,
             communityType = communityType,
-            shapeName = shapeType.name,
+            shapeName = actualShapeType.name,
             regionNumberId = regionNumberId,
             creatorUUID = player.uuid,
             totalCost = costResult.totalCost
