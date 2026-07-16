@@ -1,7 +1,11 @@
 package com.imyvm.community.domain.model
 
+import com.imyvm.community.WorldGeoCommunityAddon
+import com.imyvm.community.application.event.addPendingOperationByKey
 import com.imyvm.community.application.event.getPendingOperation
+import com.imyvm.community.application.event.getPendingOperationByKey
 import com.imyvm.community.application.event.removePendingOperation
+import com.imyvm.community.application.event.removePendingOperationByKey
 import com.imyvm.community.application.event.restorePendingOperation
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -39,6 +43,23 @@ class PendingOperationTest {
 
         assertEquals(operation, getPendingOperation(subjectId, PendingOperationType.CREATE_COMMUNITY_CONFIRMATION))
         removePendingOperation(subjectId, PendingOperationType.CREATE_COMMUNITY_CONFIRMATION)
+    }
+
+    @Test
+    fun pendingOperationByKeyUsesExactLongKey() {
+        val operationKey = 0x1234_5678_9abc_def0L
+        try {
+            addPendingOperationByKey(
+                operationKey = operationKey,
+                type = PendingOperationType.INVITATION,
+                expireMinutes = 5
+            )
+
+            assertEquals(PendingOperationType.INVITATION, getPendingOperationByKey(operationKey)?.type)
+        } finally {
+            removePendingOperationByKey(operationKey)
+            WorldGeoCommunityAddon.pendingOperations.clear()
+        }
     }
 
 }

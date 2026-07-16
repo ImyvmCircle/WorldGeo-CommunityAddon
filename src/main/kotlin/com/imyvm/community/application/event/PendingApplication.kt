@@ -24,6 +24,15 @@ fun getPendingOperation(subjectId: Int?, type: PendingOperationType): PendingOpe
 fun hasPendingOperation(subjectId: Int?, type: PendingOperationType): Boolean =
     getPendingOperation(subjectId, type) != null
 
+fun getPendingOperationByKey(operationKey: Long): PendingOperation? {
+    return WorldGeoCommunityAddon.pendingOperations[operationKey]
+}
+
+fun removePendingOperationByKey(operationKey: Long): PendingOperation? {
+    return WorldGeoCommunityAddon.pendingOperations.remove(operationKey)
+}
+
+
 fun removePendingOperation(subjectId: Int?, type: PendingOperationType): PendingOperation? {
     if (subjectId == null) return null
     return WorldGeoCommunityAddon.pendingOperations.remove(pendingOperationKey(subjectId, type))
@@ -275,15 +284,54 @@ fun addPendingOperation(
         else -> throw IllegalArgumentException("Must specify either expireHours or expireMinutes")
     }
     val key = pendingOperationKey(regionId, type)
-    val existing = WorldGeoCommunityAddon.pendingOperations[key]
+    addPendingOperationByKey(
+        operationKey = key,
+        type = type,
+        expireHours = expireHours,
+        expireMinutes = expireMinutes,
+        inviterUUID = inviterUUID,
+        inviteeUUID = inviteeUUID,
+        creationData = creationData,
+        modificationData = modificationData,
+        teleportPointData = teleportPointData,
+        settingData = settingData,
+        renameData = renameData,
+        transferData = transferData,
+        treasuryGrantData = treasuryGrantData
+    )
+    WorldGeoCommunityAddon.logger.info("Added pending operation: type=$type, regionId=$regionId, expireAt=$expireTime")
+}
+
+fun addPendingOperationByKey(
+    operationKey: Long,
+    type: PendingOperationType,
+    expireHours: Int? = null,
+    expireMinutes: Int? = null,
+    inviterUUID: UUID? = null,
+    inviteeUUID: UUID? = null,
+    creationData: com.imyvm.community.domain.model.CreationConfirmationData? = null,
+    modificationData: com.imyvm.community.domain.model.ScopeModificationConfirmationData? = null,
+    teleportPointData: com.imyvm.community.domain.model.TeleportPointConfirmationData? = null,
+    settingData: com.imyvm.community.domain.model.SettingConfirmationData? = null,
+    renameData: com.imyvm.community.domain.model.RenameConfirmationData? = null,
+    transferData: com.imyvm.community.domain.model.ScopeTransferConfirmationData? = null,
+    treasuryGrantData: com.imyvm.community.domain.model.TreasuryGrantConfirmationData? = null
+) {
+    val now = System.currentTimeMillis()
+    val expireTime = when {
+        expireHours != null -> now + expireHours * 3600 * 1000L
+        expireMinutes != null -> now + expireMinutes * 60 * 1000L
+        else -> throw IllegalArgumentException("Must specify either expireHours or expireMinutes")
+    }
+    val existing = WorldGeoCommunityAddon.pendingOperations[operationKey]
     if (existing != null && existing.expireAt > now) {
-        throw IllegalStateException("Pending operation already exists for regionId=$regionId, type=${existing.type}")
+        throw IllegalStateException("Pending operation already exists for operationKey=$operationKey, type=${existing.type}")
     }
     if (existing != null) {
-        WorldGeoCommunityAddon.pendingOperations.remove(key)
+        WorldGeoCommunityAddon.pendingOperations.remove(operationKey)
     }
-    
-    WorldGeoCommunityAddon.pendingOperations[key] = PendingOperation(
+
+    WorldGeoCommunityAddon.pendingOperations[operationKey] = PendingOperation(
         expireAt = expireTime,
         type = type,
         inviterUUID = inviterUUID,
@@ -296,5 +344,5 @@ fun addPendingOperation(
         transferData = transferData,
         treasuryGrantData = treasuryGrantData
     )
-    WorldGeoCommunityAddon.logger.info("Added pending operation: type=$type, regionId=$regionId, expireAt=$expireTime")
+    WorldGeoCommunityAddon.logger.info("Added pending operation: type=$type, operationKey=$operationKey, expireAt=$expireTime")
 }

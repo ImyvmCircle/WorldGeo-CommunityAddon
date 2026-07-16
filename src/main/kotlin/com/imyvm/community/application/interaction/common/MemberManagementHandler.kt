@@ -1,7 +1,6 @@
 package com.imyvm.community.application.interaction.common
 
-import com.imyvm.community.WorldGeoCommunityAddon
-import com.imyvm.community.application.event.addPendingOperation
+import com.imyvm.community.application.event.addPendingOperationByKey
 import com.imyvm.community.application.interaction.common.helper.checkPlayerMembershipJoin
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
@@ -22,11 +21,37 @@ import net.minecraft.network.chat.Component
 import java.util.*
 import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.HoverEvent
-import com.imyvm.community.application.event.getPendingOperation
-import com.imyvm.community.application.event.removePendingOperation
+import com.imyvm.community.application.event.getPendingOperationByKey
+import com.imyvm.community.application.event.removePendingOperationByKey
+import com.imyvm.community.domain.model.PendingOperation
+import com.imyvm.community.domain.model.pendingOperationKey
 
-private fun getInvitationKey(inviteeUUID: UUID): Int {
-    return inviteeUUID.hashCode()
+private fun getInvitationKey(community: Community, inviteeUUID: UUID): Long? {
+    val regionId = community.regionNumberId ?: return null
+    val uuidPart = inviteeUUID.mostSignificantBits xor java.lang.Long.rotateLeft(inviteeUUID.leastSignificantBits, 32)
+    return pendingOperationKey(regionId, PendingOperationType.INVITATION) xor uuidPart
+}
+
+private fun getLegacyInvitationKey(inviteeUUID: UUID): Long {
+    return pendingOperationKey(inviteeUUID.hashCode(), PendingOperationType.INVITATION)
+}
+
+private fun getInvitationOperation(community: Community, inviteeUUID: UUID): Pair<Long, PendingOperation>? {
+    val invitationKey = getInvitationKey(community, inviteeUUID)
+    if (invitationKey != null) {
+        val operation = getPendingOperationByKey(invitationKey)
+        if (operation?.type == PendingOperationType.INVITATION && operation.inviteeUUID == inviteeUUID) {
+            return invitationKey to operation
+        }
+    }
+
+    val legacyKey = getLegacyInvitationKey(inviteeUUID)
+    val legacyOperation = getPendingOperationByKey(legacyKey)
+    if (legacyOperation?.type == PendingOperationType.INVITATION && legacyOperation.inviteeUUID == inviteeUUID) {
+        return legacyKey to legacyOperation
+    }
+
+    return null
 }
 
 fun notifyOfficials(community: Community, server: net.minecraft.server.MinecraftServer, message: Component, executor: ServerPlayer? = null) {
@@ -289,6 +314,7 @@ fun sendInvitation(inviter: ServerPlayer, target: ServerPlayer, community: Commu
     
     val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
     val timeoutMinutes = CommunityConfig.INVITATION_RESPONSE_TIMEOUT_MINUTES.value
+    val invitationKey = getInvitationKey(community, target.uuid) ?: return
     
     community.member[target.uuid] = MemberAccount(
         joinedTime = System.currentTimeMillis(),
@@ -296,10 +322,8 @@ fun sendInvitation(inviter: ServerPlayer, target: ServerPlayer, community: Commu
         isInvited = true
     )
     
-    val invitationKey = getInvitationKey(target.uuid)
-    
-    addPendingOperation(
-        regionId = invitationKey,
+    addPendingOperationByKey(
+        operationKey = invitationKey,
         type = PendingOperationType.INVITATION,
         expireMinutes = timeoutMinutes,
         inviterUUID = inviter.uuid,
@@ -366,8 +390,9 @@ fun sendInvitation(inviter: ServerPlayer, target: ServerPlayer, community: Commu
 }
 
 fun onAcceptInvitation(player: ServerPlayer, community: Community) {
-    val invitationKey = getInvitationKey(player.uuid)
-    val pendingOp = getPendingOperation(invitationKey, PendingOperationType.INVITATION)
+    val invitationEntry = getInvitationOperation(community, player.uuid)
+    val invitationKey = invitationEntry?.first
+    val pendingOp = invitationEntry?.second
     val memberAccount = community.member[player.uuid]
     
     if (pendingOp == null || pendingOp.type != PendingOperationType.INVITATION || 
@@ -378,7 +403,7 @@ fun onAcceptInvitation(player: ServerPlayer, community: Community) {
     
     if (pendingOp.expireAt <= System.currentTimeMillis()) {
         player.sendSystemMessage(Translator.tr("community.invite.error.expired"))
-        removePendingOperation(invitationKey, PendingOperationType.INVITATION)
+        if (invitationKey != null) removePendingOperationByKey(invitationKey)
         community.member.remove(player.uuid)
         com.imyvm.community.infra.CommunityDatabase.save()
         return
@@ -387,7 +412,7 @@ fun onAcceptInvitation(player: ServerPlayer, community: Community) {
     val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
     player.sendSystemMessage(Translator.tr("community.invite.accepted", communityName))
 
-    removePendingOperation(invitationKey, PendingOperationType.INVITATION)
+    if (invitationKey != null) removePendingOperationByKey(invitationKey)
 
     val notification = Translator.tr(
         "community.notification.invitation_accepted",
@@ -406,8 +431,9 @@ fun onAcceptInvitation(player: ServerPlayer, community: Community) {
 }
 
 fun onRejectInvitation(player: ServerPlayer, community: Community) {
-    val invitationKey = getInvitationKey(player.uuid)
-    val pendingOp = getPendingOperation(invitationKey, PendingOperationType.INVITATION)
+    val invitationEntry = getInvitationOperation(community, player.uuid)
+    val invitationKey = invitationEntry?.first
+    val pendingOp = invitationEntry?.second
     val memberAccount = community.member[player.uuid]
     
     if (pendingOp == null || pendingOp.type != PendingOperationType.INVITATION || 
@@ -416,7 +442,7 @@ fun onRejectInvitation(player: ServerPlayer, community: Community) {
         return
     }
     
-    removePendingOperation(invitationKey, PendingOperationType.INVITATION)
+    if (invitationKey != null) removePendingOperationByKey(invitationKey)
     community.member.remove(player.uuid)
     
     val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
