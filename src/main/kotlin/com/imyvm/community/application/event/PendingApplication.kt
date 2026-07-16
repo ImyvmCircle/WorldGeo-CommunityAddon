@@ -84,10 +84,12 @@ private fun handleExpiredOperation(
             if (community != null) {
                 promoteCommunityIfEligible(key, community)
                 removeExpiredRealmRequest(key, community, server)
+                removePendingOperation(key, iterator, server, operation.type)
+                CommunityDatabase.save()
             } else {
                 iterator.remove()
+                CommunityDatabase.save()
             }
-            removePendingOperation(key, iterator, server, operation.type)
         }
         PendingOperationType.TELEPORT_POINT_CONFIRMATION -> {
             iterator.remove()
@@ -221,11 +223,11 @@ fun checkAndPromoteRecruitingRealm(community: Community) {
 
 private fun removeExpiredRealmRequest(regionId: Int, community: Community, server: MinecraftServer) {
     val ownerEntry = community.member.entries.find { community.getMemberRole(it.key) == MemberRoleType.OWNER } ?: return
-    val ownerPlayer = server.playerList.getPlayer(ownerEntry.key) ?: return
+    val ownerPlayer = server.playerList.getPlayer(ownerEntry.key)
 
     if (community.status == CommunityStatus.RECRUITING_REALM) {
         community.status = CommunityStatus.REVOKED_REALM
-        refundNotCreated(ownerPlayer, community)
+        refundNotCreated(ownerPlayer, community, ownerEntry.key)
         WorldGeoCommunityAddon.logger.info("Community $regionId recruitment expired and revoked.")
     }
 }
