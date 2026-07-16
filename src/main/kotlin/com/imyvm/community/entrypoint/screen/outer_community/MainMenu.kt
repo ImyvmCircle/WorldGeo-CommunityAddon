@@ -6,14 +6,13 @@ import com.imyvm.community.util.Translator
 import com.imyvm.iwg.ImyvmWorldGeo
 import net.minecraft.world.item.Items
 import net.minecraft.server.level.ServerPlayer
-import net.minecraft.network.chat.Component
 
 class MainMenu(
     syncId: Int,
     val playerExecutor: ServerPlayer
 ) : AbstractMenu(
         syncId,
-        menuTitle = Translator.tr("ui.main.title") ?: Component.literal("Community Menu")
+        menuTitle = Translator.tr("ui.main.title")
     ) {
 
     init {
@@ -26,19 +25,19 @@ class MainMenu(
     private fun addGeneralButtons() {
         addButton(
             slot = 10,
-            name = Translator.tr("ui.main.button.list").string ?: "List",
+            name = Translator.tr("ui.main.button.list").string,
             item = Items.WRITABLE_BOOK
         ) { runList(it) }
 
         addButton(
             slot = 13,
-            name = Translator.tr("ui.main.button.geo").string ?: "Territory",
+            name = Translator.tr("ui.main.button.geo").string,
             item = Items.DIAMOND_PICKAXE
         ) { runGeoOperation(it) }
 
         addButton(
             slot = 16,
-            name = Translator.tr("ui.main.button.my").string ?: "My Village",
+            name = Translator.tr("ui.main.button.my").string,
             item = Items.RED_BED
         ) { runMyCommunity(it) }
     }
@@ -49,13 +48,13 @@ class MainMenu(
 
         addButton(
             slot = 22,
-            name = Translator.tr("ui.create.button.selection_mode.close").string ?: "Close Selection Mode",
+            name = Translator.tr("ui.create.button.selection_mode.close").string,
             item = Items.COMMAND_BLOCK
         ) { runToggleSelectionMode(it) }
 
         addButton(
             slot = 31,
-            name = Translator.tr("ui.main.button.selection_mode.reset").string ?: "Reset Point Selection",
+            name = Translator.tr("ui.main.button.selection_mode.reset").string,
             item = Items.TNT
         ) { runResetSelection(it) }
     }
@@ -63,7 +62,7 @@ class MainMenu(
     private fun addServerOperatorButton() {
         addButton(
             slot = 19,
-            name = Translator.tr("ui.main.button.op").string ?: "OP",
+            name = Translator.tr("ui.main.button.op").string,
             item = Items.ANVIL
         ) {}
     }
@@ -73,9 +72,9 @@ class MainMenu(
         addButton(
             slot = 44,
             name = if (isRegionActionBarEnabled) {
-                Translator.tr("ui.main.button.action_bar.enable").string ?: "Action Bar : Enabled"
+                Translator.tr("ui.main.button.action_bar.enable").string
             } else {
-                Translator.tr("ui.main.button.action_bar.disable").string ?: "Action Bar: Disabled"
+                Translator.tr("ui.main.button.action_bar.disable").string
             },
             item = if (isRegionActionBarEnabled) Items.LIME_DYE else Items.GRAY_DYE
         ) { runToggleActionBar(playerExecutor)}
