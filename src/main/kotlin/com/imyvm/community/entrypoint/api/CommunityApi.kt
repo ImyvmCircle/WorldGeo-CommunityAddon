@@ -48,6 +48,7 @@ object CommunityApi {
         descriptionKey: String? = null,
         descriptionArgs: List<String> = emptyList()
     ): Result<Unit> {
+        requireServerThread()?.let { return Result.failure(it) }
         if (amount <= 0L) return Result.failure(IllegalArgumentException("amount must be positive"))
         val community = CommunityDatabase.getCommunityById(regionNumberId)
             ?: return Result.failure(NoSuchElementException("community not found for regionNumberId=$regionNumberId"))
@@ -69,6 +70,7 @@ object CommunityApi {
         descriptionKey: String? = null,
         descriptionArgs: List<String> = emptyList()
     ): Result<Unit> {
+        requireServerThread()?.let { return Result.failure(it) }
         if (amount <= 0L) return Result.failure(IllegalArgumentException("amount must be positive"))
         val community = CommunityDatabase.getCommunityById(regionNumberId)
             ?: return Result.failure(NoSuchElementException("community not found for regionNumberId=$regionNumberId"))
@@ -124,6 +126,15 @@ object CommunityApi {
                 blockPlaceCount = blockPlaceCount
             )
         )
+    }
+
+    private fun requireServerThread(): IllegalStateException? {
+        val server = WorldGeoCommunityAddon.server
+            ?: return IllegalStateException("CommunityApi mutating calls require a running Minecraft server")
+        if (!server.isSameThread) {
+            return IllegalStateException("CommunityApi mutating calls must run on the Minecraft server thread")
+        }
+        return null
     }
 
 private fun Community.toSnapshot(): CommunitySnapshot = CommunitySnapshot(
