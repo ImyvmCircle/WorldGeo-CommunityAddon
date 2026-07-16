@@ -196,8 +196,8 @@ object CommunityDatabase {
                 val joinPolicy = CommunityJoinPolicy.fromValue(stream.readInt())
                 val status = CommunityStatus.fromValue(stream.readInt())
                 val announcements = loadCommunityAnnouncements(stream)
-                val expenditures = loadCommunityExpenditures(stream)
-                val messages = loadCommunityMessages(stream)
+                val expenditures = loadCommunityExpenditures(stream, strict = databaseVersion >= 2)
+                val messages = loadCommunityMessages(stream, strict = databaseVersion >= 2)
                 
                 val creationCost = if (stream.available() > 0) {
                     try {
@@ -404,10 +404,11 @@ object CommunityDatabase {
         writeTurnoverList(stream, community.expenditures)
     }
 
-    private fun loadCommunityExpenditures(stream: DataInputStream): ArrayList<Turnover> {
+    private fun loadCommunityExpenditures(stream: DataInputStream, strict: Boolean): ArrayList<Turnover> {
         return try {
             readTurnoverList(stream)
         } catch (e: Exception) {
+            if (strict) throw e
             ArrayList()
         }
     }
@@ -434,7 +435,7 @@ object CommunityDatabase {
         }
     }
 
-    private fun loadCommunityMessages(stream: DataInputStream): MutableList<CommunityMessage> {
+    private fun loadCommunityMessages(stream: DataInputStream, strict: Boolean): MutableList<CommunityMessage> {
         val messages = try {
             val size = stream.readInt()
             val list = mutableListOf<CommunityMessage>()
@@ -472,6 +473,7 @@ object CommunityDatabase {
             }
             list
         } catch (e: Exception) {
+            if (strict) throw e
             mutableListOf()
         }
         return messages
