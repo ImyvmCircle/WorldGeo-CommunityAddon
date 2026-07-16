@@ -21,7 +21,7 @@ object Translator : HokiTranslator() {
         key: String,
         vararg args: Any
     ) {
-        tr(key, *args)?.let {
+        tr(key, *args).let {
             playerExecutor.closeContainer()
             playerExecutor.sendSystemMessage(it)
         }

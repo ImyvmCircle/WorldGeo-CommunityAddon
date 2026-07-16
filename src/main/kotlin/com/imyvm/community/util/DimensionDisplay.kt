@@ -8,6 +8,6 @@ fun getPlayerDimensionId(player: ServerPlayer): String {
 }
 
 fun getColoredDimensionName(dimensionId: String): String {
-    return Translator.tr(TerritoryPricing.getDimensionDisplayKey(dimensionId))?.string
-        ?: TerritoryPricing.normalizeDimensionId(dimensionId)
+    val translated = Translator.tr(TerritoryPricing.getDimensionDisplayKey(dimensionId)).string
+    return translated.ifEmpty { TerritoryPricing.normalizeDimensionId(dimensionId) }
 }

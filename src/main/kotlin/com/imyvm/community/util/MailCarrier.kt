@@ -21,7 +21,7 @@ fun constructAndSendMail(
         content
     )
 
-    if (message != null && message.string.isNotEmpty()) {
+    if (message.string.isNotEmpty()) {
         mailBox.add(message)
         return true
     }
