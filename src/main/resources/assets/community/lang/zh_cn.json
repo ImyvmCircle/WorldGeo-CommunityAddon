@@ -89,6 +89,7 @@
   "community.invite.expired.inviter": "§e§l[已过期]§r §e您邀请 §b§l{0}§r §e加入 §f§l{1}§r §e的邀请已过期。",
   "community.invite.expired.invitee": "§e§l[已过期]§r §e您加入 §f§l{0}§r §e的邀请已过期。",
   "community.audit.error.refund_target_offline": "§c§l[无法退款]§r §c申请者 §f§l{0}§r §c不在线，无法安全退款，已取消拒绝操作。请在其在线后重试。",
+  "community.audit.refund.deferred": "§e§l[退款已挂起]§r §e申请者 §f§l{0}§r §e不在线。§a${1}§e 将在其下次上线时退还。",
   "community.audit.error.insufficient_assets": "§c§l[国库不足]§r §c无法批准 §f§l{0}§c：需要 §e§l{1}§r §c以支付入住费用。",
   "community.leave.success": "§a§l[成功]§r §a您已成功退出 §f§l{0}§a。",
   "community.leave.error.missing_data": "§c§l[错误]§r §c退出操作缺少领域数据。",

@@ -94,6 +94,49 @@ class CommunityDatabaseTest {
     }
 
     @Test
+    fun writeCommunityRecordPreservesPendingRefunds() {
+        val bytes = ByteArrayOutputStream()
+        val stream = DataOutputStream(bytes)
+        val ownerUUID = UUID.fromString("00000000-0000-0000-0000-000000000001")
+        val memberUUID = UUID.fromString("00000000-0000-0000-0000-000000000002")
+        val community = Community(
+            regionNumberId = 123,
+            member = hashMapOf(
+                ownerUUID to MemberAccount(
+                    joinedTime = 456L,
+                    basicRoleType = MemberRoleType.OWNER
+                ),
+                memberUUID to MemberAccount(
+                    joinedTime = 789L,
+                    basicRoleType = MemberRoleType.REFUSED,
+                    pendingRefund = 321L
+                )
+            ),
+            joinPolicy = CommunityJoinPolicy.OPEN,
+            status = CommunityStatus.RECRUITING_REALM
+        )
+        val writeMethod = CommunityDatabase.javaClass.getDeclaredMethod(
+            "writeCommunityRecord",
+            DataOutputStream::class.java,
+            Community::class.java
+        )
+        writeMethod.isAccessible = true
+        writeMethod.invoke(CommunityDatabase, stream, community)
+
+        val input = DataInputStream(ByteArrayInputStream(bytes.toByteArray()))
+        val loadMethod = CommunityDatabase.javaClass.getDeclaredMethod(
+            "loadCommunityRecord",
+            DataInputStream::class.java,
+            Int::class.javaPrimitiveType
+        )
+        loadMethod.isAccessible = true
+        val loaded = loadMethod.invoke(CommunityDatabase, input, 3) as Community
+
+        assertEquals(321L, loaded.member[memberUUID]?.pendingRefund)
+        assertEquals(0L, loaded.member[ownerUUID]?.pendingRefund)
+    }
+
+    @Test
     fun loadCommunityRecordRejectsTruncatedPayload() {
         val bytes = ByteArrayOutputStream()
         DataOutputStream(bytes).use { stream ->

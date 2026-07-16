@@ -103,6 +103,7 @@ object CommunityDatabase {
         saveCommunityExpenditures(stream, community)
         saveCommunityMessages(stream, community)
         stream.writeLong(community.creationCost)
+        saveMemberPendingRefunds(stream, community)
     }
 
     private fun writeSection(
@@ -273,6 +274,7 @@ object CommunityDatabase {
         val expenditures = loadCommunityExpenditures(stream, strict = databaseVersion >= 2)
         val messages = loadCommunityMessages(stream, strict = databaseVersion >= 2)
         val creationCost = if (databaseVersion >= 2) stream.readLong() else 0L
+        loadMemberPendingRefunds(stream, memberMap)
 
         return Community(
             regionNumberId = regionNumberId,
@@ -393,6 +395,28 @@ object CommunityDatabase {
                     stream.writeInt(privilege.ordinal)
                 }
             }
+        }
+    }
+
+    private fun saveMemberPendingRefunds(stream: DataOutputStream, community: Community) {
+        val pendingRefunds = community.member.filterValues { it.pendingRefund > 0L }
+        stream.writeInt(pendingRefunds.size)
+        for ((uuid, memberAccount) in pendingRefunds) {
+            stream.writeUTF(uuid.toString())
+            stream.writeLong(memberAccount.pendingRefund)
+        }
+    }
+
+    private fun loadMemberPendingRefunds(stream: DataInputStream, memberMap: HashMap<UUID, MemberAccount>) {
+        try {
+            val refundCount = readCount(stream, "pending refund")
+            for (i in 0 until refundCount) {
+                val uuid = UUID.fromString(stream.readUTF())
+                val amount = stream.readLong()
+                if (amount > 0L) memberMap[uuid]?.pendingRefund = amount
+            }
+        } catch (e: Exception) {
+            return
         }
     }
 

@@ -89,6 +89,7 @@
   "community.invite.expired.inviter": "§e§l[EXPIRED]§r §eYour invitation to §b§l{0}§r §eto join §f§l{1}§r §ehas expired.",
   "community.invite.expired.invitee": "§e§l[EXPIRED]§r §eYour invitation to join §f§l{0}§r §ehas expired.",
   "community.audit.error.refund_target_offline": "§c§l[REFUND BLOCKED]§r §cApplicant §f§l{0}§r §cis offline, so the refund cannot be applied safely. Refusal was cancelled; retry when they are online.",
+  "community.audit.refund.deferred": "§e§l[REFUND DEFERRED]§r §eApplicant §f§l{0}§r §eis offline. §a${1}§e will be refunded when they next join.",
   "community.audit.error.insufficient_assets": "§c§l[INSUFFICIENT ASSETS]§r §cCannot approve §f§l{0}§c: Need §e§l{1}§r §cto pay the join cost.",
   "community.leave.success": "§a§l[SUCCESS]§r §aYou have successfully left §f§l{0}§a.",
   "community.leave.error.missing_data": "§c§l[ERROR]§r §cMissing community data for leave operation.",

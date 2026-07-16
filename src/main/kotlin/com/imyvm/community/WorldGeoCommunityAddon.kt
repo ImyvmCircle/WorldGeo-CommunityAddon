@@ -8,6 +8,7 @@ import com.imyvm.community.entrypoint.event.registerAnnouncementNotification
 import com.imyvm.community.entrypoint.event.registerChatInterceptor
 import com.imyvm.community.entrypoint.event.registerExpireCheck
 import com.imyvm.community.entrypoint.event.registerMailCheck
+import com.imyvm.community.entrypoint.event.registerPendingRefundCheck
 import com.imyvm.community.entrypoint.event.registerSelectionContextCleanup
 import com.imyvm.community.entrypoint.registerDataLoadAndSave
 import net.fabricmc.api.ModInitializer
@@ -22,6 +23,7 @@ class WorldGeoCommunityAddon : ModInitializer {
 		registerDataLoadAndSave()
 		registerExpireCheck()
 		registerMailCheck()
+		registerPendingRefundCheck()
 		registerSelectionContextCleanup()
 		registerAnnouncementNotification()
 		registerChatInterceptor()

@@ -176,25 +176,25 @@ fun runRefuse(
                     else PricingConfig.COMMUNITY_JOIN_COST_REALM.value
                 
                 val applicantPlayer = playerExecutor.level().server.playerList.getPlayer(playerObject.id)
-                if (applicantPlayer == null) {
-                    playerExecutor.sendSystemMessage(
+                if (applicantPlayer != null) {
+                    val playerData = com.imyvm.economy.EconomyMod.data.getOrCreate(applicantPlayer)
+                    playerData.money += cost
+                    applicantPlayer.sendSystemMessage(
                         Translator.tr(
-                            "community.audit.error.refund_target_offline",
-                            playerObject.name
+                            "community.join.refund",
+                            cost / 100.0
                         )
                     )
-                    playerExecutor.closeContainer()
-                    return@executeWithPermission
-                }
-
-                val playerData = com.imyvm.economy.EconomyMod.data.getOrCreate(applicantPlayer)
-                playerData.money += cost
-                applicantPlayer.sendSystemMessage(
-                    Translator.tr(
-                        "community.join.refund",
-                        cost / 100.0
+                } else {
+                    objectAccount.pendingRefund += cost
+                    playerExecutor.sendSystemMessage(
+                        Translator.tr(
+                            "community.audit.refund.deferred",
+                            playerObject.name,
+                            cost / 100.0
+                        )
                     )
-                )
+                }
                 
                 objectAccount.basicRoleType = com.imyvm.community.domain.model.community.MemberRoleType.REFUSED
                 objectAccount.joinedTime = System.currentTimeMillis()
