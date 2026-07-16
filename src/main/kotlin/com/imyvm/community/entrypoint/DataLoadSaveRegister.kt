@@ -18,7 +18,16 @@ fun dataLoad() {
         PricingConfig.validateValues()
         CommunityDatabase.load()
     } catch (e: Exception) {
-        WorldGeoCommunityAddon.logger.error("Failed to load community database: ${e.message}", e)
+        try {
+            val backupPath = CommunityDatabase.backupDatabaseAfterLoadFailure()
+            if (backupPath != null) {
+                WorldGeoCommunityAddon.logger.error("Failed to load community database. Corrupt copy saved to $backupPath", e)
+            } else {
+                WorldGeoCommunityAddon.logger.error("Failed to load community database: ${e.message}", e)
+            }
+        } catch (backupError: Exception) {
+            WorldGeoCommunityAddon.logger.error("Failed to load community database and failed to save corrupt copy: ${backupError.message}", e)
+        }
         throw IllegalStateException("Failed to load community database", e)
     }
 }

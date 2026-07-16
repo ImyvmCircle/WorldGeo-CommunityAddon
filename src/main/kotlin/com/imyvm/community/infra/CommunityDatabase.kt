@@ -257,6 +257,16 @@ object CommunityDatabase {
         communities.remove(targetCommunity)
     }
 
+    fun backupDatabaseAfterLoadFailure(): Path? {
+        return backupDatabaseFile(getDatabasePath(), System.currentTimeMillis())
+    }
+
+    private fun backupDatabaseFile(databaseFile: Path, timestamp: Long): Path? {
+        if (!Files.exists(databaseFile)) return null
+        val backupFile = databaseFile.resolveSibling("${databaseFile.fileName}.corrupt.$timestamp")
+        return Files.copy(databaseFile, backupFile)
+    }
+
     fun getCommunityById(regionId: Int): Community? {
         return communities.find { it.regionNumberId == regionId }
     }

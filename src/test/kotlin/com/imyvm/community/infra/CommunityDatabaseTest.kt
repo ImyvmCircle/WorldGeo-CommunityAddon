@@ -108,6 +108,31 @@ class CommunityDatabaseTest {
         }
     }
 
+
+    @Test
+    fun backupDatabaseFileCopiesCorruptDatabase() {
+        val dir = Files.createTempDirectory("community-db-backup-test")
+        try {
+            val database = dir.resolve("iwg_community.db")
+            Files.writeString(database, "corrupt")
+            val method = CommunityDatabase.javaClass.getDeclaredMethod(
+                "backupDatabaseFile",
+                Path::class.java,
+                Long::class.javaPrimitiveType
+            )
+            method.isAccessible = true
+
+            val backup = method.invoke(CommunityDatabase, database, 1234L) as Path
+
+            assertEquals("iwg_community.db.corrupt.1234", backup.fileName.toString())
+            assertEquals("corrupt", Files.readString(backup))
+        } finally {
+            Files.walk(dir)
+                .sorted(Comparator.reverseOrder())
+                .forEach(Files::deleteIfExists)
+        }
+    }
+
     @Test
     fun replaceDatabaseFilePublishesCompleteTempFile() {
         val dir = Files.createTempDirectory("community-db-test")
