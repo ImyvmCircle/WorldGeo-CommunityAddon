@@ -11,6 +11,7 @@ import com.imyvm.community.util.getPlayerDimensionId
 import com.imyvm.community.util.SelectionReturnContext
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.inter.api.PlayerInteractionApi.resetSelection
 import com.imyvm.iwg.inter.api.PlayerInteractionApi.startSelection
 import com.imyvm.iwg.inter.api.PlayerInteractionApi.stopSelection
@@ -397,7 +398,8 @@ private fun runCreateCommunity(context: CommandContext<CommandSourceStack>): Int
     val communityType = StringArgumentType.getString(context, "communityType").lowercase(Locale.getDefault())
     val name = StringArgumentType.getString(context, "name")
     val shapeName = StringArgumentType.getString(context, "shapeType").uppercase(Locale.getDefault())
-    return onCreateCommunityRequest(player, communityType, name)
+    val shapeType = GeoShapeType.entries.find { it.name == shapeName } ?: GeoShapeType.RECTANGLE
+    return onCreateCommunityRequest(player, communityType, name, shapeType)
 }
 
 private fun runConfirmCommunityCreation(context: CommandContext<CommandSourceStack>): Int {

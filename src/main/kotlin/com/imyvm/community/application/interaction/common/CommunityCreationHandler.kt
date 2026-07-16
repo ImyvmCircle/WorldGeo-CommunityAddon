@@ -28,7 +28,8 @@ import net.minecraft.network.chat.HoverEvent
 fun onCreateCommunityRequest(
     player: ServerPlayer,
     communityType: String,
-    communityName: String
+    communityName: String,
+    requestedShapeType: GeoShapeType? = null
 ): Int {
     if (!checkPlayerMembershipCreation(player, communityType)) return 0
 
@@ -41,9 +42,13 @@ fun onCreateCommunityRequest(
         return 0
     }
 
+    if (requestedShapeType != null && ImyvmWorldGeo.pointSelectingPlayers.containsKey(player.uuid)) {
+        PlayerInteractionApi.setSelectionShape(player, requestedShapeType)
+    }
+
     val shapeType = when (val hs = ImyvmWorldGeo.pointSelectingPlayers[player.uuid]?.hypotheticalShape) {
         is HypotheticalShape.Normal -> hs.shapeType
-        else -> GeoShapeType.RECTANGLE
+        else -> requestedShapeType ?: GeoShapeType.RECTANGLE
     }
 
     val region = PlayerInteractionApi.createAndGetRegion(player, communityName, idMark = 2)
