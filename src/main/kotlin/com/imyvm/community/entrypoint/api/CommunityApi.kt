@@ -51,13 +51,13 @@ object CommunityApi {
         if (amount <= 0L) return Result.failure(IllegalArgumentException("amount must be positive"))
         val community = CommunityDatabase.getCommunityById(regionNumberId)
             ?: return Result.failure(NoSuchElementException("community not found for regionNumberId=$regionNumberId"))
+        val turnover = Turnover(amount, System.currentTimeMillis(), source, descriptionKey, descriptionArgs)
         return try {
-            community.communityIncome.add(
-                Turnover(amount, System.currentTimeMillis(), source, descriptionKey, descriptionArgs)
-            )
+            community.communityIncome.add(turnover)
             CommunityDatabase.save()
             Result.success(Unit)
         } catch (e: Exception) {
+            community.communityIncome.remove(turnover)
             Result.failure(e)
         }
     }
@@ -75,13 +75,13 @@ object CommunityApi {
         if (community.getTotalAssets() < amount) {
             return Result.failure(IllegalStateException("insufficient balance for regionNumberId=$regionNumberId"))
         }
+        val turnover = Turnover(amount, System.currentTimeMillis(), source, descriptionKey, descriptionArgs)
         return try {
-            community.expenditures.add(
-                Turnover(amount, System.currentTimeMillis(), source, descriptionKey, descriptionArgs)
-            )
+            community.expenditures.add(turnover)
             CommunityDatabase.save()
             Result.success(Unit)
         } catch (e: Exception) {
+            community.expenditures.remove(turnover)
             Result.failure(e)
         }
     }
