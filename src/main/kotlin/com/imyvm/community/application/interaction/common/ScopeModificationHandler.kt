@@ -15,9 +15,11 @@ import com.imyvm.iwg.inter.api.RegionDataApi
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.network.chat.Component
+import com.imyvm.community.application.event.getPendingOperation
+import com.imyvm.community.application.event.removePendingOperation
 
 private fun getAndValidatePendingOperation(player: ServerPlayer, regionNumberId: Int, scopeName: String): com.imyvm.community.domain.model.PendingOperation? {
-    val pendingOp = WorldGeoCommunityAddon.pendingOperations[regionNumberId]
+    val pendingOp = getPendingOperation(regionNumberId, PendingOperationType.MODIFY_SCOPE_CONFIRMATION)
 
     if (pendingOp == null || pendingOp.type != PendingOperationType.MODIFY_SCOPE_CONFIRMATION) {
         player.sendSystemMessage(Translator.tr("community.modification.confirmation.not_found"))
@@ -39,14 +41,14 @@ fun onConfirmScopeModification(player: ServerPlayer, regionNumberId: Int, scopeN
 
     if (System.currentTimeMillis() > pendingOp.expireAt) {
         player.sendSystemMessage(Translator.tr("community.modification.confirmation.expired"))
-        WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        removePendingOperation(regionNumberId, PendingOperationType.MODIFY_SCOPE_CONFIRMATION)
         return 0
     }
 
     val community = CommunityDatabase.getCommunityById(regionNumberId)
     if (community == null) {
         player.sendSystemMessage(Translator.tr("community.modification.error.community_not_found"))
-        WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        removePendingOperation(regionNumberId, PendingOperationType.MODIFY_SCOPE_CONFIRMATION)
         return 0
     }
 
@@ -62,7 +64,7 @@ fun onConfirmScopeModification(player: ServerPlayer, regionNumberId: Int, scopeN
     val communityRegion = community.getRegion()
     if (communityRegion == null) {
         player.sendSystemMessage(Translator.tr("community.modification.error.no_region"))
-        WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        removePendingOperation(regionNumberId, PendingOperationType.MODIFY_SCOPE_CONFIRMATION)
         return 0
     }
 
@@ -90,7 +92,7 @@ fun onConfirmScopeModification(player: ServerPlayer, regionNumberId: Int, scopeN
             ))
         }
 
-        WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        removePendingOperation(regionNumberId, PendingOperationType.MODIFY_SCOPE_CONFIRMATION)
         CommunityDatabase.save()
 
         val costDisplay = String.format("%.2f", modificationData.cost / 100.0)
@@ -128,7 +130,7 @@ fun onConfirmScopeModification(player: ServerPlayer, regionNumberId: Int, scopeN
 
     PlayerInteractionApi.modifyScope(player, communityRegion, scopeName)
     if (ImyvmWorldGeo.pointSelectingPlayers.containsKey(player.uuid)) {
-        WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        removePendingOperation(regionNumberId, PendingOperationType.MODIFY_SCOPE_CONFIRMATION)
         return 0
     }
 
@@ -155,7 +157,7 @@ fun onConfirmScopeModification(player: ServerPlayer, regionNumberId: Int, scopeN
         }
     }
 
-    WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+    removePendingOperation(regionNumberId, PendingOperationType.MODIFY_SCOPE_CONFIRMATION)
     CommunityDatabase.save()
 
     val costDisplay = String.format("%.2f", Math.abs(modificationData.cost) / 100.0)
@@ -192,13 +194,13 @@ fun onConfirmScopeModification(player: ServerPlayer, regionNumberId: Int, scopeN
 fun onCancelScopeModification(player: ServerPlayer, regionNumberId: Int, scopeName: String): Int {
     if (getAndValidatePendingOperation(player, regionNumberId, scopeName) == null) return 0
 
-    WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+    removePendingOperation(regionNumberId, PendingOperationType.MODIFY_SCOPE_CONFIRMATION)
     player.sendSystemMessage(Translator.tr("community.modification.confirmation.cancelled", scopeName))
     return 1
 }
 
 private fun getAndValidateDeletionPendingOperation(player: ServerPlayer, regionNumberId: Int, scopeName: String): com.imyvm.community.domain.model.PendingOperation? {
-    val pendingOp = WorldGeoCommunityAddon.pendingOperations[regionNumberId]
+    val pendingOp = getPendingOperation(regionNumberId, PendingOperationType.DELETE_SCOPE_CONFIRMATION)
 
     if (pendingOp == null || pendingOp.type != PendingOperationType.DELETE_SCOPE_CONFIRMATION) {
         player.sendSystemMessage(Translator.tr("community.scope_delete.confirmation.not_found"))
@@ -220,27 +222,27 @@ fun onConfirmScopeDeletion(player: ServerPlayer, regionNumberId: Int, scopeName:
 
     if (System.currentTimeMillis() > pendingOp.expireAt) {
         player.sendSystemMessage(Translator.tr("community.modification.confirmation.expired"))
-        WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        removePendingOperation(regionNumberId, PendingOperationType.DELETE_SCOPE_CONFIRMATION)
         return 0
     }
 
     val community = CommunityDatabase.getCommunityById(regionNumberId)
     if (community == null) {
         player.sendSystemMessage(Translator.tr("community.modification.error.community_not_found"))
-        WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        removePendingOperation(regionNumberId, PendingOperationType.DELETE_SCOPE_CONFIRMATION)
         return 0
     }
 
     val communityRegion = community.getRegion()
     if (communityRegion == null) {
         player.sendSystemMessage(Translator.tr("community.modification.error.no_region"))
-        WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        removePendingOperation(regionNumberId, PendingOperationType.DELETE_SCOPE_CONFIRMATION)
         return 0
     }
 
     if (communityRegion.geometryScope.size <= 1) {
         player.sendSystemMessage(Translator.tr("community.scope_delete.error.last_scope"))
-        WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        removePendingOperation(regionNumberId, PendingOperationType.DELETE_SCOPE_CONFIRMATION)
         return 0
     }
 
@@ -258,7 +260,7 @@ fun onConfirmScopeDeletion(player: ServerPlayer, regionNumberId: Int, scopeName:
         }
     }
 
-    WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+    removePendingOperation(regionNumberId, PendingOperationType.DELETE_SCOPE_CONFIRMATION)
     CommunityDatabase.save()
 
     val refundDisplay = String.format("%.2f", Math.abs(modificationData.cost) / 100.0)
@@ -287,13 +289,13 @@ fun onConfirmScopeDeletion(player: ServerPlayer, regionNumberId: Int, scopeName:
 fun onCancelScopeDeletion(player: ServerPlayer, regionNumberId: Int, scopeName: String): Int {
     if (getAndValidateDeletionPendingOperation(player, regionNumberId, scopeName) == null) return 0
 
-    WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+    removePendingOperation(regionNumberId, PendingOperationType.DELETE_SCOPE_CONFIRMATION)
     player.sendSystemMessage(Translator.tr("community.scope_delete.confirmation.cancelled", scopeName))
     return 1
 }
 
 fun onAcceptTerritoryGrant(player: ServerPlayer, sourceRegionId: Int, scopeName: String): Int {
-    val pendingOp = WorldGeoCommunityAddon.pendingOperations[sourceRegionId]
+    val pendingOp = getPendingOperation(sourceRegionId, PendingOperationType.TRANSFER_SCOPE_CONFIRMATION)
     if (pendingOp == null || pendingOp.type != PendingOperationType.TRANSFER_SCOPE_CONFIRMATION) {
         player.sendSystemMessage(Translator.tr("community.scope_transfer.confirmation.not_found"))
         return 0
@@ -307,14 +309,14 @@ fun onAcceptTerritoryGrant(player: ServerPlayer, sourceRegionId: Int, scopeName:
 
     if (System.currentTimeMillis() > pendingOp.expireAt) {
         player.sendSystemMessage(Translator.tr("community.scope_transfer.confirmation.expired"))
-        WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
+        removePendingOperation(sourceRegionId, PendingOperationType.TRANSFER_SCOPE_CONFIRMATION)
         return 0
     }
 
     val targetCommunity = CommunityDatabase.getCommunityById(transferData.targetRegionNumberId)
     if (targetCommunity == null) {
         player.sendSystemMessage(Translator.tr("community.scope_transfer.error.target_not_found"))
-        WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
+        removePendingOperation(sourceRegionId, PendingOperationType.TRANSFER_SCOPE_CONFIRMATION)
         return 0
     }
 
@@ -326,34 +328,34 @@ fun onAcceptTerritoryGrant(player: ServerPlayer, sourceRegionId: Int, scopeName:
     val sourceCommunity = CommunityDatabase.getCommunityById(sourceRegionId)
     if (sourceCommunity == null) {
         player.sendSystemMessage(Translator.tr("community.modification.error.community_not_found"))
-        WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
+        removePendingOperation(sourceRegionId, PendingOperationType.TRANSFER_SCOPE_CONFIRMATION)
         return 0
     }
 
     val sourceRegion = sourceCommunity.getRegion()
     if (sourceRegion == null) {
         player.sendSystemMessage(Translator.tr("community.modification.error.no_region"))
-        WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
+        removePendingOperation(sourceRegionId, PendingOperationType.TRANSFER_SCOPE_CONFIRMATION)
         return 0
     }
 
     if (sourceRegion.geometryScope.size <= 1) {
         player.sendSystemMessage(Translator.tr("community.scope_transfer.error.last_scope"))
-        WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
+        removePendingOperation(sourceRegionId, PendingOperationType.TRANSFER_SCOPE_CONFIRMATION)
         return 0
     }
 
     val targetRegion = targetCommunity.getRegion()
     if (targetRegion == null) {
         player.sendSystemMessage(Translator.tr("community.scope_transfer.error.target_no_region"))
-        WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
+        removePendingOperation(sourceRegionId, PendingOperationType.TRANSFER_SCOPE_CONFIRMATION)
         return 0
     }
 
     val result = PlayerInteractionApi.transferScope(player, sourceRegion, scopeName, targetRegion)
     if (result == 0) return 0
 
-    WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
+    removePendingOperation(sourceRegionId, PendingOperationType.TRANSFER_SCOPE_CONFIRMATION)
     CommunityDatabase.save()
 
     val sourceName = sourceCommunity.generateCommunityMark()
@@ -375,7 +377,7 @@ fun onAcceptTerritoryGrant(player: ServerPlayer, sourceRegionId: Int, scopeName:
 }
 
 fun onDeclineTerritoryGrant(player: ServerPlayer, sourceRegionId: Int, scopeName: String): Int {
-    val pendingOp = WorldGeoCommunityAddon.pendingOperations[sourceRegionId]
+    val pendingOp = getPendingOperation(sourceRegionId, PendingOperationType.TRANSFER_SCOPE_CONFIRMATION)
     if (pendingOp == null || pendingOp.type != PendingOperationType.TRANSFER_SCOPE_CONFIRMATION) {
         player.sendSystemMessage(Translator.tr("community.scope_transfer.confirmation.not_found"))
         return 0
@@ -393,7 +395,7 @@ fun onDeclineTerritoryGrant(player: ServerPlayer, sourceRegionId: Int, scopeName
         return 0
     }
 
-    WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
+    removePendingOperation(sourceRegionId, PendingOperationType.TRANSFER_SCOPE_CONFIRMATION)
     player.sendSystemMessage(Translator.tr("community.scope_transfer.confirmation.declined", scopeName))
 
     // Notify the initiator that the grant was declined
@@ -405,7 +407,7 @@ fun onDeclineTerritoryGrant(player: ServerPlayer, sourceRegionId: Int, scopeName
 }
 
 fun onCancelTerritoryGrant(player: ServerPlayer, sourceRegionId: Int, scopeName: String): Int {
-    val pendingOp = WorldGeoCommunityAddon.pendingOperations[sourceRegionId]
+    val pendingOp = getPendingOperation(sourceRegionId, PendingOperationType.TRANSFER_SCOPE_CONFIRMATION)
     if (pendingOp == null || pendingOp.type != PendingOperationType.TRANSFER_SCOPE_CONFIRMATION) {
         player.sendSystemMessage(Translator.tr("community.scope_transfer.confirmation.not_found"))
         return 0
@@ -417,7 +419,7 @@ fun onCancelTerritoryGrant(player: ServerPlayer, sourceRegionId: Int, scopeName:
         return 0
     }
 
-    WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
+    removePendingOperation(sourceRegionId, PendingOperationType.TRANSFER_SCOPE_CONFIRMATION)
     player.sendSystemMessage(Translator.tr("community.scope_transfer.confirmation.cancelled", scopeName))
 
     val targetCommunity = CommunityDatabase.getCommunityById(transferData.targetRegionNumberId)

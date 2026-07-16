@@ -1,7 +1,9 @@
 package com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element
 
-import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.application.event.addPendingOperation
+import com.imyvm.community.application.event.getPendingOperation
+import com.imyvm.community.application.event.hasPendingOperation
+import com.imyvm.community.application.event.removePendingOperation
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.PendingOperationType
 import com.imyvm.community.domain.model.SettingConfirmationData
@@ -85,7 +87,7 @@ fun runTogglingPermissionSetting(
         val region = community.getRegion() ?: return@executeWithPermission
         val regionId = community.regionNumberId ?: return@executeWithPermission
 
-        if (WorldGeoCommunityAddon.pendingOperations.containsKey(regionId)) {
+        if (hasPendingOperation(regionId, PendingOperationType.SETTING_CONFIRMATION)) {
             playerExecutor.closeContainer()
             playerExecutor.sendSystemMessage(Translator.tr("community.modification.confirmation.pending"))
             return@executeWithPermission
@@ -171,7 +173,7 @@ fun runTogglingRuleSetting(
         val region = community.getRegion() ?: return@executeWithPermission
         val regionId = community.regionNumberId ?: return@executeWithPermission
 
-        if (WorldGeoCommunityAddon.pendingOperations.containsKey(regionId)) {
+        if (hasPendingOperation(regionId, PendingOperationType.SETTING_CONFIRMATION)) {
             playerExecutor.closeContainer()
             playerExecutor.sendSystemMessage(Translator.tr("community.modification.confirmation.pending"))
             return@executeWithPermission
@@ -221,7 +223,7 @@ fun runTogglingRuleSetting(
 }
 
 fun onConfirmSettingChange(playerExecutor: ServerPlayer, regionNumberId: Int): Int {
-    val pendingOperation = WorldGeoCommunityAddon.pendingOperations[regionNumberId]
+    val pendingOperation = getPendingOperation(regionNumberId, PendingOperationType.SETTING_CONFIRMATION)
     val request = pendingOperation?.settingData
     if (pendingOperation == null ||
         pendingOperation.type != PendingOperationType.SETTING_CONFIRMATION ||
@@ -235,7 +237,7 @@ fun onConfirmSettingChange(playerExecutor: ServerPlayer, regionNumberId: Int): I
         return 0
     }
     if (System.currentTimeMillis() > pendingOperation.expireAt) {
-        WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        removePendingOperation(regionNumberId, PendingOperationType.SETTING_CONFIRMATION)
         playerExecutor.sendSystemMessage(Translator.tr("community.setting.confirmation.expired"))
         return 0
     }
@@ -243,7 +245,7 @@ fun onConfirmSettingChange(playerExecutor: ServerPlayer, regionNumberId: Int): I
     val community = CommunityDatabase.getCommunityById(regionNumberId)
     val region = community?.getRegion()
     if (community == null || region == null) {
-        WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        removePendingOperation(regionNumberId, PendingOperationType.SETTING_CONFIRMATION)
         playerExecutor.sendSystemMessage(Translator.tr("community.not_found.region"))
         return 0
     }
@@ -262,13 +264,13 @@ fun onConfirmSettingChange(playerExecutor: ServerPlayer, regionNumberId: Int): I
                 .any { it.key == ruleKey && it.value == request.newValue }
         }
         if (hasIdenticalRuleSetting) {
-            WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+            removePendingOperation(regionNumberId, PendingOperationType.SETTING_CONFIRMATION)
             playerExecutor.sendSystemMessage(Translator.tr("community.setting.confirmation.already_set"))
             return 0
         }
 
         if (request.cost > 0 && community.getTotalAssets() < request.cost) {
-            WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+            removePendingOperation(regionNumberId, PendingOperationType.SETTING_CONFIRMATION)
             playerExecutor.sendSystemMessage(
                 Translator.tr(
                     "community.modification.error.insufficient_assets",
@@ -288,7 +290,7 @@ fun onConfirmSettingChange(playerExecutor: ServerPlayer, regionNumberId: Int): I
             PlayerInteractionApi.addSettingScope(playerExecutor, region, scope.scopeName, request.permissionKeyStr, newValueStr, null)
         }
 
-        WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        removePendingOperation(regionNumberId, PendingOperationType.SETTING_CONFIRMATION)
 
         if (request.cost > 0) {
             community.expenditures.add(Turnover(request.cost, System.currentTimeMillis(), TurnoverSource.SYSTEM, "community.treasury.desc.setting_change", listOf(request.permissionKeyStr)))
@@ -344,13 +346,13 @@ fun onConfirmSettingChange(playerExecutor: ServerPlayer, regionNumberId: Int): I
         }
     }
     if (hasIdenticalSetting) {
-        WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        removePendingOperation(regionNumberId, PendingOperationType.SETTING_CONFIRMATION)
         playerExecutor.sendSystemMessage(Translator.tr("community.setting.confirmation.already_set"))
         return 0
     }
 
     if (request.cost > 0 && community.getTotalAssets() < request.cost) {
-        WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        removePendingOperation(regionNumberId, PendingOperationType.SETTING_CONFIRMATION)
         playerExecutor.sendSystemMessage(
             Translator.tr(
                 "community.modification.error.insufficient_assets",
@@ -371,7 +373,7 @@ fun onConfirmSettingChange(playerExecutor: ServerPlayer, regionNumberId: Int): I
         PlayerInteractionApi.addSettingScope(playerExecutor, region, scope.scopeName, request.permissionKeyStr, newValueStr, targetPlayerIdStr)
     }
 
-    WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+    removePendingOperation(regionNumberId, PendingOperationType.SETTING_CONFIRMATION)
 
     if (request.cost > 0) {
         community.expenditures.add(Turnover(request.cost, System.currentTimeMillis(), TurnoverSource.SYSTEM, "community.treasury.desc.setting_change", listOf(request.permissionKeyStr)))
@@ -417,7 +419,7 @@ fun onConfirmSettingChange(playerExecutor: ServerPlayer, regionNumberId: Int): I
 }
 
 fun onCancelSettingChange(playerExecutor: ServerPlayer, regionNumberId: Int): Int {
-    val pendingOperation = WorldGeoCommunityAddon.pendingOperations[regionNumberId]
+    val pendingOperation = getPendingOperation(regionNumberId, PendingOperationType.SETTING_CONFIRMATION)
     val request = pendingOperation?.settingData
     if (pendingOperation == null ||
         pendingOperation.type != PendingOperationType.SETTING_CONFIRMATION ||
@@ -431,7 +433,7 @@ fun onCancelSettingChange(playerExecutor: ServerPlayer, regionNumberId: Int): In
         return 0
     }
 
-    WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+    removePendingOperation(regionNumberId, PendingOperationType.SETTING_CONFIRMATION)
     playerExecutor.sendSystemMessage(Translator.tr("community.setting.confirmation.cancelled"))
     return 1
 }

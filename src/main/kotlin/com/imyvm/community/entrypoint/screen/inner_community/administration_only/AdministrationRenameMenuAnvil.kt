@@ -1,6 +1,7 @@
 package com.imyvm.community.entrypoint.screen.inner_community.administration_only
 
 import com.imyvm.community.application.event.addPendingOperation
+import com.imyvm.community.application.event.getPendingOperation
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.PendingOperationType
@@ -56,7 +57,7 @@ class AdministrationRenameMenuAnvil(
             return
         }
 
-        val existingPending = com.imyvm.community.WorldGeoCommunityAddon.pendingOperations[regionId]
+        val existingPending = getPendingOperation(regionId, PendingOperationType.RENAME_CONFIRMATION)
         if (existingPending != null) {
             player.closeContainer()
             player.sendSystemMessage(Translator.tr("community.modification.confirmation.pending"))

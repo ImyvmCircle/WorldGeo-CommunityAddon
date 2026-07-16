@@ -5,6 +5,8 @@ import com.imyvm.community.application.helper.refundNotCreated
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.PendingOperation
 import com.imyvm.community.domain.model.PendingOperationType
+import com.imyvm.community.domain.model.pendingOperationKey
+import com.imyvm.community.domain.model.pendingOperationSubjectId
 import com.imyvm.community.domain.model.community.CommunityStatus
 import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.infra.CommunityConfig
@@ -13,15 +15,35 @@ import com.imyvm.community.util.Translator
 import net.minecraft.server.MinecraftServer
 import java.util.*
 
+fun getPendingOperation(subjectId: Int?, type: PendingOperationType): PendingOperation? {
+    if (subjectId == null) return null
+    return WorldGeoCommunityAddon.pendingOperations[pendingOperationKey(subjectId, type)]
+}
+
+fun hasPendingOperation(subjectId: Int?, type: PendingOperationType): Boolean =
+    getPendingOperation(subjectId, type) != null
+
+fun removePendingOperation(subjectId: Int?, type: PendingOperationType): PendingOperation? {
+    if (subjectId == null) return null
+    return WorldGeoCommunityAddon.pendingOperations.remove(pendingOperationKey(subjectId, type))
+}
+
+fun removePendingOperationsForSubject(subjectId: Int?) {
+    if (subjectId == null) return
+    WorldGeoCommunityAddon.pendingOperations.keys
+        .filter { pendingOperationSubjectId(it) == subjectId }
+        .forEach { WorldGeoCommunityAddon.pendingOperations.remove(it) }
+}
+
 internal fun checkPendingOperations(server: MinecraftServer) {
     val now = System.currentTimeMillis()
-    val iterator: MutableIterator<MutableMap.MutableEntry<Int, PendingOperation>> =
+    val iterator: MutableIterator<MutableMap.MutableEntry<Long, PendingOperation>> =
         WorldGeoCommunityAddon.pendingOperations.iterator()
 
     while (iterator.hasNext()) {
         val (key, operation) = iterator.next()
         if (operation.expireAt <= now) {
-            handleExpiredOperation(key, operation, iterator, server)
+            handleExpiredOperation(pendingOperationSubjectId(key), operation, iterator, server)
         }
     }
 }
@@ -29,7 +51,7 @@ internal fun checkPendingOperations(server: MinecraftServer) {
 private fun handleExpiredOperation(
     key: Int,
     operation: PendingOperation,
-    iterator: MutableIterator<MutableMap.MutableEntry<Int, PendingOperation>>,
+    iterator: MutableIterator<MutableMap.MutableEntry<Long, PendingOperation>>,
     server: MinecraftServer
 ) {
     when (operation.type) {
@@ -165,7 +187,7 @@ private fun promoteCommunityIfEligible(regionId: Int, community: Community) {
         community.member.count { community.getMemberRole(it.key) != MemberRoleType.APPLICANT && community.getMemberRole(it.key) != MemberRoleType.REFUSED } >= CommunityConfig.MIN_NUMBER_MEMBER_REALM.value &&
         community.status == CommunityStatus.RECRUITING_REALM
     ) {
-        WorldGeoCommunityAddon.pendingOperations.remove(regionId)
+        removePendingOperation(regionId, PendingOperationType.CREATE_COMMUNITY_REALM_REQUEST_RECRUITMENT)
         addAuditingRequestRealm(regionId, community, ownerEntry.key)
         WorldGeoCommunityAddon.logger.info("Community $regionId promoted to auditing stage.")
     }
@@ -197,7 +219,7 @@ private fun removeExpiredRealmRequest(regionId: Int, community: Community, serve
 
 private fun removePendingOperation(
     regionId: Int,
-    iterator: MutableIterator<MutableMap.MutableEntry<Int, PendingOperation>>,
+    iterator: MutableIterator<MutableMap.MutableEntry<Long, PendingOperation>>,
     server: MinecraftServer,
     operationType: PendingOperationType
 ) {
@@ -248,15 +270,16 @@ fun addPendingOperation(
         expireMinutes != null -> now + expireMinutes * 60 * 1000L
         else -> throw IllegalArgumentException("Must specify either expireHours or expireMinutes")
     }
-    val existing = WorldGeoCommunityAddon.pendingOperations[regionId]
+    val key = pendingOperationKey(regionId, type)
+    val existing = WorldGeoCommunityAddon.pendingOperations[key]
     if (existing != null && existing.expireAt > now) {
         throw IllegalStateException("Pending operation already exists for regionId=$regionId, type=${existing.type}")
     }
     if (existing != null) {
-        WorldGeoCommunityAddon.pendingOperations.remove(regionId)
+        WorldGeoCommunityAddon.pendingOperations.remove(key)
     }
     
-    WorldGeoCommunityAddon.pendingOperations[regionId] = PendingOperation(
+    WorldGeoCommunityAddon.pendingOperations[key] = PendingOperation(
         expireAt = expireTime,
         type = type,
         inviterUUID = inviterUUID,

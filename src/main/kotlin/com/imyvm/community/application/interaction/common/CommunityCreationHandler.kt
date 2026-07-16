@@ -24,6 +24,8 @@ import net.minecraft.server.level.ServerPlayer
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.HoverEvent
+import com.imyvm.community.application.event.getPendingOperation
+import com.imyvm.community.application.event.removePendingOperation
 
 fun onCreateCommunityRequest(
     player: ServerPlayer,
@@ -101,7 +103,7 @@ fun onCreateCommunityRequest(
 
 
 fun onConfirmCommunityCreation(player: ServerPlayer, regionNumberId: Int): Int {
-    val pendingOp = WorldGeoCommunityAddon.pendingOperations[regionNumberId]
+    val pendingOp = getPendingOperation(regionNumberId, PendingOperationType.CREATE_COMMUNITY_CONFIRMATION)
 
     if (pendingOp == null || pendingOp.type != PendingOperationType.CREATE_COMMUNITY_CONFIRMATION) {
         player.sendSystemMessage(Translator.tr("community.create.confirmation.not_found"))
@@ -129,7 +131,7 @@ fun onConfirmCommunityCreation(player: ServerPlayer, regionNumberId: Int): Int {
     playerAccount.addMoney(-creationData.totalCost)
     player.sendSystemMessage(Translator.tr("community.create.money.checked", creationData.totalCost / 100.0))
 
-    WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+    removePendingOperation(regionNumberId, PendingOperationType.CREATE_COMMUNITY_CONFIRMATION)
 
     initialRequest(player, creationData.communityName, creationData.communityType, regionNumberId, creationData.totalCost)
     handleRequestBranches(player, creationData.communityType, regionNumberId)
@@ -142,7 +144,7 @@ fun onCancelCommunityCreation(player: ServerPlayer, regionNumberId: Int): Int {
 }
 
 private fun cancelCommunityCreation(player: ServerPlayer, regionNumberId: Int): Int {
-    val pendingOp = WorldGeoCommunityAddon.pendingOperations[regionNumberId]
+    val pendingOp = getPendingOperation(regionNumberId, PendingOperationType.CREATE_COMMUNITY_CONFIRMATION)
 
     if (pendingOp == null || pendingOp.type != PendingOperationType.CREATE_COMMUNITY_CONFIRMATION) {
         player.sendSystemMessage(Translator.tr("community.create.confirmation.not_found"))
@@ -160,7 +162,7 @@ private fun cancelCommunityCreation(player: ServerPlayer, regionNumberId: Int): 
         PlayerInteractionApi.deleteRegion(player, region)
     }
 
-    WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+    removePendingOperation(regionNumberId, PendingOperationType.CREATE_COMMUNITY_CONFIRMATION)
 
     player.sendSystemMessage(Translator.tr("community.create.confirmation.cancelled"))
     return 1

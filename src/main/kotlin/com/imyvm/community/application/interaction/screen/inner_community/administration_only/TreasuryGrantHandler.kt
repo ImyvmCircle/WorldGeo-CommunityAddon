@@ -18,6 +18,8 @@ import net.minecraft.server.level.ServerPlayer
 import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.HoverEvent
 import net.minecraft.network.chat.Component
+import com.imyvm.community.application.event.getPendingOperation
+import com.imyvm.community.application.event.removePendingOperation
 
 fun runOpenTreasuryGrantAmountMenu(
     player: ServerPlayer,
@@ -37,7 +39,7 @@ fun runGrantCoinsToTarget(
     amount: Long,
     runBack: (ServerPlayer) -> Unit
 ) {
-    val existingPending = WorldGeoCommunityAddon.pendingOperations[sourceCommunity.regionNumberId]
+    val existingPending = getPendingOperation(sourceCommunity.regionNumberId, PendingOperationType.TREASURY_GRANT_CONFIRMATION)
     if (existingPending != null) {
         player.closeContainer()
         player.sendSystemMessage(Translator.tr("community.modification.confirmation.pending"))
@@ -97,7 +99,7 @@ fun runGrantCoinsToTarget(
 }
 
 fun onAcceptTreasuryGrant(player: ServerPlayer, sourceRegionId: Int): Int {
-    val pendingOp = WorldGeoCommunityAddon.pendingOperations[sourceRegionId]
+    val pendingOp = getPendingOperation(sourceRegionId, PendingOperationType.TREASURY_GRANT_CONFIRMATION)
     if (pendingOp == null || pendingOp.type != PendingOperationType.TREASURY_GRANT_CONFIRMATION) {
         player.sendSystemMessage(Translator.tr("community.treasury_grant.confirmation.not_found"))
         return 0
@@ -111,14 +113,14 @@ fun onAcceptTreasuryGrant(player: ServerPlayer, sourceRegionId: Int): Int {
 
     if (System.currentTimeMillis() > pendingOp.expireAt) {
         player.sendSystemMessage(Translator.tr("community.treasury_grant.confirmation.expired"))
-        WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
+        removePendingOperation(sourceRegionId, PendingOperationType.TREASURY_GRANT_CONFIRMATION)
         return 0
     }
 
     val targetCommunity = CommunityDatabase.getCommunityById(grantData.targetRegionNumberId)
     if (targetCommunity == null) {
         player.sendSystemMessage(Translator.tr("community.treasury_grant.error.target_not_found"))
-        WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
+        removePendingOperation(sourceRegionId, PendingOperationType.TREASURY_GRANT_CONFIRMATION)
         return 0
     }
 
@@ -130,7 +132,7 @@ fun onAcceptTreasuryGrant(player: ServerPlayer, sourceRegionId: Int): Int {
     val sourceCommunity = CommunityDatabase.getCommunityById(sourceRegionId)
     if (sourceCommunity == null) {
         player.sendSystemMessage(Translator.tr("community.modification.error.community_not_found"))
-        WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
+        removePendingOperation(sourceRegionId, PendingOperationType.TREASURY_GRANT_CONFIRMATION)
         return 0
     }
 
@@ -139,7 +141,7 @@ fun onAcceptTreasuryGrant(player: ServerPlayer, sourceRegionId: Int): Int {
         val amountFormatted = "%.2f".format(grantData.amount / 100.0)
         val assetsFormatted = "%.2f".format(currentAssets / 100.0)
         player.sendSystemMessage(Translator.tr("community.treasury_grant.error.insufficient_assets", amountFormatted, assetsFormatted))
-        WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
+        removePendingOperation(sourceRegionId, PendingOperationType.TREASURY_GRANT_CONFIRMATION)
         return 0
     }
 
@@ -149,7 +151,7 @@ fun onAcceptTreasuryGrant(player: ServerPlayer, sourceRegionId: Int): Int {
     sourceCommunity.expenditures.add(Turnover(grantData.amount, now, TurnoverSource.COMMUNITY_GRANT, "community.treasury.desc.grant_out", listOf(targetMark)))
     targetCommunity.communityIncome.add(Turnover(grantData.amount, now, TurnoverSource.COMMUNITY_GRANT, "community.treasury.desc.grant_in", listOf(sourceMark)))
 
-    WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
+    removePendingOperation(sourceRegionId, PendingOperationType.TREASURY_GRANT_CONFIRMATION)
     CommunityDatabase.save()
 
     val amountFormatted = "%.2f".format(grantData.amount / 100.0)
@@ -171,7 +173,7 @@ fun onAcceptTreasuryGrant(player: ServerPlayer, sourceRegionId: Int): Int {
 }
 
 fun onDeclineTreasuryGrant(player: ServerPlayer, sourceRegionId: Int): Int {
-    val pendingOp = WorldGeoCommunityAddon.pendingOperations[sourceRegionId]
+    val pendingOp = getPendingOperation(sourceRegionId, PendingOperationType.TREASURY_GRANT_CONFIRMATION)
     if (pendingOp == null || pendingOp.type != PendingOperationType.TREASURY_GRANT_CONFIRMATION) {
         player.sendSystemMessage(Translator.tr("community.treasury_grant.confirmation.not_found"))
         return 0
@@ -189,7 +191,7 @@ fun onDeclineTreasuryGrant(player: ServerPlayer, sourceRegionId: Int): Int {
         return 0
     }
 
-    WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
+    removePendingOperation(sourceRegionId, PendingOperationType.TREASURY_GRANT_CONFIRMATION)
     player.sendSystemMessage(Translator.tr("community.treasury_grant.confirmation.declined"))
 
     player.level().server.playerList.getPlayer(grantData.executorUUID)?.sendSystemMessage(
@@ -199,7 +201,7 @@ fun onDeclineTreasuryGrant(player: ServerPlayer, sourceRegionId: Int): Int {
 }
 
 fun onCancelTreasuryGrant(player: ServerPlayer, sourceRegionId: Int): Int {
-    val pendingOp = WorldGeoCommunityAddon.pendingOperations[sourceRegionId]
+    val pendingOp = getPendingOperation(sourceRegionId, PendingOperationType.TREASURY_GRANT_CONFIRMATION)
     if (pendingOp == null || pendingOp.type != PendingOperationType.TREASURY_GRANT_CONFIRMATION) {
         player.sendSystemMessage(Translator.tr("community.treasury_grant.confirmation.not_found"))
         return 0
@@ -211,7 +213,7 @@ fun onCancelTreasuryGrant(player: ServerPlayer, sourceRegionId: Int): Int {
         return 0
     }
 
-    WorldGeoCommunityAddon.pendingOperations.remove(sourceRegionId)
+    removePendingOperation(sourceRegionId, PendingOperationType.TREASURY_GRANT_CONFIRMATION)
     player.sendSystemMessage(Translator.tr("community.treasury_grant.confirmation.cancelled"))
 
     val targetCommunity = CommunityDatabase.getCommunityById(grantData.targetRegionNumberId)

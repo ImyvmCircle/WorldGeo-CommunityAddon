@@ -24,6 +24,9 @@ import net.minecraft.server.level.ServerPlayer
 import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.HoverEvent
 import net.minecraft.network.chat.Component
+import com.imyvm.community.application.event.getPendingOperation
+import com.imyvm.community.application.event.hasPendingOperation
+import com.imyvm.community.application.event.removePendingOperation
 
 fun getTeleportPointInformationItemStack(
     item: Item,
@@ -133,7 +136,7 @@ fun runSettingTeleportPoint(playerExecutor: ServerPlayer, community: Community, 
         }
 
         val regionId = community.regionNumberId ?: return@executeWithPermission
-        val existingPending = WorldGeoCommunityAddon.pendingOperations[regionId]
+        val existingPending = getPendingOperation(regionId, PendingOperationType.TELEPORT_POINT_CONFIRMATION)
         if (existingPending != null) {
             playerExecutor.sendSystemMessage(Translator.tr("community.modification.confirmation.pending"))
             return@executeWithPermission
@@ -192,7 +195,7 @@ fun runSettingTeleportPoint(playerExecutor: ServerPlayer, community: Community, 
 }
 
 fun onConfirmTeleportPointSetting(playerExecutor: ServerPlayer, regionNumberId: Int, scopeName: String): Int {
-    val pendingOperation = WorldGeoCommunityAddon.pendingOperations[regionNumberId]
+    val pendingOperation = getPendingOperation(regionNumberId, PendingOperationType.TELEPORT_POINT_CONFIRMATION)
     val request = pendingOperation?.teleportPointData
     if (pendingOperation == null ||
         pendingOperation.type != PendingOperationType.TELEPORT_POINT_CONFIRMATION ||
@@ -206,7 +209,7 @@ fun onConfirmTeleportPointSetting(playerExecutor: ServerPlayer, regionNumberId: 
         return 0
     }
     if (System.currentTimeMillis() > pendingOperation.expireAt) {
-        WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        removePendingOperation(regionNumberId, PendingOperationType.TELEPORT_POINT_CONFIRMATION)
         playerExecutor.sendSystemMessage(Translator.tr("community.teleport_point.confirmation.expired"))
         return 0
     }
@@ -215,7 +218,7 @@ fun onConfirmTeleportPointSetting(playerExecutor: ServerPlayer, regionNumberId: 
     val region = community?.getRegion()
     val scope = region?.geometryScope?.firstOrNull { it.scopeName.equals(request.scopeName, ignoreCase = true) }
     if (community == null || region == null || scope == null) {
-        WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        removePendingOperation(regionNumberId, PendingOperationType.TELEPORT_POINT_CONFIRMATION)
         playerExecutor.sendSystemMessage(Translator.tr("community.not_found.region"))
         return 0
     }
@@ -233,7 +236,7 @@ fun onConfirmTeleportPointSetting(playerExecutor: ServerPlayer, regionNumberId: 
     }
 
     val result = PlayerInteractionApi.addTeleportPoint(playerExecutor, region, scope)
-    WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+    removePendingOperation(regionNumberId, PendingOperationType.TELEPORT_POINT_CONFIRMATION)
     if (result == 0) return 0
 
     if (request.cost > 0) {
@@ -262,7 +265,7 @@ fun onConfirmTeleportPointSetting(playerExecutor: ServerPlayer, regionNumberId: 
 }
 
 fun onCancelTeleportPointSetting(playerExecutor: ServerPlayer, regionNumberId: Int, scopeName: String): Int {
-    val pendingOperation = WorldGeoCommunityAddon.pendingOperations[regionNumberId]
+    val pendingOperation = getPendingOperation(regionNumberId, PendingOperationType.TELEPORT_POINT_CONFIRMATION)
     val request = pendingOperation?.teleportPointData
     if (pendingOperation == null ||
         pendingOperation.type != PendingOperationType.TELEPORT_POINT_CONFIRMATION ||
@@ -276,7 +279,7 @@ fun onCancelTeleportPointSetting(playerExecutor: ServerPlayer, regionNumberId: I
         return 0
     }
 
-    WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+    removePendingOperation(regionNumberId, PendingOperationType.TELEPORT_POINT_CONFIRMATION)
     playerExecutor.sendSystemMessage(Translator.tr("community.teleport_point.confirmation.cancelled", request.scopeName))
     return 1
 }

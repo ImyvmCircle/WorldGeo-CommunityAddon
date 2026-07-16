@@ -11,9 +11,13 @@ import com.imyvm.community.util.Translator
 import com.imyvm.iwg.inter.api.PlayerInteractionApi
 import com.imyvm.iwg.inter.api.RegionDataApi
 import net.minecraft.server.level.ServerPlayer
+import com.imyvm.community.application.event.getPendingOperation
+import com.imyvm.community.application.event.removePendingOperation
+import com.imyvm.community.application.event.removePendingOperationsForSubject
+import com.imyvm.community.domain.model.PendingOperationType
 
 fun onForceDeleteCommunity(player: ServerPlayer, targetCommunity: Community): Int {
-    WorldGeoCommunityAddon.pendingOperations.remove(targetCommunity.regionNumberId)
+    removePendingOperationsForSubject(targetCommunity.regionNumberId)
 
     val region = targetCommunity.regionNumberId?.let { RegionDataApi.getRegion(it) }
     if (region != null) {
@@ -61,11 +65,11 @@ fun onForceActive(player: ServerPlayer, targetCommunity: Community): Int {
 
 private fun checkPendingPreAuditing(player: ServerPlayer, targetCommunity: Community): Boolean {
     val regionId = targetCommunity.regionNumberId
-    if (WorldGeoCommunityAddon.pendingOperations[regionId] == null) {
+    if (getPendingOperation(regionId, PendingOperationType.AUDITING_COMMUNITY_REQUEST) == null) {
         player.sendSystemMessage(Translator.tr("community.audit.error.no_pending", regionId))
         return false
     }
-    WorldGeoCommunityAddon.pendingOperations.remove(regionId)
+    removePendingOperation(regionId, PendingOperationType.AUDITING_COMMUNITY_REQUEST)
     return true
 }
 

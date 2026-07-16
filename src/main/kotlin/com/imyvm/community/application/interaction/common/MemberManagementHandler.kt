@@ -22,6 +22,8 @@ import net.minecraft.network.chat.Component
 import java.util.*
 import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.HoverEvent
+import com.imyvm.community.application.event.getPendingOperation
+import com.imyvm.community.application.event.removePendingOperation
 
 private fun getInvitationKey(inviteeUUID: UUID): Int {
     return inviteeUUID.hashCode()
@@ -339,7 +341,7 @@ fun sendInvitation(inviter: ServerPlayer, target: ServerPlayer, community: Commu
 
 fun onAcceptInvitation(player: ServerPlayer, community: Community) {
     val invitationKey = getInvitationKey(player.uuid)
-    val pendingOp = WorldGeoCommunityAddon.pendingOperations[invitationKey]
+    val pendingOp = getPendingOperation(invitationKey, PendingOperationType.INVITATION)
     val memberAccount = community.member[player.uuid]
     
     if (pendingOp == null || pendingOp.type != PendingOperationType.INVITATION || 
@@ -350,7 +352,7 @@ fun onAcceptInvitation(player: ServerPlayer, community: Community) {
     
     if (pendingOp.expireAt <= System.currentTimeMillis()) {
         player.sendSystemMessage(Translator.tr("community.invite.error.expired"))
-        WorldGeoCommunityAddon.pendingOperations.remove(invitationKey)
+        removePendingOperation(invitationKey, PendingOperationType.INVITATION)
         community.member.remove(player.uuid)
         com.imyvm.community.infra.CommunityDatabase.save()
         return
@@ -359,7 +361,7 @@ fun onAcceptInvitation(player: ServerPlayer, community: Community) {
     val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
     player.sendSystemMessage(Translator.tr("community.invite.accepted", communityName))
 
-    WorldGeoCommunityAddon.pendingOperations.remove(invitationKey)
+    removePendingOperation(invitationKey, PendingOperationType.INVITATION)
 
     val notification = Translator.tr(
         "community.notification.invitation_accepted",
@@ -379,7 +381,7 @@ fun onAcceptInvitation(player: ServerPlayer, community: Community) {
 
 fun onRejectInvitation(player: ServerPlayer, community: Community) {
     val invitationKey = getInvitationKey(player.uuid)
-    val pendingOp = WorldGeoCommunityAddon.pendingOperations[invitationKey]
+    val pendingOp = getPendingOperation(invitationKey, PendingOperationType.INVITATION)
     val memberAccount = community.member[player.uuid]
     
     if (pendingOp == null || pendingOp.type != PendingOperationType.INVITATION || 
@@ -388,7 +390,7 @@ fun onRejectInvitation(player: ServerPlayer, community: Community) {
         return
     }
     
-    WorldGeoCommunityAddon.pendingOperations.remove(invitationKey)
+    removePendingOperation(invitationKey, PendingOperationType.INVITATION)
     community.member.remove(player.uuid)
     
     val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"

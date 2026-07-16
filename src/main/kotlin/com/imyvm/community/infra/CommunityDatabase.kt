@@ -11,6 +11,7 @@ import com.imyvm.community.domain.model.SettingConfirmationData
 import com.imyvm.community.domain.model.TeleportPointConfirmationData
 import com.imyvm.community.domain.model.TreasuryGrantConfirmationData
 import com.imyvm.community.domain.model.Turnover
+import com.imyvm.community.domain.model.pendingOperationKey
 import com.imyvm.community.domain.model.TurnoverSource
 import com.imyvm.community.domain.model.community.*
 import com.imyvm.community.domain.policy.permission.AdminPrivilege
@@ -31,7 +32,7 @@ object CommunityDatabase {
     private const val DATABASE_VERSION_MARKER = -3
     private const val DATABASE_VERSION = 2
     private const val PENDING_SECTION_VERSION_MARKER = -2
-    private const val PENDING_SECTION_VERSION = 2
+    private const val PENDING_SECTION_VERSION = 3
     lateinit var communities: MutableList<Community>
 
     @Throws(IOException::class)
@@ -403,8 +404,8 @@ object CommunityDatabase {
         stream.writeInt(PENDING_SECTION_VERSION_MARKER)
         stream.writeInt(PENDING_SECTION_VERSION)
         stream.writeInt(ops.size)
-        for ((regionId, operation) in ops) {
-            stream.writeInt(regionId)
+        for ((operationKey, operation) in ops) {
+            stream.writeLong(operationKey)
             stream.writeLong(operation.expireAt)
             stream.writeInt(operation.type.value)
             writeNullableUUID(stream, operation.inviterUUID)
@@ -427,9 +428,10 @@ object CommunityDatabase {
             com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.clear()
 
             for (i in 0 until size) {
-                val regionId = stream.readInt()
+                val storedKey = if (version >= 3) stream.readLong() else stream.readInt().toLong()
                 val expireAt = stream.readLong()
                 val type = com.imyvm.community.domain.model.PendingOperationType.fromValue(stream.readInt())
+                val operationKey = if (version >= 3) storedKey else pendingOperationKey(storedKey.toInt(), type)
                 val inviterUUID = readNullableUUID(stream)
                 val inviteeUUID = readNullableUUID(stream)
                 val creationData = readCreationData(stream)
@@ -453,7 +455,7 @@ object CommunityDatabase {
                     transferData = transferData,
                     treasuryGrantData = treasuryGrantData
                 )
-                com.imyvm.community.WorldGeoCommunityAddon.pendingOperations[regionId] = operation
+                com.imyvm.community.WorldGeoCommunityAddon.pendingOperations[operationKey] = operation
             }
         } catch (e: Exception) {
             com.imyvm.community.WorldGeoCommunityAddon.logger.error("Failed to load pending operations: ${e.message}")

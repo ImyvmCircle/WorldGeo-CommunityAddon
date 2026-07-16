@@ -1,6 +1,8 @@
 package com.imyvm.community.application.interaction.screen.inner_community.multi_parent
 
 import com.imyvm.community.application.event.addPendingOperation
+import com.imyvm.community.application.event.getPendingOperation
+import com.imyvm.community.application.event.removePendingOperation
 import com.imyvm.community.application.interaction.common.helper.calculateModificationCost
 import com.imyvm.community.application.interaction.common.helper.generateModificationConfirmationMessage
 import com.imyvm.community.application.interaction.common.helper.generateScopeAdditionConfirmationMessage
@@ -159,8 +161,8 @@ private fun onCreateScopeRequest(
     geoShapeType: GeoShapeType
 ): Int {
     val regionId = community.regionNumberId ?: return 0
-    val existingPending = com.imyvm.community.WorldGeoCommunityAddon.pendingOperations[regionId]
-    if (existingPending != null && existingPending.type == PendingOperationType.MODIFY_SCOPE_CONFIRMATION) {
+    val existingPending = getPendingOperation(regionId, PendingOperationType.MODIFY_SCOPE_CONFIRMATION)
+    if (existingPending != null) {
         player.sendSystemMessage(Translator.tr("community.modification.confirmation.pending"))
         return 0
     }
@@ -275,8 +277,8 @@ private fun onCreateScopeRequest(
 }
 
 fun onConfirmRename(player: ServerPlayer, regionNumberId: Int, nameKey: String): Int {
-    val pendingOp = com.imyvm.community.WorldGeoCommunityAddon.pendingOperations[regionNumberId]
-    if (pendingOp == null || pendingOp.type != PendingOperationType.RENAME_CONFIRMATION) {
+    val pendingOp = getPendingOperation(regionNumberId, PendingOperationType.RENAME_CONFIRMATION)
+    if (pendingOp == null) {
         player.sendSystemMessage(Translator.tr("community.modification.confirmation.not_found"))
         return 0
     }
@@ -291,14 +293,14 @@ fun onConfirmRename(player: ServerPlayer, regionNumberId: Int, nameKey: String):
     }
     if (System.currentTimeMillis() > pendingOp.expireAt) {
         player.sendSystemMessage(Translator.tr("community.modification.confirmation.expired"))
-        com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        removePendingOperation(regionNumberId, PendingOperationType.RENAME_CONFIRMATION)
         return 0
     }
 
     val community = CommunityDatabase.getCommunityById(regionNumberId)
     if (community == null) {
         player.sendSystemMessage(Translator.tr("community.modification.error.community_not_found"))
-        com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        removePendingOperation(regionNumberId, PendingOperationType.RENAME_CONFIRMATION)
         return 0
     }
 
@@ -315,7 +317,7 @@ fun onConfirmRename(player: ServerPlayer, regionNumberId: Int, nameKey: String):
     val communityRegion = community.getRegion()
     if (communityRegion == null) {
         player.sendSystemMessage(Translator.tr("community.modification.error.no_region"))
-        com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        removePendingOperation(regionNumberId, PendingOperationType.RENAME_CONFIRMATION)
         return 0
     }
 
@@ -323,7 +325,7 @@ fun onConfirmRename(player: ServerPlayer, regionNumberId: Int, nameKey: String):
         val oldName = communityRegion.name
         val renameResult = PlayerInteractionApi.renameRegion(player, communityRegion, renameData.newName)
         if (renameResult == 0) {
-            com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+            removePendingOperation(regionNumberId, PendingOperationType.RENAME_CONFIRMATION)
             return 0
         }
         community.nameChangeCooldowns["global"] = System.currentTimeMillis()
@@ -336,20 +338,20 @@ fun onConfirmRename(player: ServerPlayer, regionNumberId: Int, nameKey: String):
                 descriptionArgs = listOf(renameData.newName)
             ))
         }
-        com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        removePendingOperation(regionNumberId, PendingOperationType.RENAME_CONFIRMATION)
         CommunityDatabase.save()
         player.sendSystemMessage(Translator.tr("community.rename.success.global", oldName, renameData.newName))
     } else {
         val scope = communityRegion.geometryScope.firstOrNull { it.scopeName == renameData.nameKey }
         if (scope == null) {
             player.sendSystemMessage(Translator.tr("community.rename.error.scope_not_found", renameData.nameKey))
-            com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+            removePendingOperation(regionNumberId, PendingOperationType.RENAME_CONFIRMATION)
             return 0
         }
         val oldScopeName = scope.scopeName
         val renameResult = PlayerInteractionApi.renameScope(player, communityRegion, oldScopeName, renameData.newName)
         if (renameResult == 0) {
-            com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+            removePendingOperation(regionNumberId, PendingOperationType.RENAME_CONFIRMATION)
             return 0
         }
         community.nameChangeCooldowns.remove(renameData.nameKey)
@@ -363,7 +365,7 @@ fun onConfirmRename(player: ServerPlayer, regionNumberId: Int, nameKey: String):
                 descriptionArgs = listOf(renameData.nameKey, renameData.newName)
             ))
         }
-        com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+        removePendingOperation(regionNumberId, PendingOperationType.RENAME_CONFIRMATION)
         CommunityDatabase.save()
         player.sendSystemMessage(Translator.tr("community.rename.success.scope", oldScopeName, renameData.newName))
     }
@@ -371,8 +373,8 @@ fun onConfirmRename(player: ServerPlayer, regionNumberId: Int, nameKey: String):
 }
 
 fun onCancelRename(player: ServerPlayer, regionNumberId: Int, nameKey: String): Int {
-    val pendingOp = com.imyvm.community.WorldGeoCommunityAddon.pendingOperations[regionNumberId]
-    if (pendingOp == null || pendingOp.type != PendingOperationType.RENAME_CONFIRMATION) {
+    val pendingOp = getPendingOperation(regionNumberId, PendingOperationType.RENAME_CONFIRMATION)
+    if (pendingOp == null) {
         player.sendSystemMessage(Translator.tr("community.modification.confirmation.not_found"))
         return 0
     }
@@ -385,7 +387,7 @@ fun onCancelRename(player: ServerPlayer, regionNumberId: Int, nameKey: String): 
         player.sendSystemMessage(Translator.tr("community.modification.confirmation.not_found"))
         return 0
     }
-    com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.remove(regionNumberId)
+    removePendingOperation(regionNumberId, PendingOperationType.RENAME_CONFIRMATION)
     player.sendSystemMessage(Translator.tr("community.rename.cancelled"))
     return 1
 }
@@ -882,7 +884,7 @@ internal fun executeScopeDeletion(
         return
     }
 
-    val existingPending = com.imyvm.community.WorldGeoCommunityAddon.pendingOperations[community.regionNumberId]
+    val existingPending = getPendingOperation(community.regionNumberId, PendingOperationType.DELETE_SCOPE_CONFIRMATION)
     if (existingPending != null) {
         player.sendSystemMessage(Translator.tr("community.modification.confirmation.pending"))
         player.closeContainer()

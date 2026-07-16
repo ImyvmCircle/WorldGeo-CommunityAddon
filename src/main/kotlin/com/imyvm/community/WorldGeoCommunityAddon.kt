@@ -1,6 +1,6 @@
 package com.imyvm.community
 
-import com.imyvm.community.domain.model.PendingOperation
+import com.imyvm.community.domain.model.PendingOperationStore
 import com.imyvm.community.entrypoint.command.register
 import com.imyvm.community.entrypoint.command.registerCh
 import com.imyvm.community.entrypoint.command.registerCommun
@@ -36,7 +36,7 @@ class WorldGeoCommunityAddon : ModInitializer {
 		const val MOD_ID = "community"
 		val logger: Logger = LoggerFactory.getLogger(MOD_ID)
 
-		val pendingOperations: MutableMap<Int, PendingOperation> = mutableMapOf()
+		val pendingOperations = PendingOperationStore()
 		var server: MinecraftServer? = null
 	}
 }

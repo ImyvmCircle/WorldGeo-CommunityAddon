@@ -18,6 +18,7 @@ import net.minecraft.server.level.ServerPlayer
 import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.HoverEvent
 import net.minecraft.network.chat.Component
+import com.imyvm.community.application.event.getPendingOperation
 
 fun runTransferScopeFromGlobalMenu(
     player: ServerPlayer,
@@ -62,7 +63,7 @@ fun runTransferScopeToTarget(
     targetCommunity: Community,
     runBack: (ServerPlayer) -> Unit
 ) {
-    val existingPending = WorldGeoCommunityAddon.pendingOperations[sourceCommunity.regionNumberId]
+    val existingPending = getPendingOperation(sourceCommunity.regionNumberId, PendingOperationType.TRANSFER_SCOPE_CONFIRMATION)
     if (existingPending != null) {
         player.closeContainer()
         player.sendSystemMessage(Translator.tr("community.modification.confirmation.pending"))
