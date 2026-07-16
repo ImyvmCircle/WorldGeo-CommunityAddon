@@ -10,9 +10,23 @@ internal fun saveCommunityDatabaseOrRollback(
     operationName: String,
     restoreCommunityState: () -> Unit,
     rollbackCoreState: () -> Unit
+): Boolean = saveCommunityStateOrRollback(
+    operationName = operationName,
+    saveCommunityState = { CommunityDatabase.save() },
+    restoreCommunityState = restoreCommunityState,
+    rollbackCoreState = rollbackCoreState,
+    notifyFailure = { player.sendSystemMessage(Translator.tr("community.operation.save_failed", operationName)) }
+)
+
+internal fun saveCommunityStateOrRollback(
+    operationName: String,
+    saveCommunityState: () -> Unit,
+    restoreCommunityState: () -> Unit,
+    rollbackCoreState: () -> Unit,
+    notifyFailure: () -> Unit
 ): Boolean {
     return try {
-        CommunityDatabase.save()
+        saveCommunityState()
         true
     } catch (error: Exception) {
         runCatching { restoreCommunityState() }
@@ -24,7 +38,7 @@ internal fun saveCommunityDatabaseOrRollback(
                 WorldGeoCommunityAddon.logger.error("Failed to rollback WorldGeo Core state after $operationName save failure", rollbackError)
             }
         WorldGeoCommunityAddon.logger.error("Failed to save CommunityAddon database after $operationName", error)
-        player.sendSystemMessage(Translator.tr("community.operation.save_failed", operationName))
+        notifyFailure()
         false
     }
 }
