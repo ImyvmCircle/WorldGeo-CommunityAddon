@@ -18,6 +18,8 @@ import com.imyvm.community.domain.policy.permission.AdminPrivilege
 import com.imyvm.community.domain.policy.permission.AdminPrivileges
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.network.chat.Component
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.IOException
@@ -33,6 +35,12 @@ object CommunityDatabase {
     private const val DATABASE_VERSION = 2
     private const val PENDING_SECTION_VERSION_MARKER = -2
     private const val PENDING_SECTION_VERSION = 3
+    private const val SECTION_FRAME_MARKER = -4
+    private const val SECTION_PENDING_OPERATIONS = 1
+    private const val SECTION_NAME_CHANGE_COOLDOWNS = 2
+    private const val SECTION_LIKES = 3
+    private const val SECTION_COMMUNITY_INCOME = 4
+    private const val MAX_SECTION_BYTES = 16 * 1024 * 1024
     lateinit var communities: MutableList<Community>
 
     @Throws(IOException::class)
@@ -57,10 +65,10 @@ object CommunityDatabase {
                     stream.writeLong(community.creationCost)
                 }
 
-                savePendingOperations(stream)
-                saveNameChangeCooldownsSection(stream)
-                saveLikesSection(stream)
-                saveCommunityIncomeSection(stream)
+                writeSection(stream, SECTION_PENDING_OPERATIONS) { savePendingOperations(it) }
+                writeSection(stream, SECTION_NAME_CHANGE_COOLDOWNS) { saveNameChangeCooldownsSection(it) }
+                writeSection(stream, SECTION_LIKES) { saveLikesSection(it) }
+                writeSection(stream, SECTION_COMMUNITY_INCOME) { saveCommunityIncomeSection(it) }
             }
             replaceDatabaseFile(tempFile, file)
         } finally {
@@ -73,6 +81,97 @@ object CommunityDatabase {
             Files.move(tempFile, targetFile, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
         } catch (_: IOException) {
             Files.move(tempFile, targetFile, StandardCopyOption.REPLACE_EXISTING)
+        }
+    }
+
+    private fun writeSection(
+        stream: DataOutputStream,
+        tag: Int,
+        writer: (DataOutputStream) -> Unit
+    ) {
+        val buffer = ByteArrayOutputStream()
+        DataOutputStream(buffer).use { sectionStream -> writer(sectionStream) }
+        val payload = buffer.toByteArray()
+        stream.writeInt(SECTION_FRAME_MARKER)
+        stream.writeInt(tag)
+        stream.writeInt(payload.size)
+        stream.write(payload)
+    }
+
+    private fun loadTrailingSections(stream: DataInputStream) {
+        val firstInt = stream.readInt()
+        if (firstInt == SECTION_FRAME_MARKER) {
+            loadFramedSections(stream)
+        } else {
+            loadLegacyTrailingSections(stream, firstInt)
+        }
+    }
+
+    private fun loadFramedSections(stream: DataInputStream) {
+        while (true) {
+            val tag = stream.readInt()
+            val length = stream.readInt()
+            require(length in 0..MAX_SECTION_BYTES) { "Invalid community database section length: $length" }
+            val payload = stream.readNBytes(length)
+            require(payload.size == length) { "Truncated community database section: $tag" }
+            DataInputStream(ByteArrayInputStream(payload)).use { sectionStream ->
+                if (loadFramedSection(tag, sectionStream)) {
+                    require(sectionStream.available() == 0) { "Unread bytes in community database section: $tag" }
+                }
+            }
+            if (stream.available() <= 0) return
+            val marker = stream.readInt()
+            require(marker == SECTION_FRAME_MARKER) { "Unexpected community database section marker: $marker" }
+        }
+    }
+
+    private fun loadFramedSection(tag: Int, stream: DataInputStream): Boolean {
+        return when (tag) {
+            SECTION_PENDING_OPERATIONS -> {
+                loadPendingOperations(stream)
+                true
+            }
+            SECTION_NAME_CHANGE_COOLDOWNS -> {
+                loadNameChangeCooldownsSection(stream)
+                true
+            }
+            SECTION_LIKES -> {
+                loadLikesSection(stream)
+                true
+            }
+            SECTION_COMMUNITY_INCOME -> {
+                loadCommunityIncomeSection(stream)
+                true
+            }
+            else -> {
+                com.imyvm.community.WorldGeoCommunityAddon.logger.warn("Skipped unknown community database section: $tag")
+                false
+            }
+        }
+    }
+
+    private fun loadLegacyTrailingSections(stream: DataInputStream, firstPendingInt: Int) {
+        loadPendingOperations(stream, firstPendingInt)
+        if (stream.available() > 0) {
+            try {
+                loadNameChangeCooldownsSection(stream)
+            } catch (e: Exception) {
+                com.imyvm.community.WorldGeoCommunityAddon.logger.error("Failed to load name change cooldowns: ${e.message}")
+            }
+        }
+        if (stream.available() > 0) {
+            try {
+                loadLikesSection(stream)
+            } catch (e: Exception) {
+                com.imyvm.community.WorldGeoCommunityAddon.logger.error("Failed to load likes data: ${e.message}")
+            }
+        }
+        if (stream.available() > 0) {
+            try {
+                loadCommunityIncomeSection(stream)
+            } catch (e: Exception) {
+                com.imyvm.community.WorldGeoCommunityAddon.logger.error("Failed to load community income data: ${e.message}")
+            }
         }
     }
 
@@ -122,30 +221,9 @@ object CommunityDatabase {
                 )
                 communities.add(community)
             }
-            
+
             if (stream.available() > 0) {
-                loadPendingOperations(stream)
-            }
-            if (stream.available() > 0) {
-                try {
-                    loadNameChangeCooldownsSection(stream)
-                } catch (e: Exception) {
-                    com.imyvm.community.WorldGeoCommunityAddon.logger.error("Failed to load name change cooldowns: ${e.message}")
-                }
-            }
-            if (stream.available() > 0) {
-                try {
-                    loadLikesSection(stream)
-                } catch (e: Exception) {
-                    com.imyvm.community.WorldGeoCommunityAddon.logger.error("Failed to load likes data: ${e.message}")
-                }
-            }
-            if (stream.available() > 0) {
-                try {
-                    loadCommunityIncomeSection(stream)
-                } catch (e: Exception) {
-                    com.imyvm.community.WorldGeoCommunityAddon.logger.error("Failed to load community income data: ${e.message}")
-                }
+                loadTrailingSections(stream)
             }
         }
     }
@@ -420,9 +498,9 @@ object CommunityDatabase {
         }
     }
 
-    private fun loadPendingOperations(stream: DataInputStream) {
+    private fun loadPendingOperations(stream: DataInputStream, firstStoredInt: Int? = null) {
         try {
-            val firstInt = stream.readInt()
+            val firstInt = firstStoredInt ?: stream.readInt()
             val version = if (firstInt == PENDING_SECTION_VERSION_MARKER) stream.readInt() else 1
             val size = if (version == 1) firstInt else stream.readInt()
             com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.clear()
