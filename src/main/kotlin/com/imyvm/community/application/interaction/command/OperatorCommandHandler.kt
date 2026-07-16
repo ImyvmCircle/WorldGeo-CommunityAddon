@@ -111,12 +111,13 @@ private fun handleAuditingChoices(player: ServerPlayer, choice: String, targetCo
             return 1
         }
         "no" -> {
-            val owner = getOwnerPlayer(targetCommunity, player.level().server)
+            val ownerUUID = getOwnerUUID(targetCommunity)
+            val owner = ownerUUID?.let { player.level().server.playerList.getPlayer(it) }
             val refundAmount = targetCommunity.creationCost / 100.0
             revokeCommunity(targetCommunity)
             removePendingOperation(targetCommunity.regionNumberId, PendingOperationType.AUDITING_COMMUNITY_REQUEST)
-            if (owner != null) {
-                refundNotCreated(owner, targetCommunity)
+            if (ownerUUID != null) {
+                refundNotCreated(owner, targetCommunity, ownerUUID)
             }
             CommunityDatabase.save()
             player.sendSystemMessage(Translator.tr("community.audit.denied", targetCommunity.regionNumberId))
