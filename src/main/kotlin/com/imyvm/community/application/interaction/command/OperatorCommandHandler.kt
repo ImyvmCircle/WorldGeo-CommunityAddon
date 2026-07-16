@@ -25,7 +25,7 @@ fun onForceDeleteCommunity(player: ServerPlayer, targetCommunity: Community): In
     }
 
     CommunityDatabase.removeCommunity(targetCommunity)
-
+    CommunityDatabase.save()
 
     if (region != null) {
         player.sendSystemMessage(Translator.tr("community.delete.success",
@@ -50,6 +50,7 @@ fun onAudit(player: ServerPlayer, choice: String, targetCommunity: Community): I
 
 fun onForceRevoke(player: ServerPlayer, targetCommunity: Community): Int {
     revokeCommunity(targetCommunity)
+    CommunityDatabase.save()
     player.sendSystemMessage(Translator.tr("community.revoke.success", targetCommunity.regionNumberId))
     return 1
 }
@@ -63,6 +64,7 @@ fun onForceActive(player: ServerPlayer, targetCommunity: Community): Int {
             return 0
         }
     }
+    CommunityDatabase.save()
     player.sendSystemMessage(Translator.tr("community.force_active.success", targetCommunity.regionNumberId))
     return 1
 }
