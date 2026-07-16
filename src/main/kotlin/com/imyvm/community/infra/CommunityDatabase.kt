@@ -18,6 +18,8 @@ import com.imyvm.community.domain.policy.permission.AdminPrivilege
 import com.imyvm.community.domain.policy.permission.AdminPrivileges
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.network.chat.Component
+import net.minecraft.server.MinecraftServer
+import net.minecraft.world.level.storage.LevelResource
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
@@ -199,6 +201,11 @@ object CommunityDatabase {
         loadDatabaseFile(this.getDatabasePath())
     }
 
+    @Throws(IOException::class)
+    fun load(server: MinecraftServer) {
+        loadDatabaseFile(this.getDatabasePath(server))
+    }
+
     private fun loadDatabaseFile(file: Path) {
         val previousCommunities = if (this::communities.isInitialized) communities else null
         val previousPendingOperations = com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.toMap()
@@ -338,6 +345,13 @@ object CommunityDatabase {
     }
 
     private fun getDatabasePath(): Path {
+        return getDatabasePath(com.imyvm.community.WorldGeoCommunityAddon.server)
+    }
+
+    private fun getDatabasePath(server: MinecraftServer?): Path {
+        if (server != null) {
+            return server.getWorldPath(LevelResource.ROOT).resolve(DATABASE_FILENAME)
+        }
         return FabricLoader.getInstance().gameDir
             .resolve("world")
             .resolve(DATABASE_FILENAME)

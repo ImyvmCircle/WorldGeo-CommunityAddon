@@ -5,6 +5,7 @@ import com.imyvm.community.infra.CommunityConfig
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.infra.PricingConfig
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
+import net.minecraft.server.MinecraftServer
 
 fun registerDataLoadAndSave(){
     dataLoad()
@@ -13,10 +14,17 @@ fun registerDataLoadAndSave(){
 }
 
 fun dataLoad() {
+    ServerLifecycleEvents.SERVER_STARTING.register { server ->
+        WorldGeoCommunityAddon.server = server
+        loadData(server)
+    }
+}
+
+private fun loadData(server: MinecraftServer) {
     try {
         CommunityConfig.validateValues()
         PricingConfig.validateValues()
-        CommunityDatabase.load()
+        CommunityDatabase.load(server)
     } catch (e: Exception) {
         try {
             val backupPath = CommunityDatabase.backupDatabaseAfterLoadFailure()
@@ -43,10 +51,6 @@ fun dataSave() {
 }
 
 fun captureServerInstance() {
-    ServerLifecycleEvents.SERVER_STARTED.register { server ->
-        WorldGeoCommunityAddon.server = server
-    }
-    
     ServerLifecycleEvents.SERVER_STOPPING.register { _ ->
         WorldGeoCommunityAddon.server = null
     }
