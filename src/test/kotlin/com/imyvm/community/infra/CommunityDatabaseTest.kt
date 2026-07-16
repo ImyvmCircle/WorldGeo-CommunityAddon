@@ -118,14 +118,48 @@ class CommunityDatabaseTest {
             val method = CommunityDatabase.javaClass.getDeclaredMethod(
                 "backupDatabaseFile",
                 Path::class.java,
+                String::class.java,
                 Long::class.javaPrimitiveType
             )
             method.isAccessible = true
 
-            val backup = method.invoke(CommunityDatabase, database, 1234L) as Path
+            val backup = method.invoke(CommunityDatabase, database, "corrupt", 1234L) as Path
 
             assertEquals("iwg_community.db.corrupt.1234", backup.fileName.toString())
             assertEquals("corrupt", Files.readString(backup))
+        } finally {
+            Files.walk(dir)
+                .sorted(Comparator.reverseOrder())
+                .forEach(Files::deleteIfExists)
+        }
+    }
+
+
+    @Test
+    fun backupLegacyDatabaseBeforeSaveCopiesOnlyOnce() {
+        val dir = Files.createTempDirectory("community-db-legacy-backup-test")
+        try {
+            val database = dir.resolve("iwg_community.db")
+            Files.writeString(database, "legacy")
+            val loadedField = CommunityDatabase.javaClass.getDeclaredField("legacyDatabaseLoaded")
+            val createdField = CommunityDatabase.javaClass.getDeclaredField("legacyBackupCreated")
+            loadedField.isAccessible = true
+            createdField.isAccessible = true
+            loadedField.setBoolean(CommunityDatabase, true)
+            createdField.setBoolean(CommunityDatabase, false)
+
+            val method = CommunityDatabase.javaClass.getDeclaredMethod(
+                "backupLegacyDatabaseBeforeSave",
+                Path::class.java
+            )
+            method.isAccessible = true
+
+            val firstBackup = method.invoke(CommunityDatabase, database) as Path
+            val secondBackup = method.invoke(CommunityDatabase, database)
+
+            assertEquals(true, firstBackup.fileName.toString().startsWith("iwg_community.db.legacy."))
+            assertEquals("legacy", Files.readString(firstBackup))
+            assertEquals(null, secondBackup)
         } finally {
             Files.walk(dir)
                 .sorted(Comparator.reverseOrder())

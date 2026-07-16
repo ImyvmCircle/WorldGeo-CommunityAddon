@@ -42,11 +42,14 @@ object CommunityDatabase {
     private const val SECTION_COMMUNITY_INCOME = 4
     private const val MAX_SECTION_BYTES = 16 * 1024 * 1024
     private const val MAX_COMMUNITY_BYTES = 16 * 1024 * 1024
+    private var legacyDatabaseLoaded = false
+    private var legacyBackupCreated = false
     lateinit var communities: MutableList<Community>
 
     @Throws(IOException::class)
     fun save() {
         val file = this.getDatabasePath()
+        backupLegacyDatabaseBeforeSave(file)
         val parent = file.parent
         if (parent != null) Files.createDirectories(parent)
         val tempFile = Files.createTempFile(parent, "${DATABASE_FILENAME}.", ".tmp")
@@ -191,6 +194,8 @@ object CommunityDatabase {
     @Throws(IOException::class)
     fun load() {
         val file = this.getDatabasePath()
+        legacyDatabaseLoaded = false
+        legacyBackupCreated = false
         if (!file.toFile().exists()) {
             communities = mutableListOf()
             return
@@ -200,6 +205,7 @@ object CommunityDatabase {
             val firstInt = stream.readInt()
             val databaseVersion = if (firstInt == DATABASE_VERSION_MARKER) stream.readInt() else 1
             require(databaseVersion in 1..DATABASE_VERSION) { "Unsupported community database version: $databaseVersion" }
+            legacyDatabaseLoaded = databaseVersion < DATABASE_VERSION
             val size = if (databaseVersion == 1) firstInt else stream.readInt()
             communities = ArrayList(size)
             for (i in 0 until size) {
@@ -258,12 +264,19 @@ object CommunityDatabase {
     }
 
     fun backupDatabaseAfterLoadFailure(): Path? {
-        return backupDatabaseFile(getDatabasePath(), System.currentTimeMillis())
+        return backupDatabaseFile(getDatabasePath(), "corrupt", System.currentTimeMillis())
     }
 
-    private fun backupDatabaseFile(databaseFile: Path, timestamp: Long): Path? {
+    private fun backupLegacyDatabaseBeforeSave(databaseFile: Path): Path? {
+        if (!legacyDatabaseLoaded || legacyBackupCreated) return null
+        val backupFile = backupDatabaseFile(databaseFile, "legacy", System.currentTimeMillis())
+        legacyBackupCreated = backupFile != null
+        return backupFile
+    }
+
+    private fun backupDatabaseFile(databaseFile: Path, label: String, timestamp: Long): Path? {
         if (!Files.exists(databaseFile)) return null
-        val backupFile = databaseFile.resolveSibling("${databaseFile.fileName}.corrupt.$timestamp")
+        val backupFile = databaseFile.resolveSibling("${databaseFile.fileName}.$label.$timestamp")
         return Files.copy(databaseFile, backupFile)
     }
 
