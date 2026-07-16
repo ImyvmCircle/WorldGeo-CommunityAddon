@@ -112,20 +112,4 @@ fun pendingOperationSubjectId(key: Long): Int = (key and 0xffffffffL).toInt()
 
 class PendingOperationStore(
     private val backing: MutableMap<Long, PendingOperation> = mutableMapOf()
-) : MutableMap<Long, PendingOperation> by backing {
-    operator fun get(subjectId: Int?): PendingOperation? {
-        if (subjectId == null) return null
-        return backing.entries.firstOrNull { pendingOperationSubjectId(it.key) == subjectId }?.value
-    }
-
-    fun remove(subjectId: Int?): PendingOperation? {
-        if (subjectId == null) return null
-        val key = backing.keys.firstOrNull { pendingOperationSubjectId(it) == subjectId } ?: return null
-        return backing.remove(key)
-    }
-
-    fun containsKey(subjectId: Int?): Boolean {
-        if (subjectId == null) return false
-        return backing.keys.any { pendingOperationSubjectId(it) == subjectId }
-    }
-}
+) : MutableMap<Long, PendingOperation> by backing
