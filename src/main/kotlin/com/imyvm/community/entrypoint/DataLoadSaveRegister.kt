@@ -1,7 +1,9 @@
 package com.imyvm.community.entrypoint
 
 import com.imyvm.community.WorldGeoCommunityAddon
+import com.imyvm.community.infra.CommunityConfig
 import com.imyvm.community.infra.CommunityDatabase
+import com.imyvm.community.infra.PricingConfig
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 
 fun registerDataLoadAndSave(){
@@ -12,6 +14,8 @@ fun registerDataLoadAndSave(){
 
 fun dataLoad() {
     try {
+        CommunityConfig.validateValues()
+        PricingConfig.validateValues()
         CommunityDatabase.load()
     } catch (e: Exception) {
         WorldGeoCommunityAddon.logger.error("Failed to load community database: ${e.message}", e)

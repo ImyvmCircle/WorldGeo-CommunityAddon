@@ -3,6 +3,7 @@ package com.imyvm.community.infra
 import com.imyvm.hoki.config.ConfigOption
 import com.imyvm.hoki.config.HokiConfig
 import com.imyvm.hoki.config.Option
+import java.time.ZoneId
 
 class CommunityConfig : HokiConfig("Community.conf") {
     companion object {
@@ -174,6 +175,24 @@ class CommunityConfig : HokiConfig("Community.conf") {
             "status effect duration in ticks after teleport completes."
         ) { obj, path ->
             obj.getInt(path)
+        }
+
+
+        fun validateValues() {
+            require(LANGUAGE.value.isNotBlank()) { "language must not be blank" }
+            ZoneId.of(TIMEZONE.value)
+            require(PENDING_CHECK_INTERVAL_SECONDS.value > 0) { "pending.check_interval_ticks must be positive" }
+            require(MAX_MANOR_AREA.value > 0) { "region.max_manor_area must be positive" }
+            require(MIN_NUMBER_MEMBER_REALM.value > 0) { "community.min_number_member_realm must be positive" }
+            require(REALM_REQUEST_EXPIRE_HOURS.value > 0) { "community.realm_request_expire_hours must be positive" }
+            require(AUDITING_EXPIRE_HOURS.value > 0) { "community.auditing_expire_hours must be positive" }
+            require(MAX_MEMBER_MANOR.value > 0) { "community.max_member_manor must be positive" }
+            require(MAX_NUMBER_ADMIN.value >= 0) { "community.max_number_admin must not be negative" }
+            require(INVITATION_RESPONSE_TIMEOUT_MINUTES.value > 0) { "community.invitation_response_timeout_minutes must be positive" }
+            require(TELEPORT_FREE_USES_FORMAL_MEMBER.value >= 0) { "teleport.free_uses_formal_member_per_day must not be negative" }
+            require(TELEPORT_FREE_USES_NON_FORMAL.value >= 0) { "teleport.free_uses_non_formal_per_day must not be negative" }
+            require(TELEPORT_PAID_BASE_DELAY_SECONDS.value >= 0) { "teleport.paid_base_delay_seconds must not be negative" }
+            require(TELEPORT_POST_EFFECT_TICKS.value >= 0) { "teleport.post_effect_ticks must not be negative" }
         }
     }
 }

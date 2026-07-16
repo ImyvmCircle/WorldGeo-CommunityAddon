@@ -580,5 +580,71 @@ class PricingConfig : HokiConfig("Pricing.conf") {
         ) { obj, path ->
             obj.getLong(path)
         }
+
+
+        fun validateValues() {
+            val nonNegativeLongOptions = listOf(
+                "economy.price_manor" to PRICE_MANOR.value,
+                "economy.price_realm" to PRICE_REALM.value,
+                "economy.community_join_cost" to COMMUNITY_JOIN_COST_REALM.value,
+                "economy.community_join_cost_manor" to COMMUNITY_JOIN_COST_MANOR.value,
+                "economy.manor_area_price_per_unit" to MANOR_AREA_PRICE_PER_UNIT.value,
+                "economy.realm_area_price_per_unit" to REALM_AREA_PRICE_PER_UNIT.value,
+                "economy.scope_addition_base_cost_manor" to SCOPE_ADDITION_BASE_COST_MANOR.value,
+                "economy.scope_addition_base_cost_realm" to SCOPE_ADDITION_BASE_COST_REALM.value,
+                "economy.rename_global_cost" to RENAME_GLOBAL_COST.value,
+                "economy.rename_scope_cost" to RENAME_SCOPE_COST.value,
+                "economy.teleport_point_second_point_base_cost" to TELEPORT_POINT_SECOND_POINT_BASE_COST.value,
+                "economy.teleport_point_modify_cost" to TELEPORT_POINT_MODIFY_COST.value,
+                "economy.teleport_paid_base_cost" to TELEPORT_PAID_BASE_COST.value,
+                "economy.permission.build_break.coefficient_per_unit" to PERMISSION_BUILD_BREAK_COEFFICIENT_PER_UNIT.value,
+                "economy.permission.container.coefficient_per_unit" to PERMISSION_CONTAINER_COEFFICIENT_PER_UNIT.value,
+                "economy.permission.build.coefficient_per_unit" to PERMISSION_BUILD_COEFFICIENT_PER_UNIT.value,
+                "economy.permission.break.coefficient_per_unit" to PERMISSION_BREAK_COEFFICIENT_PER_UNIT.value,
+                "economy.permission.bucket_build.coefficient_per_unit" to PERMISSION_BUCKET_BUILD_COEFFICIENT_PER_UNIT.value,
+                "economy.permission.bucket_scoop.coefficient_per_unit" to PERMISSION_BUCKET_SCOOP_COEFFICIENT_PER_UNIT.value,
+                "economy.permission.interaction.coefficient_per_unit" to PERMISSION_INTERACTION_COEFFICIENT_PER_UNIT.value,
+                "economy.permission.container.coefficient_per_unit" to PERMISSION_CONTAINER_COEFFICIENT_PER_UNIT.value,
+                "economy.permission.redstone.coefficient_per_unit" to PERMISSION_REDSTONE_COEFFICIENT_PER_UNIT.value,
+                "economy.permission.trade.coefficient_per_unit" to PERMISSION_TRADE_COEFFICIENT_PER_UNIT.value,
+                "economy.permission.pvp.coefficient_per_unit" to PERMISSION_PVP_COEFFICIENT_PER_UNIT.value,
+                "economy.permission.animal_killing.coefficient_per_unit" to PERMISSION_ANIMAL_KILLING_COEFFICIENT_PER_UNIT.value,
+                "economy.permission.villager_killing.coefficient_per_unit" to PERMISSION_VILLAGER_KILLING_COEFFICIENT_PER_UNIT.value,
+                "economy.permission.throwable.coefficient_per_unit" to PERMISSION_THROWABLE_COEFFICIENT_PER_UNIT.value,
+                "economy.permission.egg_use.coefficient_per_unit" to PERMISSION_EGG_USE_COEFFICIENT_PER_UNIT.value,
+                "economy.permission.snowball_use.coefficient_per_unit" to PERMISSION_SNOWBALL_USE_COEFFICIENT_PER_UNIT.value,
+                "economy.permission.potion_use.coefficient_per_unit" to PERMISSION_POTION_USE_COEFFICIENT_PER_UNIT.value,
+                "economy.permission.farming.coefficient_per_unit" to PERMISSION_FARMING_COEFFICIENT_PER_UNIT.value,
+                "economy.permission.ignite.coefficient_per_unit" to PERMISSION_IGNITE_COEFFICIENT_PER_UNIT.value,
+                "economy.permission.armor_stand.coefficient_per_unit" to PERMISSION_ARMOR_STAND_COEFFICIENT_PER_UNIT.value,
+                "economy.permission.item_frame.coefficient_per_unit" to PERMISSION_ITEM_FRAME_COEFFICIENT_PER_UNIT.value,
+                "economy.permission.wind_charge_use.coefficient_per_unit" to PERMISSION_WIND_CHARGE_USE_COEFFICIENT_PER_UNIT.value,
+                "economy.rule.spawn_monsters.coefficient_per_unit" to RULE_SPAWN_MONSTERS_COEFFICIENT_PER_UNIT.value,
+                "economy.rule.spawn_phantoms.coefficient_per_unit" to RULE_SPAWN_PHANTOMS_COEFFICIENT_PER_UNIT.value,
+                "economy.rule.tnt_block_protection.coefficient_per_unit" to RULE_TNT_BLOCK_PROTECTION_COEFFICIENT_PER_UNIT.value,
+                "economy.rule.enderman_block_pickup.coefficient_per_unit" to RULE_ENDERMAN_BLOCK_PICKUP_COEFFICIENT_PER_UNIT.value,
+                "economy.rule.sculk_spread.coefficient_per_unit" to RULE_SCULK_SPREAD_COEFFICIENT_PER_UNIT.value,
+                "economy.rule.snow_golem_trail.coefficient_per_unit" to RULE_SNOW_GOLEM_TRAIL_COEFFICIENT_PER_UNIT.value,
+                "economy.rule.dispenser.coefficient_per_unit" to RULE_DISPENSER_COEFFICIENT_PER_UNIT.value,
+                "economy.rule.pressure_plate.coefficient_per_unit" to RULE_PRESSURE_PLATE_COEFFICIENT_PER_UNIT.value,
+                "economy.rule.piston.coefficient_per_unit" to RULE_PISTON_COEFFICIENT_PER_UNIT.value,
+                "economy.rule.rpg_natural_regen.coefficient_per_unit" to RULE_RPG_NATURAL_REGEN_COEFFICIENT_PER_UNIT.value,
+                "economy.rule.rpg_fire_spread.coefficient_per_unit" to RULE_RPG_FIRE_SPREAD_COEFFICIENT_PER_UNIT.value,
+                "economy.rule.rpg_hunger.coefficient_per_unit" to RULE_RPG_HUNGER_COEFFICIENT_PER_UNIT.value
+            )
+            for ((path, value) in nonNegativeLongOptions) {
+                require(value >= 0L) { "$path must not be negative" }
+            }
+            require(MANOR_FREE_AREA.value >= 0.0) { "economy.manor_free_area must not be negative" }
+            require(REALM_FREE_AREA.value >= 0.0) { "economy.realm_free_area must not be negative" }
+            require(MANOR_AREA_UNIT_SIZE.value > 0.0) { "economy.manor_area_unit_size must be positive" }
+            require(REALM_AREA_UNIT_SIZE.value > 0.0) { "economy.realm_area_unit_size must be positive" }
+            require(AREA_REFUND_RATE.value in 0.0..1.0) { "economy.area_refund_rate must be between 0.0 and 1.0" }
+            require(DIMENSION_PRICE_MULTIPLIER_NETHER.value > 0L) { "economy.dimension_price_multiplier_nether must be positive" }
+            require(DIMENSION_PRICE_MULTIPLIER_END.value > 0L) { "economy.dimension_price_multiplier_end must be positive" }
+            require(SCOPE_ADDITION_SOFT_LIMIT_MULTIPLIER.value >= 1.0) { "economy.scope_addition_soft_limit_multiplier must be at least 1.0" }
+            require(PERMISSION_COEFFICIENT_UNIT_SIZE.value > 0) { "economy.permission.coefficient_unit_size must be positive" }
+            require(PERMISSION_TARGET_PLAYER_DENOMINATOR.value > 0L) { "economy.permission.target_player_denominator must be positive" }
+        }
     }
 }
