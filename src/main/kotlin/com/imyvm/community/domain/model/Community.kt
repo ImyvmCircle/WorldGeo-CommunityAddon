@@ -29,7 +29,8 @@ class Community(
     }
 
     fun generateCommunityMark(): String {
-        return RegionDataApi.getRegion(this.regionNumberId!!)?.name ?: "Community #${this.regionNumberId}"
+        val regionId = this.regionNumberId ?: return "Community #unbound"
+        return RegionDataApi.getRegion(regionId)?.name ?: "Community #$regionId"
     }
 
     fun getFormattedFoundingTime(): String {
