@@ -31,10 +31,15 @@ object CommunityApi {
         if (amount <= 0L) return Result.failure(IllegalArgumentException("amount must be positive"))
         val community = CommunityDatabase.getCommunityById(regionNumberId)
             ?: return Result.failure(NoSuchElementException("community not found for regionNumberId=$regionNumberId"))
-        community.communityIncome.add(
-            Turnover(amount, System.currentTimeMillis(), source, descriptionKey, descriptionArgs)
-        )
-        return Result.success(Unit)
+        return try {
+            community.communityIncome.add(
+                Turnover(amount, System.currentTimeMillis(), source, descriptionKey, descriptionArgs)
+            )
+            CommunityDatabase.save()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     fun withdraw(
@@ -50,10 +55,15 @@ object CommunityApi {
         if (community.getTotalAssets() < amount) {
             return Result.failure(IllegalStateException("insufficient balance for regionNumberId=$regionNumberId"))
         }
-        community.expenditures.add(
-            Turnover(amount, System.currentTimeMillis(), source, descriptionKey, descriptionArgs)
-        )
-        return Result.success(Unit)
+        return try {
+            community.expenditures.add(
+                Turnover(amount, System.currentTimeMillis(), source, descriptionKey, descriptionArgs)
+            )
+            CommunityDatabase.save()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     fun snapshotDevelopment(regionNumberId: Int, tick: Long): DevelopmentSnapshot? {
