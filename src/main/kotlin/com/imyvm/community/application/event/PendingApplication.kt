@@ -2,6 +2,7 @@ package com.imyvm.community.application.event
 
 import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.application.helper.refundNotCreated
+import com.imyvm.community.application.interaction.common.deleteCreationRegion
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.PendingOperation
 import com.imyvm.community.domain.model.PendingOperationType
@@ -65,8 +66,9 @@ private fun handleExpiredOperation(
             iterator.remove()
         }
         PendingOperationType.CREATE_COMMUNITY_CONFIRMATION -> {
-            handleExpiredCreationConfirmation(key, operation, server)
-            iterator.remove()
+            if (handleExpiredCreationConfirmation(key, operation, server)) {
+                iterator.remove()
+            }
         }
         PendingOperationType.CREATE_COMMUNITY_REALM_REQUEST_RECRUITMENT -> {
             val community = CommunityDatabase.communities.find { it.regionNumberId == key }
@@ -163,18 +165,14 @@ private fun handleExpiredCreationConfirmation(
     regionId: Int,
     operation: PendingOperation,
     server: MinecraftServer
-) {
-    val creationData = operation.creationData ?: return
+): Boolean {
+    val creationData = operation.creationData ?: return true
     val creatorPlayer = server.playerList.getPlayer(creationData.creatorUUID)
+    val cleaned = deleteCreationRegion(regionId, creatorPlayer)
 
-    val region = com.imyvm.iwg.inter.api.RegionDataApi.getRegion(regionId)
-    if (region != null && creatorPlayer != null) {
-        try {
-            com.imyvm.iwg.inter.api.PlayerInteractionApi.deleteRegion(creatorPlayer, region)
-            WorldGeoCommunityAddon.logger.info("Deleted region $regionId for expired creation confirmation")
-        } catch (e: Exception) {
-            WorldGeoCommunityAddon.logger.error("Failed to delete region $regionId: ${e.message}")
-        }
+    if (!cleaned) {
+        WorldGeoCommunityAddon.logger.error("Expired creation confirmation for region $regionId could not be cleaned; pending retained")
+        return false
     }
 
     creatorPlayer?.sendSystemMessage(
@@ -182,8 +180,9 @@ private fun handleExpiredCreationConfirmation(
             "community.create.confirmation.expired"
         )
     )
-    
+
     WorldGeoCommunityAddon.logger.info("Expired creation confirmation for region $regionId by ${creationData.creatorUUID}")
+    return true
 }
 
 private fun promoteCommunityIfEligible(regionId: Int, community: Community) {

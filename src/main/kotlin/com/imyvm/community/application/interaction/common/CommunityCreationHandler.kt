@@ -19,7 +19,9 @@ import com.imyvm.economy.EconomyMod
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.HypotheticalShape
+import com.imyvm.iwg.inter.api.RegionDataApi
 import com.imyvm.iwg.inter.api.PlayerInteractionApi
+import com.imyvm.iwg.infra.RegionDatabase
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.ClickEvent
@@ -66,7 +68,7 @@ fun onCreateCommunityRequest(
     val playerAccount = EconomyMod.data.getOrCreate(player)
     if (playerAccount.money < costResult.totalCost) {
         player.sendSystemMessage(Translator.tr("community.create.money.error", costResult.totalCost / 100.0))
-        PlayerInteractionApi.deleteRegion(player, region)
+        deleteCreationRegion(region.numberID, player)
         return 0
     }
 
@@ -83,21 +85,29 @@ fun onCreateCommunityRequest(
         player.sendSystemMessage(msg)
     }
 
-    addPendingOperation(
-        regionId = regionNumberId,
-        type = PendingOperationType.CREATE_COMMUNITY_CONFIRMATION,
-        expireMinutes = 5,
-        creationData = CreationConfirmationData(
-            communityName = communityName,
-            communityType = communityType,
-            shapeName = actualShapeType.name,
-            regionNumberId = regionNumberId,
-            creatorUUID = player.uuid,
-            totalCost = costResult.totalCost
+    try {
+        addPendingOperation(
+            regionId = regionNumberId,
+            type = PendingOperationType.CREATE_COMMUNITY_CONFIRMATION,
+            expireMinutes = 5,
+            creationData = CreationConfirmationData(
+                communityName = communityName,
+                communityType = communityType,
+                shapeName = actualShapeType.name,
+                regionNumberId = regionNumberId,
+                creatorUUID = player.uuid,
+                totalCost = costResult.totalCost
+            )
         )
-    )
 
-    sendInteractiveConfirmation(player, regionNumberId)
+        sendInteractiveConfirmation(player, regionNumberId)
+    } catch (e: Exception) {
+        removePendingOperation(regionNumberId, PendingOperationType.CREATE_COMMUNITY_CONFIRMATION)
+        deleteCreationRegion(regionNumberId, player)
+        WorldGeoCommunityAddon.logger.error("Failed to prepare community creation confirmation for region $regionNumberId", e)
+        player.sendSystemMessage(Translator.tr("community.create.confirmation.failed"))
+        return 0
+    }
 
     return 1
 }
@@ -132,9 +142,11 @@ fun onConfirmCommunityCreation(player: ServerPlayer, regionNumberId: Int): Int {
     var createdCommunity: Community? = null
     var removedConfirmation: com.imyvm.community.domain.model.PendingOperation? = null
     var branchPendingType: PendingOperationType? = null
+    var moneyDeducted = false
 
     return try {
         playerAccount.addMoney(-creationData.totalCost)
+        moneyDeducted = true
         player.sendSystemMessage(Translator.tr("community.create.money.checked", creationData.totalCost / 100.0))
 
         removedConfirmation = removePendingOperation(regionNumberId, PendingOperationType.CREATE_COMMUNITY_CONFIRMATION)
@@ -146,9 +158,16 @@ fun onConfirmCommunityCreation(player: ServerPlayer, regionNumberId: Int): Int {
     } catch (e: Exception) {
         createdCommunity?.let { CommunityDatabase.removeCommunity(it) }
         branchPendingType?.let { removePendingOperation(regionNumberId, it) }
-        removedConfirmation?.let { restorePendingOperation(regionNumberId, PendingOperationType.CREATE_COMMUNITY_CONFIRMATION, it) }
-        playerAccount.addMoney(creationData.totalCost)
-        WorldGeoCommunityAddon.logger.error("Failed to confirm community creation for region $regionNumberId: ${e.message}")
+        if (moneyDeducted) playerAccount.addMoney(creationData.totalCost)
+        val cleaned = deleteCreationRegion(regionNumberId, player)
+        if (!cleaned) {
+            removedConfirmation?.let {
+                restorePendingOperation(regionNumberId, PendingOperationType.CREATE_COMMUNITY_CONFIRMATION, it)
+            }
+        } else {
+            removePendingOperation(regionNumberId, PendingOperationType.CREATE_COMMUNITY_CONFIRMATION)
+        }
+        WorldGeoCommunityAddon.logger.error("Failed to confirm community creation for region $regionNumberId", e)
         player.sendSystemMessage(Translator.tr("community.create.confirmation.failed"))
         0
     }
@@ -172,15 +191,39 @@ private fun cancelCommunityCreation(player: ServerPlayer, regionNumberId: Int): 
         return 0
     }
 
-    val region = com.imyvm.iwg.inter.api.RegionDataApi.getRegion(regionNumberId)
-    if (region != null) {
-        PlayerInteractionApi.deleteRegion(player, region)
+    if (!deleteCreationRegion(regionNumberId, player)) {
+        player.sendSystemMessage(Translator.tr("community.create.confirmation.failed"))
+        return 0
     }
 
     removePendingOperation(regionNumberId, PendingOperationType.CREATE_COMMUNITY_CONFIRMATION)
 
     player.sendSystemMessage(Translator.tr("community.create.confirmation.cancelled"))
     return 1
+}
+
+internal fun deleteCreationRegion(regionNumberId: Int, player: ServerPlayer? = null): Boolean {
+    val region = RegionDataApi.getRegion(regionNumberId) ?: return true
+
+    if (player != null) {
+        try {
+            PlayerInteractionApi.deleteRegion(player, region)
+            if (RegionDataApi.getRegion(regionNumberId) == null) return true
+            WorldGeoCommunityAddon.logger.warn("Core API did not remove creation region $regionNumberId; falling back to RegionDatabase")
+        } catch (e: Exception) {
+            WorldGeoCommunityAddon.logger.warn("Core API failed to remove creation region $regionNumberId; falling back to RegionDatabase", e)
+        }
+    }
+
+    return try {
+        RegionDatabase.removeRegion(region)
+        RegionDatabase.save()
+        WorldGeoCommunityAddon.logger.info("Deleted creation region $regionNumberId by RegionDatabase fallback")
+        true
+    } catch (e: Exception) {
+        WorldGeoCommunityAddon.logger.error("Failed to delete creation region $regionNumberId", e)
+        false
+    }
 }
 
 private fun initialRequest(player: ServerPlayer, name: String, communityType: String, regionNumberId: Int, creationCost: Long): Community {
