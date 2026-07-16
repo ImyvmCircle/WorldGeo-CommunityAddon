@@ -3,7 +3,10 @@ package com.imyvm.community.entrypoint.command
 import com.imyvm.community.application.interaction.command.*
 import com.imyvm.community.application.interaction.common.*
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
+import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.community.CommunityListFilterType
+import com.imyvm.community.domain.policy.permission.AdminPrivilege
+import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.entrypoint.command.helper.*
 import com.imyvm.community.entrypoint.screen.outer_community.MainMenu
 import com.imyvm.community.util.getColoredDimensionName
@@ -693,6 +696,7 @@ private fun runOpenTeleportAdminCommand(context: CommandContext<CommandSourceSta
         player.sendSystemMessage(Translator.tr("community.notfound.id", regionId.toString()))
         return 0
     }
+    if (!canOpenAdministrationCommand(player, community, AdminPrivilege.MANAGE_TELEPORT_POINTS)) return 0
     val region = community.getRegion() ?: return 0
     val scope = region.geometryScope.find { it.scopeName == scopeName } ?: return 0
     CommunityMenuOpener.open(player) { syncId ->
@@ -714,6 +718,7 @@ private fun runOpenRenameMenuCommand(context: CommandContext<CommandSourceStack>
         player.sendSystemMessage(Translator.tr("community.notfound.id", regionId.toString()))
         return 0
     }
+    if (!canOpenAdministrationCommand(player, community, AdminPrivilege.RENAME_COMMUNITY)) return 0
     val runBack: (net.minecraft.server.level.ServerPlayer) -> Unit = { p ->
         CommunityMenuOpener.open(p) { s -> MainMenu(s, p) }
     }
@@ -736,6 +741,7 @@ private fun runOpenModifyMenuCommand(context: CommandContext<CommandSourceStack>
         player.sendSystemMessage(Translator.tr("community.notfound.id", regionId.toString()))
         return 0
     }
+    if (!canOpenAdministrationCommand(player, community, AdminPrivilege.MODIFY_REGION_GEOMETRY)) return 0
     val runBack: (net.minecraft.server.level.ServerPlayer) -> Unit = { p ->
         CommunityMenuOpener.open(p) { s -> MainMenu(s, p) }
     }
@@ -749,6 +755,22 @@ private fun runOpenModifyMenuCommand(context: CommandContext<CommandSourceStack>
         )
     }
     return 1
+}
+
+private fun canOpenAdministrationCommand(
+    player: net.minecraft.server.level.ServerPlayer,
+    community: Community,
+    privilege: AdminPrivilege
+): Boolean {
+    val adminCheck = CommunityPermissionPolicy.canExecuteAdministration(player, community, privilege)
+    val result = if (adminCheck.isDenied()) {
+        adminCheck
+    } else {
+        CommunityPermissionPolicy.canExecuteOperationInProto(player, community, privilege)
+    }
+    if (result.isAllowed()) return true
+    result.sendSuccess(player)
+    return false
 }
 
 private fun runAcceptTerritoryGrant(context: CommandContext<CommandSourceStack>): Int {
