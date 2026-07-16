@@ -317,7 +317,6 @@ fun sendInvitation(inviter: ServerPlayer, target: ServerPlayer, community: Commu
     val invitationKey = getInvitationKey(community, target.uuid) ?: return
     
     val previousAccount = community.member[target.uuid]
-    var pendingAdded = false
     try {
         community.member[target.uuid] = MemberAccount(
             joinedTime = System.currentTimeMillis(),
@@ -332,7 +331,6 @@ fun sendInvitation(inviter: ServerPlayer, target: ServerPlayer, community: Commu
             inviterUUID = inviter.uuid,
             inviteeUUID = target.uuid
         )
-        pendingAdded = true
 
         com.imyvm.community.infra.CommunityDatabase.save()
     } catch (e: Exception) {
@@ -341,7 +339,6 @@ fun sendInvitation(inviter: ServerPlayer, target: ServerPlayer, community: Commu
         } else {
             community.member[target.uuid] = previousAccount
         }
-        if (pendingAdded) removePendingOperationByKey(invitationKey)
         com.imyvm.community.WorldGeoCommunityAddon.logger.error("Failed to send invitation for ${target.uuid} in community ${community.regionNumberId}", e)
         inviter.sendSystemMessage(Translator.tr("community.operation.save_failed", "invitation"))
         return

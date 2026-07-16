@@ -327,9 +327,6 @@ fun addPendingOperationByKey(
     if (existing != null && existing.expireAt > now) {
         throw IllegalStateException("Pending operation already exists for operationKey=$operationKey, type=${existing.type}")
     }
-    if (existing != null) {
-        WorldGeoCommunityAddon.pendingOperations.remove(operationKey)
-    }
 
     WorldGeoCommunityAddon.pendingOperations[operationKey] = PendingOperation(
         expireAt = expireTime,
@@ -344,6 +341,15 @@ fun addPendingOperationByKey(
         transferData = transferData,
         treasuryGrantData = treasuryGrantData
     )
-    if (WorldGeoCommunityAddon.server != null) CommunityDatabase.save()
+    try {
+        if (WorldGeoCommunityAddon.server != null) CommunityDatabase.save()
+    } catch (e: Exception) {
+        if (existing == null) {
+            WorldGeoCommunityAddon.pendingOperations.remove(operationKey)
+        } else {
+            WorldGeoCommunityAddon.pendingOperations[operationKey] = existing
+        }
+        throw e
+    }
     WorldGeoCommunityAddon.logger.info("Added pending operation: type=$type, operationKey=$operationKey, expireAt=$expireTime")
 }
