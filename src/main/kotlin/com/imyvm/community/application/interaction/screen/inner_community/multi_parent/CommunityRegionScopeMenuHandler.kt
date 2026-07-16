@@ -852,19 +852,20 @@ internal fun executeScopeModification(
                 settingChanges = allSettingChanges
             ).forEach { player.sendSystemMessage(it) }
 
+            val regionId = community.regionNumberId ?: return
             addPendingOperation(
-                regionId = community.regionNumberId!!,
+                regionId = regionId,
                 type = PendingOperationType.MODIFY_SCOPE_CONFIRMATION,
                 expireMinutes = 5,
                 modificationData = ScopeModificationConfirmationData(
-                    regionNumberId = community.regionNumberId!!,
+                    regionNumberId = regionId,
                     scopeName = scope.scopeName,
                     executorUUID = player.uuid,
                     cost = totalCost
                 )
             )
 
-            sendInteractiveScopeModificationConfirmation(player, community.regionNumberId!!, scope.scopeName)
+            sendInteractiveScopeModificationConfirmation(player, regionId, scope.scopeName)
         }
     }
 }
@@ -922,12 +923,13 @@ internal fun executeScopeDeletion(
         settingChanges = allSettingChanges
     ).forEach { player.sendSystemMessage(it) }
 
+    val regionId = community.regionNumberId ?: return
     addPendingOperation(
-        regionId = community.regionNumberId!!,
+        regionId = regionId,
         type = PendingOperationType.DELETE_SCOPE_CONFIRMATION,
         expireMinutes = 5,
         modificationData = ScopeModificationConfirmationData(
-            regionNumberId = community.regionNumberId!!,
+            regionNumberId = regionId,
             scopeName = scope.scopeName,
             executorUUID = player.uuid,
             cost = totalCost,
@@ -935,7 +937,7 @@ internal fun executeScopeDeletion(
         )
     )
 
-    sendInteractiveScopeDeletionConfirmation(player, community.regionNumberId!!, scope.scopeName)
+    sendInteractiveScopeDeletionConfirmation(player, regionId, scope.scopeName)
 }
 
 private fun sendInteractiveScopeDeletionConfirmation(player: ServerPlayer, regionNumberId: Int, scopeName: String) {

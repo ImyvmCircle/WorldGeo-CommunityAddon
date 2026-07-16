@@ -38,7 +38,7 @@ fun getTeleportPointInformationItemStack(
         loreLines.add(Component.literal("y=" + blockPos.y))
         loreLines.add(Component.literal("z=" + blockPos.z))
     } else {
-        loreLines.add(Translator.tr("ui.admin.teleport_point.inquiry.lore.no_point")!!)
+        loreLines.add(Translator.tr("ui.admin.teleport_point.inquiry.lore.no_point"))
     }
 
     return getLoreButton(itemStack, loreLines)
