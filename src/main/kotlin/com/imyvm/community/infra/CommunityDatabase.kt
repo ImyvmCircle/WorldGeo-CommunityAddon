@@ -28,6 +28,8 @@ import java.util.*
 object CommunityDatabase {
 
     private const val DATABASE_FILENAME = "iwg_community.db"
+    private const val DATABASE_VERSION_MARKER = -3
+    private const val DATABASE_VERSION = 2
     private const val PENDING_SECTION_VERSION_MARKER = -2
     private const val PENDING_SECTION_VERSION = 2
     lateinit var communities: MutableList<Community>
@@ -40,6 +42,8 @@ object CommunityDatabase {
         val tempFile = Files.createTempFile(parent, "${DATABASE_FILENAME}.", ".tmp")
         try {
             DataOutputStream(Files.newOutputStream(tempFile)).use { stream ->
+                stream.writeInt(DATABASE_VERSION_MARKER)
+                stream.writeInt(DATABASE_VERSION)
                 stream.writeInt(communities.size)
                 for (community in communities) {
                     saveCommunityRegionNumberId(stream,community)
@@ -80,7 +84,10 @@ object CommunityDatabase {
         }
 
         DataInputStream(file.toFile().inputStream()).use { stream ->
-            val size = stream.readInt()
+            val firstInt = stream.readInt()
+            val databaseVersion = if (firstInt == DATABASE_VERSION_MARKER) stream.readInt() else 1
+            require(databaseVersion in 1..DATABASE_VERSION) { "Unsupported community database version: $databaseVersion" }
+            val size = if (databaseVersion == 1) firstInt else stream.readInt()
             communities = ArrayList(size)
             for (i in 0 until size) {
                 val regionNumberId = loadCommunityRegionNumberId(stream)
