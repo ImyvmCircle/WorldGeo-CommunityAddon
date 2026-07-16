@@ -316,22 +316,37 @@ fun sendInvitation(inviter: ServerPlayer, target: ServerPlayer, community: Commu
     val timeoutMinutes = CommunityConfig.INVITATION_RESPONSE_TIMEOUT_MINUTES.value
     val invitationKey = getInvitationKey(community, target.uuid) ?: return
     
-    community.member[target.uuid] = MemberAccount(
-        joinedTime = System.currentTimeMillis(),
-        basicRoleType = MemberRoleType.APPLICANT,
-        isInvited = true
-    )
-    
-    addPendingOperationByKey(
-        operationKey = invitationKey,
-        type = PendingOperationType.INVITATION,
-        expireMinutes = timeoutMinutes,
-        inviterUUID = inviter.uuid,
-        inviteeUUID = target.uuid
-    )
-    
-    com.imyvm.community.infra.CommunityDatabase.save()
-    
+    val previousAccount = community.member[target.uuid]
+    var pendingAdded = false
+    try {
+        community.member[target.uuid] = MemberAccount(
+            joinedTime = System.currentTimeMillis(),
+            basicRoleType = MemberRoleType.APPLICANT,
+            isInvited = true
+        )
+
+        addPendingOperationByKey(
+            operationKey = invitationKey,
+            type = PendingOperationType.INVITATION,
+            expireMinutes = timeoutMinutes,
+            inviterUUID = inviter.uuid,
+            inviteeUUID = target.uuid
+        )
+        pendingAdded = true
+
+        com.imyvm.community.infra.CommunityDatabase.save()
+    } catch (e: Exception) {
+        if (previousAccount == null) {
+            community.member.remove(target.uuid)
+        } else {
+            community.member[target.uuid] = previousAccount
+        }
+        if (pendingAdded) removePendingOperationByKey(invitationKey)
+        com.imyvm.community.WorldGeoCommunityAddon.logger.error("Failed to send invitation for ${target.uuid} in community ${community.regionNumberId}", e)
+        inviter.sendSystemMessage(Translator.tr("community.operation.save_failed", "invitation"))
+        return
+    }
+
     val acceptText = net.minecraft.network.chat.Component.literal("[")
         .append(Translator.tr("community.invite.button.accept") ?: net.minecraft.network.chat.Component.literal("Accept"))
         .append(net.minecraft.network.chat.Component.literal("]"))
