@@ -38,7 +38,7 @@ class MainMenu(
         addButton(
             slot = 16,
             name = Translator.tr("ui.main.button.my").string,
-            item = Items.RED_BED
+            item = Items.BED.red()
         ) { runMyCommunity(it) }
     }
 
@@ -76,7 +76,7 @@ class MainMenu(
             } else {
                 Translator.tr("ui.main.button.action_bar.disable").string
             },
-            item = if (isRegionActionBarEnabled) Items.LIME_DYE else Items.GRAY_DYE
+            item = if (isRegionActionBarEnabled) Items.DYE.lime() else Items.DYE.gray()
         ) { runToggleActionBar(playerExecutor)}
     }
 }

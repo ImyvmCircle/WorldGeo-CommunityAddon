@@ -39,9 +39,9 @@ class AdministrationTeleportPointMenu(
             name = (Translator.tr("ui.admin.teleport_point.button.toggle").string
                 ?: "Teleport Accessibility") + ": " + accessState,
             item = if (isPublic) {
-                Items.GREEN_WOOL
+                Items.WOOL.green()
             } else {
-                Items.RED_WOOL
+                Items.WOOL.red()
             }
         ) { runToggleTeleportPointAccessibility(playerExecutor, community, scope, runBack) }
 

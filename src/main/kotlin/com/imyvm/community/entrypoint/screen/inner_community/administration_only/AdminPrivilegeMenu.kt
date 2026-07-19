@@ -34,7 +34,7 @@ class AdminPrivilegeMenu(
                     ": " + (Translator.tr(if (enabled) "ui.admin.privilege.state.enabled"
                                           else "ui.admin.privilege.state.disabled")?.string
                             ?: if (enabled) "Enabled" else "Disabled"),
-                item = if (enabled) Items.LIME_CONCRETE else Items.RED_CONCRETE
+                item = if (enabled) Items.CONCRETE.lime() else Items.CONCRETE.red()
             ) {
                 runToggleAdminPrivilege(
                     playerExecutor = playerExecutor,

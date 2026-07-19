@@ -25,7 +25,7 @@ class AdministrationAuditMenu(
         addButton(
             slot = 21,
             name = Translator.tr("ui.admin.audit.button.accept") ?.string ?: "Accept",
-            item = Items.GREEN_WOOL
+            item = Items.WOOL.green()
         ) { runAccept(community, playerExecutor, playerObject) }
 
         addButton(

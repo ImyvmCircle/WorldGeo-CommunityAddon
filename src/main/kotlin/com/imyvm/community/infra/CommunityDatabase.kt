@@ -273,8 +273,8 @@ object CommunityDatabase {
         val announcements = loadCommunityAnnouncements(stream)
         val expenditures = loadCommunityExpenditures(stream, strict = databaseVersion >= 2)
         val messages = loadCommunityMessages(stream, strict = databaseVersion >= 2)
-        val creationCost = if (databaseVersion >= 2) stream.readLong() else 0L
-        loadMemberPendingRefunds(stream, memberMap)
+        val creationCost = stream.readLong()
+        if (databaseVersion >= 3) loadMemberPendingRefunds(stream, memberMap)
 
         return Community(
             regionNumberId = regionNumberId,

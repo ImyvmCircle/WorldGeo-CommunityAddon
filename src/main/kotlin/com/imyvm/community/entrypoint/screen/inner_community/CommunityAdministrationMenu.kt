@@ -116,9 +116,9 @@ class CommunityAdministrationMenu(
             name = (Translator.tr("ui.admin.button.join_policy").string
                 ?: "Join Policy: ") + community.joinPolicy.toString(),
             item = when (community.joinPolicy) {
-                CommunityJoinPolicy.OPEN -> Items.GREEN_WOOL
-                CommunityJoinPolicy.APPLICATION -> Items.YELLOW_WOOL
-                CommunityJoinPolicy.INVITE_ONLY -> Items.RED_WOOL
+                CommunityJoinPolicy.OPEN -> Items.WOOL.green()
+                CommunityJoinPolicy.APPLICATION -> Items.WOOL.yellow()
+                CommunityJoinPolicy.INVITE_ONLY -> Items.WOOL.red()
             }
         ) { runAdmChangeJoinPolicy(player, community, community.joinPolicy, runBack) }
     }

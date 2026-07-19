@@ -1,7 +1,7 @@
 plugins {
 id 'net.fabricmc.fabric-loom' version "${loom_version}"
 id 'maven-publish'
-id "org.jetbrains.kotlin.jvm" version "2.3.20"
+id "org.jetbrains.kotlin.jvm" version "2.4.10"
 }
 
 version = project.mod_version
@@ -49,7 +49,7 @@ implementation("com.typesafe:config:${project.typesafe_version}")
 implementation("com.imyvm:imyvm-hoki:${project.imyvm_hoki_version}")
 implementation("com.imyvm:imyvm-economy:${project.imyvm_economy_version}")
 implementation("com.imyvm:imyvm-world-geo:${project.imyvm_world_geo_version}")
-testImplementation "org.jetbrains.kotlin:kotlin-test-junit:2.3.20"
+testImplementation "org.jetbrains.kotlin:kotlin-test-junit:2.4.10"
 }
 
 processResources {

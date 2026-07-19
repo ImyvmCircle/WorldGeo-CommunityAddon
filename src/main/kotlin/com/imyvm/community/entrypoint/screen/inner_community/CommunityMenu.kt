@@ -113,7 +113,7 @@ class CommunityMenu(
         addButton(
             slot = 32,
             name = Translator.tr("ui.community.button.interaction.like").string ?: "Like Community",
-            item = Items.PINK_DYE
+            item = Items.DYE.pink()
         ) { runLikeCommunity(player, community) }
 
         addButton(

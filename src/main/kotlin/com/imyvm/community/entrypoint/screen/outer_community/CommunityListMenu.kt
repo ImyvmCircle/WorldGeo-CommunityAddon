@@ -105,15 +105,15 @@ class CommunityListMenu(
 
     private fun addModeButtons() {
         val modeColorMap = mapOf(
-            CommunityListFilterType.ALL to Items.ORANGE_WOOL,
-            CommunityListFilterType.JOIN_ABLE to Items.GREEN_WOOL,
-            CommunityListFilterType.RECRUITING to Items.LIME_WOOL,
-            CommunityListFilterType.AUDITING to Items.YELLOW_WOOL,
-            CommunityListFilterType.ACTIVE to Items.CYAN_WOOL,
-            CommunityListFilterType.REVOKED to Items.RED_WOOL
+            CommunityListFilterType.ALL to Items.WOOL.orange(),
+            CommunityListFilterType.JOIN_ABLE to Items.WOOL.green(),
+            CommunityListFilterType.RECRUITING to Items.WOOL.lime(),
+            CommunityListFilterType.AUDITING to Items.WOOL.yellow(),
+            CommunityListFilterType.ACTIVE to Items.WOOL.cyan(),
+            CommunityListFilterType.REVOKED to Items.WOOL.red()
         )
 
-        val selectedItem = modeColorMap[mode] ?: Items.WHITE_WOOL
+        val selectedItem = modeColorMap[mode] ?: Items.WOOL.white()
 
         addButton(
             slot = 45,
@@ -125,7 +125,7 @@ class CommunityListMenu(
             addButton(
                 slot = 47 + index,
                 name = Translator.trStringOrFallback("ui.list.button.${filterType.name.lowercase()}", filterType.name),
-                item = modeColorMap[filterType] ?: Items.WHITE_WOOL
+                item = modeColorMap[filterType] ?: Items.WOOL.white()
             ) { runSwitchFilterMode(it, filterType, runBack) }
         }
     }

@@ -46,7 +46,7 @@ class ConfirmMenu(
         addButton(
             slot = 35,
             name = Translator.trStringOrFallback("ui.confirm.button.confirm", "Confirm"),
-            item = Items.GREEN_WOOL
+            item = Items.WOOL.green()
         ) {
             runConfirmDispatcher(
                 playerExecutor = playerExecutor,

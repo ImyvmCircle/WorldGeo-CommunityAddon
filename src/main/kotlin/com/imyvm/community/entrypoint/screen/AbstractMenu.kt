@@ -18,7 +18,7 @@ import net.minecraft.network.chat.Component
 abstract class AbstractMenu(
     syncId: Int,
     rows: Int = 6,
-    private val defaultBackground: Item = Items.GRAY_STAINED_GLASS_PANE,
+    private val defaultBackground: Item = Items.STAINED_GLASS_PANE.gray(),
     private val defaultBackgroundName: String = " ",
     val menuTitle: Component? = Component.literal("Menu"),
     private val runBack: ((ServerPlayer) -> Unit)? = null

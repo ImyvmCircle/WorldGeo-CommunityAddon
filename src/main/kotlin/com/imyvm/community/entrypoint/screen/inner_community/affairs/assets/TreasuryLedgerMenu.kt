@@ -50,7 +50,7 @@ class TreasuryLedgerMenu(
                     add(Translator.tr("ui.treasury.ledger.desc", descText) ?: Component.literal("§7$descText"))
                 }
             }
-            val icon = if (isIncome) ItemStack(Items.GOLD_INGOT) else ItemStack(Items.RED_STAINED_GLASS_PANE)
+            val icon = if (isIncome) ItemStack(Items.GOLD_INGOT) else ItemStack(Items.STAINED_GLASS_PANE.red())
             addButton(
                 slot = slot,
                 itemStack = getLoreButton(icon, lore),

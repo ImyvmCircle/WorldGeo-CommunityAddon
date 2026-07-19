@@ -27,19 +27,19 @@ class CommunityRegionGlobalGeometryMenu(
         addButton(
             slot = 21,
             name = Translator.trStringOrFallback("ui.admin.region.global.add", "Add Administrative District"),
-            item = Items.LIME_WOOL
+            item = Items.WOOL.lime()
         ) { runAddScopeForCommunity(it, community, runBack) }
 
         addButton(
             slot = 22,
             name = Translator.trStringOrFallback("ui.admin.region.global.delete", "Delete Administrative District"),
-            item = Items.RED_WOOL
+            item = Items.WOOL.red()
         ) { runDeleteScopeForCommunity(it, community, runBack) }
 
         addButton(
             slot = 23,
             name = Translator.trStringOrFallback("ui.admin.region.global.transfer", "Transfer Administrative District"),
-            item = Items.YELLOW_WOOL
+            item = Items.WOOL.yellow()
         ) { runTransferScopeFromGlobalMenu(it, community, runBack) }
     }
 }
