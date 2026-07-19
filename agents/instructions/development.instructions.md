@@ -15,6 +15,7 @@ applyTo: "**"
 
 - `minecraft-i18n.instructions.md`：玩家可见文本、语言文件、枚举显示和 MessageFormat。
 - `configuration-pricing.instructions.md`：`CommunityConfig`、`PricingConfig` 和价格单位。
+- `imyvm-mechanism-tech-principles.instructions.md`：IMYVM 机制资源交易与结算技术原则。
 - `persistence-pending.instructions.md`：`CommunityDatabase`、`PendingOperation` 和数据兼容。
 - `permissions-administration.instructions.md`：成员身份、权限和聚落状态检查。
 - `menus-screens.instructions.md`：菜单、按钮、列表、返回逻辑和玩家头颅。
