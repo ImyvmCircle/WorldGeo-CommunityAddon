@@ -581,6 +581,46 @@ class PricingConfig : HokiConfig("Pricing.conf") {
             obj.getLong(path)
         }
 
+        @JvmField
+        @ConfigOption
+        val BUILDING_REWARD_BLOCK_VALUE = Option(
+            "economy.building_reward_block_value",
+            100L,
+            "money paid per counted block in building reward claims."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val PLOT_AREA_PRICE_PER_BLOCK = Option(
+            "economy.plot_area_price_per_block",
+            20L,
+            "plot price coefficient per square block."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val TITLE_SLOT_COST = Option(
+            "economy.title_slot_cost",
+            50000L,
+            "price to buy one title slot."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val POLICY_SWITCH_COST = Option(
+            "economy.policy_switch_cost",
+            20000L,
+            "price to schedule a policy switch."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
+
 
         fun validateValues() {
             val nonNegativeLongOptions = listOf(
@@ -630,7 +670,11 @@ class PricingConfig : HokiConfig("Pricing.conf") {
                 "economy.rule.piston.coefficient_per_unit" to RULE_PISTON_COEFFICIENT_PER_UNIT.value,
                 "economy.rule.rpg_natural_regen.coefficient_per_unit" to RULE_RPG_NATURAL_REGEN_COEFFICIENT_PER_UNIT.value,
                 "economy.rule.rpg_fire_spread.coefficient_per_unit" to RULE_RPG_FIRE_SPREAD_COEFFICIENT_PER_UNIT.value,
-                "economy.rule.rpg_hunger.coefficient_per_unit" to RULE_RPG_HUNGER_COEFFICIENT_PER_UNIT.value
+                "economy.rule.rpg_hunger.coefficient_per_unit" to RULE_RPG_HUNGER_COEFFICIENT_PER_UNIT.value,
+                "economy.building_reward_block_value" to BUILDING_REWARD_BLOCK_VALUE.value,
+                "economy.plot_area_price_per_block" to PLOT_AREA_PRICE_PER_BLOCK.value,
+                "economy.title_slot_cost" to TITLE_SLOT_COST.value,
+                "economy.policy_switch_cost" to POLICY_SWITCH_COST.value
             )
             for ((path, value) in nonNegativeLongOptions) {
                 require(value >= 0L) { "$path must not be negative" }

@@ -3,6 +3,7 @@ package com.imyvm.community.entrypoint.command
 import com.imyvm.community.application.interaction.command.*
 import com.imyvm.community.application.interaction.common.*
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
+import com.imyvm.community.application.testcycle.CommunityV4TestCycleService
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.community.CommunityListFilterType
 import com.imyvm.community.domain.policy.permission.AdminPrivilege
@@ -281,6 +282,48 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                     )
             )
             .then(
+                literal("v4")
+                    .requires { net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(it.permissions()) }
+                    .then(
+                        literal("summary")
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.string())
+                                    .suggests(ALL_COMMUNITY_PROVIDER)
+                                    .executes { runV4Summary(it) }
+                            )
+                    )
+                    .then(
+                        literal("settle")
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.string())
+                                    .suggests(ALL_COMMUNITY_PROVIDER)
+                                    .then(
+                                        argument("periodId", StringArgumentType.word())
+                                            .executes { runV4Settle(it) }
+                                    )
+                            )
+                    )
+                    .then(
+                        literal("test")
+                            .then(
+                                literal("start")
+                                    .then(
+                                        argument("communityIdentifier", StringArgumentType.string())
+                                            .suggests(ALL_COMMUNITY_PROVIDER)
+                                            .executes { runV4TestStart(it) }
+                                    )
+                            )
+                            .then(
+                                literal("status")
+                                    .then(
+                                        argument("communityIdentifier", StringArgumentType.string())
+                                            .suggests(ALL_COMMUNITY_PROVIDER)
+                                            .executes { runV4TestStatus(it) }
+                                    )
+                            )
+                    )
+            )
+            .then(
                 literal("treasury")
                     .requires { net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(it.permissions()) }
                     .then(
@@ -315,6 +358,90 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                     )
             )
     )
+}
+
+
+private fun runV4Summary(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val identifier = StringArgumentType.getString(context, "communityIdentifier")
+    return identifierHandler(player, identifier) { community ->
+        player.sendSystemMessage(
+            Translator.tr(
+                "command.community.v4.summary",
+                community.generateCommunityMark(),
+                community.developmentBlockPlaceTotal.toString(),
+                community.plots.size.toString(),
+                community.titles.size.toString(),
+                community.policy.activePolicyKey,
+                community.taxWelfareSettlements.count { it.status != com.imyvm.community.domain.model.community.TaxWelfareSettlementStatus.APPLIED }.toString()
+            )
+        )
+    }
+}
+
+private fun runV4Settle(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val identifier = StringArgumentType.getString(context, "communityIdentifier")
+    val periodId = StringArgumentType.getString(context, "periodId")
+    return identifierHandler(player, identifier) { community ->
+        val regionId = community.regionNumberId ?: return@identifierHandler
+        val result = com.imyvm.community.entrypoint.api.CommunityApi.settleTaxWelfare(regionId, periodId)
+        if (result.isSuccess) {
+            val settlement = result.getOrThrow()
+            player.sendSystemMessage(
+                Translator.tr(
+                    "command.community.v4.settle.success",
+                    community.generateCommunityMark(),
+                    settlement.periodId,
+                    settlement.taxAmount.toString(),
+                    settlement.welfareAmount.toString(),
+                    settlement.status.name
+                )
+            )
+        } else {
+            player.sendSystemMessage(Translator.tr("command.community.v4.settle.failed", result.exceptionOrNull()?.message ?: "unknown"))
+        }
+    }
+}
+
+
+private fun runV4TestStart(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val identifier = StringArgumentType.getString(context, "communityIdentifier")
+    return identifierHandler(player, identifier) { community ->
+        val run = CommunityV4TestCycleService.start(community)
+        player.sendSystemMessage(
+            Translator.tr(
+                "command.community.v4.test.start",
+                community.generateCommunityMark(),
+                (run.periodMillis / 60000L).toString(),
+                run.maxCycles.toString()
+            )
+        )
+    }
+}
+
+private fun runV4TestStatus(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val identifier = StringArgumentType.getString(context, "communityIdentifier")
+    return identifierHandler(player, identifier) { community ->
+        val regionId = community.regionNumberId
+        val run = if (regionId != null) CommunityV4TestCycleService.latestRun(regionId) else null
+        if (run == null) {
+            player.sendSystemMessage(Translator.tr("command.community.v4.test.status.none", community.generateCommunityMark()))
+        } else {
+            player.sendSystemMessage(
+                Translator.tr(
+                    "command.community.v4.test.status",
+                    community.generateCommunityMark(),
+                    run.completedCycles.toString(),
+                    run.maxCycles.toString(),
+                    run.active.toString(),
+                    run.settlements.size.toString()
+                )
+            )
+        }
+    }
 }
 
 private fun runInitialUI(context: CommandContext<CommandSourceStack>): Int {

@@ -7,6 +7,10 @@ import com.imyvm.community.domain.model.community.CommunityJoinPolicy
 import com.imyvm.community.domain.model.community.CommunityStatus
 import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.domain.model.TurnoverSource
+import com.imyvm.community.application.interaction.common.CommunityV4Service
+import com.imyvm.community.domain.model.community.CommunityPlot
+import com.imyvm.community.domain.model.community.CommunityTitle
+import com.imyvm.community.domain.model.community.TaxWelfareSettlement
 import com.imyvm.community.domain.model.development.DevelopmentComponents
 import com.imyvm.community.domain.model.development.DevelopmentSnapshot
 import com.imyvm.community.infra.CommunityDatabase
@@ -28,7 +32,12 @@ data class CommunitySnapshot(
     val likeCount: Int,
     val activeAnnouncementCount: Int,
     val messageCount: Int,
-    val isManor: Boolean
+    val isManor: Boolean,
+    val developmentBlockPlaceTotal: Long,
+    val plotCount: Int,
+    val titleCount: Int,
+    val activePolicyKey: String,
+    val pendingSettlementCount: Int
 )
 
 object CommunityApi {
@@ -88,6 +97,67 @@ object CommunityApi {
         }
     }
 
+
+    fun refreshDevelopment(regionNumberId: Int): Result<Long> {
+        requireServerThread()?.let { return Result.failure(it) }
+        val community = CommunityDatabase.getCommunityById(regionNumberId)
+            ?: return Result.failure(NoSuchElementException("community not found for regionNumberId=$regionNumberId"))
+        return saveMutation(community, { CommunityV4Service.refreshDevelopmentFromWorldGeo(community) })
+    }
+
+    fun claimBuildingReward(regionNumberId: Int, playerUUID: UUID, periodId: String): Result<Long> {
+        requireServerThread()?.let { return Result.failure(it) }
+        val community = CommunityDatabase.getCommunityById(regionNumberId)
+            ?: return Result.failure(NoSuchElementException("community not found for regionNumberId=$regionNumberId"))
+        return saveMutation(community) {
+            CommunityV4Service.claimBuildingReward(
+                community,
+                playerUUID,
+                periodId,
+                com.imyvm.community.infra.PricingConfig.BUILDING_REWARD_BLOCK_VALUE.value
+            )
+        }
+    }
+
+    fun upsertPlot(regionNumberId: Int, subSpaceId: Long, name: String): Result<CommunityPlot> {
+        requireServerThread()?.let { return Result.failure(it) }
+        val community = CommunityDatabase.getCommunityById(regionNumberId)
+            ?: return Result.failure(NoSuchElementException("community not found for regionNumberId=$regionNumberId"))
+        return saveMutation(community) { CommunityV4Service.upsertPlot(community, subSpaceId, name) }
+    }
+
+    fun calculatePlotPrice(regionNumberId: Int, subSpaceId: Long, area: Double? = null): Result<Long> {
+        requireServerThread()?.let { return Result.failure(it) }
+        val community = CommunityDatabase.getCommunityById(regionNumberId)
+            ?: return Result.failure(NoSuchElementException("community not found for regionNumberId=$regionNumberId"))
+        return saveMutation(community) { CommunityV4Service.calculatePlotPrice(community, subSpaceId, area) }
+    }
+
+    fun buyTitle(regionNumberId: Int, playerUUID: UUID, slot: Int, titleKey: String, effectKey: String? = null): Result<CommunityTitle> {
+        requireServerThread()?.let { return Result.failure(it) }
+        val community = CommunityDatabase.getCommunityById(regionNumberId)
+            ?: return Result.failure(NoSuchElementException("community not found for regionNumberId=$regionNumberId"))
+        return saveMutation(community) { CommunityV4Service.buyTitle(community, playerUUID, slot, titleKey, effectKey) }
+    }
+
+    fun schedulePolicy(regionNumberId: Int, newPolicyKey: String, currentPeriodId: String, effectivePeriodId: String): Result<Boolean> {
+        requireServerThread()?.let { return Result.failure(it) }
+        val community = CommunityDatabase.getCommunityById(regionNumberId)
+            ?: return Result.failure(NoSuchElementException("community not found for regionNumberId=$regionNumberId"))
+        return saveMutation(community) { CommunityV4Service.schedulePolicy(community, newPolicyKey, currentPeriodId, effectivePeriodId) }
+    }
+
+    fun settleTaxWelfare(regionNumberId: Int, periodId: String): Result<TaxWelfareSettlement> {
+        requireServerThread()?.let { return Result.failure(it) }
+        val community = CommunityDatabase.getCommunityById(regionNumberId)
+            ?: return Result.failure(NoSuchElementException("community not found for regionNumberId=$regionNumberId"))
+        return saveMutation(community) {
+            val settlement = CommunityV4Service.freezeTaxWelfare(community, periodId)
+            CommunityV4Service.applyTaxWelfare(community, settlement)
+            settlement
+        }
+    }
+
     fun snapshotDevelopment(regionNumberId: Int, tick: Long): DevelopmentSnapshot? {
         val community = CommunityDatabase.getCommunityById(regionNumberId) ?: return null
         val region = RegionDataApi.getRegion(regionNumberId) ?: return null
@@ -128,6 +198,34 @@ object CommunityApi {
         )
     }
 
+    private fun <T> saveMutation(community: Community, action: () -> T): Result<T> {
+        val memberSnapshot = HashMap(community.member)
+        val incomeSnapshot = ArrayList(community.communityIncome)
+        val expenditureSnapshot = ArrayList(community.expenditures)
+        val buildingRewardSnapshot = HashMap(community.buildingRewardLedgers)
+        val developmentSnapshot = community.developmentBlockPlaceTotal
+        val plotSnapshot = community.plots.toMutableList()
+        val titleSnapshot = community.titles.toMutableList()
+        val policySnapshot = community.policy.copy()
+        val settlementSnapshot = community.taxWelfareSettlements.toMutableList()
+        return try {
+            val result = action()
+            CommunityDatabase.save()
+            Result.success(result)
+        } catch (e: Exception) {
+            community.member = memberSnapshot
+            community.communityIncome = incomeSnapshot
+            community.expenditures = expenditureSnapshot
+            community.buildingRewardLedgers = buildingRewardSnapshot
+            community.developmentBlockPlaceTotal = developmentSnapshot
+            community.plots = plotSnapshot
+            community.titles = titleSnapshot
+            community.policy = policySnapshot
+            community.taxWelfareSettlements = settlementSnapshot
+            Result.failure(e)
+        }
+    }
+
     private fun requireServerThread(): IllegalStateException? {
         val server = WorldGeoCommunityAddon.server
             ?: return IllegalStateException("CommunityApi mutating calls require a running Minecraft server")
@@ -150,6 +248,11 @@ private fun Community.toSnapshot(): CommunitySnapshot = CommunitySnapshot(
     likeCount = likeCount,
     activeAnnouncementCount = getActiveAnnouncements().size,
     messageCount = messages.count { !it.isDeleted },
-    isManor = isManor()
+    isManor = isManor(),
+    developmentBlockPlaceTotal = developmentBlockPlaceTotal,
+    plotCount = plots.size,
+    titleCount = titles.size,
+    activePolicyKey = policy.activePolicyKey,
+    pendingSettlementCount = taxWelfareSettlements.count { it.status != com.imyvm.community.domain.model.community.TaxWelfareSettlementStatus.APPLIED }
 )
 }

@@ -827,5 +827,11 @@
   "ui.admin.scope.modify.confirm_menu.button.exit_to_select": "§e§lExit to Continue Selecting§r",
   "ui.admin.scope.modify.confirm_menu.button.confirm": "§a§lConfirm Modification§r",
   "community.like.success": "§d§l[Liked!]§r §dSuccessfully liked §f§l{0}§r§d. Community now has §e§l{1}§r§d like(s), ranked §a§l#{2}§r§d.",
-  "community.like.already_liked": "§c§l[Like Reminder]§r §cYou have already liked today. Come back tomorrow!"
+  "community.like.already_liked": "§c§l[Like Reminder]§r §cYou have already liked today. Come back tomorrow!",
+  "command.community.v4.summary": "§6§l[V4 Summary]§r §6Community: §f§l{0}§r§6, blocks: §a{1}§r§6, plots: §a{2}§r§6, titles: §a{3}§r§6, policy: §a{4}§r§6, pending settlements: §a{5}§r§6.",
+  "command.community.v4.settle.success": "§a§l[V4 Settlement]§r §aCommunity §f§l{0}§r §aperiod §f{1}§r §atax §c{2}§r §awelfare §b{3}§r §astatus §f{4}§r§a.",
+  "command.community.v4.settle.failed": "§c§l[V4 Settlement Failed]§r §c{0}",
+  "command.community.v4.test.start": "§a§l[V4 Test Cycle]§r §aStarted isolated test cycle for §f§l{0}§r§a. Period: §f{1} minute(s)§r§a, cycles: §f{2}§r§a.",
+  "command.community.v4.test.status": "§6§l[V4 Test Cycle]§r §6Community: §f§l{0}§r§6, completed: §a{1}/{2}§r§6, active: §f{3}§r§6, test settlements: §a{4}§r§6.",
+  "command.community.v4.test.status.none": "§7§l[V4 Test Cycle]§r §7No isolated test cycle exists for §f§l{0}§r§7."
 }

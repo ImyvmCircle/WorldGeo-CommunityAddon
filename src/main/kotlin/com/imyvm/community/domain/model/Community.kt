@@ -22,7 +22,13 @@ class Community(
     var creationCost: Long = 0L,
     var nameChangeCooldowns: HashMap<String, Long> = HashMap(),
     var likeCount: Int = 0,
-    var lastLikedBy: HashMap<UUID, Long> = HashMap()
+    var lastLikedBy: HashMap<UUID, Long> = HashMap(),
+    var buildingRewardLedgers: HashMap<UUID, BuildingRewardLedger> = HashMap(),
+    var developmentBlockPlaceTotal: Long = 0L,
+    var plots: MutableList<CommunityPlot> = mutableListOf(),
+    var titles: MutableList<CommunityTitle> = mutableListOf(),
+    var policy: CommunityPolicyState = CommunityPolicyState(),
+    var taxWelfareSettlements: MutableList<TaxWelfareSettlement> = mutableListOf()
 ) {
     fun isManor(): Boolean {
         return status == CommunityStatus.PENDING_MANOR || status == CommunityStatus.ACTIVE_MANOR || status == CommunityStatus.REVOKED_MANOR

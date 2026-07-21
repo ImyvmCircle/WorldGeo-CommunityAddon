@@ -6,6 +6,7 @@ import com.imyvm.community.entrypoint.command.registerCh
 import com.imyvm.community.entrypoint.command.registerCommun
 import com.imyvm.community.entrypoint.event.registerAnnouncementNotification
 import com.imyvm.community.entrypoint.event.registerChatInterceptor
+import com.imyvm.community.entrypoint.event.registerCommunityV4TestCycleTicker
 import com.imyvm.community.entrypoint.event.registerExpireCheck
 import com.imyvm.community.entrypoint.event.registerMailCheck
 import com.imyvm.community.entrypoint.event.registerPendingRefundCheck
@@ -27,6 +28,7 @@ class WorldGeoCommunityAddon : ModInitializer {
 		registerSelectionContextCleanup()
 		registerAnnouncementNotification()
 		registerChatInterceptor()
+		registerCommunityV4TestCycleTicker()
 
 		CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> register(dispatcher) }
 		CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> registerCh(dispatcher) }
