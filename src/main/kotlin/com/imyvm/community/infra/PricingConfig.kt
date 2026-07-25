@@ -533,16 +533,6 @@ class PricingConfig : HokiConfig("Pricing.conf") {
 
         @JvmField
         @ConfigOption
-        val RULE_RPG_NATURAL_REGEN_COEFFICIENT_PER_UNIT = Option(
-            "economy.rule.rpg_natural_regen.coefficient_per_unit",
-            7000L,
-            "the pricing coefficient for RPG_NATURAL_REGEN rule per unit area."
-        ) { obj, path ->
-            obj.getLong(path)
-        }
-
-        @JvmField
-        @ConfigOption
         val RULE_RPG_FIRE_SPREAD_COEFFICIENT_PER_UNIT = Option(
             "economy.rule.rpg_fire_spread.coefficient_per_unit",
             7000L,
@@ -668,7 +658,6 @@ class PricingConfig : HokiConfig("Pricing.conf") {
                 "economy.rule.dispenser.coefficient_per_unit" to RULE_DISPENSER_COEFFICIENT_PER_UNIT.value,
                 "economy.rule.pressure_plate.coefficient_per_unit" to RULE_PRESSURE_PLATE_COEFFICIENT_PER_UNIT.value,
                 "economy.rule.piston.coefficient_per_unit" to RULE_PISTON_COEFFICIENT_PER_UNIT.value,
-                "economy.rule.rpg_natural_regen.coefficient_per_unit" to RULE_RPG_NATURAL_REGEN_COEFFICIENT_PER_UNIT.value,
                 "economy.rule.rpg_fire_spread.coefficient_per_unit" to RULE_RPG_FIRE_SPREAD_COEFFICIENT_PER_UNIT.value,
                 "economy.rule.rpg_hunger.coefficient_per_unit" to RULE_RPG_HUNGER_COEFFICIENT_PER_UNIT.value,
                 "economy.building_reward_block_value" to BUILDING_REWARD_BLOCK_VALUE.value,
