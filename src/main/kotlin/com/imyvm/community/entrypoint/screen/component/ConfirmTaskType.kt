@@ -6,5 +6,4 @@ enum class ConfirmTaskType {
     LEAVE_COMMUNITY,
     INVITATION_ACCEPT,
     INVITATION_REJECT,
-    CLAIM_BUILDING_REWARD,
 }

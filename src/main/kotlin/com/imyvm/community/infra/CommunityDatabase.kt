@@ -72,7 +72,6 @@ object CommunityDatabase {
                 writeSection(stream, SECTION_NAME_CHANGE_COOLDOWNS) { saveNameChangeCooldownsSection(it) }
                 writeSection(stream, SECTION_LIKES) { saveLikesSection(it) }
                 writeSection(stream, SECTION_COMMUNITY_INCOME) { saveCommunityIncomeSection(it) }
-                writeSection(stream, SECTION_V4_STATE) { saveV4StateSection(it) }
             }
             replaceDatabaseFile(tempFile, file)
         } finally {
@@ -958,152 +957,9 @@ object CommunityDatabase {
 
 
     private fun saveV4StateSection(stream: DataOutputStream) {
-        val list = communities.filter { it.regionNumberId != null }
-        stream.writeInt(list.size)
-        for (community in list) {
-            stream.writeInt(community.regionNumberId!!)
-            stream.writeLong(community.developmentBlockPlaceTotal)
-
-            stream.writeInt(community.buildingRewardLedgers.size)
-            for ((uuid, ledger) in community.buildingRewardLedgers) {
-                stream.writeUTF(uuid.toString())
-                stream.writeLong(ledger.claimedBlockPlaceCount)
-                stream.writeLong(ledger.claimedAmount)
-                writeNullableString(stream, ledger.lastClaimedPeriodId)
-            }
-
-            stream.writeInt(community.plots.size)
-            for (plot in community.plots) {
-                stream.writeLong(plot.subSpaceId)
-                stream.writeUTF(plot.name)
-                writeNullableUUID(stream, plot.ownerUUID)
-                stream.writeBoolean(plot.salePrice != null)
-                if (plot.salePrice != null) stream.writeLong(plot.salePrice!!)
-                stream.writeBoolean(plot.saleDisabled)
-                stream.writeBoolean(plot.arena)
-                stream.writeBoolean(plot.advertising)
-                stream.writeLong(plot.lastPriceRefreshMillis)
-                stream.writeLong(plot.cachedPrice)
-            }
-
-            stream.writeInt(community.titles.size)
-            for (title in community.titles) {
-                stream.writeInt(title.slot)
-                stream.writeUTF(title.titleKey)
-                stream.writeUTF(title.ownerUUID.toString())
-                stream.writeLong(title.purchasedAt)
-                stream.writeBoolean(title.active)
-                writeNullableString(stream, title.effectKey)
-                stream.writeInt(title.effectAmplifier)
-            }
-
-            stream.writeUTF(community.policy.activePolicyKey)
-            writeNullableString(stream, community.policy.pendingPolicyKey)
-            writeNullableString(stream, community.policy.pendingEffectivePeriodId)
-            writeNullableString(stream, community.policy.lastChangedPeriodId)
-
-            stream.writeInt(community.taxWelfareSettlements.size)
-            for (settlement in community.taxWelfareSettlements) {
-                stream.writeUTF(settlement.settlementId)
-                stream.writeUTF(settlement.periodId)
-                stream.writeLong(settlement.createdAt)
-                stream.writeLong(settlement.totalAssetsAtFreeze)
-                stream.writeLong(settlement.taxAmount)
-                stream.writeLong(settlement.welfareAmount)
-                stream.writeInt(settlement.status.value)
-                writeNullableString(stream, settlement.failureReason)
-                stream.writeInt(settlement.retryCount)
-                stream.writeLong(settlement.nextRetryAt)
-            }
-        }
     }
 
     private fun loadV4StateSection(stream: DataInputStream) {
-        val count = readCount(stream, "v4 community")
-        for (i in 0 until count) {
-            val regionId = stream.readInt()
-            val community = getCommunityById(regionId)
-            val developmentBlockPlaceTotal = stream.readLong()
-
-            val ledgers = HashMap<UUID, BuildingRewardLedger>()
-            val ledgerCount = readCount(stream, "building reward ledger")
-            for (j in 0 until ledgerCount) {
-                ledgers[UUID.fromString(stream.readUTF())] = BuildingRewardLedger(
-                    claimedBlockPlaceCount = stream.readLong(),
-                    claimedAmount = stream.readLong(),
-                    lastClaimedPeriodId = readNullableString(stream)
-                )
-            }
-
-            val plots = mutableListOf<CommunityPlot>()
-            val plotCount = readCount(stream, "community plot")
-            for (j in 0 until plotCount) {
-                plots.add(
-                    CommunityPlot(
-                        subSpaceId = stream.readLong(),
-                        name = stream.readUTF(),
-                        ownerUUID = readNullableUUID(stream),
-                        salePrice = if (stream.readBoolean()) stream.readLong() else null,
-                        saleDisabled = stream.readBoolean(),
-                        arena = stream.readBoolean(),
-                        advertising = stream.readBoolean(),
-                        lastPriceRefreshMillis = stream.readLong(),
-                        cachedPrice = stream.readLong()
-                    )
-                )
-            }
-
-            val titles = mutableListOf<CommunityTitle>()
-            val titleCount = readCount(stream, "community title")
-            for (j in 0 until titleCount) {
-                titles.add(
-                    CommunityTitle(
-                        slot = stream.readInt(),
-                        titleKey = stream.readUTF(),
-                        ownerUUID = UUID.fromString(stream.readUTF()),
-                        purchasedAt = stream.readLong(),
-                        active = stream.readBoolean(),
-                        effectKey = readNullableString(stream),
-                        effectAmplifier = stream.readInt()
-                    )
-                )
-            }
-
-            val policy = CommunityPolicyState(
-                activePolicyKey = stream.readUTF(),
-                pendingPolicyKey = readNullableString(stream),
-                pendingEffectivePeriodId = readNullableString(stream),
-                lastChangedPeriodId = readNullableString(stream)
-            )
-
-            val settlements = mutableListOf<TaxWelfareSettlement>()
-            val settlementCount = readCount(stream, "tax welfare settlement")
-            for (j in 0 until settlementCount) {
-                settlements.add(
-                    TaxWelfareSettlement(
-                        settlementId = stream.readUTF(),
-                        periodId = stream.readUTF(),
-                        createdAt = stream.readLong(),
-                        totalAssetsAtFreeze = stream.readLong(),
-                        taxAmount = stream.readLong(),
-                        welfareAmount = stream.readLong(),
-                        status = TaxWelfareSettlementStatus.fromValue(stream.readInt()),
-                        failureReason = readNullableString(stream),
-                        retryCount = stream.readInt(),
-                        nextRetryAt = stream.readLong()
-                    )
-                )
-            }
-
-            if (community != null) {
-                community.developmentBlockPlaceTotal = developmentBlockPlaceTotal
-                community.buildingRewardLedgers = ledgers
-                community.plots = plots
-                community.titles = titles
-                community.policy = policy
-                community.taxWelfareSettlements = settlements
-            }
-        }
     }
 
     private fun writeTurnoverList(stream: DataOutputStream, list: List<Turnover>) {

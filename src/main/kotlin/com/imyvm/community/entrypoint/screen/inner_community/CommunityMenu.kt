@@ -2,7 +2,6 @@ package com.imyvm.community.entrypoint.screen.inner_community
 
 import com.imyvm.community.application.interaction.screen.inner_community.*
 import com.imyvm.community.application.interaction.screen.inner_community.affairs.runOpenAssetsMenu
-import com.imyvm.community.application.interaction.screen.inner_community.affairs.runOpenBuildingMenu
 import com.imyvm.community.application.interaction.screen.inner_community.affairs.runOpenCommunitySpaceInfoMenu
 import com.imyvm.community.application.interaction.screen.inner_community.affairs.runOpenMemberAnnouncementListMenu
 import com.imyvm.community.domain.model.Community
@@ -28,7 +27,6 @@ class CommunityMenu(
         addAdministrationButtonTrail()
         addDescriptionButton()
         addInteractionButton()
-        addV4ButtonTrail()
     }
 
     private fun addOwnerHeadButton() {
@@ -135,13 +133,5 @@ class CommunityMenu(
             name = Translator.tr("ui.community.button.interaction.invite").string,
             item = Items.VILLAGER_SPAWN_EGG
         ) { runOpenInviteMemberMenu(player, community) { runBackToCommunityMenu(player, community, runBack) } }
-    }
-
-    private fun addV4ButtonTrail() {
-        addButton(
-            slot = 36,
-            name = Translator.tr("ui.community.button.interaction.building").string,
-            item = Items.BRICKS
-        ) { runOpenBuildingMenu(player, community, runBack) }
     }
 }

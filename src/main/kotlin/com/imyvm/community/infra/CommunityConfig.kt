@@ -177,46 +177,6 @@ class CommunityConfig : HokiConfig("Community.conf") {
             obj.getInt(path)
         }
 
-        @JvmField
-        @ConfigOption
-        val BUILDING_REWARD_DEFAULT_BLOCK_LIMIT = Option(
-            "building.reward_default_block_limit",
-            12,
-            "default block count limit paid per building reward claim."
-        ) { obj, path ->
-            obj.getInt(path)
-        }
-
-        @JvmField
-        @ConfigOption
-        val TAX_WELFARE_TAX_RATE = Option(
-            "tax_welfare.tax_rate",
-            0.02,
-            "community asset tax rate applied during tax welfare settlement."
-        ) { obj, path ->
-            obj.getDouble(path)
-        }
-
-        @JvmField
-        @ConfigOption
-        val TAX_WELFARE_PER_MEMBER = Option(
-            "tax_welfare.per_member",
-            1000L,
-            "welfare amount per member for each settlement."
-        ) { obj, path ->
-            obj.getLong(path)
-        }
-
-        @JvmField
-        @ConfigOption
-        val TAX_WELFARE_RETRY_DELAY_SECONDS = Option(
-            "tax_welfare.retry_delay_seconds",
-            300,
-            "delay before retrying failed tax welfare settlement."
-        ) { obj, path ->
-            obj.getInt(path)
-        }
-
 
         fun validateValues() {
             require(LANGUAGE.value.isNotBlank()) { "language must not be blank" }
@@ -233,10 +193,6 @@ class CommunityConfig : HokiConfig("Community.conf") {
             require(TELEPORT_FREE_USES_NON_FORMAL.value >= 0) { "teleport.free_uses_non_formal_per_day must not be negative" }
             require(TELEPORT_PAID_BASE_DELAY_SECONDS.value >= 0) { "teleport.paid_base_delay_seconds must not be negative" }
             require(TELEPORT_POST_EFFECT_TICKS.value >= 0) { "teleport.post_effect_ticks must not be negative" }
-            require(BUILDING_REWARD_DEFAULT_BLOCK_LIMIT.value >= 0) { "building.reward_default_block_limit must not be negative" }
-            require(TAX_WELFARE_TAX_RATE.value in 0.0..1.0) { "tax_welfare.tax_rate must be between 0.0 and 1.0" }
-            require(TAX_WELFARE_PER_MEMBER.value >= 0L) { "tax_welfare.per_member must not be negative" }
-            require(TAX_WELFARE_RETRY_DELAY_SECONDS.value > 0) { "tax_welfare.retry_delay_seconds must be positive" }
         }
     }
 }

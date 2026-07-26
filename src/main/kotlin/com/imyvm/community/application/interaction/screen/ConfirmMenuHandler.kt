@@ -3,7 +3,6 @@ package com.imyvm.community.application.interaction.screen
 import com.imyvm.community.application.interaction.common.onCreateCommunityRequest
 import com.imyvm.community.application.interaction.common.onJoinCommunityDirectly
 import com.imyvm.community.application.interaction.common.runCommunityMutationOrRollback
-import com.imyvm.community.application.interaction.screen.inner_community.affairs.runClaimBuildingReward
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.entrypoint.screen.component.ConfirmTaskType
@@ -25,7 +24,6 @@ fun runConfirmDispatcher(
         ConfirmTaskType.CREATE_COMMUNITY -> runCommunityCreation(playerExecutor, communityType, communityName, shapeName)
         ConfirmTaskType.JOIN_COMMUNITY -> runCommunityJoin(playerExecutor, targetCommunity)
         ConfirmTaskType.LEAVE_COMMUNITY -> runCommunityLeave(playerExecutor, targetCommunity)
-        ConfirmTaskType.CLAIM_BUILDING_REWARD -> runBuildingRewardClaim(playerExecutor, targetCommunity)
         ConfirmTaskType.INVITATION_ACCEPT, ConfirmTaskType.INVITATION_REJECT -> {}
     }
 }
@@ -107,13 +105,6 @@ private fun runCommunityLeave(
     }
 }
 
-private fun runBuildingRewardClaim(playerExecutor: ServerPlayer, targetCommunity: Community?) {
-    if (targetCommunity == null) {
-        playerExecutor.sendSystemMessage(Translator.tr("community.building.claim.failed", "missing community"))
-        return
-    }
-    runClaimBuildingReward(playerExecutor, targetCommunity)
-}
 
 private fun notifyOfficials(community: Community, server: net.minecraft.server.MinecraftServer, message: net.minecraft.network.chat.Component) {
     for ((memberUUID, memberAccount) in community.member) {
