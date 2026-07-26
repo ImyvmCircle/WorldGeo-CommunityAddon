@@ -8,7 +8,9 @@ import com.imyvm.community.domain.model.community.CommunityStatus
 import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.domain.model.TurnoverSource
 import com.imyvm.community.application.interaction.common.CommunityV4Service
+import com.imyvm.community.domain.model.community.BuildingRewardLedger
 import com.imyvm.community.domain.model.community.CommunityPlot
+import com.imyvm.community.domain.model.community.CommunityPolicyState
 import com.imyvm.community.domain.model.community.CommunityTitle
 import com.imyvm.community.domain.model.community.TaxWelfareSettlement
 import com.imyvm.community.domain.model.development.DevelopmentComponents
@@ -210,12 +212,12 @@ object CommunityApi {
         val memberSnapshot = HashMap(community.member)
         val incomeSnapshot = ArrayList(community.communityIncome)
         val expenditureSnapshot = ArrayList(community.expenditures)
-        val buildingRewardSnapshot = HashMap(community.buildingRewardLedgers)
+        val buildingRewardSnapshot = copyBuildingRewardLedgers(community.buildingRewardLedgers)
         val developmentSnapshot = community.developmentBlockPlaceTotal
-        val plotSnapshot = community.plots.toMutableList()
-        val titleSnapshot = community.titles.toMutableList()
-        val policySnapshot = community.policy.copy()
-        val settlementSnapshot = community.taxWelfareSettlements.toMutableList()
+        val plotSnapshot = copyPlots(community.plots)
+        val titleSnapshot = copyTitles(community.titles)
+        val policySnapshot = copyPolicy(community.policy)
+        val settlementSnapshot = copyTaxWelfareSettlements(community.taxWelfareSettlements)
         return try {
             val result = action()
             CommunityDatabase.save()
@@ -233,6 +235,20 @@ object CommunityApi {
             Result.failure(e)
         }
     }
+
+    private fun copyBuildingRewardLedgers(source: HashMap<UUID, BuildingRewardLedger>): HashMap<UUID, BuildingRewardLedger> =
+        source.mapValuesTo(HashMap()) { (_, ledger) -> ledger.copy() }
+
+    private fun copyPlots(source: MutableList<CommunityPlot>): MutableList<CommunityPlot> =
+        source.map { it.copy() }.toMutableList()
+
+    private fun copyTitles(source: MutableList<CommunityTitle>): MutableList<CommunityTitle> =
+        source.map { it.copy() }.toMutableList()
+
+    private fun copyTaxWelfareSettlements(source: MutableList<TaxWelfareSettlement>): MutableList<TaxWelfareSettlement> =
+        source.map { it.copy() }.toMutableList()
+
+    private fun copyPolicy(source: CommunityPolicyState): CommunityPolicyState = source.copy()
 
     private fun requireServerThread(): IllegalStateException? {
         val server = WorldGeoCommunityAddon.server
