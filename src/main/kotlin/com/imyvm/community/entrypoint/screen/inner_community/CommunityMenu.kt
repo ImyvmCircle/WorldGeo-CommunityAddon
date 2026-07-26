@@ -2,6 +2,7 @@ package com.imyvm.community.entrypoint.screen.inner_community
 
 import com.imyvm.community.application.interaction.screen.inner_community.*
 import com.imyvm.community.application.interaction.screen.inner_community.affairs.runOpenAssetsMenu
+import com.imyvm.community.application.interaction.screen.inner_community.affairs.runOpenCommunitySpaceInfoMenu
 import com.imyvm.community.application.interaction.screen.inner_community.affairs.runOpenMemberAnnouncementListMenu
 import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.domain.model.Community
@@ -71,6 +72,12 @@ class CommunityMenu(
             name = Translator.tr("ui.community.button.description.assets").string ?: "Asset",
             item = Items.GOLD_INGOT
         ) { runOpenAssetsMenu(player, community, runBack) }
+
+        addButton(
+            slot = 31,
+            name = Translator.tr("ui.community.button.description.space")?.string ?: "Space Information",
+            item = Items.SPYGLASS
+        ) { runOpenCommunitySpaceInfoMenu(player, community, runBack) }
     }
 
     private fun addInteractionButton(){
