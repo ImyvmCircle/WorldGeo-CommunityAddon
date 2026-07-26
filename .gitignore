@@ -45,3 +45,6 @@ replay_*.log
 
 # github
 logs/
+
+# local docs
+docs/

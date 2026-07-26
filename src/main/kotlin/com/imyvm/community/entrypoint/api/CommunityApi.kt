@@ -14,6 +14,7 @@ import com.imyvm.community.domain.model.community.TaxWelfareSettlement
 import com.imyvm.community.domain.model.development.DevelopmentComponents
 import com.imyvm.community.domain.model.development.DevelopmentSnapshot
 import com.imyvm.community.infra.CommunityDatabase
+import com.imyvm.economy.EconomyMod
 import com.imyvm.iwg.domain.RegionNaturalStatsResult
 import com.imyvm.iwg.inter.api.RegionDataApi
 import java.util.UUID
@@ -110,12 +111,19 @@ object CommunityApi {
         val community = CommunityDatabase.getCommunityById(regionNumberId)
             ?: return Result.failure(NoSuchElementException("community not found for regionNumberId=$regionNumberId"))
         return saveMutation(community) {
-            CommunityV4Service.claimBuildingReward(
+            val amount = CommunityV4Service.claimBuildingReward(
                 community,
                 playerUUID,
                 periodId,
                 com.imyvm.community.infra.PricingConfig.BUILDING_REWARD_BLOCK_VALUE.value
             )
+            if (amount <= 0L) return@saveMutation 0L
+            val server = WorldGeoCommunityAddon.server
+                ?: throw IllegalStateException("CommunityApi building reward claims require a running Minecraft server")
+            val player = server.playerList.getPlayer(playerUUID)
+                ?: throw IllegalStateException("player must be online to claim building reward: $playerUUID")
+            EconomyMod.data.getOrCreate(player).addMoney(amount)
+            amount
         }
     }
 

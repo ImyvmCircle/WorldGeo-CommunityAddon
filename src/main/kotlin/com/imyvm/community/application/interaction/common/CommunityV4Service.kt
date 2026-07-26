@@ -33,9 +33,6 @@ object CommunityV4Service {
         ledger.claimedBlockPlaceCount += payableBlocks
         ledger.claimedAmount += amount
         ledger.lastClaimedPeriodId = periodId
-        community.communityIncome.add(
-            Turnover(amount, System.currentTimeMillis(), TurnoverSource.SYSTEM, "community.treasury.desc.building_reward", listOf(playerUUID.toString()))
-        )
         return amount
     }
 

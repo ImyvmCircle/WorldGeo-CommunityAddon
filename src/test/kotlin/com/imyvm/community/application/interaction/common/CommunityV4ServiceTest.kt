@@ -16,6 +16,22 @@ import kotlin.test.assertTrue
 
 class CommunityV4ServiceTest {
     @Test
+    fun buildingRewardClaimUpdatesLedgerWithoutChangingCommunityTreasury() {
+        val owner = UUID.fromString("00000000-0000-0000-0000-000000000001")
+        val community = testCommunity(regionNumberId = null)
+        community.developmentBlockPlaceTotal = 20L
+
+        val amount = CommunityV4Service.claimBuildingReward(community, owner, "2026-W30", 100L)
+        val ledger = community.buildingRewardLedgers.getValue(owner)
+
+        assertEquals(1200L, amount)
+        assertEquals(12L, ledger.claimedBlockPlaceCount)
+        assertEquals(1200L, ledger.claimedAmount)
+        assertEquals("2026-W30", ledger.lastClaimedPeriodId)
+        assertTrue(community.communityIncome.isEmpty())
+    }
+
+    @Test
     fun policySwitchFreezesPendingPolicyAndCost() {
         val community = testCommunity()
 
@@ -44,10 +60,10 @@ class CommunityV4ServiceTest {
         assertEquals(TaxWelfareSettlementStatus.APPLIED, first.status)
     }
 
-    private fun testCommunity(): Community {
+    private fun testCommunity(regionNumberId: Int? = 77): Community {
         val owner = UUID.fromString("00000000-0000-0000-0000-000000000001")
         return Community(
-            regionNumberId = 77,
+            regionNumberId = regionNumberId,
             member = hashMapOf(owner to MemberAccount(0L, MemberRoleType.OWNER)),
             joinPolicy = CommunityJoinPolicy.OPEN,
             status = CommunityStatus.ACTIVE_REALM
