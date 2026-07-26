@@ -24,12 +24,15 @@ import kotlin.math.ln
 
 data class CommunitySnapshot(
     val regionNumberId: Int?,
+    val communityName: String?,
+    val organizationType: CommunityOrganizationType,
     val joinPolicy: CommunityJoinPolicy,
     val status: CommunityStatus,
     val memberRoles: Map<UUID, MemberRoleType>,
     val ownerUUID: UUID?,
     val adminUUIDs: List<UUID>,
     val memberUUIDs: List<UUID>,
+    val memberCount: Int,
     val totalAssets: Long,
     val creationCost: Long,
     val likeCount: Int,
@@ -39,8 +42,32 @@ data class CommunitySnapshot(
     val developmentBlockPlaceTotal: Long,
     val plotCount: Int,
     val titleCount: Int,
+    val displayTitleKeys: List<String>,
     val activePolicyKey: String,
+    val publicPolicy: CommunityPolicySnapshot,
     val pendingSettlementCount: Int
+)
+
+enum class CommunityOrganizationType {
+    MANOR,
+    REALM
+}
+
+data class CommunityPolicySnapshot(
+    val activePolicyKey: String,
+    val pendingPolicyKey: String?,
+    val pendingEffectivePeriodId: String?,
+    val lastChangedPeriodId: String?
+)
+
+data class PlayerOrganizationSnapshot(
+    val regionNumberId: Int?,
+    val communityName: String?,
+    val organizationType: CommunityOrganizationType,
+    val memberRole: MemberRoleType,
+    val displayTitleKeys: List<String>,
+    val administrationPrivileges: List<String>,
+    val canRepresent: Boolean
 )
 
 object CommunityApi {
@@ -51,6 +78,20 @@ object CommunityApi {
 
     fun listCommunities(): List<CommunitySnapshot> {
         return CommunityDatabase.communities.map { it.toSnapshot() }
+    }
+
+    fun listPlayerOrganizations(playerUUID: UUID): List<PlayerOrganizationSnapshot> {
+        return CommunityDatabase.communities
+            .mapNotNull { it.toPlayerOrganizationSnapshot(playerUUID) }
+            .sortedWith(compareBy<PlayerOrganizationSnapshot> { it.regionNumberId ?: Int.MAX_VALUE }.thenBy { it.communityName ?: "" })
+    }
+
+    fun getTreasuryBalance(regionNumberId: Int): Long? {
+        return CommunityDatabase.getCommunityById(regionNumberId)?.getTotalAssets()
+    }
+
+    fun getCommunityPolicies(regionNumberId: Int): CommunityPolicySnapshot? {
+        return CommunityDatabase.getCommunityById(regionNumberId)?.toPolicySnapshot()
     }
 
     fun deposit(
@@ -259,14 +300,19 @@ object CommunityApi {
         return null
     }
 
+}
+
 private fun Community.toSnapshot(): CommunitySnapshot = CommunitySnapshot(
     regionNumberId = regionNumberId,
+    communityName = regionNumberId?.let { RegionDataApi.getRegion(it)?.name },
+    organizationType = getOrganizationType(),
     joinPolicy = joinPolicy,
     status = status,
     memberRoles = member.mapValues { it.value.basicRoleType },
     ownerUUID = getOwnerUUID(),
     adminUUIDs = getAdminUUIDs(),
     memberUUIDs = getMemberUUIDs(),
+    memberCount = getOwnerAdminMemberCount(),
     totalAssets = getTotalAssets(),
     creationCost = creationCost,
     likeCount = likeCount,
@@ -276,7 +322,38 @@ private fun Community.toSnapshot(): CommunitySnapshot = CommunitySnapshot(
     developmentBlockPlaceTotal = developmentBlockPlaceTotal,
     plotCount = plots.size,
     titleCount = titles.size,
+    displayTitleKeys = getDisplayTitleKeys(),
     activePolicyKey = policy.activePolicyKey,
+    publicPolicy = toPolicySnapshot(),
     pendingSettlementCount = taxWelfareSettlements.count { it.status != com.imyvm.community.domain.model.community.TaxWelfareSettlementStatus.APPLIED }
 )
+
+private fun Community.toPlayerOrganizationSnapshot(playerUUID: UUID): PlayerOrganizationSnapshot? {
+    val account = member[playerUUID] ?: return null
+    return PlayerOrganizationSnapshot(
+        regionNumberId = regionNumberId,
+        communityName = regionNumberId?.let { RegionDataApi.getRegion(it)?.name },
+        organizationType = getOrganizationType(),
+        memberRole = account.basicRoleType,
+        displayTitleKeys = titles.filter { it.ownerUUID == playerUUID && it.active }.map { it.titleKey }.distinct().sorted(),
+        administrationPrivileges = account.adminPrivileges?.getEnabled()?.map { it.name }?.sorted() ?: emptyList(),
+        canRepresent = account.basicRoleType != com.imyvm.community.domain.model.community.MemberRoleType.APPLICANT &&
+            account.basicRoleType != com.imyvm.community.domain.model.community.MemberRoleType.REFUSED
+    )
 }
+
+private fun Community.toPolicySnapshot(): CommunityPolicySnapshot = CommunityPolicySnapshot(
+    activePolicyKey = policy.activePolicyKey,
+    pendingPolicyKey = policy.pendingPolicyKey,
+    pendingEffectivePeriodId = policy.pendingEffectivePeriodId,
+    lastChangedPeriodId = policy.lastChangedPeriodId
+)
+
+private fun Community.getOrganizationType(): CommunityOrganizationType =
+    if (isManor()) CommunityOrganizationType.MANOR else CommunityOrganizationType.REALM
+
+private fun Community.getOwnerAdminMemberCount(): Int =
+    getMemberUUIDs().size + getAdminUUIDs().size + if (getOwnerUUID() != null) 1 else 0
+
+private fun Community.getDisplayTitleKeys(): List<String> =
+    titles.filter { it.active }.map { it.titleKey }.distinct().sorted()
