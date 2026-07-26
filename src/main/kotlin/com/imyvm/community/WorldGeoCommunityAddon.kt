@@ -6,7 +6,6 @@ import com.imyvm.community.entrypoint.command.registerCh
 import com.imyvm.community.entrypoint.command.registerCommun
 import com.imyvm.community.entrypoint.event.registerAnnouncementNotification
 import com.imyvm.community.entrypoint.event.registerChatInterceptor
-import com.imyvm.community.entrypoint.event.registerCommunityV4TestCycleTicker
 import com.imyvm.community.entrypoint.event.registerExpireCheck
 import com.imyvm.community.entrypoint.event.registerMailCheck
 import com.imyvm.community.entrypoint.event.registerPendingRefundCheck
@@ -20,27 +19,26 @@ import org.slf4j.LoggerFactory
 
 class WorldGeoCommunityAddon : ModInitializer {
 
-	override fun onInitialize() {
-		registerDataLoadAndSave()
-		registerExpireCheck()
-		registerMailCheck()
-		registerPendingRefundCheck()
-		registerSelectionContextCleanup()
-		registerAnnouncementNotification()
-		registerChatInterceptor()
-		registerCommunityV4TestCycleTicker()
+    override fun onInitialize() {
+        registerDataLoadAndSave()
+        registerExpireCheck()
+        registerMailCheck()
+        registerPendingRefundCheck()
+        registerSelectionContextCleanup()
+        registerAnnouncementNotification()
+        registerChatInterceptor()
 
-		CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> register(dispatcher) }
-		CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> registerCh(dispatcher) }
-		CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> registerCommun(dispatcher) }
-		logger.info("$MOD_ID initialized successfully.")
-	}
+        CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> register(dispatcher) }
+        CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> registerCh(dispatcher) }
+        CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> registerCommun(dispatcher) }
+        logger.info("$MOD_ID initialized successfully.")
+    }
 
-	companion object {
-		const val MOD_ID = "community"
-		val logger: Logger = LoggerFactory.getLogger(MOD_ID)
+    companion object {
+        const val MOD_ID = "community"
+        val logger: Logger = LoggerFactory.getLogger(MOD_ID)
 
-		val pendingOperations = PendingOperationStore()
-		var server: MinecraftServer? = null
-	}
+        val pendingOperations = PendingOperationStore()
+        var server: MinecraftServer? = null
+    }
 }

@@ -3,8 +3,9 @@ package com.imyvm.community.application.interaction.screen
 import com.imyvm.community.application.interaction.common.onCreateCommunityRequest
 import com.imyvm.community.application.interaction.common.onJoinCommunityDirectly
 import com.imyvm.community.application.interaction.common.runCommunityMutationOrRollback
-import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
+import com.imyvm.community.application.interaction.screen.inner_community.affairs.runClaimBuildingReward
 import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.entrypoint.screen.component.ConfirmTaskType
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.Translator
@@ -24,6 +25,7 @@ fun runConfirmDispatcher(
         ConfirmTaskType.CREATE_COMMUNITY -> runCommunityCreation(playerExecutor, communityType, communityName, shapeName)
         ConfirmTaskType.JOIN_COMMUNITY -> runCommunityJoin(playerExecutor, targetCommunity)
         ConfirmTaskType.LEAVE_COMMUNITY -> runCommunityLeave(playerExecutor, targetCommunity)
+        ConfirmTaskType.CLAIM_BUILDING_REWARD -> runBuildingRewardClaim(playerExecutor, targetCommunity)
         ConfirmTaskType.INVITATION_ACCEPT, ConfirmTaskType.INVITATION_REJECT -> {}
     }
 }
@@ -93,22 +95,31 @@ private fun runCommunityLeave(
                 saveCommunityState = { CommunityDatabase.save() },
                 notifyFailure = { playerExecutor.sendSystemMessage(Translator.tr("community.operation.save_failed", operationName)) }
             )) return@executeWithPermission
-        
+
         playerExecutor.sendSystemMessage(
             Translator.tr("community.leave.success", communityName)
         )
-        
-        val notification = Translator.tr("community.notification.member_left", playerExecutor.name.string, communityName)
-            ?: net.minecraft.network.chat.Component.literal("${playerExecutor.name.string} has left $communityName")
+
+        val notification = Translator.tr("community.notification.member_left", playerExecutor.name.string, communityName).let {
+            if (it.string.isBlank()) net.minecraft.network.chat.Component.literal(" has left ") else it
+        }
         notifyOfficials(targetCommunity, playerExecutor.level().server, notification)
     }
+}
+
+private fun runBuildingRewardClaim(playerExecutor: ServerPlayer, targetCommunity: Community?) {
+    if (targetCommunity == null) {
+        playerExecutor.sendSystemMessage(Translator.tr("community.building.claim.failed", "missing community"))
+        return
+    }
+    runClaimBuildingReward(playerExecutor, targetCommunity)
 }
 
 private fun notifyOfficials(community: Community, server: net.minecraft.server.MinecraftServer, message: net.minecraft.network.chat.Component) {
     for ((memberUUID, memberAccount) in community.member) {
         val isOfficial = memberAccount.basicRoleType == com.imyvm.community.domain.model.community.MemberRoleType.OWNER ||
-                        memberAccount.basicRoleType == com.imyvm.community.domain.model.community.MemberRoleType.ADMIN
-        
+            memberAccount.basicRoleType == com.imyvm.community.domain.model.community.MemberRoleType.ADMIN
+
         if (isOfficial) {
             val officialPlayer = server.playerList.getPlayer(memberUUID)
             if (officialPlayer != null) {

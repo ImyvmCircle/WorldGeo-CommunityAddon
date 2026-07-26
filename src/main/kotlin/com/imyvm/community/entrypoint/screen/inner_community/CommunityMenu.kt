@@ -2,24 +2,25 @@ package com.imyvm.community.entrypoint.screen.inner_community
 
 import com.imyvm.community.application.interaction.screen.inner_community.*
 import com.imyvm.community.application.interaction.screen.inner_community.affairs.runOpenAssetsMenu
+import com.imyvm.community.application.interaction.screen.inner_community.affairs.runOpenBuildingMenu
 import com.imyvm.community.application.interaction.screen.inner_community.affairs.runOpenCommunitySpaceInfoMenu
 import com.imyvm.community.application.interaction.screen.inner_community.affairs.runOpenMemberAnnouncementListMenu
-import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.entrypoint.screen.AbstractMenu
 import com.imyvm.community.entrypoint.screen.component.getPlayerHeadButtonItemStackCommunity
 import com.imyvm.community.util.Translator
-import net.minecraft.world.item.Items
 import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.item.Items
 
 class CommunityMenu(
     syncId: Int,
     val player: ServerPlayer,
     val community: Community,
-    val runBack : ((ServerPlayer) -> Unit)
+    val runBack: ((ServerPlayer) -> Unit)
 ) : AbstractMenu(
     syncId,
-    menuTitle = community.getRegion()?.let { Translator.tr("ui.community.title", it.name , it.numberID)},
+    menuTitle = community.getRegion()?.let { Translator.tr("ui.community.title", it.name, it.numberID) },
     runBack = runBack
 ) {
     init {
@@ -27,6 +28,7 @@ class CommunityMenu(
         addAdministrationButtonTrail()
         addDescriptionButton()
         addInteractionButton()
+        addV4ButtonTrail()
     }
 
     private fun addOwnerHeadButton() {
@@ -41,99 +43,105 @@ class CommunityMenu(
         if (CommunityPermissionPolicy.canExecuteAdministration(player, community).isAllowed()) {
             addButton(
                 slot = 12,
-                name = Translator.tr("ui.community.button.interaction.operations").string ?: "Community Operations",
+                name = Translator.tr("ui.community.button.interaction.operations").string,
                 item = Items.ANVIL
             ) { runOpenOperationMenu(player, community, runBack) }
         }
     }
 
-    private fun addDescriptionButton(){
+    private fun addDescriptionButton() {
         addButton(
             slot = 19,
-            name = Translator.tr("ui.community.button.description.region").string ?: "Description",
+            name = Translator.tr("ui.community.button.description.region").string,
             item = Items.BOOKSHELF
         ) { runSendingCommunityDescription(player, community) }
 
         addButton(
             slot = 20,
-            name = Translator.tr("ui.community.button.description.announcement").string ?: "Announcement",
+            name = Translator.tr("ui.community.button.description.announcement").string,
             item = Items.MAP
         ) { runOpenMemberAnnouncementListMenu(player, community) { runBackToCommunityMenu(player, community, runBack) } }
 
-
         addButton(
             slot = 22,
-            name = Translator.tr("ui.community.button.description.members").string ?: "Member",
+            name = Translator.tr("ui.community.button.description.members").string,
             item = Items.ARMOR_STAND
         ) { runOpenMemberListMenu(player, community, runBack) }
 
         addButton(
             slot = 21,
-            name = Translator.tr("ui.community.button.description.assets").string ?: "Asset",
+            name = Translator.tr("ui.community.button.description.assets").string,
             item = Items.GOLD_INGOT
         ) { runOpenAssetsMenu(player, community, runBack) }
 
         addButton(
             slot = 31,
-            name = Translator.tr("ui.community.button.description.space")?.string ?: "Space Information",
+            name = Translator.tr("ui.community.button.description.space").string,
             item = Items.SPYGLASS
         ) { runOpenCommunitySpaceInfoMenu(player, community, runBack) }
     }
 
-    private fun addInteractionButton(){
+    private fun addInteractionButton() {
         addButton(
             slot = 23,
-            name = Translator.tr("ui.community.button.interaction.settings").string ?: "Settings",
+            name = Translator.tr("ui.community.button.interaction.settings").string,
             item = Items.HEART_OF_THE_SEA
         ) { runOpenSettingMenu(player, community, runBack) }
 
         addButton(
             slot = 24,
-            name = Translator.tr("ui.community.button.interaction.teleport").string ?: "Teleport to Community",
+            name = Translator.tr("ui.community.button.interaction.teleport").string,
             item = Items.ENDER_PEARL
         ) { runTeleportCommunity(player, community) }
 
         addButton(
             slot = 25,
-            Translator.tr("ui.community.button.interaction.teleport.scope").string ?: "Teleportation Scope",
+            name = Translator.tr("ui.community.button.interaction.teleport.scope").string,
             item = Items.COMPASS
         ) { runTeleportToScope(player, community, runBack) }
 
         addButton(
             slot = 28,
-            name = Translator.tr("ui.community.button.interaction.chat").string ?: "Community Chat",
+            name = Translator.tr("ui.community.button.interaction.chat").string,
             item = Items.WRITABLE_BOOK
         ) { com.imyvm.community.application.interaction.screen.inner_community.chat.runOpenChatRoomMenu(player, community) { runBackToCommunityMenu(player, community, runBack) } }
 
         addButton(
             slot = 29,
-            name = Translator.tr("ui.community.button.interaction.advancement").string ?: "Advancement",
+            name = Translator.tr("ui.community.button.interaction.advancement").string,
             item = Items.EXPERIENCE_BOTTLE
         ) {}
 
         addButton(
             slot = 30,
-            name = Translator.tr("ui.community.button.interaction.donate").string ?: "Donate to Community",
+            name = Translator.tr("ui.community.button.interaction.donate").string,
             item = Items.EMERALD
         ) { runOpenAssetsMenu(player, community, runBack) }
 
         addButton(
             slot = 32,
-            name = Translator.tr("ui.community.button.interaction.like").string ?: "Like Community",
+            name = Translator.tr("ui.community.button.interaction.like").string,
             item = Items.DYE.pink()
         ) { runLikeCommunity(player, community) }
 
         addButton(
             slot = 33,
-            name = Translator.tr("ui.community.button.interaction.leave").string ?: "Leave Community",
+            name = Translator.tr("ui.community.button.interaction.leave").string,
             item = Items.ZOMBIE_VILLAGER_SPAWN_EGG
         ) { runShowLeaveConfirmMenu(player, community, runBack) }
 
         addButton(
             slot = 34,
-            name = Translator.tr ("ui.community.button.interaction.invite")?.string ?: "Invite Member",
+            name = Translator.tr("ui.community.button.interaction.invite").string,
             item = Items.VILLAGER_SPAWN_EGG
         ) { runOpenInviteMemberMenu(player, community) { runBackToCommunityMenu(player, community, runBack) } }
     }
-}
 
+    private fun addV4ButtonTrail() {
+        addButton(
+            slot = 36,
+            name = Translator.tr("ui.community.button.interaction.building").string,
+            item = Items.BRICKS
+        ) { runOpenBuildingMenu(player, community, runBack) }
+    }
+}

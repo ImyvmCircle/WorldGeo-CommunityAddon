@@ -2,6 +2,8 @@ package com.imyvm.community.entrypoint.api
 
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.MemberAccount
+import com.imyvm.community.domain.model.Turnover
+import com.imyvm.community.domain.model.TurnoverSource
 import com.imyvm.community.domain.model.community.BuildingRewardLedger
 import com.imyvm.community.domain.model.community.CommunityJoinPolicy
 import com.imyvm.community.domain.model.community.CommunityPlot
@@ -21,7 +23,13 @@ class CommunityApiRollbackTest {
         val owner = UUID.fromString("00000000-0000-0000-0000-000000000001")
         val community = Community(
             regionNumberId = 77,
-            member = hashMapOf(owner to MemberAccount(0L, MemberRoleType.OWNER)),
+            member = hashMapOf(
+                owner to MemberAccount(
+                    0L,
+                    MemberRoleType.OWNER,
+                    turnover = arrayListOf(Turnover(50L, 1L, TurnoverSource.SYSTEM, "before"))
+                )
+            ),
             joinPolicy = CommunityJoinPolicy.OPEN,
             status = CommunityStatus.ACTIVE_REALM,
             buildingRewardLedgers = hashMapOf(owner to BuildingRewardLedger(1L, 100L, "2026-W29")),
@@ -36,6 +44,7 @@ class CommunityApiRollbackTest {
         val method = CommunityApi::class.java.declaredMethods.first { it.name.startsWith("saveMutation") }
         method.isAccessible = true
         val action = {
+            community.member.getValue(owner).turnover.add(Turnover(999L, 2L, TurnoverSource.SYSTEM, "after"))
             community.buildingRewardLedgers.getValue(owner).claimedAmount = 999L
             community.buildingRewardLedgers.getValue(owner).lastClaimedPeriodId = "2026-W30"
             community.plots.first().name = "New Plot"
@@ -49,6 +58,8 @@ class CommunityApiRollbackTest {
             throw IllegalStateException("boom")
         }
         method.invoke(CommunityApi, community, action)
+        assertEquals(1, community.member.getValue(owner).turnover.size)
+        assertEquals(50L, community.member.getValue(owner).turnover.first().amount)
         assertEquals(100L, community.buildingRewardLedgers.getValue(owner).claimedAmount)
         assertEquals("2026-W29", community.buildingRewardLedgers.getValue(owner).lastClaimedPeriodId)
         assertEquals("Old Plot", community.plots.first().name)

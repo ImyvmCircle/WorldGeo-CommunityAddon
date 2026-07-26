@@ -4,11 +4,10 @@ import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.infra.CommunityConfig
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.infra.PricingConfig
-import com.imyvm.community.infra.testcycle.CommunityV4TestCycleDatabase
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.minecraft.server.MinecraftServer
 
-fun registerDataLoadAndSave(){
+fun registerDataLoadAndSave() {
     dataLoad()
     dataSave()
     captureServerInstance()
@@ -26,7 +25,6 @@ private fun loadData(server: MinecraftServer) {
         CommunityConfig.validateValues()
         PricingConfig.validateValues()
         CommunityDatabase.load(server)
-        CommunityV4TestCycleDatabase.load(server)
     } catch (e: Exception) {
         try {
             val backupPath = CommunityDatabase.backupDatabaseAfterLoadFailure()
@@ -46,7 +44,6 @@ fun dataSave() {
     ServerLifecycleEvents.SERVER_STOPPING.register { _ ->
         try {
             CommunityDatabase.save()
-            CommunityV4TestCycleDatabase.save()
         } catch (e: Exception) {
             WorldGeoCommunityAddon.logger.error("Failed to save community database: ${e.message}", e)
         }
