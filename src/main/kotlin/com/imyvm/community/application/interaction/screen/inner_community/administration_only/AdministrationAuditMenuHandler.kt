@@ -1,11 +1,11 @@
 package com.imyvm.community.application.interaction.screen.inner_community.administration_only
 
 import com.imyvm.community.application.interaction.common.runCommunityMutationOrRollback
+import com.imyvm.community.application.interaction.common.submitApplicationRefund
 import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.domain.model.TurnoverSource
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.infra.PricingConfig
-import com.imyvm.community.infra.economy.EconomyWalletAdapter
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.util.Translator
@@ -34,6 +34,7 @@ fun runAccept(
             val previousRole = objectAccount.basicRoleType
             val previousJoinedTime = objectAccount.joinedTime
             val previousInvited = objectAccount.isInvited
+            val previousJoinFeePaid = objectAccount.joinFeePaid
             var joinFeeTurnover: com.imyvm.community.domain.model.Turnover? = null
 
             if (wasInvited) {
@@ -72,6 +73,7 @@ fun runAccept(
                         objectAccount.basicRoleType = MemberRoleType.MEMBER
                         objectAccount.joinedTime = System.currentTimeMillis()
                         objectAccount.isInvited = false
+                        objectAccount.joinFeePaid = 0L
                         com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.autoGrantDefaultPermissions(
                             playerObject.id, playerExecutor, community
                         )
@@ -81,6 +83,7 @@ fun runAccept(
                         objectAccount.basicRoleType = previousRole
                         objectAccount.joinedTime = previousJoinedTime
                         objectAccount.isInvited = previousInvited
+                        objectAccount.joinFeePaid = previousJoinFeePaid
                     },
                     rollbackCoreState = {
                         com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.revokeGrantedPermissions(
@@ -172,32 +175,29 @@ fun runRefuse(
                     applicantPlayer.sendSystemMessage(targetNotification)
                 }
             } else {
-                val cost = if (community.isManor()) 
-                    PricingConfig.COMMUNITY_JOIN_COST_MANOR.value 
+                val cost = objectAccount.joinFeePaid.takeIf { it > 0L } ?: if (community.isManor())
+                    PricingConfig.COMMUNITY_JOIN_COST_MANOR.value
                     else PricingConfig.COMMUNITY_JOIN_COST_REALM.value
-                
-                val applicantPlayer = playerExecutor.level().server.playerList.getPlayer(playerObject.id)
-                if (applicantPlayer != null) {
-                    EconomyWalletAdapter.credit(applicantPlayer, cost)
-                    applicantPlayer.sendSystemMessage(
-                        Translator.tr(
-                            "community.join.refund",
-                            cost / 100.0
-                        )
-                    )
-                } else {
-                    objectAccount.pendingRefund += cost
+                val previousRole = objectAccount.basicRoleType
+                val previousJoinedTime = objectAccount.joinedTime
+                val previousJoinFeePaid = objectAccount.joinFeePaid
+                val refusedAt = System.currentTimeMillis()
+                objectAccount.basicRoleType = MemberRoleType.REFUSED
+                objectAccount.joinedTime = refusedAt
+                objectAccount.joinFeePaid = cost
+                try {
+                    CommunityDatabase.save()
+                } catch (error: Exception) {
+                    objectAccount.basicRoleType = previousRole
+                    objectAccount.joinedTime = previousJoinedTime
+                    objectAccount.joinFeePaid = previousJoinFeePaid
                     playerExecutor.sendSystemMessage(
-                        Translator.tr(
-                            "community.audit.refund.deferred",
-                            playerObject.name,
-                            cost / 100.0
-                        )
+                        Translator.tr("community.operation.save_failed", "application refund")
                     )
+                    playerExecutor.closeContainer()
+                    return@executeWithPermission
                 }
-                
-                objectAccount.basicRoleType = com.imyvm.community.domain.model.community.MemberRoleType.REFUSED
-                objectAccount.joinedTime = System.currentTimeMillis()
+                submitApplicationRefund(playerObject, community.regionNumberId ?: return@executeWithPermission, cost, refusedAt)
                 
                 val targetNotification = com.imyvm.community.util.Translator.tr(
                     "community.notification.target.application_refused",

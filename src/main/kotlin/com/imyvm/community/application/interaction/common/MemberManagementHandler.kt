@@ -245,7 +245,8 @@ private fun joinUnderApplicationPolicy(player: ServerPlayer, targetCommunity: Co
 
     val memberAccount = MemberAccount(
         joinedTime = System.currentTimeMillis(),
-        basicRoleType = MemberRoleType.APPLICANT
+        basicRoleType = MemberRoleType.APPLICANT,
+        joinFeePaid = cost
     )
     val operationName = Translator.tr("community.operation.join_application", targetCommunity.regionNumberId).string
     if (!runCommunityMutationOrRollback(
