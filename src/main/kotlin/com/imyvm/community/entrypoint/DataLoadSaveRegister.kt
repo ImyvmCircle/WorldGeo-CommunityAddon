@@ -6,7 +6,9 @@ import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.infra.PricingConfig
 import com.imyvm.community.infra.TeleportDailyState
 import com.imyvm.community.infra.account.AccountSubsystem
+import com.imyvm.community.infra.communication.CommunicationShardStore
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.level.storage.LevelResource
 
@@ -15,6 +17,7 @@ fun registerDataLoadAndSave() {
     dataSave()
     captureServerInstance()
     accountLifecycle()
+    registerCommCleanup()
 }
 
 fun dataLoad() {
@@ -30,6 +33,7 @@ private fun loadData(server: MinecraftServer) {
         PricingConfig.validateValues()
         CommunityDatabase.load(server)
         TeleportDailyState.initialize(server.getWorldPath(LevelResource.ROOT))
+        CommunicationShardStore.initialize(server.getWorldPath(LevelResource.ROOT))
     } catch (e: Exception) {
         try {
             val backupPath = CommunityDatabase.backupDatabaseAfterLoadFailure()
@@ -65,4 +69,16 @@ fun captureServerInstance() {
 private fun accountLifecycle() {
     ServerLifecycleEvents.SERVER_STARTED.register(AccountSubsystem::start)
     ServerLifecycleEvents.SERVER_STOPPING.register { AccountSubsystem.stop() }
+}
+
+private fun registerCommCleanup() {
+    var tickCount = 0
+    ServerTickEvents.END_SERVER_TICK.register { _ ->
+        tickCount++
+        if (tickCount >= 72000) {
+            tickCount = 0
+            Thread({ CommunicationShardStore.runRetentionCleanup() }, "community-comm-cleanup")
+                .apply { isDaemon = true }.start()
+        }
+    }
 }

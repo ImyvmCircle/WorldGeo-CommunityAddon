@@ -26,8 +26,6 @@ import net.minecraft.world.effect.MobEffects
 import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.network.chat.ClickEvent
-import java.time.LocalDate
-import java.time.ZoneId
 import java.util.UUID
 
 fun runOpenOperationMenu(player: ServerPlayer, community: Community, runBackGrandfather : ((ServerPlayer) -> Unit)) {
@@ -343,24 +341,17 @@ fun runBackToCommunityMenu(player: ServerPlayer, community: Community, runBackGr
 fun runLikeCommunity(player: ServerPlayer, community: Community) {
     player.closeContainer()
 
-    val timezone = ZoneId.of(CommunityConfig.TIMEZONE.value)
-    val today = LocalDate.now(timezone)
-    val lastLikeTimestamp = community.lastLikedBy[player.uuid]
-    val communityName = community.generateCommunityMark()
     val regionId = community.regionNumberId
+    val communityName = community.generateCommunityMark()
 
-    if (lastLikeTimestamp != null) {
-        val lastLikeDate = java.time.Instant.ofEpochMilli(lastLikeTimestamp)
-            .atZone(timezone).toLocalDate()
-        if (!today.isAfter(lastLikeDate)) {
-            player.sendSystemMessage(Translator.tr("community.like.already_liked"))
-            sendReturnToMenuButton(player, regionId)
-            return
-        }
+    if (regionId != null && TeleportDailyState.hasLikedToday(player.uuid, regionId)) {
+        player.sendSystemMessage(Translator.tr("community.like.already_liked"))
+        sendReturnToMenuButton(player, regionId)
+        return
     }
 
     community.likeCount++
-    community.lastLikedBy[player.uuid] = System.currentTimeMillis()
+    if (regionId != null) TeleportDailyState.recordLike(player.uuid, regionId)
 
     val rank = calculateCommunityLikeRank(community)
     player.sendSystemMessage(Translator.tr("community.like.success", communityName, community.likeCount, rank))

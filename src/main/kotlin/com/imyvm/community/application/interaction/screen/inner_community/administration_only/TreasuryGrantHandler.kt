@@ -1,6 +1,7 @@
 package com.imyvm.community.application.interaction.screen.inner_community.administration_only
 
 import com.imyvm.community.WorldGeoCommunityAddon
+import com.imyvm.community.application.account.appendTreasuryLedgerEntry
 import com.imyvm.community.application.event.addPendingOperation
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.application.interaction.common.runCommunityMutationOrRollback
@@ -178,6 +179,16 @@ fun onAcceptTreasuryGrant(player: ServerPlayer, sourceRegionId: Int): Int {
         )) return 0
 
     val amountFormatted = "%.2f".format(grantData.amount / 100.0)
+    sourceCommunity.regionNumberId?.let { rid ->
+        appendTreasuryLedgerEntry(rid, grantData.amount, com.imyvm.community.domain.model.transaction.ResourceDirection.DEBIT,
+            "treasury-grant-out", "community-grant", targetCommunity.regionNumberId?.toString() ?: "",
+            "community.treasury.desc.grant_out", listOf(targetMark))
+    }
+    targetCommunity.regionNumberId?.let { rid ->
+        appendTreasuryLedgerEntry(rid, grantData.amount, com.imyvm.community.domain.model.transaction.ResourceDirection.CREDIT,
+            "treasury-grant-in", "community-grant", sourceCommunity.regionNumberId?.toString() ?: "",
+            "community.treasury.desc.grant_in", listOf(sourceMark))
+    }
 
     player.sendSystemMessage(Translator.tr("community.treasury_grant.success", amountFormatted, sourceMark, targetMark))
 

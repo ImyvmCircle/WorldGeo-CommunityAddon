@@ -8,6 +8,7 @@ import com.imyvm.community.domain.model.account.AccountTransactionStatus
 import com.imyvm.community.domain.model.account.ManualAccountAction
 import com.imyvm.community.domain.model.account.MoneyAmount
 import com.imyvm.community.infra.account.AccountSubsystem
+import com.imyvm.community.infra.communication.CommunicationShardStore
 import com.imyvm.community.util.Translator
 import com.mojang.brigadier.context.CommandContext
 import net.minecraft.commands.CommandSourceStack
@@ -147,6 +148,7 @@ fun runMoneyAction(context: CommandContext<CommandSourceStack>): Int {
             else player.sendSystemMessage(Translator.tr(
                 "command.community.money.action.completed", shortId, updated.status.name
             ))
+            if (updated.status.isTerminal()) CommunicationShardStore.closeOpException(0, shortId)
         }
     }
     return 1

@@ -1,6 +1,7 @@
 package com.imyvm.community.entrypoint.api
 
 import com.imyvm.community.WorldGeoCommunityAddon
+import com.imyvm.community.application.account.appendTreasuryLedgerEntry
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.Turnover
 import com.imyvm.community.domain.model.community.CommunityJoinPolicy
@@ -9,6 +10,7 @@ import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.domain.model.TurnoverSource
 import com.imyvm.community.domain.model.development.DevelopmentComponents
 import com.imyvm.community.domain.model.development.DevelopmentSnapshot
+import com.imyvm.community.domain.model.transaction.ResourceDirection
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.iwg.domain.RegionNaturalStatsResult
 import com.imyvm.iwg.inter.api.RegionDataApi
@@ -56,6 +58,9 @@ object CommunityApi {
         return try {
             community.communityIncome.add(turnover)
             CommunityDatabase.save()
+            appendTreasuryLedgerEntry(regionNumberId, amount, ResourceDirection.CREDIT,
+                "external-deposit", source.name.lowercase(), regionNumberId.toString(),
+                descriptionKey, descriptionArgs)
             Result.success(Unit)
         } catch (e: Exception) {
             community.communityIncome.remove(turnover)
@@ -81,6 +86,9 @@ object CommunityApi {
         return try {
             community.expenditures.add(turnover)
             CommunityDatabase.save()
+            appendTreasuryLedgerEntry(regionNumberId, amount, ResourceDirection.DEBIT,
+                "external-withdrawal", source.name.lowercase(), regionNumberId.toString(),
+                descriptionKey, descriptionArgs)
             Result.success(Unit)
         } catch (e: Exception) {
             community.expenditures.remove(turnover)

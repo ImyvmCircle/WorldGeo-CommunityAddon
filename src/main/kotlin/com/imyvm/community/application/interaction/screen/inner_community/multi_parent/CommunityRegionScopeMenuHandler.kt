@@ -19,6 +19,8 @@ import com.imyvm.community.domain.model.ScopeModificationConfirmationData
 import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.domain.policy.permission.AdminPrivilege
 import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
+import com.imyvm.community.application.account.appendTreasuryLedgerEntry
+import com.imyvm.community.domain.model.transaction.ResourceDirection
 import com.imyvm.community.domain.policy.territory.SettingItemCostChange
 import com.imyvm.community.domain.policy.territory.TerritoryPricing
 import com.imyvm.community.entrypoint.screen.inner_community.administration_only.AdministrationRenameMenuAnvil
@@ -338,6 +340,11 @@ fun onConfirmRename(player: ServerPlayer, regionNumberId: Int, nameKey: String):
         }
         removePendingOperation(regionNumberId, PendingOperationType.RENAME_CONFIRMATION)
         CommunityDatabase.save()
+        if (renameData.cost > 0) community.regionNumberId?.let { rid ->
+            appendTreasuryLedgerEntry(rid, renameData.cost, ResourceDirection.DEBIT,
+                "rename-community-fee", "scope-rename", renameData.newName,
+                "community.treasury.desc.rename_community", listOf(renameData.newName))
+        }
         player.sendSystemMessage(Translator.tr("community.rename.success.global", oldName, renameData.newName))
     } else {
         val scope = communityRegion.geometryScope.firstOrNull { it.scopeName == renameData.nameKey }
@@ -365,6 +372,11 @@ fun onConfirmRename(player: ServerPlayer, regionNumberId: Int, nameKey: String):
         }
         removePendingOperation(regionNumberId, PendingOperationType.RENAME_CONFIRMATION)
         CommunityDatabase.save()
+        if (renameData.cost > 0) community.regionNumberId?.let { rid ->
+            appendTreasuryLedgerEntry(rid, renameData.cost, ResourceDirection.DEBIT,
+                "rename-scope-fee", "scope-rename", renameData.newName,
+                "community.treasury.desc.rename_scope", listOf(renameData.nameKey, renameData.newName))
+        }
         player.sendSystemMessage(Translator.tr("community.rename.success.scope", oldScopeName, renameData.newName))
     }
     return 1

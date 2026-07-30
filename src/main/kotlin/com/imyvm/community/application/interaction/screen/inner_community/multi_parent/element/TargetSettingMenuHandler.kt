@@ -323,6 +323,16 @@ fun onConfirmSettingChange(playerExecutor: ServerPlayer, regionNumberId: Int): I
                 rollbackCoreState = { restoreSettingSnapshots(region, scope, regionSettingsBefore, scopeSettingsBefore) }
             )) return 0
 
+        community.regionNumberId?.let { rid ->
+            if (expenditure != null) com.imyvm.community.application.account.appendTreasuryLedgerEntry(
+                rid, expenditure.amount, com.imyvm.community.domain.model.transaction.ResourceDirection.DEBIT,
+                "setting-change-fee", "setting-change", request.permissionKeyStr,
+                "community.treasury.desc.setting_change", listOf(request.permissionKeyStr))
+            if (refundTurnover != null) com.imyvm.community.application.account.appendTreasuryLedgerEntry(
+                rid, refundTurnover.amount, com.imyvm.community.domain.model.transaction.ResourceDirection.DEBIT,
+                "setting-change-refund", "setting-change", request.permissionKeyStr,
+                "community.treasury.desc.setting_refund", listOf(request.permissionKeyStr))
+        }
         playerExecutor.sendSystemMessage(
             Translator.tr(
                 "community.setting.confirmation.completed",
@@ -436,6 +446,16 @@ fun onConfirmSettingChange(playerExecutor: ServerPlayer, regionNumberId: Int): I
             notifyFailure = { playerExecutor.sendSystemMessage(Translator.tr("community.operation.save_failed", operationName)) }
         )) return 0
 
+    community.regionNumberId?.let { rid ->
+        if (expenditure != null) com.imyvm.community.application.account.appendTreasuryLedgerEntry(
+            rid, expenditure!!.amount, com.imyvm.community.domain.model.transaction.ResourceDirection.DEBIT,
+            "setting-change-fee", "setting-change", request.permissionKeyStr,
+            "community.treasury.desc.setting_change", listOf(request.permissionKeyStr))
+        if (refundTurnover != null) com.imyvm.community.application.account.appendTreasuryLedgerEntry(
+            rid, refundTurnover!!.amount, com.imyvm.community.domain.model.transaction.ResourceDirection.DEBIT,
+            "setting-change-refund", "setting-change", request.permissionKeyStr,
+            "community.treasury.desc.setting_refund", listOf(request.permissionKeyStr))
+    }
     playerExecutor.sendSystemMessage(
         Translator.tr(
             "community.setting.confirmation.completed",

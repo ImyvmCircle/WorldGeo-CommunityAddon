@@ -1,5 +1,6 @@
 package com.imyvm.community.entrypoint.event
 
+import com.imyvm.community.application.communication.appendOpExceptionNotification
 import com.imyvm.community.domain.model.account.AccountTransactionStatus
 import com.imyvm.community.infra.account.AccountSubsystem
 import com.imyvm.community.util.Translator
@@ -11,10 +12,27 @@ import net.minecraft.server.MinecraftServer
 import java.util.UUID
 
 fun registerAccountIssueNotification() {
+    AccountSubsystem.onReady { runtime ->
+        scanForOpExceptions(runtime, runtime.server, null)
+    }
     ServerPlayConnectionEvents.JOIN.register join@ { handler, _, _ ->
         val player = handler.player
         if (!Commands.LEVEL_GAMEMASTERS.check(player.permissions())) return@join
         findIssue(player.level().server, player.uuid, null)
+    }
+}
+
+private fun scanForOpExceptions(runtime: AccountSubsystem.Runtime, server: MinecraftServer, token: String?) {
+    runtime.store.scanUnresolved(token, 64).whenComplete { page, error ->
+        if (error != null) return@whenComplete
+        page.items.filter { it.status == AccountTransactionStatus.NEEDS_OP }.forEach { state ->
+            appendOpExceptionNotification(0,
+                "NEEDS_OP:${state.transaction.shortId}:${state.transaction.subjectName ?: "?"}:${state.failureStage ?: "UNKNOWN"}"
+            )
+        }
+        if (page.items.size == 64 && page.nextToken != null) {
+            scanForOpExceptions(runtime, server, page.nextToken)
+        }
     }
 }
 

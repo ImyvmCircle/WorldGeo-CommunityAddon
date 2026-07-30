@@ -2,6 +2,8 @@ package com.imyvm.community.application.interaction.screen.inner_community.admin
 
 import com.imyvm.community.application.interaction.common.runCommunityMutationOrRollback
 import com.imyvm.community.application.interaction.common.submitApplicationRefund
+import com.imyvm.community.application.account.appendTreasuryLedgerEntry
+import com.imyvm.community.domain.model.transaction.ResourceDirection
 import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.domain.model.TurnoverSource
 import com.imyvm.community.infra.CommunityDatabase
@@ -98,6 +100,11 @@ fun runAccept(
                 return@executeWithPermission
             }
 
+            if (joinFeeTurnover != null) community.regionNumberId?.let { rid ->
+                appendTreasuryLedgerEntry(rid, joinFeeTurnover!!.amount, ResourceDirection.DEBIT,
+                    "member-join-fee", "audit-accept", playerObject.name,
+                    "community.treasury.desc.member_join_fee", listOf(playerObject.name))
+            }
             val targetNotificationKey = if (wasInvited) {
                 "community.notification.target.invitation_accepted"
             } else {

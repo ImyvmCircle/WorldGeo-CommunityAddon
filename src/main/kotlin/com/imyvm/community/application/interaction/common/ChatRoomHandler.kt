@@ -1,5 +1,6 @@
 package com.imyvm.community.application.interaction.common
 
+import com.imyvm.community.application.communication.addChatMessageWithShard
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.community.CommunityMessage
 import com.imyvm.community.domain.model.community.MemberRoleType
@@ -28,7 +29,7 @@ object ChatRoomHandler {
             content = Component.literal(message),
             senderUUID = player.uuid
         )
-        community.addMessage(chatMessage)
+        community.addChatMessageWithShard(chatMessage)
 
         broadcastChatMessage(community, player, message)
         

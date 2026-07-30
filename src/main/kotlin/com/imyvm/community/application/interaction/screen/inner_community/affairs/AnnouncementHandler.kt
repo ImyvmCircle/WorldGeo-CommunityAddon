@@ -3,6 +3,7 @@ package com.imyvm.community.application.interaction.screen.inner_community.affai
 import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
+import com.imyvm.community.application.communication.addAnnouncementWithShard
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.policy.permission.AdminPrivilege
 import com.imyvm.community.domain.model.community.Announcement
@@ -95,7 +96,7 @@ fun onCreateAnnouncementConfirm(
             authorUUID = player.uuid
         )
 
-        community.addAnnouncement(announcement)
+        community.addAnnouncementWithShard(announcement)
         CommunityDatabase.save()
 
         notifyMembersOfNewAnnouncement(community, announcement)

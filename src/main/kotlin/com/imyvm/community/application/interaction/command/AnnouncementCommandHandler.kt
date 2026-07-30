@@ -1,6 +1,7 @@
 package com.imyvm.community.application.interaction.command
 
 import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
+import com.imyvm.community.application.communication.addAnnouncementWithShard
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.policy.permission.AdminPrivilege
 import com.imyvm.community.domain.model.community.Announcement
@@ -22,7 +23,7 @@ fun onAnnouncementCreateCommand(context: CommandContext<CommandSourceStack>, com
     }
 
     val announcement = Announcement(content = TextParser.parse(content), authorUUID = player.uuid)
-    community.addAnnouncement(announcement)
+    community.addAnnouncementWithShard(announcement)
     CommunityDatabase.save()
 
     community.member.keys.mapNotNull { context.source.server.playerList.getPlayer(it) }.forEach { member ->

@@ -11,12 +11,12 @@ import java.time.ZoneId
 import java.util.UUID
 
 object TeleportDailyState {
-    private val ZONE = ZoneId.of(CommunityConfig.TIMEZONE.value)
-    private const val FILE_VERSION = 1
+    private const val FILE_VERSION = 2
 
     private var stateDir: Path? = null
     private var currentDayKey: String = ""
     private val counts: MutableMap<String, Int> = mutableMapOf()
+    private val likes: MutableSet<String> = mutableSetOf()
 
     @Volatile private var publishedDayKey: String? = null
 
@@ -29,28 +29,26 @@ object TeleportDailyState {
     private fun loadDay(dayKey: String) {
         currentDayKey = dayKey
         counts.clear()
+        likes.clear()
         val file = stateDir?.resolve("teleport-$dayKey.dat") ?: return
-        if (!Files.exists(file)) {
-            publishedDayKey = null
-            return
-        }
+        if (!Files.exists(file)) { publishedDayKey = null; return }
         try {
             DataInputStream(Files.newInputStream(file)).use { stream ->
                 val version = stream.readInt()
-                check(version == FILE_VERSION) { "Unknown teleport daily state version $version" }
                 val storedDay = stream.readUTF()
                 check(storedDay == dayKey) { "Day key mismatch: expected $dayKey, found $storedDay" }
-                val count = stream.readInt()
-                repeat(count) {
-                    val key = stream.readUTF()
-                    val value = stream.readInt()
-                    counts[key] = value
+                val countSize = stream.readInt()
+                repeat(countSize) { counts[stream.readUTF()] = stream.readInt() }
+                if (version >= 2) {
+                    val likeSize = stream.readInt()
+                    repeat(likeSize) { likes.add(stream.readUTF()) }
                 }
             }
             publishedDayKey = dayKey
         } catch (error: Exception) {
-            WorldGeoCommunityAddon.logger.error("Failed to load daily teleport state for $dayKey; counts reset", error)
+            WorldGeoCommunityAddon.logger.error("Failed to load daily interaction state for $dayKey; reset", error)
             counts.clear()
+            likes.clear()
             publishedDayKey = null
         }
     }
@@ -62,28 +60,17 @@ object TeleportDailyState {
         loadDay(today)
         stateDir?.resolve("teleport-$oldDay.dat")?.let { old ->
             runCatching { Files.deleteIfExists(old) }
-                .onFailure { WorldGeoCommunityAddon.logger.warn("Failed to delete daily teleport state $oldDay", it) }
+                .onFailure { WorldGeoCommunityAddon.logger.warn("Failed to delete daily interaction state $oldDay", it) }
         }
     }
 
-    fun currentDayKey(): String {
-        checkRollover()
-        return currentDayKey
-    }
-
-    fun isStatePublishedForToday(): Boolean {
-        checkRollover()
-        return publishedDayKey == currentDayKey
-    }
-
-    fun getCount(playerUuid: UUID, regionId: Int): Int {
-        checkRollover()
-        return counts[slotKey(playerUuid, regionId)] ?: 0
-    }
+    fun currentDayKey(): String { checkRollover(); return currentDayKey }
+    fun isStatePublishedForToday(): Boolean { checkRollover(); return publishedDayKey == currentDayKey }
+    fun getCount(playerUuid: UUID, regionId: Int): Int { checkRollover(); return counts[teleportKey(playerUuid, regionId)] ?: 0 }
 
     fun reserve(playerUuid: UUID, regionId: Int): Int {
         checkRollover()
-        val key = slotKey(playerUuid, regionId)
+        val key = teleportKey(playerUuid, regionId)
         val before = counts[key] ?: 0
         counts[key] = before + 1
         persist()
@@ -91,19 +78,35 @@ object TeleportDailyState {
     }
 
     fun release(playerUuid: UUID, regionId: Int) {
-        val key = slotKey(playerUuid, regionId)
+        val key = teleportKey(playerUuid, regionId)
         val current = counts[key] ?: 0
         if (current <= 0) return
         counts[key] = current - 1
         persist()
     }
 
-    private fun slotKey(playerUuid: UUID, regionId: Int) = "$playerUuid:$regionId"
+    fun hasLikedToday(playerUuid: UUID, regionId: Int): Boolean {
+        checkRollover()
+        return likes.contains(likeKey(regionId, playerUuid))
+    }
+
+    fun recordLike(playerUuid: UUID, regionId: Int): Boolean {
+        checkRollover()
+        val key = likeKey(regionId, playerUuid)
+        if (likes.contains(key)) return false
+        likes.add(key)
+        persist()
+        return true
+    }
+
+    private fun teleportKey(playerUuid: UUID, regionId: Int) = "t:$playerUuid:$regionId"
+    private fun likeKey(regionId: Int, playerUuid: UUID) = "l:$regionId:$playerUuid"
 
     private fun persist() {
         val dir = stateDir ?: return
         val dayKey = currentDayKey
-        val snapshot = counts.toMap()
+        val countSnapshot = counts.toMap()
+        val likeSnapshot = likes.toSet()
         Thread({
             try {
                 val file = dir.resolve("teleport-$dayKey.dat")
@@ -111,18 +114,17 @@ object TeleportDailyState {
                 DataOutputStream(Files.newOutputStream(tmp)).use { stream ->
                     stream.writeInt(FILE_VERSION)
                     stream.writeUTF(dayKey)
-                    stream.writeInt(snapshot.size)
-                    snapshot.forEach { (key, value) ->
-                        stream.writeUTF(key)
-                        stream.writeInt(value)
-                    }
+                    stream.writeInt(countSnapshot.size)
+                    countSnapshot.forEach { (key, value) -> stream.writeUTF(key); stream.writeInt(value) }
+                    stream.writeInt(likeSnapshot.size)
+                    likeSnapshot.forEach { stream.writeUTF(it) }
                     stream.flush()
                 }
                 Files.move(tmp, file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
                 publishedDayKey = dayKey
             } catch (error: Exception) {
-                WorldGeoCommunityAddon.logger.error("Failed to persist daily teleport state for $dayKey", error)
+                WorldGeoCommunityAddon.logger.error("Failed to persist daily interaction state for $dayKey", error)
             }
-        }, "community-teleport-daily-persist").apply { isDaemon = true }.start()
+        }, "community-daily-interact-persist").apply { isDaemon = true }.start()
     }
 }
