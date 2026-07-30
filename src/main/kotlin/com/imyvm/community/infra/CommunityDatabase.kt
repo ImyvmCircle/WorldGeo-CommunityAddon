@@ -232,6 +232,19 @@ object CommunityDatabase {
                 return
             }
 
+            val payload = Files.readAllBytes(file)
+            DataInputStream(ByteArrayInputStream(payload)).use { header ->
+                if (header.readInt() != DATABASE_VERSION_MARKER) {
+                    legacyDatabaseLoaded = true
+                    backupLegacyDatabaseBeforeLoad(file)
+                    val decoded = LegacyCommunityDatabaseDecoder.decode(payload)
+                    communities = decoded.communities
+                    com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.clear()
+                    com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.putAll(decoded.pendingOperations)
+                    return
+                }
+            }
+
             DataInputStream(file.toFile().inputStream()).use { stream ->
                 val firstInt = stream.readInt()
                 val databaseVersion = if (firstInt == DATABASE_VERSION_MARKER) stream.readInt() else 1
