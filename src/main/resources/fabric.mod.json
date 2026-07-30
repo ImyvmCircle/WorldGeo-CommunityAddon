@@ -30,6 +30,9 @@
 		"minecraft": "26.2",
 		"java": ">=25",
 		"fabric-api": "*",
-		"fabric-language-kotlin": "*"
+		"fabric-language-kotlin": "*",
+		"hoki": ">=1.1.6",
+		"imyvm_economy": ">=26.2-1.2.7",
+		"imyvmworldgeo": ">=26.2-1.5.6"
 	}
 }

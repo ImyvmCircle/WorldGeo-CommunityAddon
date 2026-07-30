@@ -15,7 +15,7 @@ import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.infra.CommunityConfig
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.Translator
-import com.imyvm.economy.EconomyMod
+import com.imyvm.community.infra.economy.EconomyWalletAdapter
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.HypotheticalShape
@@ -65,8 +65,7 @@ fun onCreateCommunityRequest(
     val isManor = communityType.equals("manor", ignoreCase = true)
     val costResult = calculateCreationCost(region, isManor)
 
-    val playerAccount = EconomyMod.data.getOrCreate(player)
-    if (playerAccount.money < costResult.totalCost) {
+    if (EconomyWalletAdapter.balance(player) < costResult.totalCost) {
         player.sendSystemMessage(Translator.tr("community.create.money.error", costResult.totalCost / 100.0))
         deleteCreationRegion(region.numberID, player)
         return 0
@@ -132,8 +131,7 @@ fun onConfirmCommunityCreation(player: ServerPlayer, regionNumberId: Int): Int {
         return 0
     }
 
-    val playerAccount = EconomyMod.data.getOrCreate(player)
-    if (playerAccount.money < creationData.totalCost) {
+    if (EconomyWalletAdapter.balance(player) < creationData.totalCost) {
         player.sendSystemMessage(Translator.tr("community.create.money.error", creationData.totalCost / 100.0))
         cancelCommunityCreation(player, regionNumberId)
         return 0
@@ -145,7 +143,7 @@ fun onConfirmCommunityCreation(player: ServerPlayer, regionNumberId: Int): Int {
     var moneyDeducted = false
 
     return try {
-        playerAccount.addMoney(-creationData.totalCost)
+        EconomyWalletAdapter.debit(player, creationData.totalCost)
         moneyDeducted = true
         player.sendSystemMessage(Translator.tr("community.create.money.checked", creationData.totalCost / 100.0))
 
@@ -158,7 +156,7 @@ fun onConfirmCommunityCreation(player: ServerPlayer, regionNumberId: Int): Int {
     } catch (e: Exception) {
         createdCommunity?.let { CommunityDatabase.removeCommunity(it) }
         branchPendingType?.let { removePendingOperation(regionNumberId, it) }
-        if (moneyDeducted) playerAccount.addMoney(creationData.totalCost)
+        if (moneyDeducted) EconomyWalletAdapter.credit(player, creationData.totalCost)
         val cleaned = deleteCreationRegion(regionNumberId, player)
         if (!cleaned) {
             removedConfirmation?.let {

@@ -4,6 +4,7 @@ import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.infra.CommunityConfig
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.infra.PricingConfig
+import com.imyvm.community.infra.account.AccountSubsystem
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.minecraft.server.MinecraftServer
 
@@ -11,6 +12,7 @@ fun registerDataLoadAndSave() {
     dataLoad()
     dataSave()
     captureServerInstance()
+    accountLifecycle()
 }
 
 fun dataLoad() {
@@ -54,4 +56,10 @@ fun captureServerInstance() {
     ServerLifecycleEvents.SERVER_STOPPING.register { _ ->
         WorldGeoCommunityAddon.server = null
     }
+}
+
+
+private fun accountLifecycle() {
+    ServerLifecycleEvents.SERVER_STARTED.register(AccountSubsystem::start)
+    ServerLifecycleEvents.SERVER_STOPPING.register { AccountSubsystem.stop() }
 }

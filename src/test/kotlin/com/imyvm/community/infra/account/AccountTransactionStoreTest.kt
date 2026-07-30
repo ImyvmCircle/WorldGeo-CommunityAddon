@@ -22,7 +22,7 @@ class AccountTransactionStoreTest {
                 val store = AccountTransactionStore(root, writer, maxCacheEntries = 2, maxCacheBytes = 1024)
                 repeat(8) { index -> store.determine(transaction(index)).join() }
                 assertEquals(8L, store.currentAppliedSequence())
-                assertTrue(store.scanUnresolved(null, 3).size == 3)
+                assertTrue(store.scanUnresolved(null, 3).join().items.size == 3)
                 assertTrue(store.cacheEntryCount() <= 2)
                 assertTrue(store.estimatedCacheBytes() <= 1024)
             }
@@ -35,7 +35,7 @@ class AccountTransactionStoreTest {
             CommunityDataWriter(32).use { writer ->
                 val recovered = AccountTransactionStore(root, writer, maxCacheEntries = 2, maxCacheBytes = 1024)
                 assertEquals(8L, recovered.currentAppliedSequence())
-                assertEquals(8, recovered.scanUnresolved(null, 20).size)
+                assertEquals(8, recovered.scanUnresolved(null, 20).join().items.size)
             }
         } finally {
             deleteTree(root)
@@ -61,8 +61,8 @@ class AccountTransactionStoreTest {
 
             CommunityDataWriter(8).use { writer ->
                 val recovered = AccountTransactionStore(root, writer)
-                assertEquals(1, recovered.find(transaction.transactionId)?.attempts?.size)
-                assertEquals(attempt.attemptId, recovered.find(transaction.transactionId)?.attempts?.single()?.attemptId)
+                assertEquals(1, recovered.find(transaction.transactionId).join()?.attempts?.size)
+                assertEquals(attempt.attemptId, recovered.find(transaction.transactionId).join()?.attempts?.single()?.attemptId)
             }
         } finally {
             deleteTree(root)
@@ -84,7 +84,7 @@ class AccountTransactionStoreTest {
 
             CommunityDataWriter(32).use { writer ->
                 val recovered = AccountTransactionStore(root, writer)
-                assertEquals("T0119", recovered.find(transaction(119).transactionId)?.transaction?.shortId)
+                assertEquals("T0119", recovered.find(transaction(119).transactionId).join()?.transaction?.shortId)
                 assertTrue(Files.exists(sealed.resolveSibling("${sealed.fileName}.corrupt")))
             }
         } finally {
@@ -99,12 +99,33 @@ class AccountTransactionStoreTest {
             CommunityDataWriter(64).use { writer ->
                 val store = AccountTransactionStore(root, writer)
                 repeat(40) { index -> store.determine(transaction(index + 200)).join() }
-                val first = store.scanUnresolved(null, 13)
-                val second = store.scanUnresolved("${first.last().transaction.transactionId}.idx", 13)
-                assertEquals(13, first.size)
-                assertEquals(13, second.size)
-                assertTrue(first.map { it.transaction.transactionId }.toSet()
-                    .intersect(second.map { it.transaction.transactionId }.toSet()).isEmpty())
+                val first = store.scanUnresolved(null, 13).join()
+                val second = store.scanUnresolved(first.nextToken, 13).join()
+                assertEquals(13, first.items.size)
+                assertEquals(13, second.items.size)
+                assertTrue(first.items.map { it.transaction.transactionId }.toSet()
+                    .intersect(second.items.map { it.transaction.transactionId }.toSet()).isEmpty())
+            }
+        } finally {
+            deleteTree(root)
+        }
+    }
+
+    @Test
+    fun accountOrderUsesDurableJournalSequence() {
+        val root = Files.createTempDirectory("community-account-order")
+        try {
+            CommunityDataWriter(8).use { writer ->
+                val store = AccountTransactionStore(root, writer)
+                val subject = UUID.randomUUID()
+                val first = transaction(500).copy(subjectUuid = subject, createdAtMillis = 200L)
+                val second = transaction(501).copy(subjectUuid = subject, createdAtMillis = 100L)
+                store.determine(first).join()
+                store.determine(second).join()
+
+                val ordered = store.scanAccountOrder(subject, null, 10).join().items
+                assertEquals(listOf(first.transactionId, second.transactionId),
+                    ordered.map { it.transaction.transactionId })
             }
         } finally {
             deleteTree(root)
@@ -148,7 +169,7 @@ class AccountTransactionStoreTest {
                     AccountTransactionStatus.SUCCEEDED,
                     finalBalance = 900L
                 )).join()
-                assertTrue(store.scanUnresolved(null, 10).isEmpty())
+                assertTrue(store.scanUnresolved(null, 10).join().items.isEmpty())
             }
         } finally {
             deleteTree(root)

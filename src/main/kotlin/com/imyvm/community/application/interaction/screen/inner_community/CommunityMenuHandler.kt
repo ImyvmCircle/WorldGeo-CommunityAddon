@@ -15,7 +15,7 @@ import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.Commun
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityMemberListMenu
 import com.imyvm.community.infra.CommunityConfig
 import com.imyvm.community.infra.PricingConfig
-import com.imyvm.economy.EconomyMod
+import com.imyvm.community.infra.economy.EconomyWalletAdapter
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.inter.api.PlayerInteractionApi
 import com.imyvm.iwg.inter.api.RegionDataApi
@@ -145,13 +145,13 @@ fun startCommunityTeleportExecution(player: ServerPlayer, community: Community, 
 
     if (cost > 0) {
         sendTeleportDimensionLegend(player, dimensionId)
-        val playerAccount = EconomyMod.data.getOrCreate(player)
-        if (playerAccount.money < cost) {
+        val playerBalance = EconomyWalletAdapter.balance(player)
+        if (playerBalance < cost) {
             player.sendSystemMessage(
                 Translator.tr(
                     "community.teleport.execution.error.insufficient_balance",
                     String.format("%.2f", cost / 100.0),
-                    String.format("%.2f", playerAccount.money / 100.0)
+                    String.format("%.2f", playerBalance / 100.0)
                 )
             )
             return 0
@@ -243,12 +243,12 @@ private fun executeCommunityTeleport(
     }
 
     if (cost > 0) {
-        val playerAccount = EconomyMod.data.getOrCreate(player)
-        if (playerAccount.money < cost) {
+        val playerBalance = EconomyWalletAdapter.balance(player)
+        if (playerBalance < cost) {
             player.sendSystemMessage(Translator.tr("community.teleport.execution.cancelled.balance_changed"))
             return 0
         }
-        playerAccount.money -= cost
+        EconomyWalletAdapter.debit(player, cost)
     }
 
     PlayerInteractionApi.teleportPlayerToScope(player, region, scope)

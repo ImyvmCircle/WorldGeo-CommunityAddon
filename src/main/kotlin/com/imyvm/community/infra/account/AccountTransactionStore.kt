@@ -3,6 +3,7 @@ package com.imyvm.community.infra.account
 import com.imyvm.community.domain.model.account.AccountAttempt
 import com.imyvm.community.domain.model.account.AccountTransaction
 import com.imyvm.community.domain.model.account.AccountTransactionState
+import com.imyvm.community.domain.model.account.AccountStatePage
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.EOFException
@@ -79,10 +80,11 @@ class AccountTransactionStore(
     fun changeState(fact: AccountFact.StateChanged): CompletableFuture<AccountTransactionState> =
         writer.submit { appendAndApply(fact) }
 
-    @Synchronized
-    fun find(transactionId: UUID): AccountTransactionState? = loadState(transactionId)
+    fun find(transactionId: UUID): CompletableFuture<AccountTransactionState?> = writer.submit { loadState(transactionId) }
 
-    fun findByShortId(shortId: String): AccountTransactionState? {
+    fun findByShortId(shortId: String): CompletableFuture<AccountTransactionState?> = writer.submit { findByShortIdNow(shortId) }
+
+    private fun findByShortIdNow(shortId: String): AccountTransactionState? {
         Files.newDirectoryStream(statesDirectory, "*.state").use { stream ->
             for (path in stream) {
                 val state = readState(path)
@@ -92,21 +94,28 @@ class AccountTransactionStore(
         return null
     }
 
-    fun scanUnresolved(after: String?, limit: Int): List<AccountTransactionState> {
+    fun scanUnresolved(after: String?, limit: Int): CompletableFuture<AccountStatePage> = writer.submit {
         require(limit in 1..10_000)
-        return scanIndex(unresolvedDirectory, after, limit).mapNotNull { entry ->
-            loadState(UUID.fromString(entry.fileName.toString().removeSuffix(".idx")))
-        }
+        val entries = scanIndex(unresolvedDirectory, after, limit)
+        AccountStatePage(
+            entries.mapNotNull { entry ->
+                loadState(UUID.fromString(entry.fileName.toString().removeSuffix(".idx")))
+            },
+            entries.lastOrNull()?.fileName?.toString()
+        )
     }
 
-    fun scanAccountOrder(subjectUuid: UUID, after: String?, limit: Int): List<AccountTransactionState> {
+    fun scanAccountOrder(subjectUuid: UUID, after: String?, limit: Int): CompletableFuture<AccountStatePage> = writer.submit {
         require(limit in 1..10_000)
         val directory = accountOrderDirectory.resolve(subjectUuid.toString())
-        if (!Files.exists(directory)) return emptyList()
-        return scanIndex(directory, after, limit).mapNotNull { entry ->
-            val id = Files.readString(entry).trim()
-            loadState(UUID.fromString(id))
-        }
+        val entries = scanIndex(directory, after, limit)
+        AccountStatePage(
+            entries.mapNotNull { entry ->
+                val id = Files.readString(entry).trim()
+                loadState(UUID.fromString(id))
+            },
+            entries.lastOrNull()?.fileName?.toString()
+        )
     }
 
     fun currentAppliedSequence(): Long = appliedSequence
@@ -184,7 +193,7 @@ class AccountTransactionStore(
         if (state.status == com.imyvm.community.domain.model.account.AccountTransactionStatus.DETERMINED) {
             val accountDirectory = accountOrderDirectory.resolve(state.transaction.subjectUuid.toString())
             Files.createDirectories(accountDirectory)
-            val orderName = "%020d-%s.idx".format(state.transaction.createdAtMillis, state.transaction.transactionId)
+            val orderName = "%020d-%s.idx".format(sequence, state.transaction.transactionId)
             writeAtomic(accountDirectory.resolve(orderName), state.transaction.transactionId.toString().toByteArray())
             writeAtomic(externalPath(state.transaction.externalReference), state.transaction.transactionId.toString().toByteArray())
         }

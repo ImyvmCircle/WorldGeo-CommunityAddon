@@ -56,3 +56,9 @@ data class PlayerIdentity(
     val trustedName: String,
     val updatedAtMillis: Long
 )
+
+
+data class AccountStatePage(
+    val items: List<AccountTransactionState>,
+    val nextToken: String?
+)

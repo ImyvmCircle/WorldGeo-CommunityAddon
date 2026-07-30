@@ -15,7 +15,7 @@ import com.imyvm.community.entrypoint.screen.component.ConfirmTaskType
 import com.imyvm.community.infra.CommunityConfig
 import com.imyvm.community.infra.PricingConfig
 import com.imyvm.community.util.Translator
-import com.imyvm.economy.EconomyMod
+import com.imyvm.community.infra.economy.EconomyWalletAdapter
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.network.chat.Component
 import java.util.*
@@ -115,7 +115,7 @@ private fun showLeaveConfirmMenu(player: ServerPlayer, targetCommunity: Communit
 }
 
 private fun checkPlayerHasEnoughCurrency(player: ServerPlayer, targetCommunity: Community): Boolean {
-    val totalAssets = EconomyMod.data.getOrCreate(player).money
+    val totalAssets = EconomyWalletAdapter.balance(player)
     val cost = if(targetCommunity.isManor()) PricingConfig.COMMUNITY_JOIN_COST_MANOR.value else PricingConfig.COMMUNITY_JOIN_COST_REALM.value
 
     if (totalAssets < cost) {
@@ -179,10 +179,10 @@ fun tryJoinByPolicy(player: ServerPlayer, targetCommunity: Community): Int {
 private fun joinUnderOpenPolicy(player: ServerPlayer, targetCommunity: Community): Int {
     val cost = if(targetCommunity.isManor()) PricingConfig.COMMUNITY_JOIN_COST_MANOR.value else PricingConfig.COMMUNITY_JOIN_COST_REALM.value
     
-    val playerData = EconomyMod.data.getOrCreate(player)
-    if (playerData.money < cost) {
+    val playerBalance = EconomyWalletAdapter.balance(player)
+    if (playerBalance < cost) {
         player.sendSystemMessage(
-            Translator.tr("community.join.error.insufficient_assets", cost / 100.0, playerData.money / 100.0)
+            Translator.tr("community.join.error.insufficient_assets", cost / 100.0, playerBalance / 100.0)
         )
         return 0
     }
@@ -195,14 +195,14 @@ private fun joinUnderOpenPolicy(player: ServerPlayer, targetCommunity: Community
     if (!runCommunityMutationOrRollback(
             operationName = operationName,
             mutateCommunityState = {
-                playerData.money -= cost
+                EconomyWalletAdapter.debit(player, cost)
                 targetCommunity.member[player.uuid] = memberAccount
                 com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.autoGrantDefaultPermissions(
                     player.uuid, player, targetCommunity
                 )
             },
             restoreCommunityState = {
-                playerData.money += cost
+                EconomyWalletAdapter.credit(player, cost)
                 targetCommunity.member.remove(player.uuid)
             },
             rollbackCoreState = {
@@ -235,10 +235,10 @@ private fun joinUnderApplicationPolicy(player: ServerPlayer, targetCommunity: Co
     
     val cost = if(targetCommunity.isManor()) PricingConfig.COMMUNITY_JOIN_COST_MANOR.value else PricingConfig.COMMUNITY_JOIN_COST_REALM.value
     
-    val playerData = EconomyMod.data.getOrCreate(player)
-    if (playerData.money < cost) {
+    val playerBalance = EconomyWalletAdapter.balance(player)
+    if (playerBalance < cost) {
         player.sendSystemMessage(
-            Translator.tr("community.join.error.insufficient_assets", cost / 100.0, playerData.money / 100.0)
+            Translator.tr("community.join.error.insufficient_assets", cost / 100.0, playerBalance / 100.0)
         )
         return 0
     }
@@ -251,11 +251,11 @@ private fun joinUnderApplicationPolicy(player: ServerPlayer, targetCommunity: Co
     if (!runCommunityMutationOrRollback(
             operationName = operationName,
             mutateCommunityState = {
-                playerData.money -= cost
+                EconomyWalletAdapter.debit(player, cost)
                 targetCommunity.member[player.uuid] = memberAccount
             },
             restoreCommunityState = {
-                playerData.money += cost
+                EconomyWalletAdapter.credit(player, cost)
                 targetCommunity.member.remove(player.uuid)
             },
             rollbackCoreState = {},

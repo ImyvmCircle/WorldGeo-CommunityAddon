@@ -5,6 +5,7 @@ import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.domain.model.TurnoverSource
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.infra.PricingConfig
+import com.imyvm.community.infra.economy.EconomyWalletAdapter
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.util.Translator
@@ -177,8 +178,7 @@ fun runRefuse(
                 
                 val applicantPlayer = playerExecutor.level().server.playerList.getPlayer(playerObject.id)
                 if (applicantPlayer != null) {
-                    val playerData = com.imyvm.economy.EconomyMod.data.getOrCreate(applicantPlayer)
-                    playerData.money += cost
+                    EconomyWalletAdapter.credit(applicantPlayer, cost)
                     applicantPlayer.sendSystemMessage(
                         Translator.tr(
                             "community.join.refund",

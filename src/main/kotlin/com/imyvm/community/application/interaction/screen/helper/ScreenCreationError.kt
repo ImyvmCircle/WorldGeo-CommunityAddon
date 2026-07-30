@@ -4,7 +4,7 @@ import com.imyvm.community.application.interaction.common.helper.checkPlayerMemb
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.infra.PricingConfig
 import com.imyvm.community.util.Translator
-import com.imyvm.economy.EconomyMod
+import com.imyvm.community.infra.economy.EconomyWalletAdapter
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.inter.api.UtilApi
@@ -26,7 +26,7 @@ fun generateCreationError(
     else
         PricingConfig.PRICE_REALM.value
 
-    if (EconomyMod.data.getOrCreate(playerEntity).money < price) {
+    if (EconomyWalletAdapter.balance(playerEntity) < price) {
         errors.add(Translator.tr("ui.create.error.money_$typeStr").string ?: "NotEnoughMoney${typeStr.replaceFirstChar { it.uppercase() }}")
     }
 

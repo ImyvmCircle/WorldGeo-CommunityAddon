@@ -12,7 +12,7 @@ import com.imyvm.community.entrypoint.screen.inner_community.affairs.assets.Dono
 import com.imyvm.community.entrypoint.screen.inner_community.affairs.assets.TreasuryLedgerMenu
 import com.imyvm.community.entrypoint.screen.inner_community.CommunityMenu
 import com.imyvm.community.util.Translator
-import com.imyvm.economy.EconomyMod
+import com.imyvm.community.infra.economy.EconomyWalletAdapter
 import net.minecraft.server.level.ServerPlayer
 import java.util.*
 
@@ -56,9 +56,7 @@ fun onDonateConfirm(player: ServerPlayer, community: Community, amount: Long, ru
         player,
         { CommunityPermissionPolicy.canDonate(player, community) }
     ) {
-        val playerAccount = EconomyMod.data.getOrCreate(player)
-        
-        if (playerAccount.money < amount) {
+        if (EconomyWalletAdapter.balance(player) < amount) {
             player.sendSystemMessage(Translator.tr("ui.community.assets.donate.error.insufficient_funds"))
             player.closeContainer()
             return@executeWithPermission
@@ -71,7 +69,7 @@ fun onDonateConfirm(player: ServerPlayer, community: Community, amount: Long, ru
             return@executeWithPermission
         }
 
-        playerAccount.addMoney(-amount)
+        EconomyWalletAdapter.debit(player, amount)
         memberAccount.turnover.add(Turnover(amount, System.currentTimeMillis(), TurnoverSource.PLAYER, "community.treasury.desc.donation", listOf(player.name.string)))
 
         val amountFormatted = "%.2f".format(amount / 100.0)
