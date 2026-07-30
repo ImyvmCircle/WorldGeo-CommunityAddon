@@ -12,7 +12,8 @@ data class MemberAccount (
     var turnover: ArrayList<Turnover> = arrayListOf(),
     var isInvited: Boolean = false,
     var chatHistoryEnabled: Boolean = true,
-    var pendingRefund: Long = 0L
+    var pendingRefund: Long = 0L,
+    var joinFeePaid: Long = 0L
 ) {
     fun getTotalDonation(): Long {
         return turnover.sumOf { it.amount }

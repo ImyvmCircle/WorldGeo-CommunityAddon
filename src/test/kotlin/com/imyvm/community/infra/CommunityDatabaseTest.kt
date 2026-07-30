@@ -130,10 +130,80 @@ class CommunityDatabaseTest {
             Int::class.javaPrimitiveType
         )
         loadMethod.isAccessible = true
-        val loaded = loadMethod.invoke(CommunityDatabase, input, 3) as Community
+        val loaded = loadMethod.invoke(CommunityDatabase, input, 4) as Community
 
         assertEquals(321L, loaded.member[memberUUID]?.pendingRefund)
         assertEquals(0L, loaded.member[ownerUUID]?.pendingRefund)
+    }
+
+    @Test
+    fun writeCommunityRecordPreservesFrozenJoinFees() {
+        val bytes = ByteArrayOutputStream()
+        val memberUUID = UUID.fromString("00000000-0000-0000-0000-000000000002")
+        val community = Community(
+            regionNumberId = 123,
+            member = hashMapOf(memberUUID to MemberAccount(
+                joinedTime = 789L,
+                basicRoleType = MemberRoleType.APPLICANT,
+                joinFeePaid = 321L
+            )),
+            joinPolicy = CommunityJoinPolicy.APPLICATION,
+            status = CommunityStatus.RECRUITING_REALM
+        )
+        val writeMethod = CommunityDatabase.javaClass.getDeclaredMethod(
+            "writeCommunityRecord",
+            DataOutputStream::class.java,
+            Community::class.java
+        ).also { it.isAccessible = true }
+        writeMethod.invoke(CommunityDatabase, DataOutputStream(bytes), community)
+
+        val loadMethod = CommunityDatabase.javaClass.getDeclaredMethod(
+            "loadCommunityRecord",
+            DataInputStream::class.java,
+            Int::class.javaPrimitiveType
+        ).also { it.isAccessible = true }
+        val loaded = loadMethod.invoke(
+            CommunityDatabase,
+            DataInputStream(ByteArrayInputStream(bytes.toByteArray())),
+            4
+        ) as Community
+
+        assertEquals(321L, loaded.member[memberUUID]?.joinFeePaid)
+    }
+
+    @Test
+    fun versionThreeCommunityDefaultsFrozenJoinFeeToZero() {
+        val bytes = ByteArrayOutputStream()
+        val memberUUID = UUID.fromString("00000000-0000-0000-0000-000000000002")
+        val community = Community(
+            regionNumberId = 123,
+            member = hashMapOf(memberUUID to MemberAccount(
+                joinedTime = 789L,
+                basicRoleType = MemberRoleType.APPLICANT
+            )),
+            joinPolicy = CommunityJoinPolicy.APPLICATION,
+            status = CommunityStatus.RECRUITING_REALM
+        )
+        val saveMethod = CommunityDatabase.javaClass.getDeclaredMethod(
+            "saveCommunityBody",
+            DataOutputStream::class.java,
+            Community::class.java
+        ).also { it.isAccessible = true }
+        saveMethod.invoke(CommunityDatabase, DataOutputStream(bytes), community)
+        val versionThreePayload = bytes.toByteArray().dropLast(Integer.BYTES).toByteArray()
+
+        val loadMethod = CommunityDatabase.javaClass.getDeclaredMethod(
+            "loadCommunityBody",
+            DataInputStream::class.java,
+            Int::class.javaPrimitiveType
+        ).also { it.isAccessible = true }
+        val loaded = loadMethod.invoke(
+            CommunityDatabase,
+            DataInputStream(ByteArrayInputStream(versionThreePayload)),
+            3
+        ) as Community
+
+        assertEquals(0L, loaded.member[memberUUID]?.joinFeePaid)
     }
 
     @Test

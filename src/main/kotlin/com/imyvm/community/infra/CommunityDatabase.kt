@@ -34,7 +34,7 @@ object CommunityDatabase {
 
     private const val DATABASE_FILENAME = "iwg_community.db"
     private const val DATABASE_VERSION_MARKER = -3
-    private const val DATABASE_VERSION = 3
+    private const val DATABASE_VERSION = 4
     private const val PENDING_SECTION_VERSION_MARKER = -2
     private const val PENDING_SECTION_VERSION = 3
     private const val SECTION_FRAME_MARKER = -4
@@ -105,6 +105,7 @@ object CommunityDatabase {
         saveCommunityMessages(stream, community)
         stream.writeLong(community.creationCost)
         saveMemberPendingRefunds(stream, community)
+        saveMemberJoinFees(stream, community)
     }
 
     private fun writeSection(
@@ -300,6 +301,7 @@ object CommunityDatabase {
         val messages = loadCommunityMessages(stream, strict = databaseVersion >= 2)
         val creationCost = stream.readLong()
         if (databaseVersion >= 3) loadMemberPendingRefunds(stream, memberMap)
+        if (databaseVersion >= 4) loadMemberJoinFees(stream, memberMap)
 
         return Community(
             regionNumberId = regionNumberId,
@@ -439,6 +441,28 @@ object CommunityDatabase {
                 val uuid = UUID.fromString(stream.readUTF())
                 val amount = stream.readLong()
                 if (amount > 0L) memberMap[uuid]?.pendingRefund = amount
+            }
+        } catch (e: Exception) {
+            return
+        }
+    }
+
+    private fun saveMemberJoinFees(stream: DataOutputStream, community: Community) {
+        val joinFees = community.member.filterValues { it.joinFeePaid > 0L }
+        stream.writeInt(joinFees.size)
+        for ((uuid, memberAccount) in joinFees) {
+            stream.writeUTF(uuid.toString())
+            stream.writeLong(memberAccount.joinFeePaid)
+        }
+    }
+
+    private fun loadMemberJoinFees(stream: DataInputStream, memberMap: HashMap<UUID, MemberAccount>) {
+        try {
+            val feeCount = readCount(stream, "member join fee")
+            for (i in 0 until feeCount) {
+                val uuid = UUID.fromString(stream.readUTF())
+                val amount = stream.readLong()
+                if (amount > 0L) memberMap[uuid]?.joinFeePaid = amount
             }
         } catch (e: Exception) {
             return
