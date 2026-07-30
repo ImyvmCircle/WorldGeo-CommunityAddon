@@ -113,14 +113,19 @@ class CommunityAdministrationMenu(
     private fun addChangeableButtons(player: ServerPlayer, community: Community) {
         addButton(
             slot = 28,
-            name = (Translator.tr("ui.admin.button.join_policy").string
-                ?: "Join Policy: ") + community.joinPolicy.toString(),
+            name = Translator.tr("ui.admin.button.join_policy").string ?: "Join Policy: " + community.joinPolicy.toString(),
             item = when (community.joinPolicy) {
                 CommunityJoinPolicy.OPEN -> Items.WOOL.green()
                 CommunityJoinPolicy.APPLICATION -> Items.WOOL.yellow()
                 CommunityJoinPolicy.INVITE_ONLY -> Items.WOOL.red()
             }
         ) { runAdmChangeJoinPolicy(player, community, community.joinPolicy, runBack) }
+
+        addButton(
+            slot = 29,
+            name = Translator.tr("ui.admin.button.building").string ?: "Community Building",
+            item = Items.BRICKS
+        ) { runOpenCommunityBuildingMenu(player, community, runBack) }
     }
 
     companion object {

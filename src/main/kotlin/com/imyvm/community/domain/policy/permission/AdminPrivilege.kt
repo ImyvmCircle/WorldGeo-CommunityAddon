@@ -10,7 +10,8 @@ enum class AdminPrivilege(val displayKey: String) {
     MODIFY_REGION_GEOMETRY("ui.admin.button.region.geometry"),
     MODIFY_REGION_SETTINGS("ui.admin.button.region.setting"),
     MANAGE_TELEPORT_POINTS("ui.admin.button.teleport"),
-    CHANGE_JOIN_POLICY("ui.admin.button.join_policy");
+    CHANGE_JOIN_POLICY("ui.admin.button.join_policy"),
+    MANAGE_BUILDING("ui.admin.button.building");
 
     companion object {
         fun defaultEnabled(): Set<AdminPrivilege> = entries.toSet()

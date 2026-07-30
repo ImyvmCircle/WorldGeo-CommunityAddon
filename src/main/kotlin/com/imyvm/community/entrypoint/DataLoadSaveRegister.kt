@@ -4,9 +4,11 @@ import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.infra.CommunityConfig
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.infra.PricingConfig
+import com.imyvm.community.infra.TeleportDailyState
 import com.imyvm.community.infra.account.AccountSubsystem
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.minecraft.server.MinecraftServer
+import net.minecraft.world.level.storage.LevelResource
 
 fun registerDataLoadAndSave() {
     dataLoad()
@@ -27,6 +29,7 @@ private fun loadData(server: MinecraftServer) {
         CommunityConfig.validateValues()
         PricingConfig.validateValues()
         CommunityDatabase.load(server)
+        TeleportDailyState.initialize(server.getWorldPath(LevelResource.ROOT))
     } catch (e: Exception) {
         try {
             val backupPath = CommunityDatabase.backupDatabaseAfterLoadFailure()

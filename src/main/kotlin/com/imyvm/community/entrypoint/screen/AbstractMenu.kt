@@ -2,6 +2,7 @@ package com.imyvm.community.entrypoint.screen
 
 import com.imyvm.community.entrypoint.screen.component.MenuButton
 import com.imyvm.community.entrypoint.screen.component.ReadOnlySlot
+import com.imyvm.community.entrypoint.screen.component.getLoreButton
 import com.imyvm.community.util.Translator
 import net.minecraft.core.component.DataComponents
 import net.minecraft.world.entity.player.Player
@@ -49,6 +50,12 @@ abstract class AbstractMenu(
     protected fun addButton(slot: Int, name: String, item: Item, onClick: (ServerPlayer) -> Unit) {
         buttons.add(MenuButton(slot, item, name, onClick))
         inventory.setItem(slot, createItem(Component.literal(name), item))
+    }
+
+    protected fun addButton(slot: Int, name: String, item: Item, loreLines: List<Component>, onClick: (ServerPlayer) -> Unit) {
+        val stack = createItem(Component.literal(name), item)
+        buttons.add(MenuButton(slot, item, name, onClick))
+        inventory.setItem(slot, getLoreButton(stack, loreLines))
     }
 
     protected fun addButton(slot: Int, itemStack: ItemStack, name: String? = null, onClick: (ServerPlayer) -> Unit) {

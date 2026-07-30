@@ -6,7 +6,10 @@ import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.Turnover
 import com.imyvm.community.domain.model.TurnoverSource
 import com.imyvm.community.domain.model.community.CommunityStatus
+import com.imyvm.community.domain.model.transaction.ResourceDirection
+import com.imyvm.community.domain.model.transaction.TreasuryLedgerFact
 import com.imyvm.community.infra.CommunityDatabase
+import com.imyvm.community.infra.account.AccountSubsystem
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.inter.api.PlayerInteractionApi
 import com.imyvm.iwg.inter.api.RegionDataApi
@@ -16,6 +19,8 @@ import com.imyvm.community.application.event.removePendingOperation
 import com.imyvm.community.application.event.removePendingOperationsForSubject
 import com.imyvm.community.domain.model.PendingOperationType
 import com.imyvm.community.domain.model.pendingOperationSubjectId
+import java.nio.charset.StandardCharsets
+import java.util.UUID
 
 fun onForceDeleteCommunity(player: ServerPlayer, targetCommunity: Community): Int {
     val regionId = targetCommunity.regionNumberId
@@ -224,14 +229,32 @@ fun onAdminTreasuryDeposit(player: ServerPlayer, targetCommunity: Community, amo
         player.sendSystemMessage(Translator.tr("community.treasury.admin.error.invalid_amount"))
         return 0
     }
+    val regionId = targetCommunity.regionNumberId ?: return 0
+    val runtime = AccountSubsystem.runtimeOrNull()
+    val now = System.currentTimeMillis()
     val descArgs = if (description.isNullOrBlank()) listOf("") else listOf(description)
-    targetCommunity.communityIncome.add(
-        Turnover(amount, System.currentTimeMillis(), TurnoverSource.SERVER_ADMIN, "community.treasury.desc.admin_deposit", descArgs)
-    )
-    CommunityDatabase.save()
-    val amountFormatted = "%.2f".format(amountDisplay)
-    player.sendSystemMessage(Translator.tr("community.treasury.admin.deposit.success", targetCommunity.generateCommunityMark(), amountFormatted))
-    return 1
+    val reference = "community:admin-deposit:${UUID.nameUUIDFromBytes("admin-deposit:$regionId:${player.uuid}:$now".toByteArray(StandardCharsets.UTF_8))}"
+    val turnover = Turnover(amount, now, TurnoverSource.SERVER_ADMIN, "community.treasury.desc.admin_deposit", descArgs)
+    targetCommunity.communityIncome.add(turnover)
+    return try {
+        CommunityDatabase.save()
+        runtime?.sharedStore?.append(
+            TreasuryLedgerFact(
+                UUID.nameUUIDFromBytes(reference.toByteArray(StandardCharsets.UTF_8)),
+                regionId, now, amount, ResourceDirection.CREDIT, "admin",
+                reference, "admin-deposit", player.uuid.toString(),
+                "community.treasury.desc.admin_deposit", descArgs
+            )
+        )
+        val amountFormatted = "%.2f".format(amountDisplay)
+        player.sendSystemMessage(Translator.tr("community.treasury.admin.deposit.success", targetCommunity.generateCommunityMark(), amountFormatted))
+        1
+    } catch (e: Exception) {
+        targetCommunity.communityIncome.remove(turnover)
+        WorldGeoCommunityAddon.logger.error("Failed to save admin treasury deposit for region $regionId", e)
+        player.sendSystemMessage(Translator.tr("community.operation.save_failed", "admin-deposit"))
+        0
+    }
 }
 
 fun onAdminTreasuryWithdraw(player: ServerPlayer, targetCommunity: Community, amountDisplay: Double, description: String?): Int {
@@ -248,12 +271,30 @@ fun onAdminTreasuryWithdraw(player: ServerPlayer, targetCommunity: Community, am
         ))
         return 0
     }
+    val regionId = targetCommunity.regionNumberId ?: return 0
+    val runtime = AccountSubsystem.runtimeOrNull()
+    val now = System.currentTimeMillis()
     val descArgs = if (description.isNullOrBlank()) listOf("") else listOf(description)
-    targetCommunity.expenditures.add(
-        Turnover(amount, System.currentTimeMillis(), TurnoverSource.SERVER_ADMIN, "community.treasury.desc.admin_withdrawal", descArgs)
-    )
-    CommunityDatabase.save()
-    val amountFormatted = "%.2f".format(amountDisplay)
-    player.sendSystemMessage(Translator.tr("community.treasury.admin.withdraw.success", targetCommunity.generateCommunityMark(), amountFormatted))
-    return 1
+    val reference = "community:admin-withdrawal:${UUID.nameUUIDFromBytes("admin-withdrawal:$regionId:${player.uuid}:$now".toByteArray(StandardCharsets.UTF_8))}"
+    val turnover = Turnover(amount, now, TurnoverSource.SERVER_ADMIN, "community.treasury.desc.admin_withdrawal", descArgs)
+    targetCommunity.expenditures.add(turnover)
+    return try {
+        CommunityDatabase.save()
+        runtime?.sharedStore?.append(
+            TreasuryLedgerFact(
+                UUID.nameUUIDFromBytes(reference.toByteArray(StandardCharsets.UTF_8)),
+                regionId, now, amount, ResourceDirection.DEBIT, "admin",
+                reference, "admin-withdrawal", player.uuid.toString(),
+                "community.treasury.desc.admin_withdrawal", descArgs
+            )
+        )
+        val amountFormatted = "%.2f".format(amountDisplay)
+        player.sendSystemMessage(Translator.tr("community.treasury.admin.withdraw.success", targetCommunity.generateCommunityMark(), amountFormatted))
+        1
+    } catch (e: Exception) {
+        targetCommunity.expenditures.remove(turnover)
+        WorldGeoCommunityAddon.logger.error("Failed to save admin treasury withdrawal for region $regionId", e)
+        player.sendSystemMessage(Translator.tr("community.operation.save_failed", "admin-withdrawal"))
+        0
+    }
 }

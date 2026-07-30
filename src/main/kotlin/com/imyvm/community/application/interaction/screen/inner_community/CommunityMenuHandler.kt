@@ -15,7 +15,8 @@ import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.Commun
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityMemberListMenu
 import com.imyvm.community.infra.CommunityConfig
 import com.imyvm.community.infra.PricingConfig
-import com.imyvm.community.infra.economy.EconomyWalletAdapter
+import com.imyvm.community.infra.TeleportDailyState
+import com.imyvm.community.infra.account.AccountSubsystem
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.inter.api.PlayerInteractionApi
 import com.imyvm.iwg.inter.api.RegionDataApi
@@ -119,8 +120,7 @@ fun startCommunityTeleportExecution(player: ServerPlayer, community: Community, 
     }
 
     val regionId = community.regionNumberId ?: return 0
-    val usageKey = getTeleportUsageKey(player.uuid, regionId)
-    val usedTimes = teleportUsageByDay[usageKey] ?: 0
+    val usedTimes = TeleportDailyState.getCount(player.uuid, regionId)
     val role = community.getMemberRole(player.uuid)
     val isFormalMember = role == MemberRoleType.OWNER || role == MemberRoleType.ADMIN || role == MemberRoleType.MEMBER
     val freeUses = if (isFormalMember) {
@@ -145,42 +145,37 @@ fun startCommunityTeleportExecution(player: ServerPlayer, community: Community, 
 
     if (cost > 0) {
         sendTeleportDimensionLegend(player, dimensionId)
-        val playerBalance = EconomyWalletAdapter.balance(player)
-        if (playerBalance < cost) {
+    }
+
+    val usageCountAtFreeze = TeleportDailyState.reserve(player.uuid, regionId)
+
+    persistTeleportPlan(player, regionId, scope.scopeName, usageCountAtFreeze, cost) { plan ->
+        val runtime = AccountSubsystem.runtimeOrNull()
+        if (delaySeconds <= 0) {
+            if (runtime == null) {
+                cancelTeleportPlan(player.uuid, plan)
+                return@persistTeleportPlan
+            }
+            executeTeleportWithPlan(player, community, scope, plan, runtime)
+        } else {
             player.sendSystemMessage(
                 Translator.tr(
-                    "community.teleport.execution.error.insufficient_balance",
+                    "community.teleport.execution.pending",
+                    scope.scopeName,
                     String.format("%.2f", cost / 100.0),
-                    String.format("%.2f", playerBalance / 100.0)
+                    delaySeconds.toString()
                 )
             )
-            return 0
+            pendingTeleportExecutions[player.uuid] = PendingTeleportExecution(
+                playerUUID = player.uuid,
+                plan = plan,
+                executeAt = System.currentTimeMillis() + delaySeconds * 1000L,
+                startX = player.x,
+                startY = player.y,
+                startZ = player.z
+            )
         }
     }
-
-    if (delaySeconds <= 0) {
-        return executeCommunityTeleport(player, community, scope, usageKey, cost)
-    }
-
-    pendingTeleportExecutions[player.uuid] = PendingTeleportExecution(
-        playerUUID = player.uuid,
-        regionNumberId = regionId,
-        scopeName = scope.scopeName,
-        usageKey = usageKey,
-        cost = cost,
-        executeAt = System.currentTimeMillis() + delaySeconds * 1000L,
-        startX = player.x,
-        startY = player.y,
-        startZ = player.z
-    )
-    player.sendSystemMessage(
-        Translator.tr(
-            "community.teleport.execution.pending",
-            scope.scopeName,
-            String.format("%.2f", cost / 100.0),
-            delaySeconds.toString()
-        )
-    )
     return 1
 }
 
@@ -191,11 +186,13 @@ fun processPendingTeleportExecutions() {
         val (_, pending) = iterator.next()
         val player = com.imyvm.community.WorldGeoCommunityAddon.server?.playerList?.getPlayer(pending.playerUUID)
         if (player == null) {
+            cancelTeleportPlan(pending.playerUUID, pending.plan)
             iterator.remove()
             continue
         }
-        val community = com.imyvm.community.infra.CommunityDatabase.getCommunityById(pending.regionNumberId)
+        val community = com.imyvm.community.infra.CommunityDatabase.getCommunityById(pending.plan.regionId)
         if (community == null) {
+            cancelTeleportPlan(pending.playerUUID, pending.plan)
             iterator.remove()
             continue
         }
@@ -203,82 +200,71 @@ fun processPendingTeleportExecutions() {
         val moved = player.distanceToSqr(pending.startX, pending.startY, pending.startZ) > 0.01
         if (moved) {
             player.sendSystemMessage(Translator.tr("community.teleport.execution.cancelled.moved"))
+            cancelTeleportPlan(pending.playerUUID, pending.plan)
             iterator.remove()
             continue
         }
 
         if (player.hurtTime > 0) {
             player.sendSystemMessage(Translator.tr("community.teleport.execution.cancelled.attacked"))
+            cancelTeleportPlan(pending.playerUUID, pending.plan)
             iterator.remove()
             continue
         }
 
-        if (now < pending.executeAt) {
-            continue
-        }
+        if (now < pending.executeAt) continue
 
-        val scope = community.getRegion()?.geometryScope?.firstOrNull { it.scopeName.equals(pending.scopeName, ignoreCase = true) }
+        val scope = community.getRegion()?.geometryScope?.firstOrNull {
+            it.scopeName.equals(pending.plan.scopeName, ignoreCase = true)
+        }
         if (scope == null) {
             player.sendSystemMessage(Translator.tr("ui.community.button.interaction.teleport.execution.error.no_scope"))
+            cancelTeleportPlan(pending.playerUUID, pending.plan)
             iterator.remove()
             continue
         }
 
-        val result = executeCommunityTeleport(player, community, scope, pending.usageKey, pending.cost)
+        val runtime = AccountSubsystem.runtimeOrNull()
+        if (runtime == null) {
+            cancelTeleportPlan(pending.playerUUID, pending.plan)
+            iterator.remove()
+            continue
+        }
+
+        executeTeleportWithPlan(player, community, scope, pending.plan, runtime)
         iterator.remove()
     }
 }
 
-private fun executeCommunityTeleport(
+private fun executeTeleportWithPlan(
     player: ServerPlayer,
     community: Community,
     scope: GeoScope,
-    usageKey: String,
-    cost: Long
-): Int {
-    val region = community.getRegion() ?: return 0
-    if (!canUseCommunityTeleport(player, community, scope)) {
-        player.sendSystemMessage(Translator.tr("ui.community.button.interaction.teleport.execution.error.not_public"))
-        return 0
-    }
-
-    if (cost > 0) {
-        val playerBalance = EconomyWalletAdapter.balance(player)
-        if (playerBalance < cost) {
-            player.sendSystemMessage(Translator.tr("community.teleport.execution.cancelled.balance_changed"))
-            return 0
+    plan: TeleportPlan,
+    runtime: AccountSubsystem.Runtime
+) {
+    driveTeleportAfterPlanPersisted(runtime, plan) {
+        val region = community.getRegion()
+        if (region == null || !canUseCommunityTeleport(player, community, scope)) {
+            issueAutoRefund(runtime, plan)
+            return@driveTeleportAfterPlanPersisted
         }
-        EconomyWalletAdapter.debit(player, cost)
+        recordTeleportCallStarted(runtime, plan) {
+            PlayerInteractionApi.teleportPlayerToScope(player, region, scope)
+            recordTeleportSucceeded(runtime, plan)
+            player.addEffect(MobEffectInstance(MobEffects.NAUSEA, CommunityConfig.TELEPORT_POST_EFFECT_TICKS.value, 0, false, false, true))
+            player.level().sendParticles(
+                ParticleTypes.CRIT, player.x, player.y + 0.1, player.z, 40, 0.9, 0.1, 0.9, 0.02
+            )
+            player.sendSystemMessage(
+                Translator.tr(
+                    "community.teleport.execution.completed",
+                    scope.scopeName,
+                    String.format("%.2f", plan.cost / 100.0)
+                )
+            )
+        }
     }
-
-    PlayerInteractionApi.teleportPlayerToScope(player, region, scope)
-    teleportUsageByDay[usageKey] = (teleportUsageByDay[usageKey] ?: 0) + 1
-
-    player.addEffect(MobEffectInstance(MobEffects.NAUSEA, CommunityConfig.TELEPORT_POST_EFFECT_TICKS.value, 0, false, false, true))
-    player.level().sendParticles(
-        ParticleTypes.CRIT,
-        player.x,
-        player.y + 0.1,
-        player.z,
-        40,
-        0.9,
-        0.1,
-        0.9,
-        0.02
-    )
-    player.sendSystemMessage(
-        Translator.tr(
-            "community.teleport.execution.completed",
-            scope.scopeName,
-            String.format("%.2f", cost / 100.0)
-        )
-    )
-    return 1
-}
-
-private fun getTeleportUsageKey(playerUUID: UUID, regionNumberId: Int): String {
-    val day = LocalDate.now(ZoneId.systemDefault()).toString()
-    return "$day:$playerUUID:$regionNumberId"
 }
 
 private fun sendTeleportDimensionLegend(player: ServerPlayer, dimensionId: String) {
@@ -298,17 +284,13 @@ private fun sendTeleportDimensionLegend(player: ServerPlayer, dimensionId: Strin
 
 private data class PendingTeleportExecution(
     val playerUUID: UUID,
-    val regionNumberId: Int,
-    val scopeName: String,
-    val usageKey: String,
-    val cost: Long,
+    val plan: TeleportPlan,
     val executeAt: Long,
     val startX: Double,
     val startY: Double,
     val startZ: Double
 )
 
-private val teleportUsageByDay: MutableMap<String, Int> = mutableMapOf()
 private val pendingTeleportExecutions: MutableMap<UUID, PendingTeleportExecution> = mutableMapOf()
 
 fun runTeleportToScope(player: ServerPlayer, community: Community, runBackGrandfather: (ServerPlayer) -> Unit) {

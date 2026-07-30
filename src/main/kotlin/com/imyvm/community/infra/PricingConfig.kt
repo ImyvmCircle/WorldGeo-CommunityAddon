@@ -230,6 +230,26 @@ class PricingConfig : HokiConfig("Pricing.conf") {
             obj.getLong(path)
         }
 
+        
+        
+        val BUILDING_STYLE_UNIT_SELECTION_COST = Option(
+            "economy.building.style_unit_selection_cost",
+            4000L,
+            "treasury cost per consumed style package unit when adding or expanding a block entry."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
+
+        
+        
+        val BUILDING_CAPACITY_UNIT_BASE_COST = Option(
+            "economy.building.capacity_unit_base_cost",
+            20000L,
+            "base tier cost per extra building capacity unit beyond the default 12 units."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
+
         // Permission settings
 
         @JvmField
@@ -645,6 +665,8 @@ class PricingConfig : HokiConfig("Pricing.conf") {
                 "economy.teleport_point_second_point_base_cost" to TELEPORT_POINT_SECOND_POINT_BASE_COST.value,
                 "economy.teleport_point_modify_cost" to TELEPORT_POINT_MODIFY_COST.value,
                 "economy.teleport_paid_base_cost" to TELEPORT_PAID_BASE_COST.value,
+                "economy.building.style_unit_selection_cost" to BUILDING_STYLE_UNIT_SELECTION_COST.value,
+                "economy.building.capacity_unit_base_cost" to BUILDING_CAPACITY_UNIT_BASE_COST.value,
                 "economy.permission.build_break.coefficient_per_unit" to PERMISSION_BUILD_BREAK_COEFFICIENT_PER_UNIT.value,
                 "economy.permission.container.coefficient_per_unit" to PERMISSION_CONTAINER_COEFFICIENT_PER_UNIT.value,
                 "economy.permission.build.coefficient_per_unit" to PERMISSION_BUILD_COEFFICIENT_PER_UNIT.value,

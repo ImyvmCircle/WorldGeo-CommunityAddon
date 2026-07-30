@@ -3,6 +3,9 @@ package com.imyvm.community.entrypoint.command
 import com.imyvm.community.application.interaction.command.*
 import com.imyvm.community.application.interaction.common.*
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
+import com.imyvm.community.application.interaction.screen.inner_community.runOpenCommunityBuildingCandidates
+import com.imyvm.community.application.interaction.screen.inner_community.runOpenCommunityBuildingMenu
+import com.imyvm.community.application.townbuilding.CommunityBuildingService
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.account.AccountDirection
 import com.imyvm.community.domain.model.community.CommunityListFilterType
@@ -332,6 +335,59 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                     )
                     .then(literal("reconcile").executes(::runMoneyReconcile))
             )
+            .then(
+                literal("building")
+                    .requires { net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(it.permissions()) }
+                    .then(
+                        literal("open")
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.string())
+                                    .suggests(ALL_COMMUNITY_PROVIDER)
+                                    .executes { runOpenBuildingMenuCommand(it) }
+                            )
+                    )
+                    .then(
+                        literal("candidates")
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.string())
+                                    .suggests(ALL_COMMUNITY_PROVIDER)
+                                    .executes { runOpenBuildingCandidatesCommand(it) }
+                            )
+                    )
+                    .then(
+                        literal("pool")
+                            .then(
+                                literal("list")
+                                    .executes { runBuildingPoolList(it) }
+                            )
+                            .then(
+                                literal("remove")
+                                    .then(
+                                        argument("blockId", StringArgumentType.string())
+                                            .suggests(BUILDING_SELECTABLE_BLOCK_PROVIDER)
+                                            .executes { runBuildingPoolRemove(it) }
+                                    )
+                            )
+                            .then(
+                                literal("add")
+                                    .then(
+                                        argument("blockId", StringArgumentType.string())
+                                            .suggests(BUILDING_SURVIVAL_BLOCK_PROVIDER)
+                                            .then(
+                                                argument("unitCost", IntegerArgumentType.integer(1))
+                                                    .then(
+                                                        argument("reward", com.mojang.brigadier.arguments.DoubleArgumentType.doubleArg(0.01))
+                                                            .executes { runBuildingPoolAdd(it, null) }
+                                                            .then(
+                                                                argument("linkedBlocks", StringArgumentType.greedyString())
+                                                                    .executes { runBuildingPoolAdd(it, StringArgumentType.getString(it, "linkedBlocks")) }
+                                                            )
+                                                    )
+                                            )
+                                    )
+                            )
+                        )
+                    )
             .then(
                 literal("treasury")
                     .requires { net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(it.permissions()) }
@@ -1062,4 +1118,82 @@ fun registerCommun(dispatcher: CommandDispatcher<CommandSourceStack>) {
                     )
             )
     )
+}
+
+
+private fun runOpenBuildingMenuCommand(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    return identifierHandler(player, communityIdentifier) { community ->
+        runOpenCommunityBuildingMenu(player, community) { p -> CommunityMenuOpener.open(p) { s -> MainMenu(s, p) } }
+    }
+}
+
+private fun runOpenBuildingCandidatesCommand(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    return identifierHandler(player, communityIdentifier) { community ->
+        runOpenCommunityBuildingCandidates(player, community, 0) { p -> CommunityMenuOpener.open(p) { s -> MainMenu(s, p) } }
+    }
+}
+
+private fun runBuildingPoolList(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val entries = CommunityBuildingService.getSelectablePool()
+    if (entries.isEmpty()) {
+        player.sendSystemMessage(Translator.tr("command.community.building.pool.list.empty"))
+        return 1
+    }
+    player.sendSystemMessage(Translator.tr("command.community.building.pool.list.header", entries.size.toString()))
+    entries.forEach { entry ->
+        player.sendSystemMessage(
+            Translator.tr(
+                "command.community.building.pool.list.entry",
+                entry.baseBlockId,
+                entry.unitCost.toString(),
+                CommunityBuildingService.formatMoney(entry.rewardPerBlock),
+                if (entry.linkedBlockIds.isEmpty()) "-" else entry.linkedBlockIds.joinToString(",")
+            )
+        )
+    }
+    return 1
+}
+
+private fun runBuildingPoolRemove(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val blockId = StringArgumentType.getString(context, "blockId")
+    val result = CommunityBuildingService.removeSelectableEntry(blockId)
+    if (result.isSuccess) {
+        player.sendSystemMessage(Translator.tr("command.community.building.pool.remove.success", blockId))
+        return 1
+    }
+    player.sendSystemMessage(Translator.tr("command.community.building.pool.remove.failed", blockId, result.exceptionOrNull()?.message ?: "error"))
+    return 0
+}
+
+private fun runBuildingPoolAdd(context: CommandContext<CommandSourceStack>, linkedBlocksArg: String?): Int {
+    val player = context.source.player ?: return 0
+    val blockId = StringArgumentType.getString(context, "blockId")
+    val unitCost = IntegerArgumentType.getInteger(context, "unitCost")
+    val reward = (com.mojang.brigadier.arguments.DoubleArgumentType.getDouble(context, "reward") * 100.0).toLong()
+    val linkedBlocks = linkedBlocksArg
+        ?.split(',')
+        ?.map { it.trim() }
+        ?.filter { it.isNotEmpty() }
+        ?: CommunityBuildingService.inferLinkedBlockIds(blockId)
+    val result = CommunityBuildingService.addOrUpdateSelectableEntry(blockId, unitCost, reward, linkedBlocks)
+    if (result.isSuccess) {
+        player.sendSystemMessage(
+            Translator.tr(
+                "command.community.building.pool.add.success",
+                blockId,
+                unitCost.toString(),
+                CommunityBuildingService.formatMoney(reward),
+                if (linkedBlocks.isEmpty()) "-" else linkedBlocks.joinToString(",")
+            )
+        )
+        return 1
+    }
+    player.sendSystemMessage(Translator.tr("command.community.building.pool.add.failed", blockId, result.exceptionOrNull()?.message ?: "error"))
+    return 0
 }

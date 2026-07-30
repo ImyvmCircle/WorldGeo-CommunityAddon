@@ -1,5 +1,6 @@
 package com.imyvm.community.entrypoint.command.helper
 
+import com.imyvm.community.application.townbuilding.CommunityBuildingService
 import com.imyvm.community.domain.model.community.CommunityStatus
 import com.imyvm.community.infra.CommunityDatabase.communities
 import com.mojang.brigadier.suggestion.SuggestionProvider
@@ -19,6 +20,16 @@ val COMMUNITY_TYPE_PROVIDER: SuggestionProvider<CommandSourceStack> = Suggestion
 val BINARY_CHOICE_SUGGESTION_PROVIDER: SuggestionProvider<CommandSourceStack> = SuggestionProvider { _, builder ->
     listOf("yes", "no").forEach { builder.suggest(it) }
     CompletableFuture.completedFuture(builder.build())
+}
+
+val BUILDING_SURVIVAL_BLOCK_PROVIDER = SuggestionProvider<CommandSourceStack> { _, builder ->
+    CommunityBuildingService.listSurvivalBlockIds().forEach { builder.suggest(it) }
+    builder.buildFuture()
+}
+
+val BUILDING_SELECTABLE_BLOCK_PROVIDER = SuggestionProvider<CommandSourceStack> { _, builder ->
+    CommunityBuildingService.getSelectablePool().map { it.baseBlockId }.forEach { builder.suggest(it) }
+    builder.buildFuture()
 }
 
 val JOINABLE_COMMUNITY_PROVIDER = SuggestionProvider<CommandSourceStack> { _, builder ->

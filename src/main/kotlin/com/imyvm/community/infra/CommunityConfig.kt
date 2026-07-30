@@ -178,6 +178,36 @@ class CommunityConfig : HokiConfig("Community.conf") {
         }
 
 
+        
+        
+        val BUILDING_DEFAULT_CAPACITY_UNITS = Option(
+            "building.default_capacity_units",
+            12,
+            "default style package capacity units per community."
+        ) { obj, path ->
+            obj.getInt(path)
+        }
+
+        
+        
+        val BUILDING_PLAYER_WEEKLY_CAP = Option(
+            "building.player_weekly_cap",
+            120000L,
+            "weekly personal building income cap in cents."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
+
+        
+        
+        val BUILDING_COMMUNITY_WEEKLY_CAP = Option(
+            "building.community_weekly_cap",
+            200000L,
+            "weekly community building treasury income cap in cents."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
+
         fun validateValues() {
             require(LANGUAGE.value.isNotBlank()) { "language must not be blank" }
             ZoneId.of(TIMEZONE.value)
@@ -193,6 +223,9 @@ class CommunityConfig : HokiConfig("Community.conf") {
             require(TELEPORT_FREE_USES_NON_FORMAL.value >= 0) { "teleport.free_uses_non_formal_per_day must not be negative" }
             require(TELEPORT_PAID_BASE_DELAY_SECONDS.value >= 0) { "teleport.paid_base_delay_seconds must not be negative" }
             require(TELEPORT_POST_EFFECT_TICKS.value >= 0) { "teleport.post_effect_ticks must not be negative" }
+            require(BUILDING_DEFAULT_CAPACITY_UNITS.value > 0) { "building.default_capacity_units must be positive" }
+            require(BUILDING_PLAYER_WEEKLY_CAP.value >= 0L) { "building.player_weekly_cap must not be negative" }
+            require(BUILDING_COMMUNITY_WEEKLY_CAP.value >= 0L) { "building.community_weekly_cap must not be negative" }
         }
     }
 }

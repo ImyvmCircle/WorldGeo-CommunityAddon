@@ -1,5 +1,6 @@
 package com.imyvm.community
 
+import com.imyvm.community.application.townbuilding.CommunityBuildingService
 import com.imyvm.community.domain.model.PendingOperationStore
 import com.imyvm.community.entrypoint.command.register
 import com.imyvm.community.entrypoint.command.registerCh
@@ -13,6 +14,7 @@ import com.imyvm.community.application.interaction.common.registerCommunityCreat
 import com.imyvm.community.application.interaction.common.registerApplicationRefundRecovery
 import com.imyvm.community.application.interaction.common.registerApplicationJoinAccountRecovery
 import com.imyvm.community.application.interaction.screen.inner_community.affairs.registerDonationAccountRecovery
+import com.imyvm.community.application.interaction.screen.inner_community.registerTeleportAccountRecovery
 import com.imyvm.community.entrypoint.event.registerExpireCheck
 import com.imyvm.community.entrypoint.event.registerMailCheck
 import com.imyvm.community.entrypoint.event.registerPendingRefundCheck
@@ -40,7 +42,9 @@ class WorldGeoCommunityAddon : ModInitializer {
         registerApplicationRefundRecovery()
         registerApplicationJoinAccountRecovery()
         registerDonationAccountRecovery()
+        registerTeleportAccountRecovery()
         registerChatInterceptor()
+        CommunityBuildingService.register()
 
         CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> register(dispatcher) }
         CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> registerCh(dispatcher) }

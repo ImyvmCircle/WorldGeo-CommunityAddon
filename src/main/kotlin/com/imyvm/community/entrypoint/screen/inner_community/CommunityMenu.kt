@@ -117,6 +117,12 @@ class CommunityMenu(
         ) { runOpenAssetsMenu(player, community, runBack) }
 
         addButton(
+            slot = 37,
+            name = Translator.tr("ui.community.button.interaction.building").string,
+            item = Items.BRICKS
+        ) { runOpenCommunityBuildingMenu(player, community, runBack) }
+
+        addButton(
             slot = 32,
             name = Translator.tr("ui.community.button.interaction.like").string,
             item = Items.DYE.pink()

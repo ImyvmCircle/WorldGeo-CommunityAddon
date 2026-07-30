@@ -22,7 +22,8 @@ class Community(
     var creationCost: Long = 0L,
     var nameChangeCooldowns: HashMap<String, Long> = HashMap(),
     var likeCount: Int = 0,
-    var lastLikedBy: HashMap<UUID, Long> = HashMap()
+    var lastLikedBy: HashMap<UUID, Long> = HashMap(),
+    var buildingState: CommunityBuildingState = CommunityBuildingState()
 ) {
     fun isManor(): Boolean {
         return status == CommunityStatus.PENDING_MANOR || status == CommunityStatus.ACTIVE_MANOR || status == CommunityStatus.REVOKED_MANOR

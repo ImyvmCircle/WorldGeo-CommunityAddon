@@ -1,5 +1,6 @@
 package com.imyvm.community.infra
 
+import com.imyvm.community.application.townbuilding.CommunityBuildingService
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.CreationConfirmationData
 import com.imyvm.community.domain.model.MemberAccount
@@ -43,6 +44,8 @@ object CommunityDatabase {
     private const val SECTION_LIKES = 3
     private const val SECTION_COMMUNITY_INCOME = 4
     private const val SECTION_V4_STATE = 5
+    private const val SECTION_COMMUNITY_BUILDING = 6
+    private const val SECTION_COMMUNITY_BUILDING_CATALOG = 7
     private const val MAX_SECTION_BYTES = 16 * 1024 * 1024
     private const val MAX_COMMUNITY_BYTES = 16 * 1024 * 1024
     private const val MAX_COMMUNITIES = 100_000
@@ -72,6 +75,8 @@ object CommunityDatabase {
                 writeSection(stream, SECTION_NAME_CHANGE_COOLDOWNS) { saveNameChangeCooldownsSection(it) }
                 writeSection(stream, SECTION_LIKES) { saveLikesSection(it) }
                 writeSection(stream, SECTION_COMMUNITY_INCOME) { saveCommunityIncomeSection(it) }
+                writeSection(stream, SECTION_COMMUNITY_BUILDING) { saveCommunityBuildingSection(it) }
+                writeSection(stream, SECTION_COMMUNITY_BUILDING_CATALOG) { saveCommunityBuildingCatalogSection(it) }
             }
             replaceDatabaseFile(tempFile, file)
         } finally {
@@ -167,6 +172,14 @@ object CommunityDatabase {
                 loadCommunityIncomeSection(stream)
                 true
             }
+            SECTION_COMMUNITY_BUILDING -> {
+                loadCommunityBuildingSection(stream)
+                true
+            }
+            SECTION_COMMUNITY_BUILDING_CATALOG -> {
+                loadCommunityBuildingCatalogSection(stream)
+                true
+            }
             SECTION_V4_STATE -> {
                 loadV4StateSection(stream)
                 true
@@ -206,6 +219,20 @@ object CommunityDatabase {
                 loadV4StateSection(stream)
             } catch (e: Exception) {
                 recordLegacyLoadWarning("v4 state data", e)
+            }
+        }
+        if (stream.available() > 0) {
+            try {
+                loadCommunityBuildingSection(stream)
+            } catch (e: Exception) {
+                recordLegacyLoadWarning("community building data", e)
+            }
+        }
+        if (stream.available() > 0) {
+            try {
+                loadCommunityBuildingCatalogSection(stream)
+            } catch (e: Exception) {
+                recordLegacyLoadWarning("community building catalog data", e)
             }
         }
     }
@@ -992,6 +1019,122 @@ object CommunityDatabase {
         }
     }
 
+
+    private fun saveCommunityBuildingSection(stream: DataOutputStream) {
+        val targets = communities.filter { it.regionNumberId != null && (it.buildingState.stylePackage.isNotEmpty() || it.buildingState.capacityUnits != 12 || it.buildingState.processedHourPeriodIds.isNotEmpty() || it.buildingState.processedWeekPeriodIds.isNotEmpty() || it.buildingState.playerWeekLedgers.isNotEmpty() || it.buildingState.pendingPayouts.isNotEmpty()) }
+        stream.writeInt(targets.size)
+        for (community in targets) {
+            val state = community.buildingState
+            stream.writeInt(community.regionNumberId!!)
+            stream.writeInt(state.capacityUnits)
+            stream.writeInt(state.stylePackage.size)
+            for (entry in state.stylePackage) {
+                stream.writeUTF(entry.baseBlockId)
+                stream.writeInt(entry.unitCost)
+                stream.writeLong(entry.rewardPerBlock)
+                stream.writeInt(entry.linkedBlockIds.size)
+                for (linked in entry.linkedBlockIds) stream.writeUTF(linked)
+            }
+            stream.writeInt(state.processedHourPeriodIds.size)
+            for (id in state.processedHourPeriodIds) stream.writeUTF(id)
+            stream.writeInt(state.processedWeekPeriodIds.size)
+            for (id in state.processedWeekPeriodIds) stream.writeUTF(id)
+            stream.writeInt(state.playerWeekLedgers.size)
+            for ((uuid, ledger) in state.playerWeekLedgers) {
+                stream.writeUTF(uuid.toString())
+                stream.writeUTF(ledger.weekPeriodId)
+                stream.writeLong(ledger.settledAmount)
+            }
+            stream.writeInt(state.pendingPayouts.size)
+            for (payout in state.pendingPayouts) {
+                stream.writeUTF(payout.playerUuid.toString())
+                stream.writeLong(payout.amount)
+                stream.writeUTF(payout.hourPeriodId)
+                stream.writeUTF(payout.weekPeriodId)
+                stream.writeLong(payout.blockCount)
+                stream.writeLong(payout.createdAt)
+            }
+        }
+    }
+
+    private fun loadCommunityBuildingSection(stream: DataInputStream) {
+        val entryCount = readCount(stream, "community building")
+        for (i in 0 until entryCount) {
+            val regionId = stream.readInt()
+            val community = getCommunityById(regionId) ?: continue
+            val capacityUnits = stream.readInt()
+            val styleSize = readCount(stream, "community building style")
+            val stylePackage = mutableListOf<CommunityBuildingEntry>()
+            for (j in 0 until styleSize) {
+                val baseBlockId = stream.readUTF()
+                val unitCost = stream.readInt()
+                val rewardPerBlock = stream.readLong()
+                val linkedSize = readCount(stream, "community building linked")
+                val linked = MutableList(linkedSize) { stream.readUTF() }
+                stylePackage.add(CommunityBuildingEntry(baseBlockId, unitCost, rewardPerBlock, linked.toMutableList()))
+            }
+            val hourSize = readCount(stream, "community building processed hour")
+            val processedHours = MutableList(hourSize) { stream.readUTF() }
+            val weekSize = readCount(stream, "community building processed week")
+            val processedWeeks = MutableList(weekSize) { stream.readUTF() }
+            val ledgerSize = readCount(stream, "community building ledger")
+            val ledgers = HashMap<UUID, CommunityBuildingWeekLedger>(ledgerSize)
+            for (j in 0 until ledgerSize) {
+                val uuid = UUID.fromString(stream.readUTF())
+                val weekId = stream.readUTF()
+                val settledAmount = stream.readLong()
+                ledgers[uuid] = CommunityBuildingWeekLedger(weekId, settledAmount)
+            }
+            val payoutSize = readCount(stream, "community building payout")
+            val payouts = mutableListOf<CommunityBuildingPendingPayout>()
+            for (j in 0 until payoutSize) {
+                payouts.add(
+                    CommunityBuildingPendingPayout(
+                        playerUuid = UUID.fromString(stream.readUTF()),
+                        amount = stream.readLong(),
+                        hourPeriodId = stream.readUTF(),
+                        weekPeriodId = stream.readUTF(),
+                        blockCount = stream.readLong(),
+                        createdAt = stream.readLong()
+                    )
+                )
+            }
+            community.buildingState = CommunityBuildingState(
+                capacityUnits = capacityUnits,
+                stylePackage = stylePackage,
+                processedHourPeriodIds = processedHours,
+                processedWeekPeriodIds = processedWeeks,
+                playerWeekLedgers = ledgers,
+                pendingPayouts = payouts
+            )
+        }
+    }
+
+
+    private fun saveCommunityBuildingCatalogSection(stream: DataOutputStream) {
+        val entries = CommunityBuildingService.selectablePoolState.sortedBy { it.baseBlockId }
+        stream.writeInt(entries.size)
+        for (entry in entries) {
+            stream.writeUTF(entry.baseBlockId)
+            stream.writeInt(entry.unitCost)
+            stream.writeLong(entry.rewardPerBlock)
+            stream.writeInt(entry.linkedBlockIds.size)
+            for (linked in entry.linkedBlockIds) stream.writeUTF(linked)
+        }
+    }
+
+    private fun loadCommunityBuildingCatalogSection(stream: DataInputStream) {
+        val entryCount = readCount(stream, "community building catalog")
+        CommunityBuildingService.selectablePoolState.clear()
+        for (i in 0 until entryCount) {
+            val baseBlockId = stream.readUTF()
+            val unitCost = stream.readInt()
+            val rewardPerBlock = stream.readLong()
+            val linkedSize = readCount(stream, "community building catalog linked")
+            val linked = MutableList(linkedSize) { stream.readUTF() }
+            CommunityBuildingService.selectablePoolState.add(CommunityBuildingCatalogEntry(baseBlockId, unitCost, rewardPerBlock, linked.toMutableList()))
+        }
+    }
 
     private fun saveV4StateSection(stream: DataOutputStream) {
     }
