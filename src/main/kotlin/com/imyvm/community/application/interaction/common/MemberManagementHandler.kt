@@ -232,9 +232,10 @@ private fun joinUnderApplicationPolicy(player: ServerPlayer, targetCommunity: Co
         player.sendSystemMessage(Translator.tr("community.join.error.already_applied", targetCommunity.regionNumberId))
         return 0
     }
-    
-    val cost = if(targetCommunity.isManor()) PricingConfig.COMMUNITY_JOIN_COST_MANOR.value else PricingConfig.COMMUNITY_JOIN_COST_REALM.value
-    
+
+    val cost = if (targetCommunity.isManor())
+        PricingConfig.COMMUNITY_JOIN_COST_MANOR.value
+        else PricingConfig.COMMUNITY_JOIN_COST_REALM.value
     val playerBalance = EconomyWalletAdapter.balance(player)
     if (playerBalance < cost) {
         player.sendSystemMessage(
@@ -243,37 +244,7 @@ private fun joinUnderApplicationPolicy(player: ServerPlayer, targetCommunity: Co
         return 0
     }
 
-    val memberAccount = MemberAccount(
-        joinedTime = System.currentTimeMillis(),
-        basicRoleType = MemberRoleType.APPLICANT,
-        joinFeePaid = cost
-    )
-    val operationName = Translator.tr("community.operation.join_application", targetCommunity.regionNumberId).string
-    if (!runCommunityMutationOrRollback(
-            operationName = operationName,
-            mutateCommunityState = {
-                EconomyWalletAdapter.debit(player, cost)
-                targetCommunity.member[player.uuid] = memberAccount
-            },
-            restoreCommunityState = {
-                EconomyWalletAdapter.credit(player, cost)
-                targetCommunity.member.remove(player.uuid)
-            },
-            rollbackCoreState = {},
-            saveCommunityState = { com.imyvm.community.infra.CommunityDatabase.save() },
-            notifyFailure = { player.sendSystemMessage(Translator.tr("community.operation.save_failed", operationName)) }
-        )) return 0
-    
-    player.sendSystemMessage(targetCommunity.getRegion()
-        ?.let { Translator.tr("community.join.applied", it.name ,targetCommunity.regionNumberId) } ?: Component.empty())
-    player.sendSystemMessage(Translator.tr("community.join.payment.deducted", cost / 100.0))
-    
-    val communityName = targetCommunity.getRegion()?.name ?: "Community #${targetCommunity.regionNumberId}"
-    val notification = Translator.tr("community.notification.application_received", player.name.string, communityName)
-        ?: net.minecraft.network.chat.Component.literal("${player.name.string} has applied to join $communityName")
-    notifyOfficials(targetCommunity, player.level().server, notification, player)
-    
-    return 1
+    return if (submitApplicationJoin(player, targetCommunity, cost)) 1 else 0
 }
 
 private fun joinUnderInviteOnlyPolicy(player: ServerPlayer, targetCommunity: Community): Int {
