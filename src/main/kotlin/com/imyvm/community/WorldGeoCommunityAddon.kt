@@ -8,6 +8,7 @@ import com.imyvm.community.entrypoint.event.registerAccountIdentityCapture
 import com.imyvm.community.entrypoint.event.registerAccountIssueNotification
 import com.imyvm.community.entrypoint.event.registerAnnouncementNotification
 import com.imyvm.community.entrypoint.event.registerChatInterceptor
+import com.imyvm.community.application.account.registerLegacyTreasuryMigration
 import com.imyvm.community.application.interaction.common.registerCommunityCreationAccountRecovery
 import com.imyvm.community.application.interaction.common.registerApplicationRefundRecovery
 import com.imyvm.community.application.interaction.common.registerApplicationJoinAccountRecovery
@@ -34,6 +35,7 @@ class WorldGeoCommunityAddon : ModInitializer {
         registerAnnouncementNotification()
         registerAccountIdentityCapture()
         registerAccountIssueNotification()
+        registerLegacyTreasuryMigration()
         registerCommunityCreationAccountRecovery()
         registerApplicationRefundRecovery()
         registerApplicationJoinAccountRecovery()
