@@ -3,16 +3,12 @@ package com.imyvm.community.application.interaction.screen.inner_community.affai
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.domain.model.Community
-import com.imyvm.community.domain.model.Turnover
-import com.imyvm.community.domain.model.TurnoverSource
 import com.imyvm.community.entrypoint.screen.inner_community.affairs.assets.CommunityAssetsMenu
 import com.imyvm.community.entrypoint.screen.inner_community.affairs.assets.DonationMenu
 import com.imyvm.community.entrypoint.screen.inner_community.affairs.assets.DonorDetailsMenu
 import com.imyvm.community.entrypoint.screen.inner_community.affairs.assets.DonorListMenu
 import com.imyvm.community.entrypoint.screen.inner_community.affairs.assets.TreasuryLedgerMenu
 import com.imyvm.community.entrypoint.screen.inner_community.CommunityMenu
-import com.imyvm.community.util.Translator
-import com.imyvm.community.infra.economy.EconomyWalletAdapter
 import net.minecraft.server.level.ServerPlayer
 import java.util.*
 
@@ -56,26 +52,7 @@ fun onDonateConfirm(player: ServerPlayer, community: Community, amount: Long, ru
         player,
         { CommunityPermissionPolicy.canDonate(player, community) }
     ) {
-        if (EconomyWalletAdapter.balance(player) < amount) {
-            player.sendSystemMessage(Translator.tr("ui.community.assets.donate.error.insufficient_funds"))
-            player.closeContainer()
-            return@executeWithPermission
-        }
-
-        val memberAccount = community.member[player.uuid]
-        if (memberAccount == null) {
-            player.sendSystemMessage(Translator.tr("ui.community.assets.donate.error.not_member"))
-            player.closeContainer()
-            return@executeWithPermission
-        }
-
-        EconomyWalletAdapter.debit(player, amount)
-        memberAccount.turnover.add(Turnover(amount, System.currentTimeMillis(), TurnoverSource.PLAYER, "community.treasury.desc.donation", listOf(player.name.string)))
-
-        val amountFormatted = "%.2f".format(amount / 100.0)
-        player.sendSystemMessage(Translator.tr("ui.community.assets.donate.success", amountFormatted))
-        
-        runOpenAssetsMenu(player, community, runBackGrandfather)
+        submitDonation(player, community, amount)
     } ?: player.closeContainer()
 }
 
