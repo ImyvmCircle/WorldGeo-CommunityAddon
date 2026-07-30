@@ -1,6 +1,7 @@
 package com.imyvm.community.infra.account
 
 import com.imyvm.community.WorldGeoCommunityAddon
+import com.imyvm.community.application.account.AccountOperatorService
 import com.imyvm.community.application.account.AccountTransactionService
 import com.imyvm.community.domain.model.account.PlayerIdentity
 import com.imyvm.community.infra.economy.EconomyWalletAdapter
@@ -60,6 +61,7 @@ object AccountSubsystem {
             scheduler = ScheduledThreadPoolExecutor(1) { task ->
                 Thread(task, "community-account-retry").apply { isDaemon = true }
             }.apply { removeOnCancelPolicy = true }
+            val audit = AccountAuditLog(root.resolve("account-audit.log"), writer)
             val service = AccountTransactionService(
                 server,
                 store,
@@ -68,7 +70,10 @@ object AccountSubsystem {
                 EconomyWalletAdapter(),
                 scheduler
             )
-            val created = Runtime(writer, store, identities, service, scheduler)
+            val operator = AccountOperatorService(
+                server, store, writer, identities, EconomyWalletAdapter(), audit, service
+            )
+            val created = Runtime(writer, store, identities, service, operator, audit, scheduler)
             val accepted = synchronized(lock) {
                 if (!starting) false else {
                     runtime = created
@@ -115,6 +120,8 @@ object AccountSubsystem {
         val store: AccountTransactionStore,
         val identities: PlayerIdentityDirectory,
         val service: AccountTransactionService,
+        val operator: AccountOperatorService,
+        val audit: AccountAuditLog,
         val scheduler: ScheduledThreadPoolExecutor
     )
 

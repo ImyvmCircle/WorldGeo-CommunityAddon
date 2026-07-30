@@ -5,6 +5,7 @@ import com.imyvm.community.entrypoint.command.register
 import com.imyvm.community.entrypoint.command.registerCh
 import com.imyvm.community.entrypoint.command.registerCommun
 import com.imyvm.community.entrypoint.event.registerAccountIdentityCapture
+import com.imyvm.community.entrypoint.event.registerAccountIssueNotification
 import com.imyvm.community.entrypoint.event.registerAnnouncementNotification
 import com.imyvm.community.entrypoint.event.registerChatInterceptor
 import com.imyvm.community.entrypoint.event.registerExpireCheck
@@ -28,6 +29,7 @@ class WorldGeoCommunityAddon : ModInitializer {
         registerSelectionContextCleanup()
         registerAnnouncementNotification()
         registerAccountIdentityCapture()
+        registerAccountIssueNotification()
         registerChatInterceptor()
 
         CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> register(dispatcher) }

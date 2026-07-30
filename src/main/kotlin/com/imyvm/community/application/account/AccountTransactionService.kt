@@ -30,15 +30,28 @@ class AccountTransactionService(
 ) {
     private val activeAccounts = HashSet<UUID>()
     private val scheduledRetries = AtomicInteger()
+    private val observers = LinkedHashMap<UUID, (AccountTransactionState) -> Unit>()
 
-    fun submit(transaction: AccountTransaction): CompletableFuture<AccountTransactionState> {
+    fun submit(transaction: AccountTransaction): CompletableFuture<AccountTransactionState> =
+        submit(transaction, null)
+
+    fun submit(
+        transaction: AccountTransaction,
+        observer: ((AccountTransactionState) -> Unit)?
+    ): CompletableFuture<AccountTransactionState> {
         val result = CompletableFuture<AccountTransactionState>()
         store.determine(transaction).whenComplete { state, error ->
             if (error != null) {
                 result.completeExceptionally(error)
             } else {
                 result.complete(state)
-                onServer { kickAccount(state.transaction.subjectUuid) }
+                onServer {
+                    if (observer != null) {
+                        if (state.status.isTerminal()) observer(state)
+                        else if (observers.size < MAX_OBSERVERS) observers[state.transaction.transactionId] = observer
+                    }
+                    kickAccount(state.transaction.subjectUuid)
+                }
             }
         }
         return result
@@ -54,6 +67,13 @@ class AccountTransactionService(
 
     fun kick(subjectUuid: UUID) {
         onServer { kickAccount(subjectUuid) }
+    }
+
+    fun terminalUpdated(state: AccountTransactionState) {
+        onServer {
+            if (state.status.isTerminal()) observers.remove(state.transaction.transactionId)?.invoke(state)
+            kickAccount(state.transaction.subjectUuid)
+        }
     }
 
     private fun scanRecoveryPage(token: String?) {
@@ -311,12 +331,15 @@ class AccountTransactionService(
             state.retryCount,
             null,
             finalBalance
-        )).whenComplete { _, error ->
+        )).whenComplete { updated, error ->
             onServer {
                 if (error != null) {
                     activeAccounts.remove(state.transaction.subjectUuid)
                     WorldGeoCommunityAddon.logger.error("Failed to persist account state ${state.transaction.shortId}", error)
-                } else completed()
+                } else {
+                    if (updated.status.isTerminal()) observers.remove(updated.transaction.transactionId)?.invoke(updated)
+                    completed()
+                }
             }
         }
     }
@@ -329,6 +352,7 @@ class AccountTransactionService(
         private const val RECOVERY_PAGE_SIZE = 128
         private const val ACCOUNT_PAGE_SIZE = 128
         private const val MAX_SCHEDULED_RETRIES = 256
+        private const val MAX_OBSERVERS = 256
         private val RETRY_DELAYS_SECONDS = longArrayOf(10, 60, 300)
     }
 }

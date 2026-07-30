@@ -4,6 +4,7 @@ import com.imyvm.community.application.interaction.command.*
 import com.imyvm.community.application.interaction.common.*
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.account.AccountDirection
 import com.imyvm.community.domain.model.community.CommunityListFilterType
 import com.imyvm.community.domain.policy.permission.AdminPrivilege
 import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
@@ -279,6 +280,57 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                         argument("regionId", IntegerArgumentType.integer())
                             .executes { runOpenModifyMenuCommand(it) }
                     )
+            )
+            .then(
+                literal("money")
+                    .requires { net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(it.permissions()) }
+                    .then(
+                        literal("test")
+                            .then(
+                                literal("credit")
+                                    .then(
+                                        argument("target", StringArgumentType.word())
+                                            .suggests(MONEY_PLAYER_PROVIDER)
+                                            .then(
+                                                argument("amount", StringArgumentType.word())
+                                                    .executes { runMoneyTest(it, AccountDirection.CREDIT) }
+                                            )
+                                    )
+                            )
+                            .then(
+                                literal("debit")
+                                    .then(
+                                        argument("target", StringArgumentType.word())
+                                            .suggests(MONEY_PLAYER_PROVIDER)
+                                            .then(
+                                                argument("amount", StringArgumentType.word())
+                                                    .executes { runMoneyTest(it, AccountDirection.DEBIT) }
+                                            )
+                                    )
+                            )
+                    )
+                    .then(literal("issues").executes(::runMoneyIssues))
+                    .then(
+                        literal("issue")
+                            .then(
+                                argument("shortId", StringArgumentType.word())
+                                    .suggests(MONEY_ISSUE_PROVIDER)
+                                    .executes(::runMoneyIssue)
+                            )
+                    )
+                    .then(
+                        literal("action")
+                            .then(
+                                argument("shortId", StringArgumentType.word())
+                                    .suggests(MONEY_ISSUE_PROVIDER)
+                                    .then(
+                                        argument("action", StringArgumentType.word())
+                                            .suggests(MONEY_ACTION_PROVIDER)
+                                            .executes(::runMoneyAction)
+                                    )
+                            )
+                    )
+                    .then(literal("reconcile").executes(::runMoneyReconcile))
             )
             .then(
                 literal("treasury")

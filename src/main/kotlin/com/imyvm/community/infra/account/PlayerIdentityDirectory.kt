@@ -35,14 +35,41 @@ class PlayerIdentityDirectory(private val directory: Path) {
     fun find(uuid: UUID): PlayerIdentity? {
         val file = path(uuid)
         if (!Files.exists(file)) return null
-        return DataInputStream(Files.newInputStream(file)).use { input ->
-            require(input.readInt() == 1) { "Unsupported player identity version" }
-            val storedUuid = UUID(input.readLong(), input.readLong())
-            require(storedUuid == uuid) { "Player identity UUID mismatch" }
-            val name = input.readUTF()
-            require(name.isNotBlank() && name != uuid.toString()) { "Untrusted player identity name" }
-            PlayerIdentity(storedUuid, name, input.readLong())
+        return read(file).also { require(it.uuid == uuid) { "Player identity UUID mismatch" } }
+    }
+
+    fun findByName(trustedName: String): PlayerIdentity? {
+        require(trustedName.isNotBlank())
+        Files.newDirectoryStream(directory, "*.identity").use { stream ->
+            for (file in stream) {
+                val identity = read(file)
+                if (identity.trustedName.equals(trustedName, ignoreCase = true)) return identity
+            }
         }
+        return null
+    }
+
+    fun suggestNames(prefix: String, limit: Int): List<String> {
+        require(limit in 1..1000)
+        val names = java.util.TreeSet<String>(String.CASE_INSENSITIVE_ORDER)
+        Files.newDirectoryStream(directory, "*.identity").use { stream ->
+            for (file in stream) {
+                val name = read(file).trustedName
+                if (name.startsWith(prefix, ignoreCase = true)) {
+                    names.add(name)
+                    if (names.size > limit) names.pollLast()
+                }
+            }
+        }
+        return names.toList()
+    }
+
+    private fun read(file: Path): PlayerIdentity = DataInputStream(Files.newInputStream(file)).use { input ->
+        require(input.readInt() == 1) { "Unsupported player identity version" }
+        val storedUuid = UUID(input.readLong(), input.readLong())
+        val name = input.readUTF()
+        require(name.isNotBlank() && name != storedUuid.toString()) { "Untrusted player identity name" }
+        PlayerIdentity(storedUuid, name, input.readLong())
     }
 
     private fun path(uuid: UUID): Path = directory.resolve("$uuid.identity")

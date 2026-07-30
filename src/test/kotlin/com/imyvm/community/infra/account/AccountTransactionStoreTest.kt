@@ -203,6 +203,8 @@ class AccountTransactionStoreTest {
             }
             directory.save(PlayerIdentity(uuid, "TrustedName", 2L))
             assertEquals(PlayerIdentity(uuid, "TrustedName", 2L), directory.find(uuid))
+            assertEquals(uuid, directory.findByName("trustedname")?.uuid)
+            assertEquals(listOf("TrustedName"), directory.suggestNames("Trust", 10))
         } finally {
             deleteTree(root)
         }
