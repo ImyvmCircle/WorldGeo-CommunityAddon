@@ -5,8 +5,10 @@ import com.imyvm.community.domain.model.transaction.CombinationStepStatus
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class ApplicationJoinAccountFlowTest {
     private val plan = ApplicationJoinPlan(
@@ -19,9 +21,25 @@ class ApplicationJoinAccountFlowTest {
     )
 
     @Test
-    fun evidenceRoundTripsFrozenApplication() {
+    fun evidenceRoundTripsFrozenJoinMode() {
         assertEquals(plan, ApplicationJoinPlan.decode(plan.encode()))
+        val openPlan = plan.copy(openJoin = true)
+        assertEquals(openPlan, ApplicationJoinPlan.decode(openPlan.encode()))
+        assertTrue(ApplicationJoinPlan.decode(openPlan.encode())!!.openJoin)
         assertNull(ApplicationJoinPlan.decode("another-operation|v1"))
+    }
+
+    @Test
+    fun legacyApplicationEvidenceRemainsDecodable() {
+        val evidence = listOf(
+            "community-application:v1", plan.operationId, plan.regionId, plan.playerUuid,
+            plan.amount, plan.joinedAtMillis, "UGxheWVyfE5hbWU"
+        ).joinToString("|")
+
+        val decoded = ApplicationJoinPlan.decode(evidence)
+
+        assertEquals(plan, decoded)
+        assertFalse(decoded!!.openJoin)
     }
 
     @Test
@@ -36,6 +54,19 @@ class ApplicationJoinAccountFlowTest {
         assertEquals(AccountDirection.CREDIT, refund.direction)
         assertEquals(debit.transactionId, refund.previousTransactionId)
         assertNotEquals(debit.transactionId, refund.transactionId)
+    }
+
+    @Test
+    fun openJoinUsesSeparateExternalReferences() {
+        val openPlan = plan.copy(openJoin = true)
+        val debit = applicationJoinTransaction(openPlan, AccountDirection.DEBIT)
+        val state = applicationJoinStep(
+            openPlan, "application-community-state", CombinationStepStatus.DETERMINED
+        )
+
+        assertEquals("community-open-join", debit.source)
+        assertEquals("community:open-join:debit:${plan.operationId}", debit.externalReference)
+        assertEquals("community:open-join:state:${plan.operationId}", state.externalReference)
     }
 
     @Test

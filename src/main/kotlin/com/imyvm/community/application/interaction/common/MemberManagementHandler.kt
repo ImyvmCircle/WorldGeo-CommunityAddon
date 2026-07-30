@@ -177,8 +177,9 @@ fun tryJoinByPolicy(player: ServerPlayer, targetCommunity: Community): Int {
 }
 
 private fun joinUnderOpenPolicy(player: ServerPlayer, targetCommunity: Community): Int {
-    val cost = if(targetCommunity.isManor()) PricingConfig.COMMUNITY_JOIN_COST_MANOR.value else PricingConfig.COMMUNITY_JOIN_COST_REALM.value
-    
+    val cost = if (targetCommunity.isManor())
+        PricingConfig.COMMUNITY_JOIN_COST_MANOR.value
+        else PricingConfig.COMMUNITY_JOIN_COST_REALM.value
     val playerBalance = EconomyWalletAdapter.balance(player)
     if (playerBalance < cost) {
         player.sendSystemMessage(
@@ -187,44 +188,7 @@ private fun joinUnderOpenPolicy(player: ServerPlayer, targetCommunity: Community
         return 0
     }
 
-    val memberAccount = MemberAccount(
-        joinedTime = System.currentTimeMillis(),
-        basicRoleType = MemberRoleType.MEMBER
-    )
-    val operationName = Translator.tr("community.operation.join", targetCommunity.regionNumberId).string
-    if (!runCommunityMutationOrRollback(
-            operationName = operationName,
-            mutateCommunityState = {
-                EconomyWalletAdapter.debit(player, cost)
-                targetCommunity.member[player.uuid] = memberAccount
-                com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.autoGrantDefaultPermissions(
-                    player.uuid, player, targetCommunity
-                )
-            },
-            restoreCommunityState = {
-                EconomyWalletAdapter.credit(player, cost)
-                targetCommunity.member.remove(player.uuid)
-            },
-            rollbackCoreState = {
-                com.imyvm.community.application.interaction.screen.inner_community.multi_parent.element.revokeGrantedPermissions(
-                    player.uuid, targetCommunity
-                )
-            },
-            saveCommunityState = { com.imyvm.community.infra.CommunityDatabase.save() },
-            notifyFailure = { player.sendSystemMessage(Translator.tr("community.operation.save_failed", operationName)) }
-        )) return 0
-
-    player.sendSystemMessage(Translator.tr("community.join.success", targetCommunity.regionNumberId))
-    player.sendSystemMessage(Translator.tr("community.join.payment.deducted", cost / 100.0))
-    
-    val communityName = targetCommunity.getRegion()?.name ?: "Community #${targetCommunity.regionNumberId}"
-    val notification = Translator.tr("community.notification.member_joined", player.name.string, communityName) 
-        ?: net.minecraft.network.chat.Component.literal("${player.name.string} has joined $communityName")
-    notifyOfficials(targetCommunity, player.level().server, notification, player)
-    
-    com.imyvm.community.application.event.checkAndPromoteRecruitingRealm(targetCommunity)
-    
-    return 1
+    return if (submitOpenJoin(player, targetCommunity, cost)) 1 else 0
 }
 
 private fun joinUnderApplicationPolicy(player: ServerPlayer, targetCommunity: Community): Int {
