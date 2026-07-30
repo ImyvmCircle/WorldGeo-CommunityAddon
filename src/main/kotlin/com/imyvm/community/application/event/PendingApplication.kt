@@ -43,6 +43,55 @@ fun restorePendingOperation(subjectId: Int?, type: PendingOperationType, operati
     WorldGeoCommunityAddon.pendingOperations[pendingOperationKey(subjectId, type)] = operation
 }
 
+fun movePendingOperation(
+    subjectId: Int,
+    fromType: PendingOperationType,
+    toType: PendingOperationType
+): PendingOperation {
+    val fromKey = pendingOperationKey(subjectId, fromType)
+    val toKey = pendingOperationKey(subjectId, toType)
+    val existing = WorldGeoCommunityAddon.pendingOperations[fromKey]
+        ?: throw IllegalStateException("Pending operation not found for subjectId=$subjectId, type=$fromType")
+    check(WorldGeoCommunityAddon.pendingOperations[toKey] == null) {
+        "Pending operation already exists for subjectId=$subjectId, type=$toType"
+    }
+    val replacement = PendingOperation(
+        expireAt = existing.expireAt,
+        type = toType,
+        inviterUUID = existing.inviterUUID,
+        inviteeUUID = existing.inviteeUUID,
+        creationData = existing.creationData,
+        modificationData = existing.modificationData,
+        teleportPointData = existing.teleportPointData,
+        settingData = existing.settingData,
+        renameData = existing.renameData,
+        transferData = existing.transferData,
+        treasuryGrantData = existing.treasuryGrantData
+    )
+    WorldGeoCommunityAddon.pendingOperations.remove(fromKey)
+    WorldGeoCommunityAddon.pendingOperations[toKey] = replacement
+    try {
+        CommunityDatabase.save()
+    } catch (error: Exception) {
+        WorldGeoCommunityAddon.pendingOperations.remove(toKey)
+        WorldGeoCommunityAddon.pendingOperations[fromKey] = existing
+        throw error
+    }
+    return replacement
+}
+
+fun removePendingOperationPersisted(subjectId: Int, type: PendingOperationType): PendingOperation? {
+    val key = pendingOperationKey(subjectId, type)
+    val existing = WorldGeoCommunityAddon.pendingOperations.remove(key) ?: return null
+    try {
+        CommunityDatabase.save()
+    } catch (error: Exception) {
+        WorldGeoCommunityAddon.pendingOperations[key] = existing
+        throw error
+    }
+    return existing
+}
+
 fun removePendingOperationsForSubject(subjectId: Int?) {
     if (subjectId == null) return
     WorldGeoCommunityAddon.pendingOperations.keys
@@ -57,6 +106,7 @@ internal fun checkPendingOperations(server: MinecraftServer) {
 
     while (iterator.hasNext()) {
         val (key, operation) = iterator.next()
+        if (operation.type == PendingOperationType.CREATE_COMMUNITY_EXECUTION) continue
         if (operation.expireAt <= now) {
             handleExpiredOperation(pendingOperationSubjectId(key), operation, iterator, server)
         }

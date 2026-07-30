@@ -93,7 +93,8 @@ enum class PendingOperationType(val value: Int) {
     RENAME_CONFIRMATION(12),
     DELETE_SCOPE_CONFIRMATION(13),
     TRANSFER_SCOPE_CONFIRMATION(14),
-    TREASURY_GRANT_CONFIRMATION(15);
+    TREASURY_GRANT_CONFIRMATION(15),
+    CREATE_COMMUNITY_EXECUTION(16);
     
     companion object {
         fun fromValue(value: Int): PendingOperationType {

@@ -16,6 +16,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor
 object AccountSubsystem {
     private val lock = Any()
     private val pendingIdentities = LinkedHashMap<UUID, String>()
+    private val readyListeners = mutableListOf<(Runtime) -> Unit>()
     @Volatile private var runtime: Runtime? = null
     @Volatile private var starting = false
 
@@ -52,6 +53,15 @@ object AccountSubsystem {
 
     fun runtimeOrNull(): Runtime? = runtime
 
+    fun onReady(listener: (Runtime) -> Unit) {
+        val current = synchronized(lock) {
+            check(readyListeners.size < MAX_READY_LISTENERS) { "Too many account ready listeners" }
+            readyListeners += listener
+            runtime
+        }
+        if (current != null) current.server.execute { listener(current) }
+    }
+
     private fun initialize(server: MinecraftServer) {
         val writer = CommunityDataWriter(WRITER_QUEUE_CAPACITY)
         var scheduler: ScheduledThreadPoolExecutor? = null
@@ -75,12 +85,16 @@ object AccountSubsystem {
             val operator = AccountOperatorService(
                 server, store, writer, identities, EconomyWalletAdapter(), audit, service
             )
-            val created = Runtime(writer, store, sharedStore, identities, service, operator, audit, scheduler)
-            val accepted = synchronized(lock) {
-                if (!starting) false else {
+            val created = Runtime(server, writer, store, sharedStore, identities, service, operator, audit, scheduler)
+            var accepted = true
+            val listeners = synchronized(lock) {
+                if (!starting) {
+                    accepted = false
+                    emptyList()
+                } else {
                     runtime = created
                     starting = false
-                    true
+                    readyListeners.toList()
                 }
             }
             if (!accepted) {
@@ -95,6 +109,13 @@ object AccountSubsystem {
             server.execute {
                 server.playerList.players.forEach(::captureIdentity)
                 service.recover()
+                listeners.forEach { listener ->
+                    try {
+                        listener(created)
+                    } catch (error: Throwable) {
+                        WorldGeoCommunityAddon.logger.error("Account ready listener failed", error)
+                    }
+                }
                 WorldGeoCommunityAddon.logger.info("Community account subsystem ready")
             }
         } catch (error: Throwable) {
@@ -118,6 +139,7 @@ object AccountSubsystem {
     }
 
     data class Runtime(
+        val server: MinecraftServer,
         val writer: CommunityDataWriter,
         val store: AccountTransactionStore,
         val sharedStore: CommunityFactStore,
@@ -130,4 +152,5 @@ object AccountSubsystem {
 
     private const val WRITER_QUEUE_CAPACITY = 512
     private const val MAX_PENDING_IDENTITIES = 1024
+    private const val MAX_READY_LISTENERS = 16
 }
