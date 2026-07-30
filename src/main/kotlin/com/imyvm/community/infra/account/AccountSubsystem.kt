@@ -5,6 +5,7 @@ import com.imyvm.community.application.account.AccountOperatorService
 import com.imyvm.community.application.account.AccountTransactionService
 import com.imyvm.community.domain.model.account.PlayerIdentity
 import com.imyvm.community.infra.economy.EconomyWalletAdapter
+import com.imyvm.community.infra.transaction.CommunityFactStore
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.level.storage.LevelResource
@@ -58,6 +59,7 @@ object AccountSubsystem {
             val root = server.getWorldPath(LevelResource.ROOT).resolve("community-account")
             val identities = PlayerIdentityDirectory(root.resolve("identities"))
             val store = AccountTransactionStore(root.resolve("transactions"), writer)
+            val sharedStore = CommunityFactStore(server.getWorldPath(LevelResource.ROOT).resolve("community-shared"), writer)
             scheduler = ScheduledThreadPoolExecutor(1) { task ->
                 Thread(task, "community-account-retry").apply { isDaemon = true }
             }.apply { removeOnCancelPolicy = true }
@@ -73,7 +75,7 @@ object AccountSubsystem {
             val operator = AccountOperatorService(
                 server, store, writer, identities, EconomyWalletAdapter(), audit, service
             )
-            val created = Runtime(writer, store, identities, service, operator, audit, scheduler)
+            val created = Runtime(writer, store, sharedStore, identities, service, operator, audit, scheduler)
             val accepted = synchronized(lock) {
                 if (!starting) false else {
                     runtime = created
@@ -118,6 +120,7 @@ object AccountSubsystem {
     data class Runtime(
         val writer: CommunityDataWriter,
         val store: AccountTransactionStore,
+        val sharedStore: CommunityFactStore,
         val identities: PlayerIdentityDirectory,
         val service: AccountTransactionService,
         val operator: AccountOperatorService,
