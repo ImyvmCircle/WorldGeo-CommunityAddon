@@ -27,6 +27,7 @@ class CommunityFactStoreTest {
             CommunityDataWriter(32).use { writer ->
                 val store = CommunityFactStore(root, writer, maxCacheEntries = 2, maxCacheBytes = 512)
                 store.append(step(operationId)).join()
+                store.append(step(operationId).copy(factId = UUID.randomUUID(), status = CombinationStepStatus.SUCCEEDED)).join()
                 repeat(5) { store.append(treasury(it)).join() }
                 store.append(member(memberUuid)).join()
                 store.append(audit()).join()
@@ -38,7 +39,8 @@ class CommunityFactStoreTest {
                 assertEquals(2, second.items.size)
                 assertTrue(first.items.map { it.factId }.toSet().intersect(second.items.map { it.factId }.toSet()).isEmpty())
                 assertEquals(1, store.scanMember(REGION_ID, memberUuid, null, 10).join().items.size)
-                assertEquals(1, store.scanOperation(operationId, null, 10).join().items.size)
+                assertEquals(2, store.scanOperation(operationId, null, 10).join().items.size)
+                assertEquals(CombinationStepStatus.SUCCEEDED, store.findLatestOperationStep(operationId, "wallet").join()?.status)
                 assertEquals("period-10", store.findCursor(REGION_ID, "building", "region", "42").join()?.cursor)
                 assertEquals(510L, store.treasuryBalance(REGION_ID).join())
                 assertEquals(50L, store.memberContribution(REGION_ID, memberUuid).join())
@@ -49,10 +51,11 @@ class CommunityFactStoreTest {
             DataOutputCheckpoint.write(root.resolve("community-fact.checkpoint"), 0L)
             CommunityDataWriter(32).use { writer ->
                 val recovered = CommunityFactStore(root, writer, maxCacheEntries = 2, maxCacheBytes = 512)
-                assertEquals(9L, recovered.rootSummary().join().appliedSequence)
+                assertEquals(10L, recovered.rootSummary().join().appliedSequence)
                 assertEquals(5, recovered.scanTreasury(REGION_ID, null, 10).join().items.size)
                 assertEquals(510L, recovered.treasuryBalance(REGION_ID).join())
                 assertEquals(50L, recovered.memberContribution(REGION_ID, memberUuid).join())
+                assertEquals(CombinationStepStatus.SUCCEEDED, recovered.findLatestOperationStep(operationId, "wallet").join()?.status)
                 assertEquals("period-10", recovered.findCursor(REGION_ID, "building", "region", "42").join()?.cursor)
             }
         } finally {

@@ -40,6 +40,7 @@ class CommunityFactStore(
     private val memberDirectory = root.resolve("member")
     private val auditDirectory = root.resolve("audit")
     private val operationDirectory = root.resolve("operation")
+    private val operationLatestDirectory = root.resolve("operation-latest")
     private val cursorDirectory = root.resolve("cursor")
     private val externalDirectory = root.resolve("external")
     private val treasuryAggregateDirectory = root.resolve("aggregate/treasury")
@@ -57,7 +58,7 @@ class CommunityFactStore(
         require(maxCacheBytes > 0)
         listOf(
             factsDirectory, recordsDirectory, treasuryDirectory, memberDirectory, auditDirectory,
-            operationDirectory, cursorDirectory, externalDirectory, treasuryAggregateDirectory, memberAggregateDirectory
+            operationDirectory, operationLatestDirectory, cursorDirectory, externalDirectory, treasuryAggregateDirectory, memberAggregateDirectory
         ).forEach(Files::createDirectories)
         recover()
     }
@@ -95,6 +96,19 @@ class CommunityFactStore(
 
     fun scanOperation(operationId: UUID, after: String?, limit: Int): CompletableFuture<CommunityFactPage> =
         scan(operationDirectory.resolve(operationId.toString()), after, limit)
+
+    fun findLatestOperationStep(operationId: UUID, stepKey: String): CompletableFuture<CombinationStepFact?> =
+        writer.submit {
+            require(stepKey.isNotBlank()) { "Combination step key must not be blank" }
+            val path = operationLatestPath(operationId, stepKey)
+            if (!Files.exists(path)) {
+                null
+            } else {
+                val factId = UUID.fromString(Files.readString(path).trim())
+                loadFact(factId) as? CombinationStepFact
+                    ?: error("Missing combination latest-step target")
+            }
+        }
 
     fun findCursor(
         regionId: Int,
@@ -164,7 +178,10 @@ class CommunityFactStore(
         writeAtomic(recordPath(fact.factId), payload)
         val indexName = "%020d-%s.idx".format(sequence, fact.factId)
         when (fact) {
-            is CombinationStepFact -> writeIndex(operationDirectory.resolve(fact.operationId.toString()), indexName, fact.factId)
+            is CombinationStepFact -> {
+                writeIndex(operationDirectory.resolve(fact.operationId.toString()), indexName, fact.factId)
+                writeAtomic(operationLatestPath(fact.operationId, fact.stepKey), fact.factId.toString().toByteArray())
+            }
             is TreasuryLedgerFact -> {
                 writeIndex(treasuryDirectory.resolve(fact.regionId.toString()), indexName, fact.factId)
                 writeAtomic(externalPath("treasury", fact.externalReference), fact.factId.toString().toByteArray())
@@ -442,6 +459,9 @@ class CommunityFactStore(
     }
 
     private fun recordPath(factId: UUID): Path = recordsDirectory.resolve("$factId.fact")
+
+    private fun operationLatestPath(operationId: UUID, stepKey: String): Path =
+        operationLatestDirectory.resolve(operationId.toString()).resolve(digest(stepKey) + ".idx")
 
     private fun memberAggregatePath(regionId: Int, memberUuid: UUID): Path =
         memberAggregateDirectory.resolve(regionId.toString()).resolve(memberUuid.toString() + ".state")
