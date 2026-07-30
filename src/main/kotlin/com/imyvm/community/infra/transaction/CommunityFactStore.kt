@@ -1,6 +1,7 @@
 package com.imyvm.community.infra.transaction
 
 import com.imyvm.community.domain.model.transaction.CombinationStepFact
+import com.imyvm.community.domain.model.transaction.CombinationOperationPage
 import com.imyvm.community.domain.model.transaction.CommunityAuditFact
 import com.imyvm.community.domain.model.transaction.CommunityFact
 import com.imyvm.community.domain.model.transaction.CommunityFactPage
@@ -41,6 +42,7 @@ class CommunityFactStore(
     private val auditDirectory = root.resolve("audit")
     private val operationDirectory = root.resolve("operation")
     private val operationLatestDirectory = root.resolve("operation-latest")
+    private val unresolvedOperationDirectory = root.resolve("operation-unresolved")
     private val cursorDirectory = root.resolve("cursor")
     private val externalDirectory = root.resolve("external")
     private val treasuryAggregateDirectory = root.resolve("aggregate/treasury")
@@ -58,7 +60,7 @@ class CommunityFactStore(
         require(maxCacheBytes > 0)
         listOf(
             factsDirectory, recordsDirectory, treasuryDirectory, memberDirectory, auditDirectory,
-            operationDirectory, operationLatestDirectory, cursorDirectory, externalDirectory, treasuryAggregateDirectory, memberAggregateDirectory
+            operationDirectory, operationLatestDirectory, unresolvedOperationDirectory, cursorDirectory, externalDirectory, treasuryAggregateDirectory, memberAggregateDirectory
         ).forEach(Files::createDirectories)
         recover()
     }
@@ -108,6 +110,16 @@ class CommunityFactStore(
                 loadFact(factId) as? CombinationStepFact
                     ?: error("Missing combination latest-step target")
             }
+        }
+
+    fun scanUnresolvedOperations(after: String?, limit: Int): CompletableFuture<CombinationOperationPage> =
+        writer.submit {
+            require(limit in 1..MAX_PAGE_SIZE)
+            val entries = scanIndex(unresolvedOperationDirectory, after, limit)
+            CombinationOperationPage(
+                entries.map { UUID.fromString(it.fileName.toString().removeSuffix(".idx")) },
+                entries.lastOrNull()?.fileName?.toString()
+            )
         }
 
     fun findCursor(
@@ -181,6 +193,7 @@ class CommunityFactStore(
             is CombinationStepFact -> {
                 writeIndex(operationDirectory.resolve(fact.operationId.toString()), indexName, fact.factId)
                 writeAtomic(operationLatestPath(fact.operationId, fact.stepKey), fact.factId.toString().toByteArray())
+                updateUnresolvedOperation(fact.operationId)
             }
             is TreasuryLedgerFact -> {
                 writeIndex(treasuryDirectory.resolve(fact.regionId.toString()), indexName, fact.factId)
@@ -206,6 +219,21 @@ class CommunityFactStore(
     private fun writeIndex(directory: Path, name: String, factId: UUID) {
         Files.createDirectories(directory)
         writeAtomic(directory.resolve(name), factId.toString().toByteArray())
+    }
+
+    private fun updateUnresolvedOperation(operationId: UUID) {
+        val latestDirectory = operationLatestDirectory.resolve(operationId.toString())
+        val unresolved = Files.newDirectoryStream(latestDirectory, "*.idx").use { entries ->
+            entries.any { entry ->
+                val factId = UUID.fromString(Files.readString(entry).trim())
+                val step = loadFact(factId) as? CombinationStepFact
+                    ?: error("Missing combination latest-step target")
+                !step.status.isTerminal()
+            }
+        }
+        val index = unresolvedOperationDirectory.resolve("$operationId.idx")
+        if (unresolved) writeAtomic(index, operationId.toString().toByteArray())
+        else Files.deleteIfExists(index)
     }
 
     private fun recover() {

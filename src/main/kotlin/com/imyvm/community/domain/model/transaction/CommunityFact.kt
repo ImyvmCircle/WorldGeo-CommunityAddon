@@ -19,8 +19,15 @@ enum class CombinationStepStatus {
     SUCCEEDED,
     PENDING,
     NEEDS_OP,
-    COMPENSATED
+    COMPENSATED;
+
+    fun isTerminal(): Boolean = this == SUCCEEDED || this == COMPENSATED
 }
+
+data class CombinationOperationPage(
+    val operationIds: List<UUID>,
+    val nextToken: String?
+)
 
 data class CombinationStepFact(
     override val factId: UUID,

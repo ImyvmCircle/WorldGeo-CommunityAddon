@@ -64,6 +64,48 @@ class CommunityFactStoreTest {
     }
 
     @Test
+    fun unresolvedOperationRemainsIndexedUntilEveryKnownStepIsTerminal() {
+        val root = Files.createTempDirectory("community-unresolved-operation")
+        val operationId = UUID.randomUUID()
+        try {
+            CommunityDataWriter(8).use { writer ->
+                val store = CommunityFactStore(root, writer)
+                val wallet = step(operationId)
+                val local = step(operationId).copy(
+                    factId = UUID.randomUUID(),
+                    stepKey = "local",
+                    externalReference = "step:2"
+                )
+                store.append(wallet).join()
+                store.append(local).join()
+                assertEquals(listOf(operationId), store.scanUnresolvedOperations(null, 10).join().operationIds)
+
+                store.append(wallet.copy(
+                    factId = UUID.randomUUID(),
+                    status = CombinationStepStatus.SUCCEEDED
+                )).join()
+                assertEquals(listOf(operationId), store.scanUnresolvedOperations(null, 10).join().operationIds)
+            }
+
+            DataOutputCheckpoint.write(root.resolve("community-fact.checkpoint"), 0L)
+            Files.deleteIfExists(root.resolve("operation-unresolved").resolve("$operationId.idx"))
+            CommunityDataWriter(8).use { writer ->
+                val recovered = CommunityFactStore(root, writer)
+                assertEquals(listOf(operationId), recovered.scanUnresolvedOperations(null, 10).join().operationIds)
+                recovered.append(step(operationId).copy(
+                    factId = UUID.randomUUID(),
+                    stepKey = "local",
+                    externalReference = "step:2",
+                    status = CombinationStepStatus.COMPENSATED
+                )).join()
+                assertTrue(recovered.scanUnresolvedOperations(null, 10).join().operationIds.isEmpty())
+            }
+        } finally {
+            deleteTree(root)
+        }
+    }
+
+    @Test
     fun treasuryReferenceIsIdempotentButRejectsChangedCanonicalFields() {
         val root = Files.createTempDirectory("community-treasury-reference")
         try {
