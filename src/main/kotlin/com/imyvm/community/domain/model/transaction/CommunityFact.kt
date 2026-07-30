@@ -58,7 +58,8 @@ data class MemberLedgerFact(
     val source: String,
     val externalReference: String,
     val descriptionKey: String? = null,
-    val descriptionArgs: List<String> = emptyList()
+    val descriptionArgs: List<String> = emptyList(),
+    val countsAsContribution: Boolean = false
 ) : CommunityFact
 
 data class CommunityAuditFact(

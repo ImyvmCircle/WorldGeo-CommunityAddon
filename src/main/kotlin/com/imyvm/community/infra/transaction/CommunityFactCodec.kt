@@ -50,6 +50,7 @@ internal object CommunityFactCodec {
                     writeString(output, fact.externalReference)
                     writeNullableString(output, fact.descriptionKey)
                     writeStrings(output, fact.descriptionArgs)
+                    output.writeBoolean(fact.countsAsContribution)
                 }
                 is CommunityAuditFact -> {
                     output.writeBoolean(fact.actorUuid != null)
@@ -71,7 +72,8 @@ internal object CommunityFactCodec {
     }.toByteArray()
 
     fun decode(payload: ByteArray): CommunityFact = DataInputStream(ByteArrayInputStream(payload)).use { input ->
-        require(input.readInt() == VERSION) { "Unsupported community fact version" }
+        val version = input.readInt()
+        require(version in MINIMUM_VERSION..VERSION) { "Unsupported community fact version" }
         val type = input.readUnsignedByte()
         val factId = readUuid(input)
         val regionId = input.readInt()
@@ -89,7 +91,7 @@ internal object CommunityFactCodec {
             TYPE_MEMBER -> MemberLedgerFact(
                 factId, regionId, recordedAtMillis, readUuid(input), input.readLong(),
                 readEnum(input, ResourceDirection.entries), readString(input), readString(input),
-                readNullableString(input), readStrings(input)
+                readNullableString(input), readStrings(input), if (version >= 2) input.readBoolean() else false
             )
             TYPE_AUDIT -> CommunityAuditFact(
                 factId, regionId, recordedAtMillis, if (input.readBoolean()) readUuid(input) else null,
@@ -161,7 +163,8 @@ internal object CommunityFactCodec {
         return values[ordinal]
     }
 
-    private const val VERSION = 1
+    private const val MINIMUM_VERSION = 1
+    private const val VERSION = 2
     private const val TYPE_STEP = 1
     private const val TYPE_TREASURY = 2
     private const val TYPE_MEMBER = 3

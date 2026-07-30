@@ -7,6 +7,7 @@ import com.imyvm.community.domain.model.transaction.CommunityFactPage
 import com.imyvm.community.domain.model.transaction.CommunityFactRootSummary
 import com.imyvm.community.domain.model.transaction.MemberLedgerFact
 import com.imyvm.community.domain.model.transaction.PurposeCursorFact
+import com.imyvm.community.domain.model.transaction.ResourceDirection
 import com.imyvm.community.domain.model.transaction.TreasuryLedgerFact
 import com.imyvm.community.infra.account.CommunityDataWriter
 import java.io.DataInputStream
@@ -41,6 +42,8 @@ class CommunityFactStore(
     private val operationDirectory = root.resolve("operation")
     private val cursorDirectory = root.resolve("cursor")
     private val externalDirectory = root.resolve("external")
+    private val treasuryAggregateDirectory = root.resolve("aggregate/treasury")
+    private val memberAggregateDirectory = root.resolve("aggregate/member")
     private val checkpointFile = root.resolve("community-fact.checkpoint")
     private val activeSegment = factsDirectory.resolve("facts-active.log")
     private val cache = object : LinkedHashMap<UUID, CachedFact>(16, 0.75f, true) {}
@@ -54,7 +57,7 @@ class CommunityFactStore(
         require(maxCacheBytes > 0)
         listOf(
             factsDirectory, recordsDirectory, treasuryDirectory, memberDirectory, auditDirectory,
-            operationDirectory, cursorDirectory, externalDirectory
+            operationDirectory, cursorDirectory, externalDirectory, treasuryAggregateDirectory, memberAggregateDirectory
         ).forEach(Files::createDirectories)
         recover()
     }
@@ -69,6 +72,7 @@ class CommunityFactStore(
             require(sameExternalOperation(existing, fact)) { "Conflicting community external reference" }
             return@submit existing
         }
+        preflightAggregate(fact)
         val sequence = nextSequence++
         appendRecord(sequence, fact)
         applyFact(sequence, fact)
@@ -83,8 +87,8 @@ class CommunityFactStore(
     fun scanTreasury(regionId: Int, after: String?, limit: Int): CompletableFuture<CommunityFactPage> =
         scan(treasuryDirectory.resolve(regionId.toString()), after, limit)
 
-    fun scanMember(memberUuid: UUID, after: String?, limit: Int): CompletableFuture<CommunityFactPage> =
-        scan(memberDirectory.resolve(memberUuid.toString()), after, limit)
+    fun scanMember(regionId: Int, memberUuid: UUID, after: String?, limit: Int): CompletableFuture<CommunityFactPage> =
+        scan(memberDirectory.resolve(regionId.toString()).resolve(memberUuid.toString()), after, limit)
 
     fun scanAudit(regionId: Int, after: String?, limit: Int): CompletableFuture<CommunityFactPage> =
         scan(auditDirectory.resolve(regionId.toString()), after, limit)
@@ -119,6 +123,14 @@ class CommunityFactStore(
     fun cacheEntryCount(): Int = synchronized(cache) { cache.size }
 
     fun estimatedCacheBytes(): Long = synchronized(cache) { cacheBytes }
+
+    fun treasuryBalance(regionId: Int): CompletableFuture<Long> = writer.submit {
+        readAggregate(treasuryAggregateDirectory.resolve(regionId.toString() + ".state")).amount
+    }
+
+    fun memberContribution(regionId: Int, memberUuid: UUID): CompletableFuture<Long> = writer.submit {
+        readAggregate(memberAggregatePath(regionId, memberUuid)).amount
+    }
 
     private fun scan(directory: Path, after: String?, limit: Int): CompletableFuture<CommunityFactPage> = writer.submit {
         require(limit in 1..MAX_PAGE_SIZE)
@@ -156,10 +168,14 @@ class CommunityFactStore(
             is TreasuryLedgerFact -> {
                 writeIndex(treasuryDirectory.resolve(fact.regionId.toString()), indexName, fact.factId)
                 writeAtomic(externalPath("treasury", fact.externalReference), fact.factId.toString().toByteArray())
+                applyAggregate(sequence, treasuryAggregateDirectory.resolve(fact.regionId.toString() + ".state"), fact.direction, fact.amount)
             }
             is MemberLedgerFact -> {
-                writeIndex(memberDirectory.resolve(fact.memberUuid.toString()), indexName, fact.factId)
+                writeIndex(memberDirectory.resolve(fact.regionId.toString()).resolve(fact.memberUuid.toString()), indexName, fact.factId)
                 writeAtomic(externalPath("member", fact.externalReference), fact.factId.toString().toByteArray())
+                if (fact.countsAsContribution) {
+                    applyAggregate(sequence, memberAggregatePath(fact.regionId, fact.memberUuid), fact.direction, fact.amount)
+                }
             }
             is CommunityAuditFact -> writeIndex(auditDirectory.resolve(fact.regionId.toString()), indexName, fact.factId)
             is PurposeCursorFact -> writeAtomic(
@@ -287,7 +303,8 @@ class CommunityFactStore(
         existing is MemberLedgerFact && requested is MemberLedgerFact ->
             existing.regionId == requested.regionId && existing.memberUuid == requested.memberUuid &&
                 existing.amount == requested.amount && existing.direction == requested.direction &&
-                existing.source == requested.source
+                existing.source == requested.source &&
+                existing.countsAsContribution == requested.countsAsContribution
         else -> false
     }
 
@@ -307,6 +324,9 @@ class CommunityFactStore(
             is MemberLedgerFact -> {
                 require(fact.amount > 0) { "Member ledger amount must be positive" }
                 require(fact.source.isNotBlank() && fact.externalReference.isNotBlank())
+                require(!fact.countsAsContribution || fact.direction == ResourceDirection.CREDIT) {
+                    "Member contribution must be a credit"
+                }
             }
             is CommunityAuditFact -> {
                 require(fact.actorName.isNotBlank() && fact.action.isNotBlank())
@@ -317,6 +337,54 @@ class CommunityFactStore(
                 require(fact.consumerUnit.isNotBlank() && fact.cursor.isNotBlank())
             }
         }
+    }
+
+    private fun preflightAggregate(fact: CommunityFact) {
+        when (fact) {
+            is TreasuryLedgerFact -> nextAmount(
+                readAggregate(treasuryAggregateDirectory.resolve(fact.regionId.toString() + ".state")).amount,
+                fact.direction,
+                fact.amount
+            )
+            is MemberLedgerFact -> if (fact.countsAsContribution) {
+                nextAmount(readAggregate(memberAggregatePath(fact.regionId, fact.memberUuid)).amount, fact.direction, fact.amount)
+            }
+            else -> Unit
+        }
+    }
+
+    private fun applyAggregate(sequence: Long, path: Path, direction: ResourceDirection, amount: Long) {
+        val current = readAggregate(path)
+        if (current.appliedSequence >= sequence) return
+        writeAggregate(path, AggregateState(sequence, nextAmount(current.amount, direction, amount)))
+    }
+
+    private fun nextAmount(current: Long, direction: ResourceDirection, amount: Long): Long =
+        when (direction) {
+            ResourceDirection.CREDIT -> Math.addExact(current, amount)
+            ResourceDirection.DEBIT -> Math.subtractExact(current, amount)
+        }
+
+    private fun readAggregate(path: Path): AggregateState {
+        if (!Files.exists(path)) return AggregateState()
+        return DataInputStream(Files.newInputStream(path)).use { input ->
+            require(input.readInt() == AGGREGATE_MAGIC) { "Invalid community aggregate" }
+            require(input.readInt() == AGGREGATE_VERSION) { "Unsupported community aggregate" }
+            val state = AggregateState(input.readLong(), input.readLong())
+            require(state.appliedSequence >= 0) { "Invalid community aggregate sequence" }
+            require(input.available() == 0) { "Unread community aggregate bytes" }
+            state
+        }
+    }
+
+    private fun writeAggregate(path: Path, state: AggregateState) {
+        val bytes = ByteBuffer.allocate(Int.SIZE_BYTES * 2 + Long.SIZE_BYTES * 2)
+            .putInt(AGGREGATE_MAGIC)
+            .putInt(AGGREGATE_VERSION)
+            .putLong(state.appliedSequence)
+            .putLong(state.amount)
+            .array()
+        writeAtomic(path, bytes)
     }
 
     private fun scanIndex(directory: Path, after: String?, limit: Int): List<Path> {
@@ -375,6 +443,9 @@ class CommunityFactStore(
 
     private fun recordPath(factId: UUID): Path = recordsDirectory.resolve("$factId.fact")
 
+    private fun memberAggregatePath(regionId: Int, memberUuid: UUID): Path =
+        memberAggregateDirectory.resolve(regionId.toString()).resolve(memberUuid.toString() + ".state")
+
     private fun externalPath(kind: String, reference: String): Path =
         externalDirectory.resolve("$kind-${digest(reference)}.idx")
 
@@ -386,12 +457,16 @@ class CommunityFactStore(
 
     private data class CachedFact(val fact: CommunityFact, val bytes: Long)
 
+    private data class AggregateState(val appliedSequence: Long = 0L, val amount: Long = 0L)
+
     private class CorruptSealedSegmentException(cause: Throwable) : RuntimeException(cause)
 
     companion object {
         private const val RECORD_MAGIC = 0x434d4631
         private const val CHECKPOINT_MAGIC = 0x434d4931
         private const val CHECKPOINT_VERSION = 1
+        private const val AGGREGATE_MAGIC = 0x434d4131
+        private const val AGGREGATE_VERSION = 1
         private const val RECORD_HEADER_BYTES = Int.SIZE_BYTES + Long.SIZE_BYTES + Int.SIZE_BYTES
         private const val MAX_FACT_BYTES = 1024 * 1024
         private const val MAX_PAGE_SIZE = 10_000

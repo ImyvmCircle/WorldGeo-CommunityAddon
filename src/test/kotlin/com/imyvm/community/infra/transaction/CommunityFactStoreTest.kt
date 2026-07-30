@@ -37,9 +37,11 @@ class CommunityFactStoreTest {
                 assertEquals(2, first.items.size)
                 assertEquals(2, second.items.size)
                 assertTrue(first.items.map { it.factId }.toSet().intersect(second.items.map { it.factId }.toSet()).isEmpty())
-                assertEquals(1, store.scanMember(memberUuid, null, 10).join().items.size)
+                assertEquals(1, store.scanMember(REGION_ID, memberUuid, null, 10).join().items.size)
                 assertEquals(1, store.scanOperation(operationId, null, 10).join().items.size)
                 assertEquals("period-10", store.findCursor(REGION_ID, "building", "region", "42").join()?.cursor)
+                assertEquals(510L, store.treasuryBalance(REGION_ID).join())
+                assertEquals(50L, store.memberContribution(REGION_ID, memberUuid).join())
                 assertTrue(store.cacheEntryCount() <= 2)
                 assertTrue(store.estimatedCacheBytes() <= 512)
             }
@@ -49,6 +51,8 @@ class CommunityFactStoreTest {
                 val recovered = CommunityFactStore(root, writer, maxCacheEntries = 2, maxCacheBytes = 512)
                 assertEquals(9L, recovered.rootSummary().join().appliedSequence)
                 assertEquals(5, recovered.scanTreasury(REGION_ID, null, 10).join().items.size)
+                assertEquals(510L, recovered.treasuryBalance(REGION_ID).join())
+                assertEquals(50L, recovered.memberContribution(REGION_ID, memberUuid).join())
                 assertEquals("period-10", recovered.findCursor(REGION_ID, "building", "region", "42").join()?.cursor)
             }
         } finally {
@@ -73,6 +77,24 @@ class CommunityFactStoreTest {
                 assertFailsWith<CompletionException> {
                     store.append(duplicate.copy(factId = UUID.randomUUID(), amount = first.amount + 1)).join()
                 }
+            }
+        } finally {
+            deleteTree(root)
+        }
+    }
+
+    @Test
+    fun aggregateOverflowIsRejectedBeforeFactIsWritten() {
+        val root = Files.createTempDirectory("community-aggregate-overflow")
+        try {
+            CommunityDataWriter(8).use { writer ->
+                val store = CommunityFactStore(root, writer)
+                store.append(treasury(1).copy(amount = Long.MAX_VALUE)).join()
+                assertFailsWith<CompletionException> {
+                    store.append(treasury(2).copy(amount = 1L)).join()
+                }
+                assertEquals(Long.MAX_VALUE, store.treasuryBalance(REGION_ID).join())
+                assertEquals(1L, store.rootSummary().join().appliedSequence)
             }
         } finally {
             deleteTree(root)
@@ -110,7 +132,7 @@ class CommunityFactStoreTest {
 
     private fun member(memberUuid: UUID) = MemberLedgerFact(
         UUID.randomUUID(), REGION_ID, 2L, memberUuid, 50L, ResourceDirection.CREDIT,
-        "donation", "member:1", "ledger.member"
+        "donation", "member:1", "ledger.member", countsAsContribution = true
     )
 
     private fun audit() = CommunityAuditFact(
