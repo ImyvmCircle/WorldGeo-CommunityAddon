@@ -28,9 +28,11 @@ class AccountTransactionService(
     private val walletAdapter: EconomyWalletAdapter,
     private val scheduler: ScheduledThreadPoolExecutor
 ) {
-    private val activeAccounts = HashSet<UUID>()
+    private val admission = BoundedAccountAdmission(MAX_ACTIVE_ACCOUNTS)
     private val scheduledRetries = AtomicInteger()
     private val observers = LinkedHashMap<UUID, (AccountTransactionState) -> Unit>()
+    private var recoveryRunning = false
+    private var recoveryScheduled = false
 
     fun submit(transaction: AccountTransaction): CompletableFuture<AccountTransactionState> =
         submit(transaction, null)
@@ -50,7 +52,7 @@ class AccountTransactionService(
                         if (state.status.isTerminal()) observer(state)
                         else if (observers.size < MAX_OBSERVERS) observers[state.transaction.transactionId] = observer
                     }
-                    kickAccount(state.transaction.subjectUuid)
+                    ensureKicked(state.transaction.subjectUuid)
                 }
             }
         }
@@ -58,48 +60,85 @@ class AccountTransactionService(
     }
 
     fun recover() {
-        scanRecoveryPage(null)
+        onServer { requestRecovery() }
     }
 
     fun identityAvailable(subjectUuid: UUID) {
-        onServer { kickAccount(subjectUuid) }
+        onServer { ensureKicked(subjectUuid) }
     }
 
     fun kick(subjectUuid: UUID) {
-        onServer { kickAccount(subjectUuid) }
+        onServer { ensureKicked(subjectUuid) }
     }
 
     fun terminalUpdated(state: AccountTransactionState) {
         onServer {
             if (state.status.isTerminal()) observers.remove(state.transaction.transactionId)?.invoke(state)
-            kickAccount(state.transaction.subjectUuid)
+            ensureKicked(state.transaction.subjectUuid)
         }
+    }
+
+    private fun requestRecovery() {
+        check(server.isSameThread)
+        if (recoveryRunning || recoveryScheduled) return
+        recoveryRunning = true
+        scanRecoveryPage(null)
     }
 
     private fun scanRecoveryPage(token: String?) {
         store.scanUnresolved(token, RECOVERY_PAGE_SIZE).whenComplete { page, error ->
-            if (error != null) {
-                WorldGeoCommunityAddon.logger.error("Failed to scan unresolved account transactions", error)
-                return@whenComplete
-            }
             onServer {
-                page.items.map { it.transaction.subjectUuid }.distinct().forEach(::kickAccount)
+                if (error != null) {
+                    WorldGeoCommunityAddon.logger.error("Failed to scan unresolved account transactions", error)
+                    scheduleRecovery()
+                    return@onServer
+                }
+                val saturated = page.items.map { it.transaction.subjectUuid }.distinct()
+                    .any { !kickAccount(it) }
+                when {
+                    saturated -> scheduleRecovery()
+                    page.items.size == RECOVERY_PAGE_SIZE && page.nextToken != null ->
+                        scanRecoveryPage(page.nextToken)
+                    else -> recoveryRunning = false
+                }
             }
-            if (page.items.size == RECOVERY_PAGE_SIZE && page.nextToken != null) scanRecoveryPage(page.nextToken)
         }
     }
 
-    private fun kickAccount(subjectUuid: UUID) {
+    private fun scheduleRecovery() {
         check(server.isSameThread)
-        if (!activeAccounts.add(subjectUuid)) return
-        findFirstUnresolved(subjectUuid, null)
+        recoveryRunning = false
+        if (recoveryScheduled) return
+        recoveryScheduled = true
+        scheduler.schedule({
+            onServer {
+                recoveryScheduled = false
+                requestRecovery()
+            }
+        }, RECOVERY_RESCAN_SECONDS, TimeUnit.SECONDS)
+    }
+
+    private fun ensureKicked(subjectUuid: UUID) {
+        if (!kickAccount(subjectUuid)) scheduleRecovery()
+    }
+
+    private fun kickAccount(subjectUuid: UUID): Boolean {
+        check(server.isSameThread)
+        return when (admission.acquire(subjectUuid)) {
+            AdmissionResult.ALREADY_ACTIVE -> true
+            AdmissionResult.SATURATED -> false
+            AdmissionResult.ACQUIRED -> {
+                findFirstUnresolved(subjectUuid, null)
+                true
+            }
+        }
     }
 
     private fun findFirstUnresolved(subjectUuid: UUID, token: String?) {
         store.scanAccountOrder(subjectUuid, token, ACCOUNT_PAGE_SIZE).whenComplete { page, error ->
             onServer {
                 if (error != null) {
-                    activeAccounts.remove(subjectUuid)
+                    releaseForRecovery(subjectUuid)
                     WorldGeoCommunityAddon.logger.error("Failed to read account order for $subjectUuid", error)
                     return@onServer
                 }
@@ -108,7 +147,7 @@ class AccountTransactionService(
                     unresolved != null -> resume(unresolved)
                     page.items.size == ACCOUNT_PAGE_SIZE && page.nextToken != null ->
                         findFirstUnresolved(subjectUuid, page.nextToken)
-                    else -> activeAccounts.remove(subjectUuid)
+                    else -> releaseAccount(subjectUuid)
                 }
             }
         }
@@ -116,7 +155,7 @@ class AccountTransactionService(
 
     private fun resume(state: AccountTransactionState) {
         if (state.status == AccountTransactionStatus.NEEDS_OP) {
-            activeAccounts.remove(state.transaction.subjectUuid)
+            releaseAccount(state.transaction.subjectUuid)
             return
         }
         val retryAt = state.nextRetryAtMillis
@@ -146,11 +185,11 @@ class AccountTransactionService(
 
     private fun waitForIdentity(state: AccountTransactionState) {
         if (state.status == AccountTransactionStatus.WAITING_IDENTITY) {
-            activeAccounts.remove(state.transaction.subjectUuid)
+            releaseAccount(state.transaction.subjectUuid)
             return
         }
         changeState(state, AccountTransactionStatus.WAITING_IDENTITY, "IDENTITY", "Trusted player name unavailable") {
-            activeAccounts.remove(state.transaction.subjectUuid)
+            releaseAccount(state.transaction.subjectUuid)
         }
     }
 
@@ -250,7 +289,7 @@ class AccountTransactionService(
 
     private fun needsOp(state: AccountTransactionState, reason: String, balance: Long?) {
         changeState(state, AccountTransactionStatus.NEEDS_OP, "RECONCILIATION", reason, balance) {
-            activeAccounts.remove(state.transaction.subjectUuid)
+            releaseAccount(state.transaction.subjectUuid)
         }
     }
 
@@ -272,7 +311,7 @@ class AccountTransactionService(
         store.changeState(fact).whenComplete { pending, persistError ->
             onServer {
                 if (persistError != null) {
-                    activeAccounts.remove(state.transaction.subjectUuid)
+                    releaseForRecovery(state.transaction.subjectUuid)
                     WorldGeoCommunityAddon.logger.error("Failed to persist account retry ${state.transaction.shortId}", persistError)
                     return@onServer
                 }
@@ -298,12 +337,12 @@ class AccountTransactionService(
             onServer {
                 when {
                     error != null -> {
-                        activeAccounts.remove(subjectUuid)
+                        releaseForRecovery(subjectUuid)
                         WorldGeoCommunityAddon.logger.error("Failed to reload scheduled account transaction", error)
                     }
-                    latest == null -> activeAccounts.remove(subjectUuid)
+                    latest == null -> releaseAccount(subjectUuid)
                     latest.status.isTerminal() -> processNext(subjectUuid)
-                    latest.status == AccountTransactionStatus.NEEDS_OP -> activeAccounts.remove(subjectUuid)
+                    latest.status == AccountTransactionStatus.NEEDS_OP -> releaseAccount(subjectUuid)
                     else -> resolveIdentity(latest)
                 }
             }
@@ -313,6 +352,15 @@ class AccountTransactionService(
     private fun processNext(subjectUuid: UUID) {
         check(server.isSameThread)
         findFirstUnresolved(subjectUuid, null)
+    }
+
+    private fun releaseAccount(subjectUuid: UUID) {
+        admission.release(subjectUuid)
+    }
+
+    private fun releaseForRecovery(subjectUuid: UUID) {
+        scheduleRecovery()
+        admission.release(subjectUuid)
     }
 
     private fun changeState(
@@ -334,7 +382,7 @@ class AccountTransactionService(
         )).whenComplete { updated, error ->
             onServer {
                 if (error != null) {
-                    activeAccounts.remove(state.transaction.subjectUuid)
+                    releaseForRecovery(state.transaction.subjectUuid)
                     WorldGeoCommunityAddon.logger.error("Failed to persist account state ${state.transaction.shortId}", error)
                 } else {
                     if (updated.status.isTerminal()) observers.remove(updated.transaction.transactionId)?.invoke(updated)
@@ -351,7 +399,9 @@ class AccountTransactionService(
     companion object {
         private const val RECOVERY_PAGE_SIZE = 128
         private const val ACCOUNT_PAGE_SIZE = 128
+        private const val MAX_ACTIVE_ACCOUNTS = 128
         private const val MAX_SCHEDULED_RETRIES = 256
+        private const val RECOVERY_RESCAN_SECONDS = 1L
         private const val MAX_OBSERVERS = 256
         private val RETRY_DELAYS_SECONDS = longArrayOf(10, 60, 300)
     }
