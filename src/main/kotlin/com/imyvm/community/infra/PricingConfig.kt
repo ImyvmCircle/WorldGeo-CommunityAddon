@@ -1,5 +1,6 @@
 package com.imyvm.community.infra
 
+import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.hoki.config.ConfigOption
 import com.imyvm.hoki.config.HokiConfig
 import com.imyvm.hoki.config.Option
@@ -581,6 +582,53 @@ class PricingConfig : HokiConfig("Pricing.conf") {
             obj.getLong(path)
         }
 
+
+        init {
+            listOf(
+                PRICE_MANOR, PRICE_REALM, COMMUNITY_JOIN_COST_REALM, COMMUNITY_JOIN_COST_MANOR,
+                MANOR_AREA_PRICE_PER_UNIT, REALM_AREA_PRICE_PER_UNIT,
+                SCOPE_ADDITION_BASE_COST_MANOR, SCOPE_ADDITION_BASE_COST_REALM,
+                RENAME_GLOBAL_COST, RENAME_SCOPE_COST,
+                TELEPORT_POINT_SECOND_POINT_BASE_COST, TELEPORT_POINT_MODIFY_COST, TELEPORT_PAID_BASE_COST,
+                PERMISSION_BUILD_BREAK_COEFFICIENT_PER_UNIT, PERMISSION_CONTAINER_COEFFICIENT_PER_UNIT,
+                PERMISSION_BUILD_COEFFICIENT_PER_UNIT, PERMISSION_BREAK_COEFFICIENT_PER_UNIT,
+                PERMISSION_BUCKET_BUILD_COEFFICIENT_PER_UNIT, PERMISSION_BUCKET_SCOOP_COEFFICIENT_PER_UNIT,
+                PERMISSION_INTERACTION_COEFFICIENT_PER_UNIT, PERMISSION_REDSTONE_COEFFICIENT_PER_UNIT,
+                PERMISSION_TRADE_COEFFICIENT_PER_UNIT, PERMISSION_PVP_COEFFICIENT_PER_UNIT,
+                PERMISSION_ANIMAL_KILLING_COEFFICIENT_PER_UNIT, PERMISSION_VILLAGER_KILLING_COEFFICIENT_PER_UNIT,
+                PERMISSION_THROWABLE_COEFFICIENT_PER_UNIT, PERMISSION_EGG_USE_COEFFICIENT_PER_UNIT,
+                PERMISSION_SNOWBALL_USE_COEFFICIENT_PER_UNIT, PERMISSION_POTION_USE_COEFFICIENT_PER_UNIT,
+                PERMISSION_FARMING_COEFFICIENT_PER_UNIT, PERMISSION_IGNITE_COEFFICIENT_PER_UNIT,
+                PERMISSION_ARMOR_STAND_COEFFICIENT_PER_UNIT, PERMISSION_ITEM_FRAME_COEFFICIENT_PER_UNIT,
+                PERMISSION_WIND_CHARGE_USE_COEFFICIENT_PER_UNIT,
+                RULE_SPAWN_MONSTERS_COEFFICIENT_PER_UNIT, RULE_SPAWN_PHANTOMS_COEFFICIENT_PER_UNIT,
+                RULE_TNT_BLOCK_PROTECTION_COEFFICIENT_PER_UNIT, RULE_ENDERMAN_BLOCK_PICKUP_COEFFICIENT_PER_UNIT,
+                RULE_SCULK_SPREAD_COEFFICIENT_PER_UNIT, RULE_SNOW_GOLEM_TRAIL_COEFFICIENT_PER_UNIT,
+                RULE_DISPENSER_COEFFICIENT_PER_UNIT, RULE_PRESSURE_PLATE_COEFFICIENT_PER_UNIT,
+                RULE_PISTON_COEFFICIENT_PER_UNIT, RULE_RPG_NATURAL_REGEN_COEFFICIENT_PER_UNIT,
+                RULE_RPG_FIRE_SPREAD_COEFFICIENT_PER_UNIT, RULE_RPG_HUNGER_COEFFICIENT_PER_UNIT
+            ).forEach { retainValid(it, { value -> value >= 0L }, "must not be negative") }
+            listOf(DIMENSION_PRICE_MULTIPLIER_NETHER, DIMENSION_PRICE_MULTIPLIER_END, PERMISSION_TARGET_PLAYER_DENOMINATOR)
+                .forEach { retainValid(it, { value -> value > 0L }, "must be positive") }
+            listOf(MANOR_FREE_AREA, REALM_FREE_AREA, MANOR_AREA_UNIT_SIZE, REALM_AREA_UNIT_SIZE)
+                .forEach { retainValid(it, { value -> value.isFinite() && value > 0.0 }, "must be finite and positive") }
+            retainValid(AREA_REFUND_RATE, { value -> value.isFinite() && value in 0.0..1.0 },
+                "must be finite and between 0.0 and 1.0")
+            retainValid(SCOPE_ADDITION_SOFT_LIMIT_MULTIPLIER, { value -> value.isFinite() && value >= 1.0 },
+                "must be finite and at least 1.0")
+            retainValid(PERMISSION_COEFFICIENT_UNIT_SIZE, { value -> value > 0 }, "must be positive")
+        }
+
+        private fun <T : Any> retainValid(option: Option<T>, valid: (T) -> Boolean, requirement: String) {
+            option.changeEvents.register { _, oldValue, newValue ->
+                if (newValue != null && !valid(newValue)) {
+                    WorldGeoCommunityAddon.logger.error(
+                        "Invalid pricing config " + option.key + ": " + requirement + "; retaining previous valid value"
+                    )
+                    option.setValue(oldValue)
+                }
+            }
+        }
 
         fun validateValues() {
             val nonNegativeLongOptions = listOf(
