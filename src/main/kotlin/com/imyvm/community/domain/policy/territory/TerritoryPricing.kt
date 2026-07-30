@@ -5,6 +5,9 @@ import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.domain.component.RuleKey
+import java.math.BigDecimal
+import java.math.BigInteger
+import java.math.RoundingMode
 
 data class PricingConfiguration(
     val freeArea: Double,
@@ -84,6 +87,8 @@ object TerritoryPricing {
     const val DIMENSION_END = "minecraft:the_end"
 
     private val DIMENSION_ORDER = listOf(DIMENSION_OVERWORLD, DIMENSION_NETHER, DIMENSION_END)
+    private const val MAX_EXACT_AREA = 9_007_199_254_740_991L
+    private const val MAX_PRICING_EXPONENT = 1024
 
     fun orderedDimensionIds(dimensionIds: Collection<String>): List<String> = sortDimensionIds(dimensionIds)
 
@@ -94,30 +99,33 @@ object TerritoryPricing {
         action: (tierNum: Int, bracketLow: Double, bracketHigh: Double, areaInBracket: Double, multiplier: Long, cost: Long) -> Unit
     ) {
         val config = getPricingConfig(isManor)
-        val x = config.freeArea
-        val n = config.pricePerUnit.toDouble() / config.unitSize
-        val lo = maxOf(fromArea, x)
-        val hi = maxOf(toArea, x)
+        val freeArea = positiveAreaToLong(config.freeArea, "land pricing free area")
+        val unitSize = positiveAreaToLong(config.unitSize, "land pricing unit size")
+        val lo = maxOf(areaToLong(fromArea), freeArea)
+        val hi = maxOf(areaToLong(toArea), freeArea)
         if (lo >= hi) return
-        var tierLow = x
-        var mult = 1L
+        var tierLow = freeArea
+        var multiplier = 1L
         var tierNum = 1
-        while (tierLow * 4.0 <= lo) {
-            tierLow *= 4.0
-            mult = mult shl 1
-            tierNum++
+        while (nextTier(tierLow) <= lo) {
+            tierLow = nextTier(tierLow)
+            multiplier = Math.multiplyExact(multiplier, 2L)
+            tierNum = Math.incrementExact(tierNum)
         }
         while (tierLow < hi) {
-            val tierHigh = tierLow * 4.0
+            val tierHigh = nextTier(tierLow)
             val bracketFrom = maxOf(lo, tierLow)
             val bracketTo = minOf(hi, tierHigh)
-            val areaInBracket = bracketTo - bracketFrom
-            if (areaInBracket > 0) {
-                action(tierNum, tierLow, tierHigh, areaInBracket, mult, (areaInBracket * n * mult).toLong())
+            val areaInBracket = Math.subtractExact(bracketTo, bracketFrom)
+            if (areaInBracket > 0L) {
+                action(
+                    tierNum, tierLow.toDouble(), tierHigh.toDouble(), areaInBracket.toDouble(), multiplier,
+                    bracketCost(areaInBracket, config.pricePerUnit, multiplier, unitSize)
+                )
             }
             tierLow = tierHigh
-            mult = mult shl 1
-            tierNum++
+            multiplier = Math.multiplyExact(multiplier, 2L)
+            tierNum = Math.incrementExact(tierNum)
         }
     }
 
@@ -129,30 +137,35 @@ object TerritoryPricing {
         freeArea: Double,
         action: (tierNum: Int, bracketLow: Double, bracketHigh: Double, areaInBracket: Double, multiplier: Long, cost: Long) -> Unit
     ) {
-        if (fromArea >= toArea || coefficientPerUnit == 0L) return
-        val x = freeArea
-        val n = coefficientPerUnit.toDouble() / unitSize
-        var tierLow = 0.0
-        var tierHigh = x
-        var mult = 1L
+        val from = areaToLong(fromArea)
+        val to = areaToLong(toArea)
+        if (from >= to || coefficientPerUnit == 0L) return
+        require(coefficientPerUnit > 0L) { "Setting coefficient must not be negative" }
+        val unit = positiveAreaToLong(unitSize, "setting pricing unit size")
+        var tierLow = 0L
+        var tierHigh = positiveAreaToLong(freeArea, "setting pricing free area")
+        var multiplier = 1L
         var tierNum = 1
-        while (tierHigh <= fromArea) {
+        while (tierHigh <= from) {
             tierLow = tierHigh
-            tierHigh = tierLow * 4.0
-            mult++
-            tierNum++
+            tierHigh = nextTier(tierLow)
+            multiplier = Math.incrementExact(multiplier)
+            tierNum = Math.incrementExact(tierNum)
         }
-        while (tierLow < toArea) {
-            val bracketFrom = maxOf(fromArea, tierLow)
-            val bracketTo = minOf(toArea, tierHigh)
-            val areaInBracket = bracketTo - bracketFrom
-            if (areaInBracket > 0) {
-                action(tierNum, tierLow, tierHigh, areaInBracket, mult, (areaInBracket * n * mult).toLong())
+        while (tierLow < to) {
+            val bracketFrom = maxOf(from, tierLow)
+            val bracketTo = minOf(to, tierHigh)
+            val areaInBracket = Math.subtractExact(bracketTo, bracketFrom)
+            if (areaInBracket > 0L) {
+                action(
+                    tierNum, tierLow.toDouble(), tierHigh.toDouble(), areaInBracket.toDouble(), multiplier,
+                    bracketCost(areaInBracket, coefficientPerUnit, multiplier, unit)
+                )
             }
             tierLow = tierHigh
-            tierHigh = tierLow * 4.0
-            mult++
-            tierNum++
+            tierHigh = nextTier(tierLow)
+            multiplier = Math.incrementExact(multiplier)
+            tierNum = Math.incrementExact(tierNum)
         }
     }
 
@@ -198,14 +211,14 @@ object TerritoryPricing {
     }
 
     fun getRegionAreaByDimension(region: Region): Map<String, Double> {
-        val totals = linkedMapOf<String, Double>()
+        val totals = linkedMapOf<String, Long>()
         for (scope in region.geometryScope) {
-            val area = scope.geoShape?.calculateArea() ?: 0.0
-            if (area <= 0.0) continue
+            val area = areaToLong(scope.geoShape?.calculateArea() ?: 0.0)
+            if (area == 0L) continue
             val dimensionId = getScopeDimensionId(scope)
-            totals[dimensionId] = (totals[dimensionId] ?: 0.0) + area
+            totals[dimensionId] = Math.addExact(totals[dimensionId] ?: 0L, area)
         }
-        return orderAreaMap(totals.mapValues { roundArea(it.value) })
+        return orderAreaMap(totals.mapValues { it.value.toDouble() })
     }
 
     fun buildAreaMap(dimensionId: String, area: Double): Map<String, Double> {
@@ -221,25 +234,38 @@ object TerritoryPricing {
     ): Map<String, Double> {
         val normalized = normalizeDimensionId(dimensionId)
         val updated = currentAreaByDimension.toMutableMap()
-        val current = updated[normalized] ?: 0.0
-        val next = roundArea((current + areaChange).coerceAtLeast(0.0))
-        if (next <= 0.0) {
+        val current = areaToLong(updated[normalized] ?: 0.0)
+        val next = maxOf(0L, Math.addExact(current, signedAreaToLong(areaChange)))
+        if (next == 0L) {
             updated.remove(normalized)
         } else {
-            updated[normalized] = next
+            updated[normalized] = next.toDouble()
         }
         return orderAreaMap(updated)
     }
 
     fun applyGeoscopePriceMultiplier(baseCost: Long, dimensionId: String): FixedPriceResult {
+        require(baseCost >= 0L) { "Base cost must not be negative" }
         val normalized = normalizeDimensionId(dimensionId)
         val multiplier = getDimensionMultiplier(normalized)
         return FixedPriceResult(
             baseCost = baseCost,
-            totalCost = baseCost * multiplier,
+            totalCost = Math.multiplyExact(baseCost, multiplier),
             dimensionId = normalized,
             dimensionMultiplier = multiplier
         )
+    }
+
+    fun calculateRefund(amount: Long): Long =
+        Math.negateExact(applyRate(amount, PricingConfig.AREA_REFUND_RATE.value))
+
+    fun applySoftLimitMultiplier(amount: Long, multiplier: Double, exponent: Int): Long {
+        require(amount >= 0L && multiplier.isFinite() && multiplier >= 1.0) { "Invalid scope soft-limit price" }
+        require(exponent in 0..MAX_PRICING_EXPONENT) { "Scope soft-limit exponent exceeds supported range" }
+        return BigDecimal.valueOf(amount)
+            .multiply(BigDecimal.valueOf(multiplier).pow(exponent))
+            .setScale(0, RoundingMode.DOWN)
+            .longValueExact()
     }
 
     fun calculateLandCostTotal(area: Double, isManor: Boolean): Long {
@@ -247,7 +273,7 @@ object TerritoryPricing {
     }
 
     fun calculateLandCostTotal(areaByDimension: Map<String, Double>, isManor: Boolean): Long {
-        return calculateLandCostBreakdown(areaByDimension, isManor).sumOf { it.subtotal }
+        return sumExact(calculateLandCostBreakdown(areaByDimension, isManor).map { it.subtotal })
     }
 
     fun calculateSettingCostTotal(
@@ -302,9 +328,9 @@ object TerritoryPricing {
         val costOld = calculateSettingCostResult(areaOldByDimension, coefficientPerUnit, unitSize, isPlayerTarget, freeArea).cost
         val costNew = calculateSettingCostResult(areaNewByDimension, coefficientPerUnit, unitSize, isPlayerTarget, freeArea).cost
         return if (sumArea(areaNewByDimension) >= sumArea(areaOldByDimension)) {
-            costNew - costOld
+            Math.subtractExact(costNew, costOld)
         } else {
-            ((costOld - costNew) * refundRate * -1).toLong()
+            Math.negateExact(applyRate(Math.subtractExact(costOld, costNew), refundRate))
         }
     }
 
@@ -329,11 +355,11 @@ object TerritoryPricing {
         val orderedAreaByDimension = orderAreaMap(areaByDimension)
         val baseCost = if (isManor) PricingConfig.PRICE_MANOR.value else PricingConfig.PRICE_REALM.value
         val dimensionCosts = calculateLandCostBreakdown(orderedAreaByDimension, isManor)
-        val areaCost = dimensionCosts.sumOf { it.subtotal }
+        val areaCost = sumExact(dimensionCosts.map { it.subtotal })
         return CreationCostResult(
             baseCost = baseCost,
             areaCost = areaCost,
-            totalCost = baseCost + areaCost,
+            totalCost = Math.addExact(baseCost, areaCost),
             area = roundArea(totalArea),
             dimensionCosts = dimensionCosts,
             areaByDimension = orderedAreaByDimension
@@ -341,9 +367,11 @@ object TerritoryPricing {
     }
 
     fun calculateModificationCost(areaChange: Double, currentTotalArea: Double, isManor: Boolean): ModificationCostResult {
+        val current = areaToLong(currentTotalArea)
+        val next = maxOf(0L, Math.addExact(current, signedAreaToLong(areaChange)))
         return calculateModificationCost(
-            buildAreaMap(DIMENSION_OVERWORLD, currentTotalArea),
-            buildAreaMap(DIMENSION_OVERWORLD, currentTotalArea + areaChange),
+            buildAreaMap(DIMENSION_OVERWORLD, current.toDouble()),
+            buildAreaMap(DIMENSION_OVERWORLD, next.toDouble()),
             isManor
         )
     }
@@ -370,8 +398,8 @@ object TerritoryPricing {
 
             if (areaAfter >= areaBefore) {
                 forEachLandBracket(areaBefore, areaAfter, isManor) { tierNum, low, high, areaIn, bracketMultiplier, cost ->
-                    val adjustedCost = cost * dimensionMultiplier
-                    grossCost += adjustedCost
+                    val adjustedCost = Math.multiplyExact(cost, dimensionMultiplier)
+                    grossCost = Math.addExact(grossCost, adjustedCost)
                     brackets.add(
                         DimensionBracketCost(tierNum, low, high, areaIn, bracketMultiplier, adjustedCost)
                     )
@@ -389,8 +417,8 @@ object TerritoryPricing {
                 )
             } else {
                 forEachLandBracket(areaAfter, areaBefore, isManor) { tierNum, low, high, areaIn, bracketMultiplier, cost ->
-                    val adjustedCost = cost * dimensionMultiplier
-                    grossCost += adjustedCost
+                    val adjustedCost = Math.multiplyExact(cost, dimensionMultiplier)
+                    grossCost = Math.addExact(grossCost, adjustedCost)
                     brackets.add(
                         DimensionBracketCost(tierNum, low, high, areaIn, bracketMultiplier, adjustedCost)
                     )
@@ -402,7 +430,7 @@ object TerritoryPricing {
                         areaAfter = areaAfter,
                         dimensionMultiplier = dimensionMultiplier,
                         grossCost = grossCost,
-                        subtotal = -((grossCost) * config.refundRate).toLong(),
+                        subtotal = Math.negateExact(applyRate(grossCost, config.refundRate)),
                         brackets = brackets
                     )
                 )
@@ -410,10 +438,10 @@ object TerritoryPricing {
         }
 
         return ModificationCostResult(
-            areaChange = roundArea(sumArea(orderedAreaAfterByDimension) - sumArea(orderedAreaBeforeByDimension)),
+            areaChange = roundSignedArea(sumArea(orderedAreaAfterByDimension) - sumArea(orderedAreaBeforeByDimension)),
             areaBefore = roundArea(sumArea(orderedAreaBeforeByDimension)),
             areaAfter = roundArea(sumArea(orderedAreaAfterByDimension)),
-            cost = dimensionCosts.sumOf { it.subtotal },
+            cost = sumExact(dimensionCosts.map { it.subtotal }),
             isIncrease = isIncrease,
             dimensionCosts = dimensionCosts,
             areaBeforeByDimension = orderedAreaBeforeByDimension,
@@ -449,7 +477,7 @@ object TerritoryPricing {
     ): Long {
         val result = calculatePermissionSettingCostResult(areaByDimension, permissionKey, isManor, isPlayerTarget)
         return if (isRestoringDefault) {
-            -(result.cost * PricingConfig.AREA_REFUND_RATE.value).toLong()
+            Math.negateExact(applyRate(result.cost, PricingConfig.AREA_REFUND_RATE.value))
         } else {
             result.cost
         }
@@ -519,7 +547,7 @@ object TerritoryPricing {
     ): Long {
         val result = calculateRuleSettingCostResult(areaByDimension, ruleKey, isManor)
         return if (isRestoringDefault) {
-            -(result.cost * PricingConfig.AREA_REFUND_RATE.value).toLong()
+            Math.negateExact(applyRate(result.cost, PricingConfig.AREA_REFUND_RATE.value))
         } else {
             result.cost
         }
@@ -563,8 +591,8 @@ object TerritoryPricing {
             val brackets = mutableListOf<DimensionBracketCost>()
             var grossCost = 0L
             forEachLandBracket(0.0, area, isManor) { tierNum, low, high, areaIn, bracketMultiplier, cost ->
-                val adjustedCost = cost * dimensionMultiplier
-                grossCost += adjustedCost
+                val adjustedCost = Math.multiplyExact(cost, dimensionMultiplier)
+                grossCost = Math.addExact(grossCost, adjustedCost)
                 brackets.add(DimensionBracketCost(tierNum, low, high, areaIn, bracketMultiplier, adjustedCost))
             }
             result.add(
@@ -600,8 +628,8 @@ object TerritoryPricing {
             val brackets = mutableListOf<DimensionBracketCost>()
             var grossCost = 0L
             forEachSettingBracket(0.0, area, coefficientPerUnit, unitSize, freeArea) { tierNum, low, high, areaIn, bracketMultiplier, cost ->
-                val adjustedCost = cost * dimensionMultiplier
-                grossCost += adjustedCost
+                val adjustedCost = Math.multiplyExact(cost, dimensionMultiplier)
+                grossCost = Math.addExact(grossCost, adjustedCost)
                 brackets.add(DimensionBracketCost(tierNum, low, high, areaIn, bracketMultiplier, adjustedCost))
             }
             result.add(
@@ -618,7 +646,7 @@ object TerritoryPricing {
         }
 
         return SettingCostResult(
-            cost = result.sumOf { it.subtotal } / denominator,
+            cost = sumExact(result.map { it.subtotal }) / denominator,
             denominator = denominator,
             dimensionCosts = result,
             areaByDimension = orderedAreaByDimension
@@ -644,10 +672,56 @@ object TerritoryPricing {
     }
 
     private fun sumArea(areaByDimension: Map<String, Double>): Double {
-        return roundArea(areaByDimension.values.sum())
+        val total = areaByDimension.values.fold(0L) { sum, area -> Math.addExact(sum, areaToLong(area)) }
+        require(total <= MAX_EXACT_AREA) { "Total area exceeds supported range" }
+        return total.toDouble()
     }
 
-    private fun roundArea(area: Double): Double {
-        return String.format("%.2f", area).toDouble()
+    private fun roundArea(area: Double): Double = areaToLong(area).toDouble()
+
+    private fun roundSignedArea(area: Double): Double = signedAreaToLong(area).toDouble()
+
+    private fun signedAreaToLong(area: Double): Long {
+        require(area.isFinite()) { "Area must be finite" }
+        val rounded = BigDecimal.valueOf(area).setScale(0, RoundingMode.HALF_UP).longValueExact()
+        require(rounded in -MAX_EXACT_AREA..MAX_EXACT_AREA) { "Area exceeds supported range" }
+        return rounded
     }
+
+    private fun areaToLong(area: Double): Long {
+        require(area.isFinite() && area >= 0.0) { "Area must be finite and non-negative" }
+        val rounded = BigDecimal.valueOf(area).setScale(0, RoundingMode.HALF_UP).longValueExact()
+        require(rounded <= MAX_EXACT_AREA) { "Area exceeds supported range" }
+        return rounded
+    }
+
+    private fun positiveAreaToLong(area: Double, name: String): Long =
+        areaToLong(area).also { require(it > 0L) { name + " must round to a positive integer area" } }
+
+    private fun nextTier(current: Long): Long {
+        require(current > 0L) { "Pricing tier must be positive" }
+        val next = Math.multiplyExact(current, 4L)
+        require(next > current) { "Pricing tier must advance" }
+        return next
+    }
+
+    private fun bracketCost(area: Long, coefficient: Long, multiplier: Long, unitSize: Long): Long {
+        require(area >= 0L && coefficient >= 0L && multiplier > 0L && unitSize > 0L) { "Invalid pricing quantity" }
+        return BigInteger.valueOf(area)
+            .multiply(BigInteger.valueOf(coefficient))
+            .multiply(BigInteger.valueOf(multiplier))
+            .divide(BigInteger.valueOf(unitSize))
+            .longValueExact()
+    }
+
+    private fun applyRate(amount: Long, rate: Double): Long {
+        require(amount >= 0L && rate.isFinite() && rate in 0.0..1.0) { "Invalid pricing rate" }
+        return BigDecimal.valueOf(amount)
+            .multiply(BigDecimal.valueOf(rate))
+            .setScale(0, RoundingMode.DOWN)
+            .longValueExact()
+    }
+
+    private fun sumExact(values: Iterable<Long>): Long =
+        values.fold(0L) { sum, value -> Math.addExact(sum, value) }
 }

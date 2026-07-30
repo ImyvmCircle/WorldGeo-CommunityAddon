@@ -112,7 +112,7 @@ fun runTogglingPermissionSetting(
             isPlayerTarget = playerObject != null
         )
         val cost = if (isRestoringDefault) {
-            -(costResult.cost * PricingConfig.AREA_REFUND_RATE.value).toLong()
+            TerritoryPricing.calculateRefund(costResult.cost)
         } else {
             costResult.cost
         }
@@ -197,7 +197,7 @@ fun runTogglingRuleSetting(
             isManor = community.isManor()
         )
         val cost = if (isRestoringDefault) {
-            -(costResult.cost * PricingConfig.AREA_REFUND_RATE.value).toLong()
+            TerritoryPricing.calculateRefund(costResult.cost)
         } else {
             costResult.cost
         }

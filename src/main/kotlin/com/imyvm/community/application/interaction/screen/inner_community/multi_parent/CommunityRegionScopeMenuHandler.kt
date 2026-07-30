@@ -203,7 +203,7 @@ private fun onCreateScopeRequest(
     val fixedCostResult = TerritoryPricing.applyGeoscopePriceMultiplier(fixedCostBase, newScopeDimensionId)
 
     val settingChanges = calculateRegionSettingsCostChanges(communityRegion, areaAfterByDimension, isManor)
-    val settingTotal = settingChanges.sumOf { it.costChange }
+    val settingTotal = settingChanges.fold(0L) { sum, change -> Math.addExact(sum, change.costChange) }
     val currentTotalArea = communityRegion.calculateTotalArea()
 
     val formalMemberCount = community.member.count {
@@ -216,11 +216,9 @@ private fun onCreateScopeRequest(
     val multiplier = PricingConfig.SCOPE_ADDITION_SOFT_LIMIT_MULTIPLIER.value
 
     // Surcharge applies to the entire creation cost (base + land + settings)
-    val rawTotal = fixedCostResult.totalCost + landCostChange + settingTotal
-    val adjustedTotal = if (excessCount > 0) {
-        (rawTotal * Math.pow(multiplier, excessCount.toDouble())).toLong()
-    } else rawTotal
-    val surcharge = adjustedTotal - rawTotal
+    val rawTotal = Math.addExact(Math.addExact(fixedCostResult.totalCost, landCostChange), settingTotal)
+    val adjustedTotal = TerritoryPricing.applySoftLimitMultiplier(rawTotal, multiplier, excessCount)
+    val surcharge = Math.subtractExact(adjustedTotal, rawTotal)
 
     val currentAssets = community.getTotalAssets()
 
