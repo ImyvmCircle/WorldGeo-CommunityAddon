@@ -106,9 +106,9 @@ class CommunityMenu(
 
         addButton(
             slot = 29,
-            name = Translator.tr("ui.community.button.interaction.fiscal").string,
-            item = Items.LECTERN
-        ) { runSendFiscalStatus(player, community) }
+            name = Translator.tr("ui.community.button.interaction.building").string,
+            item = Items.BRICKS
+        ) { runOpenCommunityBuildingMenu(player, community, runBack) }
 
         addButton(
             slot = 30,
@@ -118,9 +118,9 @@ class CommunityMenu(
 
         addButton(
             slot = 35,
-            name = Translator.tr("ui.community.button.interaction.title").string,
-            item = Items.NAME_TAG
-        ) { runSendTitleStatus(player, community) }
+            name = Translator.tr("ui.community.button.interaction.fiscal").string,
+            item = Items.LECTERN
+        ) { runSendFiscalStatus(player, community) }
 
         addButton(
             slot = 36,
@@ -130,9 +130,9 @@ class CommunityMenu(
 
         addButton(
             slot = 37,
-            name = Translator.tr("ui.community.button.interaction.building").string,
-            item = Items.BRICKS
-        ) { runOpenCommunityBuildingMenu(player, community, runBack) }
+            name = Translator.tr("ui.community.button.interaction.title").string,
+            item = Items.NAME_TAG
+        ) { runSendTitleStatus(player, community) }
 
         addButton(
             slot = 32,
