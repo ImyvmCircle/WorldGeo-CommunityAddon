@@ -445,12 +445,13 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                                     .then(
                                         argument("policy", StringArgumentType.word())
                                             .suggests(FISCAL_POLICY_PROVIDER)
+                                            .executes { runFiscalPolicyAuto(it) }
                                             .then(
-                                                argument("currentWeek", StringArgumentType.word())
+                                                argument("currentWeek", StringArgumentType.word()).suggests(FISCAL_WEEK_PROVIDER)
                                                     .then(
                                                         argument("nextWeek", StringArgumentType.word())
                                                             .then(
-                                                                argument("cooldownUntilWeek", StringArgumentType.word())
+                                                                argument("cooldownUntilWeek", StringArgumentType.word()).suggests(FISCAL_WEEK_PROVIDER)
                                                                     .executes { runFiscalPolicy(it) }
                                                             )
                                                     )
@@ -1558,6 +1559,14 @@ private fun runTitleSelect(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
     return identifierHandler(player, communityIdentifier) { community -> onTitleSelect(player, community) }
+}
+
+private fun runFiscalPolicyAuto(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    return identifierHandler(player, communityIdentifier) { community ->
+        onFiscalPolicy(player, community, StringArgumentType.getString(context, "policy"))
+    }
 }
 
 private fun runFiscalPolicy(context: CommandContext<CommandSourceStack>): Int {

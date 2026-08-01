@@ -7,6 +7,24 @@ import com.imyvm.community.util.Translator
 import net.minecraft.server.level.ServerPlayer
 import java.util.UUID
 
+fun onFiscalPolicy(player: ServerPlayer, community: Community, policyName: String): Int {
+    val policy = runCatching { CommunityFiscalPolicy.valueOf(policyName.uppercase()) }.getOrNull()
+    if (policy == null) {
+        player.sendSystemMessage(Translator.tr("command.community.fiscal.failed", "unknown policy"))
+        return 0
+    }
+    return CommunityFiscalService.schedulePolicyForCurrentWeek(community, policy).fold(
+        onSuccess = { (cost, nextWeek) ->
+            player.sendSystemMessage(Translator.tr("command.community.fiscal.policy.success", community.generateCommunityMark(), policy.name, nextWeek, format(cost)))
+            1
+        },
+        onFailure = { error ->
+            player.sendSystemMessage(Translator.tr("command.community.fiscal.failed", error.message ?: error::class.java.simpleName))
+            0
+        }
+    )
+}
+
 fun onFiscalPolicy(player: ServerPlayer, community: Community, policyName: String, currentWeek: String, nextWeek: String, cooldownUntilWeek: String): Int {
     val policy = runCatching { CommunityFiscalPolicy.valueOf(policyName.uppercase()) }.getOrNull()
     if (policy == null) {

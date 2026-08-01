@@ -1003,7 +1003,7 @@
   "community.treasury.desc.fiscal_tax": "Fiscal week {0} tax income",
   "community.treasury.desc.fiscal_welfare": "Fiscal week {0} welfare spending",
   "community.command.help.section_fiscal": "§6Fiscal",
-  "community.command.help.fiscal_policy": "§7/community fiscal policy <community> <policy> <currentWeek> <effectiveWeek> <cooldownUntil> §f- Schedule a fiscal policy switch",
+  "community.command.help.fiscal_policy": "§7/community fiscal policy <community> <policy> §f- Schedule a fiscal policy switch for next week with automatic cooldown",
   "community.command.help.fiscal_preview": "§7/community fiscal tax_preview|welfare_preview <community> <week> §f- Preview tax or welfare",
   "community.command.help.fiscal_settle": "§7/community fiscal settle <week> §f- OP advances fiscal settlement for the week",
   "community.command.help.fiscal_history": "§7/community fiscal history <community> §f- Show frozen fiscal settlement history"

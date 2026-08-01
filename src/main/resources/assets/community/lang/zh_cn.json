@@ -1024,7 +1024,7 @@
   "community.treasury.desc.fiscal_tax": "税收福利周 {0} 税款入账",
   "community.treasury.desc.fiscal_welfare": "税收福利周 {0} 福利支出",
   "community.command.help.section_fiscal": "§6税收福利",
-  "community.command.help.fiscal_policy": "§7/community fiscal policy <社区> <政策> <当前周> <生效周> <冷却至> §f- 计划切换税收福利政策",
+  "community.command.help.fiscal_policy": "§7/community fiscal policy <社区> <政策> §f- 计划切换税收福利政策，自动下周生效并设置冷却",
   "community.command.help.fiscal_preview": "§7/community fiscal tax_preview|welfare_preview <社区> <周> §f- 查看税收或福利预览",
   "community.command.help.fiscal_settle": "§7/community fiscal settle <周> §f- OP 推进该周税收福利结算",
   "community.command.help.fiscal_history": "§7/community fiscal history <社区> §f- 查看税收福利冻结历史"

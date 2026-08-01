@@ -116,6 +116,17 @@ object CommunityFiscalService {
         }
     }
 
+    fun schedulePolicyForCurrentWeek(community: Community, policy: CommunityFiscalPolicy): Result<Pair<Long, String>> {
+        val current = RegionDataApi.getCurrentNaturalPeriodKeys()[NaturalPeriodKind.WEEK]
+            ?: return Result.failure(IllegalStateException("current week unavailable"))
+        val next = nextPeriodKey(current.timelineId, NaturalPeriodKind.WEEK, current.periodId)
+            ?: return Result.failure(IllegalStateException("next week unavailable"))
+        val cooldown = nextPeriodKey(next.timelineId, NaturalPeriodKind.WEEK, next.periodId)
+            ?: return Result.failure(IllegalStateException("cooldown week unavailable"))
+        return schedulePolicy(community, policy, periodLedgerKey(current), periodLedgerKey(next), periodLedgerKey(cooldown))
+            .map { it to periodLedgerKey(next) }
+    }
+
     fun schedulePolicy(community: Community, policy: CommunityFiscalPolicy, currentWeekKey: String, nextWeekKey: String, cooldownUntilWeekKey: String): Result<Long> {
         val cost = PricingConfig.FISCAL_POLICY_SWITCH_COST.value
         if (community.fiscalState.pendingPolicy != null) return Result.failure(IllegalStateException("policy switch already pending"))
@@ -347,6 +358,18 @@ object CommunityFiscalService {
         val range = RegionDataApi.getAvailableNaturalPeriodRange(timeline.timelineId, kind) ?: return null
         return if (timeline.closed) range.latest else previousPeriodKey(range.latest)
     }
+
+    private fun nextPeriodKey(timelineId: String, kind: NaturalPeriodKind, periodId: String): NaturalPeriodKey? = runCatching {
+        NaturalPeriodKey(timelineId, kind, when {
+            periodId.startsWith("test:${kind.name.lowercase(Locale.ROOT)}:") -> {
+                val prefix = "test:${kind.name.lowercase(Locale.ROOT)}:"
+                prefix + (periodId.removePrefix(prefix).toLong() + 1L)
+            }
+            kind == NaturalPeriodKind.HOUR -> LocalDateTime.parse(periodId, HOUR_FORMATTER).plusHours(1).format(HOUR_FORMATTER)
+            kind == NaturalPeriodKind.WEEK -> formatWeek(parseWeekStart(periodId).plusWeeks(1))
+            else -> return null
+        })
+    }.getOrNull()
 
     private fun previousPeriodKey(key: NaturalPeriodKey): NaturalPeriodKey? = runCatching {
         NaturalPeriodKey(key.timelineId, key.kind, when {
