@@ -177,6 +177,13 @@ private fun handleExpiredOperation(
                     ?.sendSystemMessage(Translator.tr("community.treasury_grant.confirmation.expired"))
             }
         }
+        PendingOperationType.BUILDING_CONFIRMATION -> {
+            iterator.remove()
+            operation.buildingData?.executorUUID?.let { executorUUID ->
+                server.playerList.getPlayer(executorUUID)
+                    ?.sendSystemMessage(Translator.tr("community.building.confirm.expired"))
+            }
+        }
         else -> {
             WorldGeoCommunityAddon.logger.info(
                 "Unhandled expired operation type: ${operation.type} for key $key"
