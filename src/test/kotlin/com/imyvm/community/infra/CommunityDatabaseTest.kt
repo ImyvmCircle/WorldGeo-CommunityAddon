@@ -22,10 +22,70 @@ import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.domain.model.community.Announcement
 import com.imyvm.community.domain.model.community.CommunityMessage
 import com.imyvm.community.domain.model.community.MessageType
+import com.imyvm.community.domain.model.community.CommunityBuildingWeekLedger
+import com.imyvm.community.domain.model.community.CommunityBuildingState
+import com.imyvm.community.domain.model.community.CommunityBuildingEntry
 import net.minecraft.network.chat.Component
 import java.util.UUID
 
 class CommunityDatabaseTest {
+
+
+    @Test
+    fun communityBuildingSectionPreservesFrozenTemplateFields() {
+        val ownerUUID = UUID.fromString("00000000-0000-0000-0000-000000000001")
+        val builderUUID = UUID.fromString("00000000-0000-0000-0000-000000000002")
+        val community = Community(
+            regionNumberId = 77,
+            member = hashMapOf(ownerUUID to MemberAccount(1L, MemberRoleType.OWNER)),
+            joinPolicy = CommunityJoinPolicy.OPEN,
+            status = CommunityStatus.ACTIVE_REALM,
+            buildingState = CommunityBuildingState(
+                capacityUnits = 20,
+                stylePackage = mutableListOf(
+                    CommunityBuildingEntry(
+                        "minecraft:oak_planks",
+                        2,
+                        150L,
+                        mutableListOf("minecraft:oak_stairs"),
+                        9L,
+                        "2026-08-01T12",
+                        false
+                    )
+                ),
+                processedHourPeriodIds = mutableListOf("hour-1"),
+                processedWeekPeriodIds = mutableListOf("week-1"),
+                playerWeekLedgers = hashMapOf(builderUUID to CommunityBuildingWeekLedger("week-1", 500L))
+            )
+        )
+        CommunityDatabase.communities = mutableListOf(community)
+        val bytes = ByteArrayOutputStream()
+        val saveMethod = CommunityDatabase.javaClass.getDeclaredMethod("saveCommunityBuildingSection", DataOutputStream::class.java)
+        saveMethod.isAccessible = true
+        saveMethod.invoke(CommunityDatabase, DataOutputStream(bytes))
+
+        CommunityDatabase.communities = mutableListOf(
+            Community(
+                regionNumberId = 77,
+                member = hashMapOf(ownerUUID to MemberAccount(1L, MemberRoleType.OWNER)),
+                joinPolicy = CommunityJoinPolicy.OPEN,
+                status = CommunityStatus.ACTIVE_REALM
+            )
+        )
+        val loadMethod = CommunityDatabase.javaClass.getDeclaredMethod("loadCommunityBuildingSection", DataInputStream::class.java)
+        loadMethod.isAccessible = true
+        loadMethod.invoke(CommunityDatabase, DataInputStream(ByteArrayInputStream(bytes.toByteArray())))
+
+        val loaded = CommunityDatabase.communities.single().buildingState
+        val entry = loaded.stylePackage.single()
+        assertEquals(20, loaded.capacityUnits)
+        assertEquals("minecraft:oak_planks", entry.baseBlockId)
+        assertEquals(listOf("minecraft:oak_stairs"), entry.linkedBlockIds)
+        assertEquals(9L, entry.templateVersion)
+        assertEquals("2026-08-01T12", entry.selectionCheckpoint)
+        assertFalse(entry.active)
+        assertEquals(500L, loaded.playerWeekLedgers[builderUUID]?.settledAmount)
+    }
 
     @Test
     fun writeSectionPrefixesPayloadWithTagAndLength() {

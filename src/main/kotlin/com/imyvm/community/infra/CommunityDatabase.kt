@@ -31,6 +31,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.util.*
+import java.util.zip.CRC32
 
 object CommunityDatabase {
 
@@ -50,6 +51,7 @@ object CommunityDatabase {
     private const val MAX_SECTION_BYTES = 16 * 1024 * 1024
     private const val MAX_COMMUNITY_BYTES = 16 * 1024 * 1024
     private const val MAX_COMMUNITIES = 100_000
+    private const val BUILDING_RECORD_VERSION = 1
     private const val MAX_COLLECTION_ENTRIES = 1_000_000
     private var legacyDatabaseLoaded = false
     private var legacyBackupCreated = false
@@ -995,88 +997,113 @@ object CommunityDatabase {
     private fun saveCommunityBuildingSection(stream: DataOutputStream) {
         val targets = communities.filter { it.regionNumberId != null && (it.buildingState.stylePackage.isNotEmpty() || it.buildingState.capacityUnits != 12 || it.buildingState.processedHourPeriodIds.isNotEmpty() || it.buildingState.processedWeekPeriodIds.isNotEmpty() || it.buildingState.playerWeekLedgers.isNotEmpty() || it.buildingState.pendingPayouts.isNotEmpty()) }
         stream.writeInt(targets.size)
-        for (community in targets) {
+        for (community in targets) writeCommunityBuildingRecord(stream, community)
+    }
+
+    private fun writeCommunityBuildingRecord(stream: DataOutputStream, community: Community) {
+        val buffer = ByteArrayOutputStream()
+        DataOutputStream(buffer).use { record ->
             val state = community.buildingState
-            stream.writeInt(community.regionNumberId!!)
-            stream.writeInt(state.capacityUnits)
-            stream.writeInt(state.stylePackage.size)
+            record.writeInt(BUILDING_RECORD_VERSION)
+            record.writeInt(community.regionNumberId!!)
+            record.writeInt(state.capacityUnits)
+            record.writeInt(state.stylePackage.size)
             for (entry in state.stylePackage) {
-                stream.writeUTF(entry.baseBlockId)
-                stream.writeInt(entry.unitCost)
-                stream.writeLong(entry.rewardPerBlock)
-                stream.writeInt(entry.linkedBlockIds.size)
-                for (linked in entry.linkedBlockIds) stream.writeUTF(linked)
-                stream.writeLong(entry.templateVersion)
-                stream.writeUTF(entry.selectionCheckpoint)
-                stream.writeBoolean(entry.active)
+                record.writeUTF(entry.baseBlockId)
+                record.writeInt(entry.unitCost)
+                record.writeLong(entry.rewardPerBlock)
+                record.writeInt(entry.linkedBlockIds.size)
+                for (linked in entry.linkedBlockIds) record.writeUTF(linked)
+                record.writeLong(entry.templateVersion)
+                record.writeUTF(entry.selectionCheckpoint)
+                record.writeBoolean(entry.active)
             }
-            stream.writeInt(state.processedHourPeriodIds.size)
-            for (id in state.processedHourPeriodIds) stream.writeUTF(id)
-            stream.writeInt(state.processedWeekPeriodIds.size)
-            for (id in state.processedWeekPeriodIds) stream.writeUTF(id)
-            stream.writeInt(state.playerWeekLedgers.size)
+            record.writeInt(state.processedHourPeriodIds.size)
+            for (id in state.processedHourPeriodIds) record.writeUTF(id)
+            record.writeInt(state.processedWeekPeriodIds.size)
+            for (id in state.processedWeekPeriodIds) record.writeUTF(id)
+            record.writeInt(state.playerWeekLedgers.size)
             for ((uuid, ledger) in state.playerWeekLedgers) {
-                stream.writeUTF(uuid.toString())
-                stream.writeUTF(ledger.weekPeriodId)
-                stream.writeLong(ledger.settledAmount)
+                record.writeUTF(uuid.toString())
+                record.writeUTF(ledger.weekPeriodId)
+                record.writeLong(ledger.settledAmount)
             }
-            stream.writeInt(state.pendingPayouts.size)
+            record.writeInt(state.pendingPayouts.size)
             for (payout in state.pendingPayouts) {
-                stream.writeUTF(payout.playerUuid.toString())
-                stream.writeLong(payout.amount)
-                stream.writeUTF(payout.hourPeriodId)
-                stream.writeUTF(payout.weekPeriodId)
-                stream.writeLong(payout.blockCount)
-                stream.writeLong(payout.createdAt)
+                record.writeUTF(payout.playerUuid.toString())
+                record.writeLong(payout.amount)
+                record.writeUTF(payout.hourPeriodId)
+                record.writeUTF(payout.weekPeriodId)
+                record.writeLong(payout.blockCount)
+                record.writeLong(payout.createdAt)
             }
         }
+        val payload = buffer.toByteArray()
+        require(payload.size <= MAX_COMMUNITY_BYTES) { "Community building record is too large" }
+        stream.writeInt(payload.size)
+        stream.writeInt(checksum(payload))
+        stream.write(payload)
     }
 
     private fun loadCommunityBuildingSection(stream: DataInputStream) {
-        val entryCount = readCount(stream, "community building")
-        for (i in 0 until entryCount) {
-            val regionId = stream.readInt()
-            val community = getCommunityById(regionId) ?: continue
-            val capacityUnits = stream.readInt()
-            val styleSize = readCount(stream, "community building style")
+        val recordCount = readCount(stream, "community building")
+        for (i in 0 until recordCount) {
+            val payloadSize = readCount(stream, "community building record bytes")
+            if (payloadSize > MAX_COMMUNITY_BYTES) throw IOException("community building record is too large")
+            val expectedChecksum = stream.readInt()
+            val payload = ByteArray(payloadSize)
+            stream.readFully(payload)
+            if (checksum(payload) != expectedChecksum) continue
+            runCatching { loadCommunityBuildingRecord(payload) }
+        }
+    }
+
+    private fun loadCommunityBuildingRecord(payload: ByteArray) {
+        DataInputStream(ByteArrayInputStream(payload)).use { record ->
+            val version = record.readInt()
+            if (version != BUILDING_RECORD_VERSION) return
+            val regionId = record.readInt()
+            val capacityUnits = record.readInt()
+            val styleSize = readCount(record, "community building style")
             val stylePackage = mutableListOf<CommunityBuildingEntry>()
             for (j in 0 until styleSize) {
-                val baseBlockId = stream.readUTF()
-                val unitCost = stream.readInt()
-                val rewardPerBlock = stream.readLong()
-                val linkedSize = readCount(stream, "community building linked")
-                val linked = MutableList(linkedSize) { stream.readUTF() }
-                val templateVersion = stream.readLong()
-                val selectionCheckpoint = stream.readUTF()
-                val active = stream.readBoolean()
+                val baseBlockId = record.readUTF()
+                val unitCost = record.readInt()
+                val rewardPerBlock = record.readLong()
+                val linkedSize = readCount(record, "community building linked")
+                val linked = MutableList(linkedSize) { record.readUTF() }
+                val templateVersion = record.readLong()
+                val selectionCheckpoint = record.readUTF()
+                val active = record.readBoolean()
                 stylePackage.add(CommunityBuildingEntry(baseBlockId, unitCost, rewardPerBlock, linked.toMutableList(), templateVersion, selectionCheckpoint, active))
             }
-            val hourSize = readCount(stream, "community building processed hour")
-            val processedHours = MutableList(hourSize) { stream.readUTF() }
-            val weekSize = readCount(stream, "community building processed week")
-            val processedWeeks = MutableList(weekSize) { stream.readUTF() }
-            val ledgerSize = readCount(stream, "community building ledger")
+            val hourSize = readCount(record, "community building processed hour")
+            val processedHours = MutableList(hourSize) { record.readUTF() }
+            val weekSize = readCount(record, "community building processed week")
+            val processedWeeks = MutableList(weekSize) { record.readUTF() }
+            val ledgerSize = readCount(record, "community building ledger")
             val ledgers = HashMap<UUID, CommunityBuildingWeekLedger>(ledgerSize)
             for (j in 0 until ledgerSize) {
-                val uuid = UUID.fromString(stream.readUTF())
-                val weekId = stream.readUTF()
-                val settledAmount = stream.readLong()
+                val uuid = UUID.fromString(record.readUTF())
+                val weekId = record.readUTF()
+                val settledAmount = record.readLong()
                 ledgers[uuid] = CommunityBuildingWeekLedger(weekId, settledAmount)
             }
-            val payoutSize = readCount(stream, "community building payout")
+            val payoutSize = readCount(record, "community building payout")
             val payouts = mutableListOf<CommunityBuildingPendingPayout>()
             for (j in 0 until payoutSize) {
                 payouts.add(
                     CommunityBuildingPendingPayout(
-                        playerUuid = UUID.fromString(stream.readUTF()),
-                        amount = stream.readLong(),
-                        hourPeriodId = stream.readUTF(),
-                        weekPeriodId = stream.readUTF(),
-                        blockCount = stream.readLong(),
-                        createdAt = stream.readLong()
+                        playerUuid = UUID.fromString(record.readUTF()),
+                        amount = record.readLong(),
+                        hourPeriodId = record.readUTF(),
+                        weekPeriodId = record.readUTF(),
+                        blockCount = record.readLong(),
+                        createdAt = record.readLong()
                     )
                 )
             }
+            val community = getCommunityById(regionId) ?: return
             community.buildingState = CommunityBuildingState(
                 capacityUnits = capacityUnits,
                 stylePackage = stylePackage,
@@ -1087,6 +1114,8 @@ object CommunityDatabase {
             )
         }
     }
+
+    private fun checksum(payload: ByteArray): Int = CRC32().apply { update(payload) }.value.toInt()
 
 
     private fun saveCommunityBuildingCatalogSection(stream: DataOutputStream) {
