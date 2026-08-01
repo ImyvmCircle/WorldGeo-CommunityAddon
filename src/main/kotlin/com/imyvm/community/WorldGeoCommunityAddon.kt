@@ -1,5 +1,6 @@
 package com.imyvm.community
 
+import com.imyvm.community.application.fiscal.CommunityFiscalService
 import com.imyvm.community.application.townbuilding.CommunityBuildingService
 import com.imyvm.community.domain.model.PendingOperationStore
 import com.imyvm.community.entrypoint.command.register
@@ -44,6 +45,7 @@ class WorldGeoCommunityAddon : ModInitializer {
         registerDonationAccountRecovery()
         registerTeleportAccountRecovery()
         CommunityBuildingService.register()
+        CommunityFiscalService.register()
         registerChatInterceptor()
 
         CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> register(dispatcher) }

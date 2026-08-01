@@ -56,4 +56,28 @@ fun onFiscalWelfarePreview(player: ServerPlayer, community: Community, weekKey: 
     return 1
 }
 
+fun onFiscalSettle(player: ServerPlayer, weekKey: String): Int {
+    return CommunityFiscalService.settleWeek(weekKey).fold(
+        onSuccess = { summary ->
+            player.sendSystemMessage(Translator.tr("command.community.fiscal.settle.success", weekKey, summary.frozenCommunities.toString(), summary.submittedTaxTransactions.toString(), format(summary.appliedTaxTotal), format(summary.welfareTotal)))
+            1
+        },
+        onFailure = { error ->
+            player.sendSystemMessage(Translator.tr("command.community.fiscal.failed", error.message ?: error::class.java.simpleName))
+            0
+        }
+    )
+}
+
+fun onFiscalHistory(player: ServerPlayer, community: Community): Int {
+    val settlements = CommunityFiscalService.settlementHistory(community).take(5)
+    player.sendSystemMessage(Translator.tr("command.community.fiscal.history.header", community.generateCommunityMark(), settlements.size.toString()))
+    settlements.forEach { settlement ->
+        val tax = settlement.taxLines.fold(0L) { acc, line -> Math.addExact(acc, line.taxAmount) }
+        val welfare = settlement.welfareLines.fold(0L) { acc, line -> Math.addExact(acc, line.actualAmount) }
+        player.sendSystemMessage(Translator.tr("command.community.fiscal.history.line", settlement.weekKey, settlement.policy.name, settlement.status.name, settlement.taxLines.size.toString(), format(tax), settlement.welfareLines.size.toString(), format(welfare)))
+    }
+    return 1
+}
+
 private fun format(amount: Long): String = "%.2f".format(amount / 100.0)

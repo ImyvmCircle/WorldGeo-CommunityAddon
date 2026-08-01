@@ -996,5 +996,15 @@
   "community.building.confirm.invalid_community": "§cThis community state does not allow the building operation.",
   "community.building.confirm.cancelled": "§7Building operation cancelled.",
   "community.command.help.building_confirm": "§7/community building confirm <community> §fConfirm a pending building operation.",
-  "community.command.help.building_cancel": "§7/community building cancel <community> §fCancel a pending building operation."
+  "community.command.help.building_cancel": "§7/community building cancel <community> §fCancel a pending building operation.",
+  "command.community.fiscal.settle.success": "§aFiscal settlement advanced: week §f{0} §7| newly frozen communities §f{1} §7| tax transactions §f{2} §7| applied tax §c{3} §7| welfare §b{4}",
+  "command.community.fiscal.history.header": "§6§l[Fiscal History]§r §f{0} §7| recent records §f{1}",
+  "command.community.fiscal.history.line": "§7- week §f{0} §7| policy §f{1} §7| status §f{2} §7| tax §f{3} players/§c{4} §7| welfare §f{5} players/§b{6}",
+  "community.treasury.desc.fiscal_tax": "Fiscal week {0} tax income",
+  "community.treasury.desc.fiscal_welfare": "Fiscal week {0} welfare spending",
+  "community.command.help.section_fiscal": "§6Fiscal",
+  "community.command.help.fiscal_policy": "§7/community fiscal policy <community> <policy> <currentWeek> <effectiveWeek> <cooldownUntil> §f- Schedule a fiscal policy switch",
+  "community.command.help.fiscal_preview": "§7/community fiscal tax_preview|welfare_preview <community> <week> §f- Preview tax or welfare",
+  "community.command.help.fiscal_settle": "§7/community fiscal settle <week> §f- OP advances fiscal settlement for the week",
+  "community.command.help.fiscal_history": "§7/community fiscal history <community> §f- Show frozen fiscal settlement history"
 }

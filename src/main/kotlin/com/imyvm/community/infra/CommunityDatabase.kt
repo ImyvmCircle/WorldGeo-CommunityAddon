@@ -19,10 +19,15 @@ import com.imyvm.community.domain.model.TurnoverSource
 import com.imyvm.community.domain.model.community.*
 import com.imyvm.community.domain.model.title.CommunityTitleSlot
 import com.imyvm.community.domain.model.title.CommunityTitleState
+import com.imyvm.community.domain.model.fiscal.CommunityFiscalLineStatus
 import com.imyvm.community.domain.model.fiscal.CommunityFiscalObservation
 import com.imyvm.community.domain.model.fiscal.CommunityFiscalPolicy
 import com.imyvm.community.domain.model.fiscal.CommunityFiscalPolicySwitch
+import com.imyvm.community.domain.model.fiscal.CommunityFiscalSettlement
+import com.imyvm.community.domain.model.fiscal.CommunityFiscalSettlementStatus
 import com.imyvm.community.domain.model.fiscal.CommunityFiscalState
+import com.imyvm.community.domain.model.fiscal.CommunityFiscalTaxSettlementLine
+import com.imyvm.community.domain.model.fiscal.CommunityFiscalWelfareSettlementLine
 import com.imyvm.community.domain.model.development.CommunityDevelopmentActivityWeek
 import com.imyvm.community.domain.model.development.CommunityDevelopmentBreakdown
 import com.imyvm.community.domain.model.development.CommunityDevelopmentInputs
@@ -67,6 +72,8 @@ object CommunityDatabase {
     private const val MAX_COMMUNITY_BYTES = 16 * 1024 * 1024
     private const val MAX_COMMUNITIES = 100_000
     private const val BUILDING_RECORD_VERSION = 3
+    private const val FISCAL_SECTION_VERSION_MARKER = -2
+    private const val FISCAL_SECTION_VERSION = 2
     private const val DEVELOPMENT_SECTION_VERSION_MARKER = -2
     private const val DEVELOPMENT_SECTION_VERSION = 2
     private const val MAX_COLLECTION_ENTRIES = 1_000_000
@@ -1195,8 +1202,10 @@ object CommunityDatabase {
     private fun saveCommunityFiscalSection(stream: DataOutputStream) {
         val targets = communities.filter { community ->
             community.regionNumberId != null &&
-                (community.fiscalState.activePolicy != CommunityFiscalPolicy.NEOLIBERALISM || community.fiscalState.pendingPolicy != null || community.fiscalState.memberObservations.isNotEmpty() || community.fiscalState.settledWeekKeys.isNotEmpty())
+                (community.fiscalState.activePolicy != CommunityFiscalPolicy.NEOLIBERALISM || community.fiscalState.pendingPolicy != null || community.fiscalState.policyCooldownUntilWeekKey.isNotEmpty() || community.fiscalState.memberObservations.isNotEmpty() || community.fiscalState.settledWeekKeys.isNotEmpty() || community.fiscalState.settlements.isNotEmpty())
         }
+        stream.writeInt(FISCAL_SECTION_VERSION_MARKER)
+        stream.writeInt(FISCAL_SECTION_VERSION)
         stream.writeInt(targets.size)
         for (community in targets) {
             val state = community.fiscalState
@@ -1209,6 +1218,7 @@ object CommunityDatabase {
                 stream.writeUTF(pending.cooldownUntilWeekKey)
                 stream.writeLong(pending.switchedAtMillis)
             }
+            stream.writeUTF(state.policyCooldownUntilWeekKey)
             stream.writeInt(state.memberObservations.size)
             for ((uuid, observation) in state.memberObservations) {
                 stream.writeUTF(uuid.toString())
@@ -1220,17 +1230,51 @@ object CommunityDatabase {
             }
             stream.writeInt(state.settledWeekKeys.size)
             for (weekKey in state.settledWeekKeys) stream.writeUTF(weekKey)
+            stream.writeInt(state.settlements.size)
+            for (settlement in state.settlements) {
+                stream.writeUTF(settlement.weekKey)
+                stream.writeLong(settlement.frozenAtMillis)
+                stream.writeUTF(settlement.policy.name)
+                stream.writeLong(settlement.theoreticalWelfareTotal)
+                stream.writeLong(settlement.spendableTreasury)
+                stream.writeUTF(settlement.status.name)
+                stream.writeInt(settlement.taxLines.size)
+                for (line in settlement.taxLines) {
+                    stream.writeUTF(line.playerUuid.toString())
+                    stream.writeLong(line.taxableIncrease)
+                    stream.writeLong(line.taxAmount)
+                    stream.writeLong(line.firstBalance)
+                    stream.writeLong(line.lastBalance)
+                    stream.writeBoolean(line.completeObservation)
+                    writeNullableUUID(stream, line.transactionId)
+                    stream.writeUTF(line.shortId ?: "")
+                    stream.writeUTF(line.status.name)
+                }
+                stream.writeInt(settlement.welfareLines.size)
+                for (line in settlement.welfareLines) {
+                    stream.writeUTF(line.playerUuid.toString())
+                    stream.writeLong(line.theoreticalAmount)
+                    stream.writeLong(line.actualAmount)
+                    writeNullableUUID(stream, line.transactionId)
+                    stream.writeUTF(line.shortId ?: "")
+                    stream.writeUTF(line.status.name)
+                }
+            }
         }
     }
 
     private fun loadCommunityFiscalSection(stream: DataInputStream) {
-        val communityCount = readCount(stream, "community fiscal")
+        val first = stream.readInt()
+        val version = if (first == FISCAL_SECTION_VERSION_MARKER) stream.readInt() else 1
+        require(version in 1..FISCAL_SECTION_VERSION) { "Unsupported community fiscal section version: $version" }
+        val communityCount = if (version == 1) requireCount(first, "community fiscal", MAX_COMMUNITIES) else readCount(stream, "community fiscal")
         for (i in 0 until communityCount) {
             val regionId = stream.readInt()
             val activePolicy = CommunityFiscalPolicy.valueOf(stream.readUTF())
             val pending = if (stream.readBoolean()) {
                 CommunityFiscalPolicySwitch(CommunityFiscalPolicy.valueOf(stream.readUTF()), stream.readUTF(), stream.readUTF(), stream.readLong())
             } else null
+            val cooldown = if (version >= 2) stream.readUTF() else ""
             val observationCount = readCount(stream, "community fiscal observation")
             val observations = HashMap<UUID, CommunityFiscalObservation>(observationCount)
             for (j in 0 until observationCount) {
@@ -1239,7 +1283,33 @@ object CommunityDatabase {
             val settledCount = readCount(stream, "community fiscal settled week")
             val settled = mutableSetOf<String>()
             for (j in 0 until settledCount) settled.add(stream.readUTF())
-            getCommunityById(regionId)?.fiscalState = CommunityFiscalState(activePolicy, pending, observations, settled)
+            val settlements = if (version >= 2) {
+                val settlementCount = readCount(stream, "community fiscal settlement")
+                MutableList(settlementCount) {
+                    val weekKey = stream.readUTF()
+                    val frozenAt = stream.readLong()
+                    val policy = CommunityFiscalPolicy.valueOf(stream.readUTF())
+                    val theoretical = stream.readLong()
+                    val spendable = stream.readLong()
+                    val status = CommunityFiscalSettlementStatus.valueOf(stream.readUTF())
+                    val taxCount = readCount(stream, "community fiscal tax line")
+                    val taxLines = MutableList(taxCount) {
+                        CommunityFiscalTaxSettlementLine(
+                            UUID.fromString(stream.readUTF()), stream.readLong(), stream.readLong(), stream.readLong(), stream.readLong(), stream.readBoolean(),
+                            readNullableUUID(stream), stream.readUTF().ifBlank { null }, CommunityFiscalLineStatus.valueOf(stream.readUTF())
+                        )
+                    }
+                    val welfareCount = readCount(stream, "community fiscal welfare line")
+                    val welfareLines = MutableList(welfareCount) {
+                        CommunityFiscalWelfareSettlementLine(
+                            UUID.fromString(stream.readUTF()), stream.readLong(), stream.readLong(),
+                            readNullableUUID(stream), stream.readUTF().ifBlank { null }, CommunityFiscalLineStatus.valueOf(stream.readUTF())
+                        )
+                    }
+                    CommunityFiscalSettlement(weekKey, frozenAt, policy, taxLines, welfareLines, theoretical, spendable, status)
+                }
+            } else mutableListOf()
+            getCommunityById(regionId)?.fiscalState = CommunityFiscalState(activePolicy, pending, cooldown, observations, settled, settlements)
         }
     }
 

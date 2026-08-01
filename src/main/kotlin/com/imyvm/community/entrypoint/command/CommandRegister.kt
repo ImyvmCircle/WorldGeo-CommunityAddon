@@ -490,6 +490,18 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                                     .then(argument("weekKey", StringArgumentType.word()).executes { runFiscalWelfarePreview(it) })
                             )
                     )
+                    .then(
+                        literal("settle")
+                            .then(argument("weekKey", StringArgumentType.word()).executes { runFiscalSettle(it) })
+                    )
+                    .then(
+                        literal("history")
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.string())
+                                    .suggests(ACTIVE_COMMUNITY_PROVIDER)
+                                    .executes { runFiscalHistory(it) }
+                            )
+                    )
             )
             .then(
                 literal("development")
@@ -1573,6 +1585,17 @@ private fun runFiscalWelfarePreview(context: CommandContext<CommandSourceStack>)
     val player = context.source.player ?: return 0
     val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
     return identifierHandler(player, communityIdentifier) { community -> onFiscalWelfarePreview(player, community, StringArgumentType.getString(context, "weekKey")) }
+}
+
+private fun runFiscalSettle(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    return onFiscalSettle(player, StringArgumentType.getString(context, "weekKey"))
+}
+
+private fun runFiscalHistory(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    return identifierHandler(player, communityIdentifier) { community -> onFiscalHistory(player, community) }
 }
 
 private fun runDevelopmentStatus(context: CommandContext<CommandSourceStack>): Int {

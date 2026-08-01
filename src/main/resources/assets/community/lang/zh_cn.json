@@ -1017,5 +1017,15 @@
   "community.building.confirm.invalid_community": "§c当前领域状态不允许执行该建设操作。",
   "community.building.confirm.cancelled": "§7已取消建设操作。",
   "community.command.help.building_confirm": "§7/community building confirm <领域> §f确认待处理建设操作。",
-  "community.command.help.building_cancel": "§7/community building cancel <领域> §f取消待处理建设操作。"
+  "community.command.help.building_cancel": "§7/community building cancel <领域> §f取消待处理建设操作。",
+  "command.community.fiscal.settle.success": "§a税收福利结算已推进：周 §f{0} §7| 新冻结社区 §f{1} §7| 税务事务 §f{2} §7| 已入账税款 §c{3} §7| 福利 §b{4}",
+  "command.community.fiscal.history.header": "§6§l[税收福利历史]§r §f{0} §7| 最近记录 §f{1}",
+  "command.community.fiscal.history.line": "§7- 周 §f{0} §7| 政策 §f{1} §7| 状态 §f{2} §7| 税 §f{3}人/§c{4} §7| 福利 §f{5}人/§b{6}",
+  "community.treasury.desc.fiscal_tax": "税收福利周 {0} 税款入账",
+  "community.treasury.desc.fiscal_welfare": "税收福利周 {0} 福利支出",
+  "community.command.help.section_fiscal": "§6税收福利",
+  "community.command.help.fiscal_policy": "§7/community fiscal policy <社区> <政策> <当前周> <生效周> <冷却至> §f- 计划切换税收福利政策",
+  "community.command.help.fiscal_preview": "§7/community fiscal tax_preview|welfare_preview <社区> <周> §f- 查看税收或福利预览",
+  "community.command.help.fiscal_settle": "§7/community fiscal settle <周> §f- OP 推进该周税收福利结算",
+  "community.command.help.fiscal_history": "§7/community fiscal history <社区> §f- 查看税收福利冻结历史"
 }
