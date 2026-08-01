@@ -117,22 +117,22 @@ class CommunityMenu(
         ) { runOpenAssetsMenu(player, community, runBack) }
 
         addButton(
-            slot = 35,
+            slot = 37,
+            name = Translator.tr("ui.community.button.interaction.title").string,
+            item = Items.NAME_TAG
+        ) { runSendTitleStatus(player, community) }
+
+        addButton(
+            slot = 38,
             name = Translator.tr("ui.community.button.interaction.fiscal").string,
             item = Items.LECTERN
         ) { runSendFiscalStatus(player, community) }
 
         addButton(
-            slot = 36,
+            slot = 39,
             name = Translator.tr("ui.community.button.interaction.development").string,
             item = Items.AMETHYST_SHARD
         ) { runSendDevelopmentAndLandPriceStatus(player, community) }
-
-        addButton(
-            slot = 37,
-            name = Translator.tr("ui.community.button.interaction.title").string,
-            item = Items.NAME_TAG
-        ) { runSendTitleStatus(player, community) }
 
         addButton(
             slot = 32,

@@ -181,15 +181,15 @@ object CommunityBuildingService {
     fun findSelectableEntry(baseBlockId: String): CommunityBuildingCatalogEntry? = selectablePoolState.firstOrNull { it.baseBlockId.equals(baseBlockId, ignoreCase = true) }
 
     fun addOrUpdateSelectableEntry(baseBlockId: String, unitCost: Int, rewardPerBlock: Long, linkedBlockIds: List<String>): Result<CommunityBuildingCatalogEntry> {
-        if (!isValidBlockId(baseBlockId)) return Result.failure(IllegalArgumentException("invalid block id"))
+        val normalizedBaseBlockId = normalizeBlockId(baseBlockId) ?: return Result.failure(IllegalArgumentException("invalid block id"))
         if (unitCost <= 0) return Result.failure(IllegalArgumentException("unit cost must be positive"))
         if (rewardPerBlock <= 0L) return Result.failure(IllegalArgumentException("reward must be positive"))
-        val normalizedLinked = linkedBlockIds.distinct().filter { it != baseBlockId && isValidBlockId(it) }.toMutableList()
-        val existing = findSelectableEntry(baseBlockId)
+        val normalizedLinked = linkedBlockIds.mapNotNull { normalizeBlockId(it) }.distinct().filter { it != normalizedBaseBlockId }.toMutableList()
+        val existing = findSelectableEntry(normalizedBaseBlockId)
         val old = existing?.copy(linkedBlockIds = existing.linkedBlockIds.toMutableList())
         return try {
             val result = if (existing == null) {
-                CommunityBuildingCatalogEntry(baseBlockId, unitCost, rewardPerBlock, normalizedLinked, 1L).also { selectablePoolState.add(it) }
+                CommunityBuildingCatalogEntry(normalizedBaseBlockId, unitCost, rewardPerBlock, normalizedLinked, 1L).also { selectablePoolState.add(it) }
             } else {
                 existing.unitCost = unitCost
                 existing.rewardPerBlock = rewardPerBlock
@@ -201,7 +201,7 @@ object CommunityBuildingService {
             CommunityDatabase.save()
             Result.success(result)
         } catch (error: Exception) {
-            if (existing == null) selectablePoolState.removeIf { it.baseBlockId.equals(baseBlockId, ignoreCase = true) }
+            if (existing == null) selectablePoolState.removeIf { it.baseBlockId.equals(normalizedBaseBlockId, ignoreCase = true) }
             else if (old != null) {
                 existing.unitCost = old.unitCost
                 existing.rewardPerBlock = old.rewardPerBlock
@@ -293,7 +293,21 @@ object CommunityBuildingService {
         .distinct()
         .sorted()
 
-    fun isValidBlockId(blockId: String): Boolean = BuiltInRegistries.BLOCK.any { BuiltInRegistries.BLOCK.getKey(it).toString() == blockId }
+    fun listSurvivalBlockSuggestions(): List<String> = listSurvivalBlockIds()
+        .flatMap { blockId -> listOf(blockId.substringAfter(":"), blockId) }
+        .distinct()
+        .sorted()
+
+    fun normalizeBlockId(input: String): String? {
+        val value = input.trim().trim('"')
+        if (value.isEmpty()) return null
+        val ids = listSurvivalBlockIds()
+        ids.firstOrNull { it.equals(value, ignoreCase = true) }?.let { return it }
+        ids.firstOrNull { it.substringAfter(":").equals(value, ignoreCase = true) }?.let { return it }
+        return null
+    }
+
+    fun isValidBlockId(blockId: String): Boolean = normalizeBlockId(blockId) != null
     fun getBlockItem(blockId: String): Item = BuiltInRegistries.ITEM.filterIsInstance<BlockItem>().firstOrNull { BuiltInRegistries.BLOCK.getKey(it.block).toString() == blockId } ?: net.minecraft.world.item.Items.BRICKS
 
     fun inferLinkedBlockIds(baseBlockId: String): List<String> {

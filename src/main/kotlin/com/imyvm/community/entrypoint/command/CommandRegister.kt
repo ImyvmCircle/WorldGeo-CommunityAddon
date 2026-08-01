@@ -1483,28 +1483,31 @@ private fun runBuildingPoolRemove(context: CommandContext<CommandSourceStack>): 
 
 private fun runBuildingPoolAdd(context: CommandContext<CommandSourceStack>, linkedBlocksArg: String?): Int {
     val player = context.source.player ?: return 0
-    val blockId = StringArgumentType.getString(context, "blockId")
+    val rawBlockId = StringArgumentType.getString(context, "blockId")
+    val blockId = CommunityBuildingService.normalizeBlockId(rawBlockId) ?: rawBlockId
     val unitCost = IntegerArgumentType.getInteger(context, "unitCost")
     val reward = (com.mojang.brigadier.arguments.DoubleArgumentType.getDouble(context, "reward") * 100.0).toLong()
     val linkedBlocks = linkedBlocksArg
         ?.split(Regex("""[,\s]+"""))
-        ?.map { it.trim() }
+        ?.mapNotNull { CommunityBuildingService.normalizeBlockId(it) }
         ?.filter { it.isNotEmpty() }
         ?: CommunityBuildingService.inferLinkedBlockIds(blockId)
     val result = CommunityBuildingService.addOrUpdateSelectableEntry(blockId, unitCost, reward, linkedBlocks)
+    val savedBlockId = result.getOrNull()?.baseBlockId ?: blockId
+    val savedLinkedBlocks = result.getOrNull()?.linkedBlockIds ?: linkedBlocks
     if (result.isSuccess) {
         player.sendSystemMessage(
             Translator.tr(
                 "command.community.building.pool.add.success",
-                blockId,
+                savedBlockId,
                 unitCost.toString(),
                 CommunityBuildingService.formatMoney(reward),
-                if (linkedBlocks.isEmpty()) "-" else linkedBlocks.joinToString(",")
+                if (savedLinkedBlocks.isEmpty()) "-" else savedLinkedBlocks.joinToString(",")
             )
         )
         return 1
     }
-    player.sendSystemMessage(Translator.tr("command.community.building.pool.add.failed", blockId, result.exceptionOrNull()?.message ?: "error"))
+    player.sendSystemMessage(Translator.tr("command.community.building.pool.add.failed", rawBlockId, result.exceptionOrNull()?.message ?: "error"))
     return 0
 }
 

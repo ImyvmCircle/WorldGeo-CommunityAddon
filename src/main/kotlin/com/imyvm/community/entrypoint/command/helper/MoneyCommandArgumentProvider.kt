@@ -5,10 +5,10 @@ import com.mojang.brigadier.suggestion.SuggestionProvider
 import net.minecraft.commands.CommandSourceStack
 
 val MONEY_PLAYER_PROVIDER = SuggestionProvider<CommandSourceStack> { context, builder ->
-    val prefix = builder.remaining
+    val prefix = builder.remaining.trim().trim('"')
     val online = context.source.server.playerList.players
         .map { it.gameProfile.name }
-        .filter { it.startsWith(prefix, ignoreCase = true) }
+        .filter { it.contains(prefix, ignoreCase = true) }
     val runtime = AccountSubsystem.runtimeOrNull()
     if (runtime == null) {
         online.distinct().sortedWith(String.CASE_INSENSITIVE_ORDER).forEach(builder::suggest)
@@ -25,7 +25,10 @@ val MONEY_PLAYER_PROVIDER = SuggestionProvider<CommandSourceStack> { context, bu
 }
 
 val MONEY_ACTION_PROVIDER = SuggestionProvider<CommandSourceStack> { _, builder ->
-    listOf("confirm_applied", "close_unchanged", "retry_original").forEach(builder::suggest)
+    val prefix = builder.remaining.trim()
+    listOf("confirm_applied", "close_unchanged", "retry_original")
+        .filter { prefix.isEmpty() || it.startsWith(prefix, ignoreCase = true) }
+        .forEach(builder::suggest)
     builder.buildFuture()
 }
 
@@ -36,7 +39,7 @@ val MONEY_ISSUE_PROVIDER = SuggestionProvider<CommandSourceStack> { _, builder -
         runtime.store.scanUnresolved(null, 100).thenApply { page ->
             page.items.filter { it.status == com.imyvm.community.domain.model.account.AccountTransactionStatus.NEEDS_OP }
                 .map { it.transaction.shortId }
-                .filter { it.startsWith(builder.remaining, ignoreCase = true) }
+                .filter { builder.remaining.isBlank() || it.contains(builder.remaining.trim(), ignoreCase = true) }
                 .forEach(builder::suggest)
             builder.build()
         }
