@@ -46,6 +46,20 @@ class PendingOperationTest {
     }
 
     @Test
+    fun buildingConfirmationDataSurvivesPendingOperationModel() {
+        val executor = java.util.UUID.fromString("00000000-0000-0000-0000-000000000099")
+        val data = BuildingConfirmationData(42, executor, "select", "minecraft:oak_planks", 0, 1200L)
+        val operation = PendingOperation(
+            expireAt = 1234L,
+            type = PendingOperationType.BUILDING_CONFIRMATION,
+            buildingData = data
+        )
+
+        assertEquals(PendingOperationType.BUILDING_CONFIRMATION, PendingOperationType.fromValue(17))
+        assertEquals(data, operation.buildingData)
+    }
+
+    @Test
     fun pendingOperationByKeyUsesExactLongKey() {
         val operationKey = 0x1234_5678_9abc_def0L
         try {

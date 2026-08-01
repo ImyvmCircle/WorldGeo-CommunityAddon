@@ -315,6 +315,15 @@ object CommunityBuildingService {
 
     fun calculateSelectionCost(unitDelta: Int): Long = Math.multiplyExact(unitDelta.toLong(), PricingConfig.BUILDING_STYLE_UNIT_SELECTION_COST.value)
 
+    fun previewSelectionCost(community: Community, baseBlockId: String): Result<Long> {
+        val template = findSelectableEntry(baseBlockId) ?: return Result.failure(NoSuchElementException("template not found"))
+        val existing = community.buildingState.findEntry(baseBlockId)
+        val oldUnitCost = existing?.unitCost ?: 0
+        val projectedUsage = community.buildingState.usedCapacityUnits() - oldUnitCost + template.unitCost
+        if (projectedUsage > community.buildingState.capacityUnits) return Result.failure(IllegalStateException("capacity exceeded"))
+        return Result.success(calculateSelectionCost(if (existing == null) template.unitCost else (template.unitCost - oldUnitCost).coerceAtLeast(0)))
+    }
+
     fun calculateCapacityPurchaseCost(currentCapacity: Int, buyUnits: Int): Long {
         require(buyUnits > 0) { "buy units must be positive" }
         var total = 0L

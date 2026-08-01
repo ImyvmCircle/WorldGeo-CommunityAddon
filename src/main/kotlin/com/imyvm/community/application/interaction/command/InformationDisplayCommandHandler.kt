@@ -33,6 +33,8 @@ fun onHelpCommand(player: ServerPlayer): Int {
     player.sendSystemMessage(Translator.tr("community.command.help.section_building"))
     player.sendSystemMessage(Translator.tr("community.command.help.building_status"))
     player.sendSystemMessage(Translator.tr("community.command.help.building_open"))
+    player.sendSystemMessage(Translator.tr("community.command.help.building_confirm"))
+    player.sendSystemMessage(Translator.tr("community.command.help.building_cancel"))
     player.sendSystemMessage(Translator.tr("community.command.help.building_pool_menu"))
     player.sendSystemMessage(Translator.tr("community.command.help.building_pool_list"))
     player.sendSystemMessage(Translator.tr("community.command.help.building_pool_add"))

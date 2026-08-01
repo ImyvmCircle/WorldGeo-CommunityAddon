@@ -13,7 +13,8 @@ class PendingOperation(
     val settingData: SettingConfirmationData? = null,
     val renameData: RenameConfirmationData? = null,
     val transferData: ScopeTransferConfirmationData? = null,
-    val treasuryGrantData: TreasuryGrantConfirmationData? = null
+    val treasuryGrantData: TreasuryGrantConfirmationData? = null,
+    val buildingData: BuildingConfirmationData? = null
 )
 
 data class CreationConfirmationData(
@@ -77,6 +78,15 @@ data class TreasuryGrantConfirmationData(
     val amount: Long
 )
 
+data class BuildingConfirmationData(
+    val regionNumberId: Int,
+    val executorUUID: UUID,
+    val action: String,
+    val baseBlockId: String?,
+    val buyUnits: Int,
+    val cost: Long
+)
+
 enum class PendingOperationType(val value: Int) {
     CREATE_COMMUNITY_REALM_REQUEST_RECRUITMENT(0),
     DELETE_COMMUNITY(1),
@@ -94,7 +104,8 @@ enum class PendingOperationType(val value: Int) {
     DELETE_SCOPE_CONFIRMATION(13),
     TRANSFER_SCOPE_CONFIRMATION(14),
     TREASURY_GRANT_CONFIRMATION(15),
-    CREATE_COMMUNITY_EXECUTION(16);
+    CREATE_COMMUNITY_EXECUTION(16),
+    BUILDING_CONFIRMATION(17);
     
     companion object {
         fun fromValue(value: Int): PendingOperationType {

@@ -12,6 +12,7 @@ import com.imyvm.community.domain.model.ScopeTransferConfirmationData
 import com.imyvm.community.domain.model.SettingConfirmationData
 import com.imyvm.community.domain.model.TeleportPointConfirmationData
 import com.imyvm.community.domain.model.TreasuryGrantConfirmationData
+import com.imyvm.community.domain.model.BuildingConfirmationData
 import com.imyvm.community.domain.model.Turnover
 import com.imyvm.community.domain.model.pendingOperationKey
 import com.imyvm.community.domain.model.TurnoverSource
@@ -49,7 +50,7 @@ object CommunityDatabase {
     private const val DATABASE_VERSION_MARKER = -3
     private const val DATABASE_VERSION = 4
     private const val PENDING_SECTION_VERSION_MARKER = -2
-    private const val PENDING_SECTION_VERSION = 3
+    private const val PENDING_SECTION_VERSION = 4
     private const val SECTION_FRAME_MARKER = -4
     private const val SECTION_PENDING_OPERATIONS = 1
     private const val SECTION_NAME_CHANGE_COOLDOWNS = 2
@@ -711,6 +712,7 @@ object CommunityDatabase {
             writeRenameData(stream, operation.renameData)
             writeScopeTransferData(stream, operation.transferData)
             writeTreasuryGrantData(stream, operation.treasuryGrantData)
+            writeBuildingData(stream, operation.buildingData)
         }
     }
 
@@ -743,6 +745,7 @@ object CommunityDatabase {
                 val renameData = if (version >= 2) readRenameData(stream) else null
                 val transferData = if (version >= 2) readScopeTransferData(stream) else null
                 val treasuryGrantData = if (version >= 2) readTreasuryGrantData(stream) else null
+                val buildingData = if (version >= 4) readBuildingData(stream) else null
 
                 val operation = PendingOperation(
                     expireAt = expireAt,
@@ -755,7 +758,8 @@ object CommunityDatabase {
                     settingData = settingData,
                     renameData = renameData,
                     transferData = transferData,
-                    treasuryGrantData = treasuryGrantData
+                    treasuryGrantData = treasuryGrantData,
+                    buildingData = buildingData
                 )
                 loadedOperations[operationKey] = operation
             }
@@ -939,6 +943,29 @@ object CommunityDatabase {
             targetRegionNumberId = stream.readInt(),
             executorUUID = UUID.fromString(stream.readUTF()),
             amount = stream.readLong()
+        )
+    }
+
+    private fun writeBuildingData(stream: DataOutputStream, data: BuildingConfirmationData?) {
+        stream.writeBoolean(data != null)
+        if (data == null) return
+        stream.writeInt(data.regionNumberId)
+        stream.writeUTF(data.executorUUID.toString())
+        stream.writeUTF(data.action)
+        writeNullableString(stream, data.baseBlockId)
+        stream.writeInt(data.buyUnits)
+        stream.writeLong(data.cost)
+    }
+
+    private fun readBuildingData(stream: DataInputStream): BuildingConfirmationData? {
+        if (!stream.readBoolean()) return null
+        return BuildingConfirmationData(
+            regionNumberId = stream.readInt(),
+            executorUUID = UUID.fromString(stream.readUTF()),
+            action = stream.readUTF(),
+            baseBlockId = readNullableString(stream),
+            buyUnits = stream.readInt(),
+            cost = stream.readLong()
         )
     }
 

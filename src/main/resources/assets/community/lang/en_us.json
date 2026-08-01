@@ -985,5 +985,16 @@
   "community.command.help.building_pool_menu": "§7/community building pool menu §fOpen the OP building template pool.",
   "community.command.help.building_pool_list": "§7/community building pool list §fList OP-selectable building templates.",
   "community.command.help.building_pool_add": "§7/community building pool add <blockId> <capacityCost> <reward> [linkedBlockId,linkedBlockId] §fAdd a template.",
-  "community.command.help.building_pool_remove": "§7/community building pool remove <blockId> §fRemove a template."
+  "community.command.help.building_pool_remove": "§7/community building pool remove <blockId> §fRemove a template.",
+  "community.building.confirm.sent": "§eBuilding operation pending: §f{0} §7| cost §6{1}",
+  "community.building.confirm.commands": "§7Confirm: §f/community building confirm {0} §7| Cancel: §f/community building cancel {0}",
+  "community.building.confirm.success": "§aBuilding operation completed: §f{0} §7| cost §6{1}",
+  "community.building.confirm.failed": "§cBuilding operation failed: §f{0}",
+  "community.building.confirm.not_found": "§7No pending building operation.",
+  "community.building.confirm.expired": "§cThe building confirmation expired.",
+  "community.building.confirm.executor_changed": "§cOnly the initiator can confirm or cancel this building operation.",
+  "community.building.confirm.invalid_community": "§cThis community state does not allow the building operation.",
+  "community.building.confirm.cancelled": "§7Building operation cancelled.",
+  "community.command.help.building_confirm": "§7/community building confirm <community> §fConfirm a pending building operation.",
+  "community.command.help.building_cancel": "§7/community building cancel <community> §fCancel a pending building operation."
 }

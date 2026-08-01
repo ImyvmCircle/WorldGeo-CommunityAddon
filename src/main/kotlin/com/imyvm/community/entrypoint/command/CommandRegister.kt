@@ -3,6 +3,8 @@ package com.imyvm.community.entrypoint.command
 import com.imyvm.community.application.interaction.command.*
 import com.imyvm.community.application.interaction.common.*
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
+import com.imyvm.community.application.interaction.screen.inner_community.runCancelCommunityBuildingOperation
+import com.imyvm.community.application.interaction.screen.inner_community.runConfirmCommunityBuildingOperation
 import com.imyvm.community.application.interaction.screen.inner_community.runOpenCommunityBuildingCandidates
 import com.imyvm.community.application.interaction.screen.inner_community.runOpenCommunityBuildingMenu
 import com.imyvm.community.application.interaction.screen.inner_community.runOpenCommunityBuildingPoolMenu
@@ -353,6 +355,22 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                                 argument("communityIdentifier", StringArgumentType.string())
                                     .suggests(ALL_COMMUNITY_PROVIDER)
                                     .executes { runOpenBuildingMenuCommand(it) }
+                            )
+                    )
+                    .then(
+                        literal("confirm")
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.string())
+                                    .suggests(ALL_COMMUNITY_PROVIDER)
+                                    .executes { runBuildingConfirm(it) }
+                            )
+                    )
+                    .then(
+                        literal("cancel")
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.string())
+                                    .suggests(ALL_COMMUNITY_PROVIDER)
+                                    .executes { runBuildingCancel(it) }
                             )
                     )
                     .then(
@@ -1383,6 +1401,18 @@ private fun runOpenBuildingMenuCommand(context: CommandContext<CommandSourceStac
     return identifierHandler(player, communityIdentifier) { community ->
         runOpenCommunityBuildingMenu(player, community) { p -> CommunityMenuOpener.open(p) { s -> MainMenu(s, p) } }
     }
+}
+
+private fun runBuildingConfirm(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    return identifierHandler(player, communityIdentifier) { community -> runConfirmCommunityBuildingOperation(player, community) }
+}
+
+private fun runBuildingCancel(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    return identifierHandler(player, communityIdentifier) { community -> runCancelCommunityBuildingOperation(player, community) }
 }
 
 private fun runOpenBuildingCandidatesCommand(context: CommandContext<CommandSourceStack>): Int {

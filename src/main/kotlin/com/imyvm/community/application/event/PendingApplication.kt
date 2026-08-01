@@ -66,7 +66,8 @@ fun movePendingOperation(
         settingData = existing.settingData,
         renameData = existing.renameData,
         transferData = existing.transferData,
-        treasuryGrantData = existing.treasuryGrantData
+        treasuryGrantData = existing.treasuryGrantData,
+        buildingData = existing.buildingData
     )
     WorldGeoCommunityAddon.pendingOperations.remove(fromKey)
     WorldGeoCommunityAddon.pendingOperations[toKey] = replacement
@@ -327,7 +328,8 @@ fun addPendingOperation(
     settingData: com.imyvm.community.domain.model.SettingConfirmationData? = null,
     renameData: com.imyvm.community.domain.model.RenameConfirmationData? = null,
     transferData: com.imyvm.community.domain.model.ScopeTransferConfirmationData? = null,
-    treasuryGrantData: com.imyvm.community.domain.model.TreasuryGrantConfirmationData? = null
+    treasuryGrantData: com.imyvm.community.domain.model.TreasuryGrantConfirmationData? = null,
+    buildingData: com.imyvm.community.domain.model.BuildingConfirmationData? = null
 ) {
     val now = System.currentTimeMillis()
     val expireTime = when {
@@ -349,7 +351,8 @@ fun addPendingOperation(
         settingData = settingData,
         renameData = renameData,
         transferData = transferData,
-        treasuryGrantData = treasuryGrantData
+        treasuryGrantData = treasuryGrantData,
+        buildingData = buildingData
     )
     WorldGeoCommunityAddon.logger.info("Added pending operation: type=$type, regionId=$regionId, expireAt=$expireTime")
 }
@@ -367,7 +370,8 @@ fun addPendingOperationByKey(
     settingData: com.imyvm.community.domain.model.SettingConfirmationData? = null,
     renameData: com.imyvm.community.domain.model.RenameConfirmationData? = null,
     transferData: com.imyvm.community.domain.model.ScopeTransferConfirmationData? = null,
-    treasuryGrantData: com.imyvm.community.domain.model.TreasuryGrantConfirmationData? = null
+    treasuryGrantData: com.imyvm.community.domain.model.TreasuryGrantConfirmationData? = null,
+    buildingData: com.imyvm.community.domain.model.BuildingConfirmationData? = null
 ) {
     val now = System.currentTimeMillis()
     val expireTime = when {
@@ -391,7 +395,8 @@ fun addPendingOperationByKey(
         settingData = settingData,
         renameData = renameData,
         transferData = transferData,
-        treasuryGrantData = treasuryGrantData
+        treasuryGrantData = treasuryGrantData,
+        buildingData = buildingData
     )
     try {
         if (WorldGeoCommunityAddon.server != null) CommunityDatabase.save()
