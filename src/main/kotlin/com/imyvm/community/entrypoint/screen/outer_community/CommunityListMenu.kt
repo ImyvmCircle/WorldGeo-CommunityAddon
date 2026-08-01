@@ -14,7 +14,7 @@ import net.minecraft.server.level.ServerPlayer
 
 class CommunityListMenu(
     syncId: Int,
-    private val mode: CommunityListFilterType = CommunityListFilterType.JOIN_ABLE,
+    private val mode: CommunityListFilterType = CommunityListFilterType.ALL,
     page: Int = 0,
     val runBack: ((ServerPlayer) -> Unit)
 ) : AbstractListMenu(

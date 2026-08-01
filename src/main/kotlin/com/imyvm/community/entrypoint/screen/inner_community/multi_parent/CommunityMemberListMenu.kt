@@ -3,6 +3,7 @@ package com.imyvm.community.entrypoint.screen.inner_community.multi_parent
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.application.interaction.screen.inner_community.multi_parent.runCommunityOpenMember
 import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.entrypoint.screen.AbstractListMenu
 import com.imyvm.community.entrypoint.screen.component.createPlayerHeadItemStack
 import com.imyvm.community.util.Translator
@@ -10,6 +11,7 @@ import com.imyvm.iwg.inter.api.UtilApi
 import net.minecraft.world.item.Items
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.network.chat.Component
+import java.util.UUID
 
 class CommunityMemberListMenu(
     syncId: Int,
@@ -38,7 +40,7 @@ class CommunityMemberListMenu(
             addMembersForOtherPages()
         }
 
-        handlePageWithSize(community.getMemberUUIDs().size, playersPerPage)
+        handlePageWithSize(regularMemberUUIDs().size, playersPerPage)
     }
 
     private fun addOwnerButton() {
@@ -48,12 +50,12 @@ class CommunityMemberListMenu(
             item = Items.COMMAND_BLOCK
         ) {}
 
-        val ownerUUID = community.getOwnerUUID()
+        val ownerUUID = community.getOwnerUUID() ?: return
         val ownerName = UtilApi.getPlayerName(playerExecutor, ownerUUID)
         addButton(
             slot = 12,
             name = ownerName,
-            itemStack = createPlayerHeadItemStack(ownerName, ownerUUID!!)
+            itemStack = createPlayerHeadItemStack(ownerName, ownerUUID)
         ) { runCommunityOpenMember(community, ownerUUID, playerExecutor, runBack) }
     }
 
@@ -82,7 +84,7 @@ class CommunityMemberListMenu(
             item = Items.VILLAGER_SPAWN_EGG
         ) {}
 
-        val memberUUIDs = community.getMemberUUIDs().take(playersInPageZero)
+        val memberUUIDs = regularMemberUUIDs().take(playersInPageZero)
         renderList(memberUUIDs, playersInPageZero, startSlotInPageZero) { uuid, slot, _ ->
             val memberName = UtilApi.getPlayerName(playerExecutor, uuid)
             addButton(
@@ -94,7 +96,7 @@ class CommunityMemberListMenu(
     }
 
     private fun addMembersForOtherPages() {
-        val memberUUIDs = community.getMemberUUIDs()
+        val memberUUIDs = regularMemberUUIDs()
             .drop((page - 1) * playersPerPage + playersInPageZero)
             .take(playersPerPage)
         
@@ -107,6 +109,10 @@ class CommunityMemberListMenu(
             ) { runCommunityOpenMember(community, uuid, playerExecutor, runBack) }
         }
     }
+
+    private fun regularMemberUUIDs(): List<UUID> = community.member.entries
+        .filter { (_, account) -> account.basicRoleType == MemberRoleType.MEMBER }
+        .map { it.key }
 
     override fun openNewPage(player: ServerPlayer, newPage: Int) {
         CommunityMenuOpener.open(player) { syncId ->

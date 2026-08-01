@@ -20,7 +20,7 @@ import com.imyvm.iwg.inter.api.PlayerInteractionApi
 import net.minecraft.server.level.ServerPlayer
 
 fun runList(player: ServerPlayer) {
-    val mode = CommunityListFilterType.JOIN_ABLE
+    val mode = CommunityListFilterType.ALL
     CommunityMenuOpener.open(player) { syncId ->
         CommunityListMenu(
             syncId = syncId,
