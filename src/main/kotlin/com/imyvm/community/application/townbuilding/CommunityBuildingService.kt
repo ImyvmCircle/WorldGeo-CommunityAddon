@@ -1,5 +1,6 @@
 package com.imyvm.community.application.townbuilding
 
+import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.application.account.mutateTreasury
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.account.AccountDirection
@@ -15,6 +16,7 @@ import com.imyvm.community.infra.PricingConfig
 import com.imyvm.community.infra.account.AccountSubsystem
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.domain.NaturalPeriodKind
+import com.imyvm.iwg.domain.NaturalPeriodTransition
 import com.imyvm.iwg.inter.api.RegionDataApi
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.chat.Component
@@ -27,6 +29,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import java.util.function.Consumer
 import kotlin.math.ceil
 
 object CommunityBuildingService {
@@ -41,7 +44,25 @@ object CommunityBuildingService {
     private val stoneFamilies = listOf("stone_bricks", "deepslate_bricks", "deepslate_tiles", "mud_bricks", "nether_bricks", "red_nether_bricks", "end_stone_bricks", "prismarine", "prismarine_bricks", "dark_prismarine", "sandstone", "red_sandstone", "blackstone", "polished_blackstone_bricks", "tuff_bricks", "resin_bricks")
     val selectablePoolState: MutableList<CommunityBuildingCatalogEntry> = mutableListOf()
 
-    fun register() {}
+    fun register() {
+        RegionDataApi.registerNaturalPeriodTransitionCallback(Consumer { transition ->
+            val server = WorldGeoCommunityAddon.server ?: return@Consumer
+            server.execute { settleTransition(transition) }
+        })
+    }
+
+    private fun settleTransition(transition: NaturalPeriodTransition) {
+        when (transition.kind) {
+            NaturalPeriodKind.HOUR -> {
+                val weekId = RegionDataApi.getCurrentNaturalPeriodIds()[NaturalPeriodKind.WEEK] ?: return
+                settlePeriod(NaturalPeriodKind.HOUR, transition.previousId, weekId)
+                    .onFailure { WorldGeoCommunityAddon.logger.error("Failed to settle building hour ${transition.previousId}", it) }
+            }
+            NaturalPeriodKind.WEEK -> settlePeriod(NaturalPeriodKind.WEEK, transition.previousId, transition.previousId)
+                .onFailure { WorldGeoCommunityAddon.logger.error("Failed to settle building week ${transition.previousId}", it) }
+            else -> Unit
+        }
+    }
 
     fun getState(community: Community): CommunityBuildingState = community.buildingState
     fun getDraft(playerUuid: UUID): CommunityBuildingDraft? = entryDrafts[playerUuid]
