@@ -2,6 +2,9 @@ package com.imyvm.community.entrypoint.command.helper
 
 import com.imyvm.community.application.townbuilding.CommunityBuildingService
 import com.imyvm.community.domain.model.community.CommunityStatus
+import com.imyvm.community.domain.model.fiscal.CommunityFiscalPolicy
+import com.imyvm.iwg.domain.NaturalPeriodKind
+import com.imyvm.iwg.inter.api.RegionDataApi
 import com.imyvm.community.infra.CommunityDatabase.communities
 import com.mojang.brigadier.suggestion.SuggestionProvider
 import net.minecraft.commands.CommandSourceStack
@@ -29,6 +32,23 @@ val BUILDING_SURVIVAL_BLOCK_PROVIDER = SuggestionProvider<CommandSourceStack> { 
 
 val BUILDING_SELECTABLE_BLOCK_PROVIDER = SuggestionProvider<CommandSourceStack> { _, builder ->
     CommunityBuildingService.getSelectablePool().map { it.baseBlockId }.forEach { builder.suggest(it) }
+    builder.buildFuture()
+}
+
+
+val FISCAL_POLICY_PROVIDER = SuggestionProvider<CommandSourceStack> { _, builder ->
+    CommunityFiscalPolicy.entries.forEach { builder.suggest(it.name.lowercase()) }
+    builder.buildFuture()
+}
+
+val FISCAL_WEEK_PROVIDER = SuggestionProvider<CommandSourceStack> { _, builder ->
+    RegionDataApi.getCurrentNaturalPeriodKeys()[NaturalPeriodKind.WEEK]
+        ?.let { builder.suggest("${it.timelineId}:${it.periodId}") }
+    communities.flatMap { community ->
+        community.fiscalState.memberObservations.values.map { it.weekKey } +
+            community.fiscalState.settlements.map { it.weekKey } +
+            community.fiscalState.settledWeekKeys
+    }.distinct().forEach { builder.suggest(it) }
     builder.buildFuture()
 }
 

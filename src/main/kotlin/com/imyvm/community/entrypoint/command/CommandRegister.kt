@@ -444,6 +444,7 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                                     .suggests(ACTIVE_COMMUNITY_PROVIDER)
                                     .then(
                                         argument("policy", StringArgumentType.word())
+                                            .suggests(FISCAL_POLICY_PROVIDER)
                                             .then(
                                                 argument("currentWeek", StringArgumentType.word())
                                                     .then(
@@ -479,7 +480,7 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                             .then(
                                 argument("communityIdentifier", StringArgumentType.string())
                                     .suggests(ACTIVE_COMMUNITY_PROVIDER)
-                                    .then(argument("weekKey", StringArgumentType.word()).executes { runFiscalTaxPreview(it) })
+                                    .then(argument("weekKey", StringArgumentType.word()).suggests(FISCAL_WEEK_PROVIDER).executes { runFiscalTaxPreview(it) })
                             )
                     )
                     .then(
@@ -487,12 +488,12 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                             .then(
                                 argument("communityIdentifier", StringArgumentType.string())
                                     .suggests(ACTIVE_COMMUNITY_PROVIDER)
-                                    .then(argument("weekKey", StringArgumentType.word()).executes { runFiscalWelfarePreview(it) })
+                                    .then(argument("weekKey", StringArgumentType.word()).suggests(FISCAL_WEEK_PROVIDER).executes { runFiscalWelfarePreview(it) })
                             )
                     )
                     .then(
                         literal("settle")
-                            .then(argument("weekKey", StringArgumentType.word()).executes { runFiscalSettle(it) })
+                            .then(argument("weekKey", StringArgumentType.word()).suggests(FISCAL_WEEK_PROVIDER).executes { runFiscalSettle(it) })
                     )
                     .then(
                         literal("history")
