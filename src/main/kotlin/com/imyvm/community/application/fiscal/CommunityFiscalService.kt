@@ -3,6 +3,7 @@ package com.imyvm.community.application.fiscal
 import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.application.account.mutateTreasury
 import com.imyvm.community.application.helper.CommunityBackgroundTasks
+import com.imyvm.community.application.weekly.CommunityWeeklyReportService
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.domain.model.account.AccountDirection
@@ -103,6 +104,7 @@ object CommunityFiscalService {
                 trimSettlements(community)
             }
             CommunityDatabase.save()
+            publishWeeklyReportIfComplete(weekKey)
             CommunityFiscalSettlementSummary(frozen, submittedTax, taxTotal, welfareTotal)
         }
     }
@@ -316,6 +318,7 @@ object CommunityFiscalService {
             settlement.status = CommunityFiscalSettlementStatus.COMPLETED
             community.fiscalState.settledWeekKeys.add(settlement.weekKey)
             CommunityDatabase.save()
+            publishWeeklyReportIfComplete(settlement.weekKey)
         }
     }
 
@@ -334,6 +337,12 @@ object CommunityFiscalService {
             tryApplyWelfare(runtime, community, settlement)
             CommunityDatabase.save()
         }
+    }
+
+    private fun publishWeeklyReportIfComplete(weekKey: String) {
+        val communities = CommunityDatabase.communities.filter { it.regionNumberId != null }
+        if (communities.any { community -> community.fiscalState.settlements.firstOrNull { it.weekKey == weekKey }?.status != CommunityFiscalSettlementStatus.COMPLETED }) return
+        CommunityWeeklyReportService.publishWeek(weekKey)
     }
 
     private fun fiscalTransaction(community: Community, weekKey: String, playerUuid: UUID, amount: Long, direction: AccountDirection, kind: String): AccountTransaction {

@@ -131,6 +131,21 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                     .executes{ runHelpCommand(it) }
             )
             .then(
+                literal("report")
+                    .executes { runWeeklyReportList(it) }
+                    .then(
+                        literal("list")
+                            .executes { runWeeklyReportList(it) }
+                    )
+                    .then(
+                        literal("read")
+                            .then(
+                                argument("index", IntegerArgumentType.integer(1))
+                                    .executes { runWeeklyReportRead(it) }
+                            )
+                    )
+            )
+            .then(
                 literal("list")
                     .executes{ runListCommand(it) }
                     .then(
@@ -872,6 +887,16 @@ private fun runLeave(context: CommandContext<CommandSourceStack>): Int {
 private fun runHelpCommand(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     return onHelpCommand(player)
+}
+
+private fun runWeeklyReportList(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    return onWeeklyReportList(player)
+}
+
+private fun runWeeklyReportRead(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    return onWeeklyReportRead(player, IntegerArgumentType.getInteger(context, "index"))
 }
 
 private fun runListCommand(context: CommandContext<CommandSourceStack>): Int {

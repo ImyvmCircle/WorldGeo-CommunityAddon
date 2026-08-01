@@ -20,6 +20,7 @@ import com.imyvm.community.entrypoint.event.registerExpireCheck
 import com.imyvm.community.entrypoint.event.registerMailCheck
 import com.imyvm.community.entrypoint.event.registerPendingRefundCheck
 import com.imyvm.community.entrypoint.event.registerSelectionContextCleanup
+import com.imyvm.community.application.weekly.CommunityWeeklyReportService
 import com.imyvm.community.entrypoint.registerDataLoadAndSave
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
@@ -44,6 +45,7 @@ class WorldGeoCommunityAddon : ModInitializer {
         registerApplicationJoinAccountRecovery()
         registerDonationAccountRecovery()
         registerTeleportAccountRecovery()
+        CommunityWeeklyReportService.registerLoginNotice()
         CommunityBuildingService.register()
         CommunityFiscalService.register()
         registerChatInterceptor()

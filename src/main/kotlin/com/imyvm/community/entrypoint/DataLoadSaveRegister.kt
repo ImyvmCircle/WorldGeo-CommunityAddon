@@ -7,6 +7,7 @@ import com.imyvm.community.infra.PricingConfig
 import com.imyvm.community.infra.TeleportDailyState
 import com.imyvm.community.infra.account.AccountSubsystem
 import com.imyvm.community.infra.communication.CommunicationShardStore
+import com.imyvm.community.infra.weekly.CommunityWeeklyReportStore
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.server.MinecraftServer
@@ -33,6 +34,7 @@ private fun loadData(server: MinecraftServer) {
         PricingConfig.validateValues()
         TeleportDailyState.initialize(server.getWorldPath(LevelResource.ROOT))
         CommunicationShardStore.initialize(server.getWorldPath(LevelResource.ROOT))
+        CommunityWeeklyReportStore.initialize(server.getWorldPath(LevelResource.ROOT))
         CommunityDatabase.load(server)
     } catch (e: Exception) {
         try {

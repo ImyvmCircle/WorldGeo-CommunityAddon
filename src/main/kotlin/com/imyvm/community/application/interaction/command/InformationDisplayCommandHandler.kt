@@ -14,6 +14,8 @@ fun onHelpCommand(player: ServerPlayer): Int {
     player.sendSystemMessage(Translator.tr("community.command.help.help"))
     player.sendSystemMessage(Translator.tr("community.command.help.list_communities"))
     player.sendSystemMessage(Translator.tr("community.command.help.query_region"))
+    player.sendSystemMessage(Translator.tr("community.command.help.report_list"))
+    player.sendSystemMessage(Translator.tr("community.command.help.report_read"))
     player.sendSystemMessage(Translator.tr("community.command.help.section_land"))
     player.sendSystemMessage(Translator.tr("community.command.help.select"))
     player.sendSystemMessage(Translator.tr("community.command.help.create"))
