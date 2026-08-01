@@ -18,6 +18,10 @@ import com.imyvm.community.domain.model.TurnoverSource
 import com.imyvm.community.domain.model.community.*
 import com.imyvm.community.domain.model.title.CommunityTitleSlot
 import com.imyvm.community.domain.model.title.CommunityTitleState
+import com.imyvm.community.domain.model.fiscal.CommunityFiscalObservation
+import com.imyvm.community.domain.model.fiscal.CommunityFiscalPolicy
+import com.imyvm.community.domain.model.fiscal.CommunityFiscalPolicySwitch
+import com.imyvm.community.domain.model.fiscal.CommunityFiscalState
 import com.imyvm.community.domain.policy.permission.AdminPrivilege
 import com.imyvm.community.domain.policy.permission.AdminPrivileges
 import net.fabricmc.loader.api.FabricLoader
@@ -51,6 +55,7 @@ object CommunityDatabase {
     private const val SECTION_COMMUNITY_BUILDING = 6
     private const val SECTION_COMMUNITY_BUILDING_CATALOG = 7
     private const val SECTION_COMMUNITY_TITLES = 8
+    private const val SECTION_COMMUNITY_FISCAL = 9
     private const val MAX_SECTION_BYTES = 16 * 1024 * 1024
     private const val MAX_COMMUNITY_BYTES = 16 * 1024 * 1024
     private const val MAX_COMMUNITIES = 100_000
@@ -85,6 +90,7 @@ object CommunityDatabase {
                 writeSection(stream, SECTION_COMMUNITY_BUILDING) { saveCommunityBuildingSection(it) }
                 writeSection(stream, SECTION_COMMUNITY_BUILDING_CATALOG) { saveCommunityBuildingCatalogSection(it) }
                 writeSection(stream, SECTION_COMMUNITY_TITLES) { saveCommunityTitlesSection(it) }
+                writeSection(stream, SECTION_COMMUNITY_FISCAL) { saveCommunityFiscalSection(it) }
             }
             replaceDatabaseFile(tempFile, file)
         } finally {
@@ -194,6 +200,10 @@ object CommunityDatabase {
             }
             SECTION_COMMUNITY_TITLES -> {
                 loadCommunityTitlesSection(stream)
+                true
+            }
+            SECTION_COMMUNITY_FISCAL -> {
+                loadCommunityFiscalSection(stream)
                 true
             }
             else -> {
@@ -1123,6 +1133,58 @@ object CommunityDatabase {
         }
     }
 
+
+
+    private fun saveCommunityFiscalSection(stream: DataOutputStream) {
+        val targets = communities.filter { community ->
+            community.regionNumberId != null &&
+                (community.fiscalState.activePolicy != CommunityFiscalPolicy.NEOLIBERALISM || community.fiscalState.pendingPolicy != null || community.fiscalState.memberObservations.isNotEmpty() || community.fiscalState.settledWeekKeys.isNotEmpty())
+        }
+        stream.writeInt(targets.size)
+        for (community in targets) {
+            val state = community.fiscalState
+            stream.writeInt(community.regionNumberId!!)
+            stream.writeUTF(state.activePolicy.name)
+            stream.writeBoolean(state.pendingPolicy != null)
+            state.pendingPolicy?.let { pending ->
+                stream.writeUTF(pending.policy.name)
+                stream.writeUTF(pending.effectiveWeekKey)
+                stream.writeUTF(pending.cooldownUntilWeekKey)
+                stream.writeLong(pending.switchedAtMillis)
+            }
+            stream.writeInt(state.memberObservations.size)
+            for ((uuid, observation) in state.memberObservations) {
+                stream.writeUTF(uuid.toString())
+                stream.writeUTF(observation.weekKey)
+                stream.writeLong(observation.firstBalance)
+                stream.writeLong(observation.firstObservedAtMillis)
+                stream.writeLong(observation.lastBalance)
+                stream.writeLong(observation.lastObservedAtMillis)
+            }
+            stream.writeInt(state.settledWeekKeys.size)
+            for (weekKey in state.settledWeekKeys) stream.writeUTF(weekKey)
+        }
+    }
+
+    private fun loadCommunityFiscalSection(stream: DataInputStream) {
+        val communityCount = readCount(stream, "community fiscal")
+        for (i in 0 until communityCount) {
+            val regionId = stream.readInt()
+            val activePolicy = CommunityFiscalPolicy.valueOf(stream.readUTF())
+            val pending = if (stream.readBoolean()) {
+                CommunityFiscalPolicySwitch(CommunityFiscalPolicy.valueOf(stream.readUTF()), stream.readUTF(), stream.readUTF(), stream.readLong())
+            } else null
+            val observationCount = readCount(stream, "community fiscal observation")
+            val observations = HashMap<UUID, CommunityFiscalObservation>(observationCount)
+            for (j in 0 until observationCount) {
+                observations[UUID.fromString(stream.readUTF())] = CommunityFiscalObservation(stream.readUTF(), stream.readLong(), stream.readLong(), stream.readLong(), stream.readLong())
+            }
+            val settledCount = readCount(stream, "community fiscal settled week")
+            val settled = mutableSetOf<String>()
+            for (j in 0 until settledCount) settled.add(stream.readUTF())
+            getCommunityById(regionId)?.fiscalState = CommunityFiscalState(activePolicy, pending, observations, settled)
+        }
+    }
 
     private fun saveCommunityTitlesSection(stream: DataOutputStream) {
         val targets = communities.filter { community ->

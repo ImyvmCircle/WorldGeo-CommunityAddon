@@ -251,6 +251,17 @@ class PricingConfig : HokiConfig("Pricing.conf") {
         }
 
 
+
+        @JvmField
+        @ConfigOption
+        val FISCAL_POLICY_SWITCH_COST = Option(
+            "economy.fiscal.policy_switch_cost",
+            20000L,
+            "the treasury cost to schedule a fiscal policy switch."
+        ) { obj, path ->
+            obj.getLong(path)
+        }
+
         @JvmField
         @ConfigOption
         val TITLE_FOREMAN_SLOT_COST = Option(
@@ -670,6 +681,7 @@ class PricingConfig : HokiConfig("Pricing.conf") {
                 "economy.manor_area_price_per_unit" to MANOR_AREA_PRICE_PER_UNIT.value,
                 "economy.realm_area_price_per_unit" to REALM_AREA_PRICE_PER_UNIT.value,
                 "economy.title.foreman_slot_cost" to TITLE_FOREMAN_SLOT_COST.value,
+                "economy.fiscal.policy_switch_cost" to FISCAL_POLICY_SWITCH_COST.value,
                 "economy.scope_addition_base_cost_manor" to SCOPE_ADDITION_BASE_COST_MANOR.value,
                 "economy.scope_addition_base_cost_realm" to SCOPE_ADDITION_BASE_COST_REALM.value,
                 "economy.rename_global_cost" to RENAME_GLOBAL_COST.value,
@@ -725,6 +737,7 @@ class PricingConfig : HokiConfig("Pricing.conf") {
             require(DIMENSION_PRICE_MULTIPLIER_NETHER.value > 0L) { "economy.dimension_price_multiplier_nether must be positive" }
             require(DIMENSION_PRICE_MULTIPLIER_END.value > 0L) { "economy.dimension_price_multiplier_end must be positive" }
             require(TITLE_FOREMAN_SLOT_COST.value > 0L) { "economy.title.foreman_slot_cost must be positive" }
+            require(FISCAL_POLICY_SWITCH_COST.value > 0L) { "economy.fiscal.policy_switch_cost must be positive" }
             require(SCOPE_ADDITION_SOFT_LIMIT_MULTIPLIER.value >= 1.0) { "economy.scope_addition_soft_limit_multiplier must be at least 1.0" }
             require(PERMISSION_COEFFICIENT_UNIT_SIZE.value > 0) { "economy.permission.coefficient_unit_size must be positive" }
             require(PERMISSION_TARGET_PLAYER_DENOMINATOR.value > 0L) { "economy.permission.target_player_denominator must be positive" }

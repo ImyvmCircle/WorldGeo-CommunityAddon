@@ -6,12 +6,12 @@ This Project is designed to constitute a comprehensive framework for players' **
 
 ## Changelog
 
-### 1.2.1
+### 1.2.2
 
-- feat: add foreman title slots with treasury purchase, grant, revoke and display selection commands
-- feat: apply foreman building reward bonuses with 20% unit reward gain and 600.00 dedicated weekly cap
-- feat: expose title summary through `CommunityApi` snapshots without mutable internal state
-- chore: mark community building as completed baseline before later tax, development and land-plot stages
+- feat: add fiscal policy state for income tax and welfare modes
+- feat: record weekly member balance observations and calculate marginal income tax in cents
+- feat: calculate welfare eligibility, protected treasury balance and proportional welfare distribution
+- feat: add OP fiscal commands for policy scheduling, observation, tax preview and welfare preview
 
 ## Features
 

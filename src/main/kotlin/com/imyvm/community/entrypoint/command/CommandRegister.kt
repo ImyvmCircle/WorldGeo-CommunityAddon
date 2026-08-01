@@ -400,6 +400,64 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                         )
                     )
 
+
+            .then(
+                literal("fiscal")
+                    .requires { net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(it.permissions()) }
+                    .then(
+                        literal("policy")
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.string())
+                                    .suggests(ACTIVE_COMMUNITY_PROVIDER)
+                                    .then(
+                                        argument("policy", StringArgumentType.word())
+                                            .then(
+                                                argument("currentWeek", StringArgumentType.word())
+                                                    .then(
+                                                        argument("nextWeek", StringArgumentType.word())
+                                                            .then(
+                                                                argument("cooldownUntilWeek", StringArgumentType.word())
+                                                                    .executes { runFiscalPolicy(it) }
+                                                            )
+                                                    )
+                                            )
+                                    )
+                            )
+                    )
+                    .then(
+                        literal("observe")
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.string())
+                                    .suggests(ACTIVE_COMMUNITY_PROVIDER)
+                                    .then(
+                                        argument("targetUuid", StringArgumentType.word())
+                                            .then(
+                                                argument("weekKey", StringArgumentType.word())
+                                                    .then(
+                                                        argument("balance", com.mojang.brigadier.arguments.LongArgumentType.longArg(0L))
+                                                            .executes { runFiscalObserve(it) }
+                                                    )
+                                            )
+                                    )
+                            )
+                    )
+                    .then(
+                        literal("tax_preview")
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.string())
+                                    .suggests(ACTIVE_COMMUNITY_PROVIDER)
+                                    .then(argument("weekKey", StringArgumentType.word()).executes { runFiscalTaxPreview(it) })
+                            )
+                    )
+                    .then(
+                        literal("welfare_preview")
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.string())
+                                    .suggests(ACTIVE_COMMUNITY_PROVIDER)
+                                    .then(argument("weekKey", StringArgumentType.word()).executes { runFiscalWelfarePreview(it) })
+                            )
+                    )
+            )
             .then(
                 literal("title")
                     .then(
@@ -1314,4 +1372,32 @@ private fun runTitleSelect(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
     return identifierHandler(player, communityIdentifier) { community -> onTitleSelect(player, community) }
+}
+
+private fun runFiscalPolicy(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    return identifierHandler(player, communityIdentifier) { community ->
+        onFiscalPolicy(player, community, StringArgumentType.getString(context, "policy"), StringArgumentType.getString(context, "currentWeek"), StringArgumentType.getString(context, "nextWeek"), StringArgumentType.getString(context, "cooldownUntilWeek"))
+    }
+}
+
+private fun runFiscalObserve(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    val target = UUID.fromString(StringArgumentType.getString(context, "targetUuid"))
+    val balance = com.mojang.brigadier.arguments.LongArgumentType.getLong(context, "balance")
+    return identifierHandler(player, communityIdentifier) { community -> onFiscalObserve(player, community, target, StringArgumentType.getString(context, "weekKey"), balance) }
+}
+
+private fun runFiscalTaxPreview(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    return identifierHandler(player, communityIdentifier) { community -> onFiscalTaxPreview(player, community, StringArgumentType.getString(context, "weekKey")) }
+}
+
+private fun runFiscalWelfarePreview(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    return identifierHandler(player, communityIdentifier) { community -> onFiscalWelfarePreview(player, community, StringArgumentType.getString(context, "weekKey")) }
 }

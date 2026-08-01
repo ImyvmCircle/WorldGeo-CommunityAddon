@@ -923,5 +923,11 @@
   "command.community.title.grant.success": "§aGranted foreman in §f{0}§a to §f{1}§a, slot §f{2}",
   "command.community.title.revoke.success": "§aRevoked foreman in §f{0}§a from §f{1}§a, slot §f{2}",
   "command.community.title.select.success": "§aSelected foreman in §f{0}§a as display identity.",
-  "command.community.title.failed": "§cTitle operation failed: §f{0}"
+  "command.community.title.failed": "§cTitle operation failed: §f{0}",
+  "community.treasury.desc.fiscal_policy_switch": "Switch fiscal policy: {0}",
+  "command.community.fiscal.policy.success": "§aScheduled policy §f{1}§a for §f{0}§a, effective week §f{2}§a, cost §6{3}",
+  "command.community.fiscal.observe.success": "§aRecorded balance observation for §f{1}§a in §f{0}§a week §f{2}§a: §6{3}",
+  "command.community.fiscal.tax.preview": "§aTax preview: §f{0} §7| week §f{1} §7| members §f{2} §7| total §c{3}",
+  "command.community.fiscal.welfare.preview": "§aWelfare preview: §f{0} §7| week §f{1} §7| members §f{2} §7| total §b{3}",
+  "command.community.fiscal.failed": "§cFiscal operation failed: §f{0}"
 }

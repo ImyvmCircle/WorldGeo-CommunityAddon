@@ -3,6 +3,7 @@ package com.imyvm.community.domain.model
 import com.imyvm.community.domain.model.community.*
 import com.imyvm.community.domain.model.transaction.ResourceDirection
 import com.imyvm.community.domain.model.title.CommunityTitleState
+import com.imyvm.community.domain.model.fiscal.CommunityFiscalState
 import com.imyvm.community.util.Translator
 import com.imyvm.community.util.getFormattedMillsHour
 import com.imyvm.iwg.domain.Region
@@ -29,7 +30,8 @@ class Community(
     var treasuryBalance: Long = 0L,
     var memberContributionTotals: HashMap<UUID, Long> = HashMap(),
     var treasuryReferences: HashMap<String, TreasuryReferenceRecord> = HashMap(),
-    var titleState: CommunityTitleState = CommunityTitleState()
+    var titleState: CommunityTitleState = CommunityTitleState(),
+    var fiscalState: CommunityFiscalState = CommunityFiscalState()
 ) {
     fun isManor(): Boolean {
         return status == CommunityStatus.PENDING_MANOR || status == CommunityStatus.ACTIVE_MANOR || status == CommunityStatus.REVOKED_MANOR
