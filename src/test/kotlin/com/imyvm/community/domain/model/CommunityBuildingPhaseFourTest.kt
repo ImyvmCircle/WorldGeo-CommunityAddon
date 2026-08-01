@@ -228,4 +228,20 @@ class CommunityBuildingSettlementTest {
         assertEquals(142L, plan.theoreticalCommunityIncome)
         assertEquals(130L, plan.communityIncome)
     }
+
+    @Test
+    fun `community weekly cap uses actual settled community income`() {
+        val entries = listOf(CommunityBuildingEntry("minecraft:oak_planks", 1, 100L))
+        val plan = CommunityBuildingSettlement.plan(
+            entries,
+            listOf(CommunityBuildingBlockStats("minecraft:oak_planks", 10, 0, mapOf(first to 10L))),
+            120000L,
+            emptyMap(),
+            250L,
+            100L
+        )
+
+        assertEquals(200L, plan.theoreticalCommunityIncome)
+        assertEquals(150L, plan.communityIncome)
+    }
 }

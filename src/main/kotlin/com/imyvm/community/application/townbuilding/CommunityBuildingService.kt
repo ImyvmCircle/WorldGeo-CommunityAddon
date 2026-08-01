@@ -20,6 +20,10 @@ import com.imyvm.community.util.Translator
 import com.imyvm.iwg.domain.CompleteNaturalPeriodTransition
 import com.imyvm.iwg.domain.NaturalPeriodKey
 import com.imyvm.iwg.domain.NaturalPeriodKind
+import com.imyvm.iwg.domain.WorldGeoBehaviorStatsCheckpointRequest
+import com.imyvm.iwg.domain.WorldGeoBehaviorStatsCheckpointStatus
+import com.imyvm.iwg.domain.WorldGeoBehaviorStatsPageQuery
+import com.imyvm.iwg.domain.WorldGeoBehaviorType
 import com.imyvm.iwg.domain.WorldGeoPeriodDataStatus
 import com.imyvm.iwg.inter.api.RegionDataApi
 import net.minecraft.core.registries.BuiltInRegistries
@@ -402,6 +406,7 @@ object CommunityBuildingService {
                         "community.treasury.desc.building_income",
                         listOf(periodLedgerKey(periodKey))
                     ).getOrThrow()
+                    applyCommunityWeekIncome(community, periodLedgerKey(weekKey), plan.communityIncome)
                     communityIncome = Math.addExact(communityIncome, plan.communityIncome)
                 }
                 CommunityDatabase.save()
@@ -423,10 +428,63 @@ object CommunityBuildingService {
         if (blockIds.isEmpty()) return emptyList()
         val batch = RegionDataApi.queryBlockDeltaBatchAsync(periodKey.timelineId, periodKey.kind, periodKey.periodId, regionId, blockIds).join()
         require(batch.completeness.status == WorldGeoPeriodDataStatus.COMPLETE) { "WorldGeo period data is ${batch.completeness.status.name.lowercase(Locale.ROOT)}" }
+        val checkpointByBlock = entries
+            .flatMap { entry -> entry.trackedBlockIds().map { blockId -> blockId to checkpointFor(entry.selectionCheckpoint, periodKey) } }
+            .filter { it.second != null }
+            .associate { it.first to requireNotNull(it.second) }
+        val baselineByCheckpoint = checkpointByBlock.values.distinct().associateWith(::readCheckpointBaseline)
         return batch.blocks.map { (blockId, delta) ->
             require(delta.placedCount >= 0L) { "negative WorldGeo placed count" }
             require(delta.brokenCount >= 0L) { "negative WorldGeo broken count" }
-            CommunityBuildingBlockStats(blockId, delta.placedCount, delta.brokenCount, delta.playerContributions)
+            val baseline = checkpointByBlock[blockId]?.let { baselineByCheckpoint[it]?.get(blockId) }
+            val placed = Math.subtractExact(delta.placedCount, baseline?.placedCount ?: 0L).coerceAtLeast(0L)
+            val broken = Math.subtractExact(delta.brokenCount, baseline?.brokenCount ?: 0L).coerceAtLeast(0L)
+            val contributions = if (baseline == null) delta.playerContributions else {
+                val players = delta.playerContributions.keys + baseline.playerContributions.keys
+                players.associateWith { uuid ->
+                    Math.subtractExact(delta.playerContributions[uuid] ?: 0L, baseline.playerContributions[uuid] ?: 0L)
+                }
+            }
+            CommunityBuildingBlockStats(blockId, placed, broken, contributions)
+        }
+    }
+
+    private fun checkpointFor(selectionCheckpoint: String, periodKey: NaturalPeriodKey): UUID? {
+        val parts = selectionCheckpoint.split('|')
+        if (parts.size != 5 || parts[0] != periodKey.timelineId) return null
+        return when (periodKey.kind) {
+            NaturalPeriodKind.HOUR -> if (parts[1] == periodKey.periodId) runCatching { UUID.fromString(parts[2]) }.getOrNull() else null
+            NaturalPeriodKind.WEEK -> if (parts[3] == periodKey.periodId) runCatching { UUID.fromString(parts[4]) }.getOrNull() else null
+            else -> null
+        }
+    }
+
+    private fun readCheckpointBaseline(checkpointId: UUID): Map<String, CommunityBuildingBlockStats> {
+        val aggregate = linkedMapOf<String, MutableBlockStats>()
+        var pageIndex = 0
+        while (true) {
+            val page = RegionDataApi.readBehaviorStatsCheckpointPage(checkpointId, pageIndex).join()
+                ?: throw IllegalStateException("building checkpoint $checkpointId unavailable")
+            for (entry in page.entries) {
+                val blockId = entry.objectId ?: continue
+                val stats = aggregate.getOrPut(blockId) { MutableBlockStats() }
+                when (entry.behaviorType) {
+                    WorldGeoBehaviorType.BLOCK_PLACE -> {
+                        stats.placedCount = Math.addExact(stats.placedCount, entry.count)
+                        stats.playerContributions[entry.playerUuid] = Math.addExact(stats.playerContributions[entry.playerUuid] ?: 0L, entry.count)
+                    }
+                    WorldGeoBehaviorType.BLOCK_BREAK -> {
+                        stats.brokenCount = Math.addExact(stats.brokenCount, entry.count)
+                        stats.playerContributions[entry.playerUuid] = Math.subtractExact(stats.playerContributions[entry.playerUuid] ?: 0L, entry.count)
+                    }
+                    else -> Unit
+                }
+            }
+            if (!page.hasMore) break
+            pageIndex++
+        }
+        return aggregate.mapValues { (blockId, stats) ->
+            CommunityBuildingBlockStats(blockId, stats.placedCount, stats.brokenCount, stats.playerContributions.toMap())
         }
     }
 
@@ -449,10 +507,17 @@ object CommunityBuildingService {
             .mapValues { it.value.extraCapAmount }
     }
 
-    private fun currentCommunityWeekIncome(community: Community, weekId: String): Long = community.buildingState.processedWeekPeriodIds
-        .firstOrNull { it == weekId }
-        ?.let { CommunityConfig.BUILDING_COMMUNITY_WEEKLY_CAP.value }
-        ?: 0L
+    private fun currentCommunityWeekIncome(community: Community, weekId: String): Long =
+        community.buildingState.communityWeekLedgers.firstOrNull { it.weekPeriodId == weekId }?.settledAmount ?: 0L
+
+    private fun applyCommunityWeekIncome(community: Community, weekId: String, amount: Long) {
+        val ledger = community.buildingState.communityWeekLedgers.firstOrNull { it.weekPeriodId == weekId }
+        if (ledger == null) {
+            community.buildingState.communityWeekLedgers.add(com.imyvm.community.domain.model.community.CommunityBuildingCommunityWeekLedger(weekId, amount))
+        } else {
+            ledger.settledAmount = Math.addExact(ledger.settledAmount, amount)
+        }
+    }
 
 
     private fun appendPlayerRewardLedgers(
@@ -552,13 +617,14 @@ object CommunityBuildingService {
         val selectionCost = calculateSelectionCost(if (existing == null) template.unitCost else (template.unitCost - oldUnitCost).coerceAtLeast(0))
         if (selectionCost > 0L && community.getTotalAssets() < selectionCost) return Result.failure(IllegalStateException("insufficient treasury"))
         return try {
+            val checkpoint = currentCheckpoint(regionId, template.trackedBlockIds())
             val frozen = CommunityBuildingEntry(
                 template.baseBlockId,
                 template.unitCost,
                 template.rewardPerBlock,
                 template.linkedBlockIds.toMutableList(),
                 template.templateVersion,
-                currentCheckpoint(),
+                checkpoint,
                 true
             )
             if (existing == null) state.stylePackage.add(frozen) else {
@@ -571,7 +637,7 @@ object CommunityBuildingService {
             }
             state.validateUniqueBlockMapping().getOrThrow()
             if (selectionCost > 0L) {
-                mutateTreasury(community, selectionCost, ResourceDirection.DEBIT, "building", "community:building-style:$regionId:$baseBlockId:${System.currentTimeMillis()}", "building-style-selection", baseBlockId, "community.treasury.desc.building_style_selection", listOf(baseBlockId, template.unitCost.toString())).getOrThrow()
+                mutateTreasury(community, selectionCost, ResourceDirection.DEBIT, "building", "community:building-style:$regionId:$baseBlockId:${template.templateVersion}:$checkpoint", "building-style-selection", baseBlockId, "community.treasury.desc.building_style_selection", listOf(baseBlockId, template.unitCost.toString())).getOrThrow()
             } else CommunityDatabase.save()
             Result.success(existing ?: frozen)
         } catch (error: Exception) {
@@ -591,7 +657,7 @@ object CommunityBuildingService {
         val entry = community.buildingState.findEntry(baseBlockId) ?: return Result.failure(NoSuchElementException("entry not found"))
         return try {
             entry.active = false
-            entry.selectionCheckpoint = currentCheckpoint()
+            entry.selectionCheckpoint = currentCheckpoint(community.regionNumberId ?: 0, entry.trackedBlockIds())
             CommunityDatabase.save()
             Result.success(Unit)
         } catch (error: Exception) {
@@ -610,7 +676,9 @@ object CommunityBuildingService {
         return try {
             community.buildingState.capacityUnits = Math.addExact(community.buildingState.capacityUnits, buyUnits)
             if (cost > 0L) {
-                mutateTreasury(community, cost, ResourceDirection.DEBIT, "building", "community:building-capacity:${community.regionNumberId}:$buyUnits:${System.currentTimeMillis()}", "building-capacity", buyUnits.toString(), "community.treasury.desc.building_capacity", listOf(buyUnits.toString())).getOrThrow()
+                val newCapacity = community.buildingState.capacityUnits
+                val oldCapacity = newCapacity - buyUnits
+                mutateTreasury(community, cost, ResourceDirection.DEBIT, "building", "community:building-capacity:${community.regionNumberId}:$oldCapacity:$newCapacity", "building-capacity", buyUnits.toString(), "community.treasury.desc.building_capacity", listOf(buyUnits.toString())).getOrThrow()
             } else CommunityDatabase.save()
             Result.success(cost)
         } catch (error: Exception) {
@@ -641,8 +709,40 @@ object CommunityBuildingService {
     fun formatMoney(amount: Long): String = String.format(Locale.ROOT, "%.2f", amount / 100.0)
 
     private fun linkedSummary(linkedBlockIds: List<String>): String = if (linkedBlockIds.isEmpty()) "-" else linkedBlockIds.joinToString(", ")
-    private fun currentCheckpoint(): String = RegionDataApi.getCurrentNaturalPeriodIds()[NaturalPeriodKind.HOUR] ?: System.currentTimeMillis().toString()
+    private fun currentCheckpoint(regionId: Int, blockIds: List<String>): String {
+        val server = WorldGeoCommunityAddon.server ?: return RegionDataApi.getCurrentNaturalPeriodIds()[NaturalPeriodKind.HOUR] ?: ""
+        val keys = RegionDataApi.getCurrentNaturalPeriodKeys()
+        val hourKey = keys[NaturalPeriodKind.HOUR] ?: return ""
+        val weekKey = keys[NaturalPeriodKind.WEEK] ?: return hourKey.periodId
+        val blocks = blockIds.distinct().toSet()
+        val hourCheckpoint = createCheckpoint(server, hourKey, regionId, blocks)
+        val weekCheckpoint = createCheckpoint(server, weekKey, regionId, blocks)
+        return listOf(hourKey.timelineId, hourKey.periodId, hourCheckpoint, weekKey.periodId, weekCheckpoint).joinToString("|")
+    }
+
+    private fun createCheckpoint(server: net.minecraft.server.MinecraftServer, key: NaturalPeriodKey, regionId: Int, blockIds: Set<String>): UUID {
+        val checkpointId = UUID.randomUUID()
+        val result = RegionDataApi.createBehaviorStatsCheckpoint(
+            server,
+            WorldGeoBehaviorStatsCheckpointRequest(
+                checkpointId,
+                WorldGeoBehaviorStatsPageQuery(key, regionId, objectIds = blockIds),
+                512
+            )
+        ).join()
+        require(result.status == WorldGeoBehaviorStatsCheckpointStatus.PUBLISHED || result.status == WorldGeoBehaviorStatsCheckpointStatus.ALREADY_PUBLISHED) {
+            "building checkpoint failed: ${result.status.name.lowercase(Locale.ROOT)}"
+        }
+        require(result.completeness.status != WorldGeoPeriodDataStatus.UNAVAILABLE) { "building checkpoint period unavailable" }
+        return result.checkpointId
+    }
 }
+
+private class MutableBlockStats(
+    var placedCount: Long = 0L,
+    var brokenCount: Long = 0L,
+    val playerContributions: MutableMap<UUID, Long> = linkedMapOf()
+)
 
 data class CommunityBuildingDraft(
     var baseBlockId: String,

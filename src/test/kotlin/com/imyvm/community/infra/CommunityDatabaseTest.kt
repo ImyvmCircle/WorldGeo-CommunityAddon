@@ -23,6 +23,7 @@ import com.imyvm.community.domain.model.community.Announcement
 import com.imyvm.community.domain.model.community.CommunityMessage
 import com.imyvm.community.domain.model.community.MessageType
 import com.imyvm.community.domain.model.community.CommunityBuildingWeekLedger
+import com.imyvm.community.domain.model.community.CommunityBuildingCommunityWeekLedger
 import com.imyvm.community.domain.model.community.CommunityBuildingState
 import com.imyvm.community.domain.model.community.CommunityBuildingEntry
 import net.minecraft.network.chat.Component
@@ -55,7 +56,8 @@ class CommunityDatabaseTest {
                 ),
                 processedHourPeriodIds = mutableListOf("hour-1"),
                 processedWeekPeriodIds = mutableListOf("week-1"),
-                playerWeekLedgers = hashMapOf(builderUUID to CommunityBuildingWeekLedger("week-1", 500L, 300L, 200L))
+                playerWeekLedgers = hashMapOf(builderUUID to CommunityBuildingWeekLedger("week-1", 500L, 300L, 200L)),
+                communityWeekLedgers = mutableListOf(CommunityBuildingCommunityWeekLedger("week-1", 700L))
             )
         )
         CommunityDatabase.communities = mutableListOf(community)
@@ -87,6 +89,7 @@ class CommunityDatabaseTest {
         assertEquals(500L, loaded.playerWeekLedgers[builderUUID]?.settledAmount)
         assertEquals(300L, loaded.playerWeekLedgers[builderUUID]?.baseCapAmount)
         assertEquals(200L, loaded.playerWeekLedgers[builderUUID]?.extraCapAmount)
+        assertEquals(700L, loaded.communityWeekLedgers.single().settledAmount)
     }
 
     @Test

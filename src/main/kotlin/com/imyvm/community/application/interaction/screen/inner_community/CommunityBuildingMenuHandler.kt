@@ -72,22 +72,6 @@ fun runOpenCommunityBuildingEditor(player: ServerPlayer, community: Community, d
     }
 }
 
-fun runAdjustCommunityBuildingUnit(player: ServerPlayer, community: Community, delta: Int, runBack: (ServerPlayer) -> Unit) {
-    val draft = CommunityBuildingService.getDraft(player.uuid) ?: return
-    runOpenCommunityBuildingEditor(player, community, draft, runBack)
-}
-
-fun runAdjustCommunityBuildingReward(player: ServerPlayer, community: Community, delta: Long, runBack: (ServerPlayer) -> Unit) {
-    val draft = CommunityBuildingService.getDraft(player.uuid) ?: return
-    runOpenCommunityBuildingEditor(player, community, draft, runBack)
-}
-
-fun runResetCommunityBuildingLinks(player: ServerPlayer, community: Community, runBack: (ServerPlayer) -> Unit) {
-    val draft = CommunityBuildingService.getDraft(player.uuid) ?: return
-    draft.linkedBlockIds = CommunityBuildingService.inferLinkedBlockIds(draft.baseBlockId).toMutableList()
-    runOpenCommunityBuildingEditor(player, community, draft, runBack)
-}
-
 fun runSaveCommunityBuildingDraft(player: ServerPlayer, community: Community, runBack: (ServerPlayer) -> Unit) {
     val permission = adminPermission(player, community)
     if (permission.isDenied()) {

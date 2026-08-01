@@ -64,7 +64,7 @@ object CommunityDatabase {
     private const val MAX_SECTION_BYTES = 16 * 1024 * 1024
     private const val MAX_COMMUNITY_BYTES = 16 * 1024 * 1024
     private const val MAX_COMMUNITIES = 100_000
-    private const val BUILDING_RECORD_VERSION = 2
+    private const val BUILDING_RECORD_VERSION = 3
     private const val MAX_COLLECTION_ENTRIES = 1_000_000
     private var legacyDatabaseLoaded = false
     private var legacyBackupCreated = false
@@ -1023,7 +1023,7 @@ object CommunityDatabase {
 
 
     private fun saveCommunityBuildingSection(stream: DataOutputStream) {
-        val targets = communities.filter { it.regionNumberId != null && (it.buildingState.stylePackage.isNotEmpty() || it.buildingState.capacityUnits != 12 || it.buildingState.processedHourPeriodIds.isNotEmpty() || it.buildingState.processedWeekPeriodIds.isNotEmpty() || it.buildingState.playerWeekLedgers.isNotEmpty() || it.buildingState.pendingPayouts.isNotEmpty()) }
+        val targets = communities.filter { it.regionNumberId != null && (it.buildingState.stylePackage.isNotEmpty() || it.buildingState.capacityUnits != 12 || it.buildingState.processedHourPeriodIds.isNotEmpty() || it.buildingState.processedWeekPeriodIds.isNotEmpty() || it.buildingState.playerWeekLedgers.isNotEmpty() || it.buildingState.communityWeekLedgers.isNotEmpty() || it.buildingState.pendingPayouts.isNotEmpty()) }
         stream.writeInt(targets.size)
         for (community in targets) writeCommunityBuildingRecord(stream, community)
     }
@@ -1057,6 +1057,11 @@ object CommunityDatabase {
                 record.writeLong(ledger.settledAmount)
                 record.writeLong(ledger.baseCapAmount)
                 record.writeLong(ledger.extraCapAmount)
+            }
+            record.writeInt(state.communityWeekLedgers.size)
+            for (ledger in state.communityWeekLedgers) {
+                record.writeUTF(ledger.weekPeriodId)
+                record.writeLong(ledger.settledAmount)
             }
             record.writeInt(state.pendingPayouts.size)
             for (payout in state.pendingPayouts) {
@@ -1121,6 +1126,13 @@ object CommunityDatabase {
                 val extraCapAmount = if (version >= 2) record.readLong() else 0L
                 ledgers[uuid] = CommunityBuildingWeekLedger(weekId, settledAmount, baseCapAmount, extraCapAmount)
             }
+            val communityWeekLedgers = mutableListOf<CommunityBuildingCommunityWeekLedger>()
+            if (version >= 3) {
+                val communityLedgerSize = readCount(record, "community building community week ledger")
+                for (j in 0 until communityLedgerSize) {
+                    communityWeekLedgers.add(CommunityBuildingCommunityWeekLedger(record.readUTF(), record.readLong()))
+                }
+            }
             val payoutSize = readCount(record, "community building payout")
             val payouts = mutableListOf<CommunityBuildingPendingPayout>()
             for (j in 0 until payoutSize) {
@@ -1142,6 +1154,7 @@ object CommunityDatabase {
                 processedHourPeriodIds = processedHours,
                 processedWeekPeriodIds = processedWeeks,
                 playerWeekLedgers = ledgers,
+                communityWeekLedgers = communityWeekLedgers,
                 pendingPayouts = payouts
             )
         }
