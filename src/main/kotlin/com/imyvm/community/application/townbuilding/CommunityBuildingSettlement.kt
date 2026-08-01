@@ -31,7 +31,9 @@ object CommunityBuildingSettlement {
         playerWeeklyCap: Long,
         playerWeekUsage: Map<UUID, Long>,
         communityWeeklyCap: Long,
-        communityWeekUsage: Long
+        communityWeekUsage: Long,
+        playerRewardPercents: Map<UUID, Long> = emptyMap(),
+        playerExtraWeeklyCaps: Map<UUID, Long> = emptyMap()
     ): CommunityBuildingSettlementPlan {
         require(playerWeeklyCap >= 0L) { "player weekly cap must not be negative" }
         require(communityWeeklyCap >= 0L) { "community weekly cap must not be negative" }
@@ -45,9 +47,9 @@ object CommunityBuildingSettlement {
             val netUnits = (stat.placedCount - stat.brokenCount).coerceAtLeast(0L)
             if (netUnits == 0L) continue
             communityNumerator = communityNumerator.add(BigInteger.valueOf(netUnits).multiply(BigInteger.valueOf(entry.rewardPerBlock)))
-            rewards += allocatePlayerRewards(stat, entry, netUnits)
+            rewards += allocatePlayerRewards(stat, entry, netUnits, playerRewardPercents)
         }
-        val cappedRewards = applyPlayerWeeklyCap(rewards, playerWeeklyCap, playerWeekUsage)
+        val cappedRewards = applyPlayerWeeklyCap(rewards, playerWeeklyCap, playerWeekUsage, playerExtraWeeklyCaps)
         val theoreticalCommunityIncome = toLongExact(communityNumerator.divide(BigInteger.valueOf(5L)), "community income")
         val remainingCommunityCap = (communityWeeklyCap - communityWeekUsage).coerceAtLeast(0L)
         val communityIncome = minOf(theoreticalCommunityIncome, remainingCommunityCap)
@@ -79,7 +81,8 @@ object CommunityBuildingSettlement {
     private fun allocatePlayerRewards(
         stat: CommunityBuildingBlockStats,
         entry: CommunityBuildingEntry,
-        netUnits: Long
+        netUnits: Long,
+        playerRewardPercents: Map<UUID, Long>
     ): List<CommunityBuildingPlayerReward> {
         val positives = stat.playerContributions
             .filterValues { it > 0L }
@@ -111,7 +114,7 @@ object CommunityBuildingSettlement {
                     uuid,
                     stat.blockId,
                     units,
-                    toLongExact(BigInteger.valueOf(units).multiply(BigInteger.valueOf(entry.rewardPerBlock)), "player reward")
+                    toLongExact(BigInteger.valueOf(units).multiply(BigInteger.valueOf(entry.rewardPerBlock)).multiply(BigInteger.valueOf(playerRewardPercents[uuid] ?: 100L)).divide(BigInteger.valueOf(100L)), "player reward")
                 )
             }
     }
@@ -119,7 +122,8 @@ object CommunityBuildingSettlement {
     private fun applyPlayerWeeklyCap(
         rewards: List<CommunityBuildingPlayerReward>,
         playerWeeklyCap: Long,
-        playerWeekUsage: Map<UUID, Long>
+        playerWeekUsage: Map<UUID, Long>,
+        playerExtraWeeklyCaps: Map<UUID, Long>
     ): List<CommunityBuildingPlayerReward> {
         val usage = playerWeekUsage.mapValues { (_, value) ->
             require(value >= 0L) { "player week usage must not be negative" }
@@ -127,7 +131,8 @@ object CommunityBuildingSettlement {
         }.toMutableMap()
         return rewards.mapNotNull { reward ->
             val used = usage[reward.playerUuid] ?: 0L
-            val remaining = (playerWeeklyCap - used).coerceAtLeast(0L)
+            val cap = Math.addExact(playerWeeklyCap, playerExtraWeeklyCaps[reward.playerUuid] ?: 0L)
+            val remaining = (cap - used).coerceAtLeast(0L)
             val effective = minOf(reward.amount, remaining)
             usage[reward.playerUuid] = Math.addExact(used, effective)
             if (effective <= 0L) null else reward.copy(amount = effective)

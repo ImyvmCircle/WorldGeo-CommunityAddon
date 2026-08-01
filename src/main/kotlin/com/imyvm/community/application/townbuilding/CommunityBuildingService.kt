@@ -2,6 +2,7 @@ package com.imyvm.community.application.townbuilding
 
 import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.application.account.mutateTreasury
+import com.imyvm.community.application.title.CommunityTitleService
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.account.AccountDirection
 import com.imyvm.community.domain.model.account.AccountTransaction
@@ -317,13 +318,16 @@ object CommunityBuildingService {
                     continue
                 }
                 val stats = queryBuildingStats(periodKey, regionId, entries)
+                val rewardPlayers = stats.flatMap { it.playerContributions.keys }.toSet()
                 val plan = CommunityBuildingSettlement.plan(
                     entries,
                     stats,
                     CommunityConfig.BUILDING_PLAYER_WEEKLY_CAP.value,
                     collectPlayerWeekUsage(periodLedgerKey(weekKey)),
                     CommunityConfig.BUILDING_COMMUNITY_WEEKLY_CAP.value,
-                    currentCommunityWeekIncome(community, periodLedgerKey(weekKey))
+                    currentCommunityWeekIncome(community, periodLedgerKey(weekKey)),
+                    rewardPlayers.associateWith { CommunityTitleService.rewardPercent(community, it) },
+                    rewardPlayers.associateWith { CommunityTitleService.extraWeeklyCap(community, it) }
                 )
                 if (periodKey.kind == NaturalPeriodKind.HOUR) {
                     val futures = plan.playerRewards.map { reward ->

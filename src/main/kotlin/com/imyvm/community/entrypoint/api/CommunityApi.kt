@@ -2,6 +2,7 @@ package com.imyvm.community.entrypoint.api
 
 import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.application.account.mutateTreasury
+import com.imyvm.community.application.title.CommunityTitleService
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.TreasuryMutationResult
 import com.imyvm.community.domain.model.community.CommunityJoinPolicy
@@ -30,7 +31,15 @@ data class CommunitySnapshot(
     val likeCount: Int,
     val activeAnnouncementCount: Int,
     val messageCount: Int,
-    val isManor: Boolean
+    val isManor: Boolean,
+    val titleSummary: CommunityTitleSummary
+)
+
+data class CommunityTitleSummary(
+    val foremanSlotLimit: Int,
+    val purchasedForemanSlots: Int,
+    val foremanHolders: List<UUID>,
+    val selectedDisplays: Map<UUID, String>
 )
 
 object CommunityApi {
@@ -209,6 +218,14 @@ private fun Community.toSnapshot(): CommunitySnapshot = CommunitySnapshot(
     likeCount = likeCount,
     activeAnnouncementCount = getActiveAnnouncements().size,
     messageCount = messages.count { !it.isDeleted },
-    isManor = isManor()
+    isManor = isManor(),
+    titleSummary = CommunityTitleSummary(
+        foremanSlotLimit = CommunityTitleService.foremanSlotLimit(this),
+        purchasedForemanSlots = titleState.normalized().foremanSlots.size,
+        foremanHolders = titleState.activeForemen().toList(),
+        selectedDisplays = titleState.selectedDisplay.mapNotNull { uuid ->
+            CommunityTitleService.displayLabel(this, uuid)?.let { uuid to it }
+        }.toMap()
+    )
 )
 }

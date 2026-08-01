@@ -16,6 +16,8 @@ import com.imyvm.community.domain.model.Turnover
 import com.imyvm.community.domain.model.pendingOperationKey
 import com.imyvm.community.domain.model.TurnoverSource
 import com.imyvm.community.domain.model.community.*
+import com.imyvm.community.domain.model.title.CommunityTitleSlot
+import com.imyvm.community.domain.model.title.CommunityTitleState
 import com.imyvm.community.domain.policy.permission.AdminPrivilege
 import com.imyvm.community.domain.policy.permission.AdminPrivileges
 import net.fabricmc.loader.api.FabricLoader
@@ -48,6 +50,7 @@ object CommunityDatabase {
     private const val SECTION_V4_STATE = 5
     private const val SECTION_COMMUNITY_BUILDING = 6
     private const val SECTION_COMMUNITY_BUILDING_CATALOG = 7
+    private const val SECTION_COMMUNITY_TITLES = 8
     private const val MAX_SECTION_BYTES = 16 * 1024 * 1024
     private const val MAX_COMMUNITY_BYTES = 16 * 1024 * 1024
     private const val MAX_COMMUNITIES = 100_000
@@ -81,6 +84,7 @@ object CommunityDatabase {
                 writeSection(stream, SECTION_V4_STATE) { saveV4StateSection(it) }
                 writeSection(stream, SECTION_COMMUNITY_BUILDING) { saveCommunityBuildingSection(it) }
                 writeSection(stream, SECTION_COMMUNITY_BUILDING_CATALOG) { saveCommunityBuildingCatalogSection(it) }
+                writeSection(stream, SECTION_COMMUNITY_TITLES) { saveCommunityTitlesSection(it) }
             }
             replaceDatabaseFile(tempFile, file)
         } finally {
@@ -186,6 +190,10 @@ object CommunityDatabase {
             }
             SECTION_V4_STATE -> {
                 loadV4StateSection(stream)
+                true
+            }
+            SECTION_COMMUNITY_TITLES -> {
+                loadCommunityTitlesSection(stream)
                 true
             }
             else -> {
@@ -1112,6 +1120,43 @@ object CommunityDatabase {
                 playerWeekLedgers = ledgers,
                 pendingPayouts = payouts
             )
+        }
+    }
+
+
+    private fun saveCommunityTitlesSection(stream: DataOutputStream) {
+        val targets = communities.filter { community ->
+            community.regionNumberId != null &&
+                (community.titleState.foremanSlots.any { it.index != 0 || it.holderUuid != null || it.cooldownUntilMillis != 0L } || community.titleState.selectedDisplay.isNotEmpty())
+        }
+        stream.writeInt(targets.size)
+        for (community in targets) {
+            val state = community.titleState.normalized()
+            stream.writeInt(community.regionNumberId!!)
+            stream.writeInt(state.foremanSlots.size)
+            for (slot in state.foremanSlots) {
+                stream.writeInt(slot.index)
+                writeNullableUUID(stream, slot.holderUuid)
+                stream.writeLong(slot.cooldownUntilMillis)
+            }
+            stream.writeInt(state.selectedDisplay.size)
+            for (uuid in state.selectedDisplay) stream.writeUTF(uuid.toString())
+        }
+    }
+
+    private fun loadCommunityTitlesSection(stream: DataInputStream) {
+        val communityCount = readCount(stream, "community title")
+        for (i in 0 until communityCount) {
+            val regionId = stream.readInt()
+            val slotCount = readCount(stream, "community title slot")
+            val slots = mutableListOf<CommunityTitleSlot>()
+            for (j in 0 until slotCount) {
+                slots.add(CommunityTitleSlot(stream.readInt(), readNullableUUID(stream), stream.readLong()))
+            }
+            val selectedCount = readCount(stream, "community title selected")
+            val selected = mutableSetOf<UUID>()
+            for (j in 0 until selectedCount) selected.add(UUID.fromString(stream.readUTF()))
+            getCommunityById(regionId)?.titleState = CommunityTitleState(slots, selected).normalized()
         }
     }
 

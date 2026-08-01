@@ -399,6 +399,56 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                             )
                         )
                     )
+
+            .then(
+                literal("title")
+                    .then(
+                        literal("status")
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.string())
+                                    .suggests(ALL_COMMUNITY_PROVIDER)
+                                    .executes { runTitleStatus(it) }
+                            )
+                    )
+                    .then(
+                        literal("buy_foreman_slot")
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.string())
+                                    .suggests(ACTIVE_COMMUNITY_PROVIDER)
+                                    .executes { runTitleBuyForemanSlot(it) }
+                            )
+                    )
+                    .then(
+                        literal("grant_foreman")
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.string())
+                                    .suggests(ACTIVE_COMMUNITY_PROVIDER)
+                                    .then(
+                                        argument("targetUuid", StringArgumentType.word())
+                                            .executes { runTitleGrantForeman(it) }
+                                    )
+                            )
+                    )
+                    .then(
+                        literal("revoke_foreman")
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.string())
+                                    .suggests(ACTIVE_COMMUNITY_PROVIDER)
+                                    .then(
+                                        argument("targetUuid", StringArgumentType.word())
+                                            .executes { runTitleRevokeForeman(it) }
+                                    )
+                            )
+                    )
+                    .then(
+                        literal("select")
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.string())
+                                    .suggests(ACTIVE_COMMUNITY_PROVIDER)
+                                    .executes { runTitleSelect(it) }
+                            )
+                    )
+            )
             .then(
                 literal("treasury")
                     .requires { net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(it.permissions()) }
@@ -1232,4 +1282,36 @@ private fun runBuildingSettleWeek(context: CommandContext<CommandSourceStack>): 
     }
     player.sendSystemMessage(Translator.tr("command.community.building.settle.failed", result.exceptionOrNull()?.message ?: "error"))
     return 0
+}
+
+private fun runTitleStatus(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    return identifierHandler(player, communityIdentifier) { community -> onTitleStatus(player, community) }
+}
+
+private fun runTitleBuyForemanSlot(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    return identifierHandler(player, communityIdentifier) { community -> onTitleBuyForemanSlot(player, community) }
+}
+
+private fun runTitleGrantForeman(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    val target = UUID.fromString(StringArgumentType.getString(context, "targetUuid"))
+    return identifierHandler(player, communityIdentifier) { community -> onTitleGrantForeman(player, community, target) }
+}
+
+private fun runTitleRevokeForeman(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    val target = UUID.fromString(StringArgumentType.getString(context, "targetUuid"))
+    return identifierHandler(player, communityIdentifier) { community -> onTitleRevokeForeman(player, community, target) }
+}
+
+private fun runTitleSelect(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    return identifierHandler(player, communityIdentifier) { community -> onTitleSelect(player, community) }
 }

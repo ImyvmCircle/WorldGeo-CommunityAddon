@@ -915,5 +915,13 @@
   "command.community.building.pool.remove.failed": "§cFailed to remove building template: §f{0} §7- §c{1}",
   "command.community.building.settle.success": "§aBuilding settlement completed: period §f{0} §7| settled §f{1} §7| skipped §f{2} §7| player tx §f{3} §7| treasury income §a{4}",
   "command.community.building.settle.failed": "§cBuilding settlement failed: §f{0}",
-  "community.member.desc.building_reward": "§aBuilding reward §7| period §f{0} §7| block §f{1} §7| units §f{2}"
+  "community.member.desc.building_reward": "§aBuilding reward §7| period §f{0} §7| block §f{1} §7| units §f{2}",
+  "community.title.foreman": "Foreman",
+  "community.treasury.desc.title_foreman_slot": "Buy foreman title slot: {0}",
+  "command.community.title.status": "§aTitle status: §f{0} §7| qualified §f{1} §7| purchased §f{2} §7| slots §f{3}",
+  "command.community.title.buy.success": "§aBought a foreman slot for §f{0}§a, cost §6{1}",
+  "command.community.title.grant.success": "§aGranted foreman in §f{0}§a to §f{1}§a, slot §f{2}",
+  "command.community.title.revoke.success": "§aRevoked foreman in §f{0}§a from §f{1}§a, slot §f{2}",
+  "command.community.title.select.success": "§aSelected foreman in §f{0}§a as display identity.",
+  "command.community.title.failed": "§cTitle operation failed: §f{0}"
 }

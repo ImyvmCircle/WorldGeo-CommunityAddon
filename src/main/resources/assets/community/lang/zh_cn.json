@@ -936,5 +936,13 @@
   "command.community.building.pool.remove.failed": "§c建设模板移除失败：§f{0} §7- §c{1}",
   "command.community.building.settle.success": "§a建设结算完成：周期 §f{0} §7| 已处理 §f{1} §7| 已跳过 §f{2} §7| 玩家事务 §f{3} §7| 国库收入 §a{4}",
   "command.community.building.settle.failed": "§c建设结算失败：§f{0}",
-  "community.member.desc.building_reward": "§a建设收益 §7| 周期 §f{0} §7| 方块 §f{1} §7| 数量 §f{2}"
+  "community.member.desc.building_reward": "§a建设收益 §7| 周期 §f{0} §7| 方块 §f{1} §7| 数量 §f{2}",
+  "community.title.foreman": "包工头",
+  "community.treasury.desc.title_foreman_slot": "购买包工头称号槽位：{0}",
+  "command.community.title.status": "§a称号状态：§f{0} §7| 资格 §f{1} §7| 已购 §f{2} §7| 槽位 §f{3}",
+  "command.community.title.buy.success": "§a已为 §f{0}§a 购买包工头槽位，花费 §6{1}",
+  "command.community.title.grant.success": "§a已在 §f{0}§a 将包工头发给 §f{1}§a，槽位 §f{2}",
+  "command.community.title.revoke.success": "§a已在 §f{0}§a 收回 §f{1}§a 的包工头，槽位 §f{2}",
+  "command.community.title.select.success": "§a已选择 §f{0}§a 的包工头作为显示身份。",
+  "command.community.title.failed": "§c称号操作失败：§f{0}"
 }

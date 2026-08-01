@@ -6,14 +6,12 @@ This Project is designed to constitute a comprehensive framework for players' **
 
 ## Changelog
 
-### 1.2.0
+### 1.2.1
 
-- feat: add community building treasury settlement backed by completed WorldGeo natural periods
-- feat: freeze selected building templates with framed, CRC-checked persistence records
-- feat: distribute building rewards with player weekly caps and community weekly income caps
-- feat: record building player rewards in member ledgers without counting them as contributions
-- feat: recover missed building hour and week settlements from persisted settlement cursors on server startup
-- chore: require IMYVMWorldGeo `26.2-1.5.7` for batched block delta APIs
+- feat: add foreman title slots with treasury purchase, grant, revoke and display selection commands
+- feat: apply foreman building reward bonuses with 20% unit reward gain and 600.00 dedicated weekly cap
+- feat: expose title summary through `CommunityApi` snapshots without mutable internal state
+- chore: mark community building as completed baseline before later tax, development and land-plot stages
 
 ## Features
 
