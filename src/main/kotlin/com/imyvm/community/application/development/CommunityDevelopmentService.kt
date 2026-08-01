@@ -60,7 +60,7 @@ object CommunityDevelopmentService {
         if (changed) CommunityDatabase.save()
     }
 
-    fun refreshDevelopmentFromCurrentState(community: Community): Result<CommunityDevelopmentState> = runCatching {
+    fun calculateDevelopmentFromCurrentState(community: Community): Result<CommunityDevelopmentState> = runCatching {
         val server = WorldGeoCommunityAddon.server ?: error("server unavailable")
         val region = community.getRegion() ?: error("community region unavailable")
         val weekKey = latestClosedProductionPeriod(NaturalPeriodKind.WEEK) ?: error("closed production week unavailable")
@@ -75,23 +75,26 @@ object CommunityDevelopmentService {
         val habitation = readWeightedRegionHabitation(server, geometryFacts, "community-development:${community.regionNumberId}:$periodKey")
         val weekBuildingIncome = theoreticalBuildingIncome(community, weekKey)
         val totalBuildingIncome = totalClosedProductionWeekBuildingIncome(community, weekKey)
-        val state = updateDevelopment(
-            community,
-            periodKey,
-            CommunityDevelopmentInputs(
-                formalMembers,
-                weekActiveMembers,
-                totalBuildingIncome,
-                weekBuildingIncome,
-                habitation.first,
-                habitation.second
-            )
+        val inputs = CommunityDevelopmentInputs(
+            formalMembers,
+            weekActiveMembers,
+            totalBuildingIncome,
+            weekBuildingIncome,
+            habitation.first,
+            habitation.second
         )
-        CommunityDatabase.save()
-        state
+        val (development, breakdown) = calculateDevelopment(inputs)
+        CommunityDevelopmentState(periodKey, System.currentTimeMillis(), development, inputs, breakdown, community.developmentState.landPrice, community.developmentState.activeMemberWeeks)
     }
 
-    fun refreshRegionLandPrice(community: Community): Result<CommunityLandPriceSnapshot> = runCatching {
+    fun refreshDevelopmentFromCurrentState(community: Community): Result<CommunityDevelopmentState> =
+        calculateDevelopmentFromCurrentState(community).map { state ->
+            community.developmentState = state
+            CommunityDatabase.save()
+            state
+        }
+
+    fun calculateRegionLandPrice(community: Community): Result<CommunityLandPriceSnapshot> = runCatching {
         val server = WorldGeoCommunityAddon.server ?: error("server unavailable")
         val region = community.getRegion() ?: error("community region unavailable")
         val area = BigDecimal.valueOf(RegionDataApi.getRegionArea(region))
@@ -108,10 +111,15 @@ object CommunityDevelopmentService {
         val native = RegionDataApi.queryNativeInhabitedTimeBatchAsync(server, request).join()
         val totalMillis = completeNativeMillis(native.readings)
         val buildingIncome = hourKey?.let { theoreticalBuildingIncome(community, it) } ?: 0L
-        val snapshot = updateLandPrice(community, area, totalMillis, buildingIncome)
-        CommunityDatabase.save()
-        snapshot
+        calculateLandPrice(area, totalMillis, buildingIncome)
     }
+
+    fun refreshRegionLandPrice(community: Community): Result<CommunityLandPriceSnapshot> =
+        calculateRegionLandPrice(community).map { snapshot ->
+            community.developmentState.landPrice = snapshot
+            CommunityDatabase.save()
+            snapshot
+        }
 
     fun calculateDevelopment(inputs: CommunityDevelopmentInputs): Pair<Double, CommunityDevelopmentBreakdown> {
         require(inputs.memberCount >= 0) { "memberCount must be non-negative" }

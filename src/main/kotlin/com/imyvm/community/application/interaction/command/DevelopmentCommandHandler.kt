@@ -3,12 +3,15 @@ package com.imyvm.community.application.interaction.command
 import com.imyvm.community.application.development.CommunityDevelopmentService
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.development.CommunityDevelopmentInputs
+import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.Translator
 import net.minecraft.server.level.ServerPlayer
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.math.BigDecimal
+import java.util.Collections
+import java.util.concurrent.CompletableFuture
 
 fun onDevelopmentPreview(
     player: ServerPlayer,
@@ -61,17 +64,37 @@ fun onDevelopmentStatus(player: ServerPlayer, community: Community): Int {
 }
 
 fun onDevelopmentRefresh(player: ServerPlayer, community: Community): Int {
-    return CommunityDevelopmentService.refreshDevelopmentFromCurrentState(community).fold(
-        onSuccess = { state ->
-            com.imyvm.community.infra.CommunityDatabase.save()
-            player.sendSystemMessage(Translator.tr("command.community.development.refresh.success", community.generateCommunityMark(), state.weekKey, "%.4f".format(state.development)))
-            1
-        },
-        onFailure = { error ->
-            player.sendSystemMessage(Translator.tr("command.community.development.failed", error.message ?: error::class.java.simpleName))
-            0
+    val regionId = community.regionNumberId ?: return failed(player, "community region not bound")
+    val key = "development:$regionId"
+    if (!activeRefreshes.add(key)) {
+        player.sendSystemMessage(Translator.tr("command.community.development.refresh.running", community.generateCommunityMark()))
+        return 0
+    }
+    val playerUuid = player.uuid
+    val server = player.level().server
+    player.sendSystemMessage(Translator.tr("command.community.development.refresh.started", community.generateCommunityMark()))
+    CompletableFuture.supplyAsync { CommunityDevelopmentService.calculateDevelopmentFromCurrentState(community) }
+        .whenComplete { result, error ->
+            server.execute {
+                activeRefreshes.remove(key)
+                val online = server.playerList.getPlayer(playerUuid)
+                if (error != null) {
+                    online?.sendSystemMessage(Translator.tr("command.community.development.failed", error.message ?: error::class.java.simpleName))
+                    return@execute
+                }
+                result.fold(
+                    onSuccess = { state ->
+                        community.developmentState = state
+                        CommunityDatabase.save()
+                        online?.sendSystemMessage(Translator.tr("command.community.development.refresh.success", community.generateCommunityMark(), state.weekKey, "%.4f".format(state.development)))
+                    },
+                    onFailure = { failure ->
+                        online?.sendSystemMessage(Translator.tr("command.community.development.failed", failure.message ?: failure::class.java.simpleName))
+                    }
+                )
+            }
         }
-    )
+    return 1
 }
 
 fun onLandPriceStatus(player: ServerPlayer, community: Community): Int {
@@ -85,17 +108,45 @@ fun onLandPriceStatus(player: ServerPlayer, community: Community): Int {
 }
 
 fun onLandPriceRefresh(player: ServerPlayer, community: Community): Int {
-    return CommunityDevelopmentService.refreshRegionLandPrice(community).fold(
-        onSuccess = { snapshot ->
-            player.sendSystemMessage(Translator.tr("command.community.land_price.refresh.success", community.generateCommunityMark(), format(snapshot.totalPrice), snapshot.area.toString()))
-            1
-        },
-        onFailure = { error ->
-            player.sendSystemMessage(Translator.tr("command.community.development.failed", error.message ?: error::class.java.simpleName))
-            0
+    val regionId = community.regionNumberId ?: return failed(player, "community region not bound")
+    val key = "land-price:$regionId"
+    if (!activeRefreshes.add(key)) {
+        player.sendSystemMessage(Translator.tr("command.community.land_price.refresh.running", community.generateCommunityMark()))
+        return 0
+    }
+    val playerUuid = player.uuid
+    val server = player.level().server
+    player.sendSystemMessage(Translator.tr("command.community.land_price.refresh.started", community.generateCommunityMark()))
+    CompletableFuture.supplyAsync { CommunityDevelopmentService.calculateRegionLandPrice(community) }
+        .whenComplete { result, error ->
+            server.execute {
+                activeRefreshes.remove(key)
+                val online = server.playerList.getPlayer(playerUuid)
+                if (error != null) {
+                    online?.sendSystemMessage(Translator.tr("command.community.development.failed", error.message ?: error::class.java.simpleName))
+                    return@execute
+                }
+                result.fold(
+                    onSuccess = { snapshot ->
+                        community.developmentState.landPrice = snapshot
+                        CommunityDatabase.save()
+                        online?.sendSystemMessage(Translator.tr("command.community.land_price.refresh.success", community.generateCommunityMark(), format(snapshot.totalPrice), snapshot.area.toString()))
+                    },
+                    onFailure = { failure ->
+                        online?.sendSystemMessage(Translator.tr("command.community.development.failed", failure.message ?: failure::class.java.simpleName))
+                    }
+                )
+            }
         }
-    )
+    return 1
 }
+
+private fun failed(player: ServerPlayer, reason: String): Int {
+    player.sendSystemMessage(Translator.tr("command.community.development.failed", reason))
+    return 0
+}
+
+private val activeRefreshes = Collections.synchronizedSet(mutableSetOf<String>())
 
 private fun formatMillis(value: Long): String = "%.2f".format(value / 3_600_000.0)
 
