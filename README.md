@@ -6,12 +6,12 @@ This Project is designed to constitute a comprehensive framework for players' **
 
 ## Changelog
 
-### 1.2.2
+### 1.2.3
 
-- feat: add fiscal policy state for income tax and welfare modes
-- feat: record weekly member balance observations and calculate marginal income tax in cents
-- feat: calculate welfare eligibility, protected treasury balance and proportional welfare distribution
-- feat: add OP fiscal commands for policy scheduling, observation, tax preview and welfare preview
+- feat: add community development score calculation from building income, population and habitation inputs
+- feat: add land price calculation with area, active habitation and building income components
+- feat: cache development and land price snapshots in community persistence
+- feat: add OP preview commands for development score and land price
 
 ## Features
 

@@ -929,5 +929,8 @@
   "command.community.fiscal.observe.success": "§aRecorded balance observation for §f{1}§a in §f{0}§a week §f{2}§a: §6{3}",
   "command.community.fiscal.tax.preview": "§aTax preview: §f{0} §7| week §f{1} §7| members §f{2} §7| total §c{3}",
   "command.community.fiscal.welfare.preview": "§aWelfare preview: §f{0} §7| week §f{1} §7| members §f{2} §7| total §b{3}",
-  "command.community.fiscal.failed": "§cFiscal operation failed: §f{0}"
+  "command.community.fiscal.failed": "§cFiscal operation failed: §f{0}",
+  "command.community.development.preview": "§a§l[SUCCESS]§r §aDevelopment preview for {0} week {1}: §f{2} §7(modifier {3})",
+  "command.community.land_price.preview": "§a§l[SUCCESS]§r §aLand price preview for {0}: area §f{1}§a, total §f{2}§a, active §f{3}§a, building §f{4}",
+  "command.community.development.failed": "§c§l[FAILED]§r §cDevelopment calculation failed: {0}"
 }

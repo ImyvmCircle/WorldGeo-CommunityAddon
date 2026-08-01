@@ -3,12 +3,14 @@ package com.imyvm.community.entrypoint.api
 import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.application.account.mutateTreasury
 import com.imyvm.community.application.title.CommunityTitleService
+import com.imyvm.community.application.development.CommunityDevelopmentService
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.TreasuryMutationResult
 import com.imyvm.community.domain.model.community.CommunityJoinPolicy
 import com.imyvm.community.domain.model.community.CommunityStatus
 import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.domain.model.TurnoverSource
+import com.imyvm.community.domain.model.development.CommunityDevelopmentInputs
 import com.imyvm.community.domain.model.development.DevelopmentComponents
 import com.imyvm.community.domain.model.development.DevelopmentSnapshot
 import com.imyvm.community.domain.model.transaction.ResourceDirection
@@ -164,6 +166,18 @@ object CommunityApi {
         val memberCount = community.getMemberUUIDs().size + community.getAdminUUIDs().size +
             (if (community.getOwnerUUID() != null) 1 else 0)
         val totalAssets = community.getTotalAssets()
+        val weekBuildingIncome = community.buildingState.playerWeekLedgers.values.fold(0L) { total, ledger ->
+            Math.addExact(total, ledger.settledAmount.coerceAtLeast(0L))
+        }
+        val inputs = CommunityDevelopmentInputs(
+            memberCount = memberCount,
+            weekActiveMemberCount = community.buildingState.playerWeekLedgers.size,
+            totalTheoreticalBuildingIncome = weekBuildingIncome,
+            weekTheoreticalBuildingIncome = weekBuildingIncome,
+            totalHabitationMillis = 0L,
+            averageHabitationMillis = 0L
+        )
+        val (aCommunity, breakdown) = CommunityDevelopmentService.calculateDevelopment(inputs)
 
         var avgRegionDifficulty: Double? = null
         if (server != null) {
@@ -173,14 +187,7 @@ object CommunityApi {
             }
         }
         val blockPlaceCount = RegionDataApi.getRegionPlayerStats(region).blockPlaceCount
-
-        val aCommunity =
-            (ln((memberCount + 1).toDouble()) / ln(2.0)) +
-            ln((totalAssets / 100L + 1L).toDouble()) +
-            (avgRegionDifficulty ?: 0.0) +
-            ln((blockPlaceCount / 2000L + 1L).toDouble())
-
-        val version = (memberCount.toLong() shl 40) or ((totalAssets / 100L) and 0xFFFFFFFFFFL)
+        val version = (memberCount.toLong() shl 40) or ((weekBuildingIncome / 100L) and 0xFFFFFFFFFFL)
 
         return DevelopmentSnapshot(
             regionNumberId = regionNumberId,
@@ -191,7 +198,16 @@ object CommunityApi {
                 memberCount = memberCount,
                 totalAssets = totalAssets,
                 avgRegionDifficulty = avgRegionDifficulty,
-                blockPlaceCount = blockPlaceCount
+                blockPlaceCount = blockPlaceCount,
+                weekActiveMemberCount = inputs.weekActiveMemberCount,
+                totalTheoreticalBuildingIncome = inputs.totalTheoreticalBuildingIncome,
+                weekTheoreticalBuildingIncome = inputs.weekTheoreticalBuildingIncome,
+                totalHabitationMillis = inputs.totalHabitationMillis,
+                averageHabitationMillis = inputs.averageHabitationMillis,
+                buildingScore = breakdown.building,
+                populationScore = breakdown.population,
+                habitationScore = breakdown.habitation,
+                habitationModifier = breakdown.habitationModifier
             )
         )
     }

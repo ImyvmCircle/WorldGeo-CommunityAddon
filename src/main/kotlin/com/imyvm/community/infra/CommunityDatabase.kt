@@ -22,6 +22,10 @@ import com.imyvm.community.domain.model.fiscal.CommunityFiscalObservation
 import com.imyvm.community.domain.model.fiscal.CommunityFiscalPolicy
 import com.imyvm.community.domain.model.fiscal.CommunityFiscalPolicySwitch
 import com.imyvm.community.domain.model.fiscal.CommunityFiscalState
+import com.imyvm.community.domain.model.development.CommunityDevelopmentBreakdown
+import com.imyvm.community.domain.model.development.CommunityDevelopmentInputs
+import com.imyvm.community.domain.model.development.CommunityDevelopmentState
+import com.imyvm.community.domain.model.development.CommunityLandPriceSnapshot
 import com.imyvm.community.domain.policy.permission.AdminPrivilege
 import com.imyvm.community.domain.policy.permission.AdminPrivileges
 import net.fabricmc.loader.api.FabricLoader
@@ -56,6 +60,7 @@ object CommunityDatabase {
     private const val SECTION_COMMUNITY_BUILDING_CATALOG = 7
     private const val SECTION_COMMUNITY_TITLES = 8
     private const val SECTION_COMMUNITY_FISCAL = 9
+    private const val SECTION_COMMUNITY_DEVELOPMENT = 10
     private const val MAX_SECTION_BYTES = 16 * 1024 * 1024
     private const val MAX_COMMUNITY_BYTES = 16 * 1024 * 1024
     private const val MAX_COMMUNITIES = 100_000
@@ -91,6 +96,7 @@ object CommunityDatabase {
                 writeSection(stream, SECTION_COMMUNITY_BUILDING_CATALOG) { saveCommunityBuildingCatalogSection(it) }
                 writeSection(stream, SECTION_COMMUNITY_TITLES) { saveCommunityTitlesSection(it) }
                 writeSection(stream, SECTION_COMMUNITY_FISCAL) { saveCommunityFiscalSection(it) }
+                writeSection(stream, SECTION_COMMUNITY_DEVELOPMENT) { saveCommunityDevelopmentSection(it) }
             }
             replaceDatabaseFile(tempFile, file)
         } finally {
@@ -204,6 +210,10 @@ object CommunityDatabase {
             }
             SECTION_COMMUNITY_FISCAL -> {
                 loadCommunityFiscalSection(stream)
+                true
+            }
+            SECTION_COMMUNITY_DEVELOPMENT -> {
+                loadCommunityDevelopmentSection(stream)
                 true
             }
             else -> {
@@ -1183,6 +1193,59 @@ object CommunityDatabase {
             val settled = mutableSetOf<String>()
             for (j in 0 until settledCount) settled.add(stream.readUTF())
             getCommunityById(regionId)?.fiscalState = CommunityFiscalState(activePolicy, pending, observations, settled)
+        }
+    }
+
+
+    private fun saveCommunityDevelopmentSection(stream: DataOutputStream) {
+        val targets = communities.filter { community ->
+            community.regionNumberId != null &&
+                (community.developmentState.weekKey.isNotEmpty() || community.developmentState.updatedAtMillis != 0L || community.developmentState.development != 0.0 || community.developmentState.landPrice != null)
+        }
+        stream.writeInt(targets.size)
+        for (community in targets) {
+            val state = community.developmentState
+            val inputs = state.inputs
+            val breakdown = state.breakdown
+            stream.writeInt(community.regionNumberId!!)
+            stream.writeUTF(state.weekKey)
+            stream.writeLong(state.updatedAtMillis)
+            stream.writeDouble(state.development)
+            stream.writeInt(inputs.memberCount)
+            stream.writeInt(inputs.weekActiveMemberCount)
+            stream.writeLong(inputs.totalTheoreticalBuildingIncome)
+            stream.writeLong(inputs.weekTheoreticalBuildingIncome)
+            stream.writeLong(inputs.totalHabitationMillis)
+            stream.writeLong(inputs.averageHabitationMillis)
+            stream.writeDouble(breakdown.building)
+            stream.writeDouble(breakdown.population)
+            stream.writeDouble(breakdown.habitation)
+            stream.writeDouble(breakdown.habitationModifier)
+            stream.writeBoolean(state.landPrice != null)
+            state.landPrice?.let { price ->
+                stream.writeLong(price.area)
+                stream.writeLong(price.total25HabitationMillis)
+                stream.writeLong(price.theoreticalBuildingIncome)
+                stream.writeLong(price.activePrice)
+                stream.writeLong(price.buildingPrice)
+                stream.writeLong(price.totalPrice)
+            }
+        }
+    }
+
+    private fun loadCommunityDevelopmentSection(stream: DataInputStream) {
+        val communityCount = readCount(stream, "community development")
+        for (i in 0 until communityCount) {
+            val regionId = stream.readInt()
+            val weekKey = stream.readUTF()
+            val updatedAtMillis = stream.readLong()
+            val development = stream.readDouble()
+            val inputs = CommunityDevelopmentInputs(stream.readInt(), stream.readInt(), stream.readLong(), stream.readLong(), stream.readLong(), stream.readLong())
+            val breakdown = CommunityDevelopmentBreakdown(stream.readDouble(), stream.readDouble(), stream.readDouble(), stream.readDouble())
+            val landPrice = if (stream.readBoolean()) {
+                CommunityLandPriceSnapshot(stream.readLong(), stream.readLong(), stream.readLong(), stream.readLong(), stream.readLong(), stream.readLong())
+            } else null
+            getCommunityById(regionId)?.developmentState = CommunityDevelopmentState(weekKey, updatedAtMillis, development, inputs, breakdown, landPrice)
         }
     }
 

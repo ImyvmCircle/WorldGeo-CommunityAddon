@@ -459,6 +459,57 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                     )
             )
             .then(
+                literal("development")
+                    .requires { net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(it.permissions()) }
+                    .then(
+                        literal("preview")
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.string())
+                                    .suggests(ACTIVE_COMMUNITY_PROVIDER)
+                                    .then(
+                                        argument("weekKey", StringArgumentType.word())
+                                            .then(
+                                                argument("totalBuildingIncome", com.mojang.brigadier.arguments.LongArgumentType.longArg(0L))
+                                                    .then(
+                                                        argument("weekBuildingIncome", com.mojang.brigadier.arguments.LongArgumentType.longArg(0L))
+                                                            .then(
+                                                                argument("weekActiveMembers", IntegerArgumentType.integer(0))
+                                                                    .then(
+                                                                        argument("totalHabitationMillis", com.mojang.brigadier.arguments.LongArgumentType.longArg(0L))
+                                                                            .then(
+                                                                                argument("averageHabitationMillis", com.mojang.brigadier.arguments.LongArgumentType.longArg(0L))
+                                                                                    .executes { runDevelopmentPreview(it) }
+                                                                            )
+                                                                    )
+                                                            )
+                                                    )
+                                            )
+                                    )
+                            )
+                    )
+            )
+            .then(
+                literal("land_price")
+                    .requires { net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(it.permissions()) }
+                    .then(
+                        literal("preview")
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.string())
+                                    .suggests(ACTIVE_COMMUNITY_PROVIDER)
+                                    .then(
+                                        argument("area", StringArgumentType.word())
+                                            .then(
+                                                argument("total25HabitationMillis", com.mojang.brigadier.arguments.LongArgumentType.longArg(0L))
+                                                    .then(
+                                                        argument("theoreticalBuildingIncome", com.mojang.brigadier.arguments.LongArgumentType.longArg(0L))
+                                                            .executes { runLandPricePreview(it) }
+                                                    )
+                                            )
+                                    )
+                            )
+                    )
+            )
+            .then(
                 literal("title")
                     .then(
                         literal("status")
@@ -1400,4 +1451,35 @@ private fun runFiscalWelfarePreview(context: CommandContext<CommandSourceStack>)
     val player = context.source.player ?: return 0
     val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
     return identifierHandler(player, communityIdentifier) { community -> onFiscalWelfarePreview(player, community, StringArgumentType.getString(context, "weekKey")) }
+}
+
+private fun runDevelopmentPreview(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    return identifierHandler(player, communityIdentifier) { community ->
+        onDevelopmentPreview(
+            player,
+            community,
+            StringArgumentType.getString(context, "weekKey"),
+            com.mojang.brigadier.arguments.LongArgumentType.getLong(context, "totalBuildingIncome"),
+            com.mojang.brigadier.arguments.LongArgumentType.getLong(context, "weekBuildingIncome"),
+            IntegerArgumentType.getInteger(context, "weekActiveMembers"),
+            com.mojang.brigadier.arguments.LongArgumentType.getLong(context, "totalHabitationMillis"),
+            com.mojang.brigadier.arguments.LongArgumentType.getLong(context, "averageHabitationMillis")
+        )
+    }
+}
+
+private fun runLandPricePreview(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    return identifierHandler(player, communityIdentifier) { community ->
+        onLandPricePreview(
+            player,
+            community,
+            StringArgumentType.getString(context, "area"),
+            com.mojang.brigadier.arguments.LongArgumentType.getLong(context, "total25HabitationMillis"),
+            com.mojang.brigadier.arguments.LongArgumentType.getLong(context, "theoreticalBuildingIncome")
+        )
+    }
 }

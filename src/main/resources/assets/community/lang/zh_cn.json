@@ -950,5 +950,8 @@
   "command.community.fiscal.observe.success": "§a已记录 §f{0}§a 成员 §f{1}§a 在 §f{2}§a 的余额观测 §6{3}",
   "command.community.fiscal.tax.preview": "§a税收预览：§f{0} §7| 周 §f{1} §7| 成员 §f{2} §7| 合计 §c{3}",
   "command.community.fiscal.welfare.preview": "§a福利预览：§f{0} §7| 周 §f{1} §7| 成员 §f{2} §7| 合计 §b{3}",
-  "command.community.fiscal.failed": "§c税收福利操作失败：§f{0}"
+  "command.community.fiscal.failed": "§c税收福利操作失败：§f{0}",
+  "command.community.development.preview": "§a§l[成功]§r §a{0} 第 {1} 周发展度预览：§f{2} §7（修正 {3}）",
+  "command.community.land_price.preview": "§a§l[成功]§r §a{0} 地价预览：面积 §f{1}§a，总价 §f{2}§a，活跃 §f{3}§a，建设 §f{4}",
+  "command.community.development.failed": "§c§l[失败]§r §c发展度计算失败：{0}"
 }
