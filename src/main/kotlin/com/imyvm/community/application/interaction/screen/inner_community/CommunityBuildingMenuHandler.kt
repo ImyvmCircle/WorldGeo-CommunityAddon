@@ -55,13 +55,11 @@ fun runOpenCommunityBuildingEditor(player: ServerPlayer, community: Community, d
 
 fun runAdjustCommunityBuildingUnit(player: ServerPlayer, community: Community, delta: Int, runBack: (ServerPlayer) -> Unit) {
     val draft = CommunityBuildingService.getDraft(player.uuid) ?: return
-    draft.unitCost = (draft.unitCost + delta).coerceAtLeast(1)
     runOpenCommunityBuildingEditor(player, community, draft, runBack)
 }
 
 fun runAdjustCommunityBuildingReward(player: ServerPlayer, community: Community, delta: Long, runBack: (ServerPlayer) -> Unit) {
     val draft = CommunityBuildingService.getDraft(player.uuid) ?: return
-    draft.rewardPerBlock = (draft.rewardPerBlock + delta).coerceAtLeast(100L)
     runOpenCommunityBuildingEditor(player, community, draft, runBack)
 }
 

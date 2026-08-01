@@ -26,7 +26,7 @@ class CommunityBuildingStyleListMenu(
     runBack = { runOpenCommunityBuildingMenu(it, community, parentBack) }
 ) {
     init {
-        val entries = community.buildingState.stylePackage.sortedBy { it.baseBlockId }
+        val entries = community.buildingState.activeEntries().sortedBy { it.baseBlockId }
         renderList(entries, 28, 10) { entry, slot, _ ->
             addButton(
                 slot,

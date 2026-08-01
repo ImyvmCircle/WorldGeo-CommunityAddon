@@ -6,17 +6,26 @@ data class CommunityBuildingEntry(
     var baseBlockId: String,
     var unitCost: Int,
     var rewardPerBlock: Long,
-    var linkedBlockIds: MutableList<String> = mutableListOf()
+    var linkedBlockIds: MutableList<String> = mutableListOf(),
+    var templateVersion: Long = 1L,
+    var selectionCheckpoint: String = "",
+    var active: Boolean = true
 ) {
     fun trackedBlockIds(): List<String> = listOf(baseBlockId) + linkedBlockIds.distinct().filter { it != baseBlockId }
+    fun frozenTemplate(): CommunityBuildingCatalogEntry = CommunityBuildingCatalogEntry(
+        baseBlockId, unitCost, rewardPerBlock, linkedBlockIds.toMutableList(), templateVersion
+    )
 }
 
 data class CommunityBuildingCatalogEntry(
     var baseBlockId: String,
     var unitCost: Int,
     var rewardPerBlock: Long,
-    var linkedBlockIds: MutableList<String> = mutableListOf()
-)
+    var linkedBlockIds: MutableList<String> = mutableListOf(),
+    var templateVersion: Long = 1L
+) {
+    fun trackedBlockIds(): List<String> = listOf(baseBlockId) + linkedBlockIds.distinct().filter { it != baseBlockId }
+}
 
 data class CommunityBuildingWeekLedger(
     var weekPeriodId: String,
@@ -40,10 +49,25 @@ data class CommunityBuildingState(
     var playerWeekLedgers: HashMap<UUID, CommunityBuildingWeekLedger> = hashMapOf(),
     var pendingPayouts: MutableList<CommunityBuildingPendingPayout> = mutableListOf()
 ) {
-    fun usedCapacityUnits(): Int = stylePackage.sumOf { it.unitCost }
+    fun activeEntries(): List<CommunityBuildingEntry> = stylePackage.filter { it.active }
+
+    fun usedCapacityUnits(): Int = activeEntries().sumOf { it.unitCost }
 
     fun remainingCapacityUnits(): Int = (capacityUnits - usedCapacityUnits()).coerceAtLeast(0)
 
     fun findEntry(baseBlockId: String): CommunityBuildingEntry? =
-        stylePackage.firstOrNull { it.baseBlockId.equals(baseBlockId, ignoreCase = true) }
+        stylePackage.firstOrNull { it.active && it.baseBlockId.equals(baseBlockId, ignoreCase = true) }
+
+    fun validateUniqueBlockMapping(): Result<Unit> {
+        val ownerByBlock = LinkedHashMap<String, String>()
+        for (entry in activeEntries()) {
+            for (blockId in entry.trackedBlockIds()) {
+                val previous = ownerByBlock.putIfAbsent(blockId, entry.baseBlockId)
+                if (previous != null && previous != entry.baseBlockId) {
+                    return Result.failure(IllegalStateException("building block $blockId conflicts between $previous and ${entry.baseBlockId}"))
+                }
+            }
+        }
+        return Result.success(Unit)
+    }
 }

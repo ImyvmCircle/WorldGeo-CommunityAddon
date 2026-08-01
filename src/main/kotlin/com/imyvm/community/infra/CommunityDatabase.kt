@@ -1006,6 +1006,9 @@ object CommunityDatabase {
                 stream.writeLong(entry.rewardPerBlock)
                 stream.writeInt(entry.linkedBlockIds.size)
                 for (linked in entry.linkedBlockIds) stream.writeUTF(linked)
+                stream.writeLong(entry.templateVersion)
+                stream.writeUTF(entry.selectionCheckpoint)
+                stream.writeBoolean(entry.active)
             }
             stream.writeInt(state.processedHourPeriodIds.size)
             for (id in state.processedHourPeriodIds) stream.writeUTF(id)
@@ -1043,7 +1046,10 @@ object CommunityDatabase {
                 val rewardPerBlock = stream.readLong()
                 val linkedSize = readCount(stream, "community building linked")
                 val linked = MutableList(linkedSize) { stream.readUTF() }
-                stylePackage.add(CommunityBuildingEntry(baseBlockId, unitCost, rewardPerBlock, linked.toMutableList()))
+                val templateVersion = stream.readLong()
+                val selectionCheckpoint = stream.readUTF()
+                val active = stream.readBoolean()
+                stylePackage.add(CommunityBuildingEntry(baseBlockId, unitCost, rewardPerBlock, linked.toMutableList(), templateVersion, selectionCheckpoint, active))
             }
             val hourSize = readCount(stream, "community building processed hour")
             val processedHours = MutableList(hourSize) { stream.readUTF() }
@@ -1092,6 +1098,7 @@ object CommunityDatabase {
             stream.writeLong(entry.rewardPerBlock)
             stream.writeInt(entry.linkedBlockIds.size)
             for (linked in entry.linkedBlockIds) stream.writeUTF(linked)
+            stream.writeLong(entry.templateVersion)
         }
     }
 
@@ -1104,7 +1111,8 @@ object CommunityDatabase {
             val rewardPerBlock = stream.readLong()
             val linkedSize = readCount(stream, "community building catalog linked")
             val linked = MutableList(linkedSize) { stream.readUTF() }
-            CommunityBuildingService.selectablePoolState.add(CommunityBuildingCatalogEntry(baseBlockId, unitCost, rewardPerBlock, linked.toMutableList()))
+            val templateVersion = stream.readLong()
+            CommunityBuildingService.selectablePoolState.add(CommunityBuildingCatalogEntry(baseBlockId, unitCost, rewardPerBlock, linked.toMutableList(), templateVersion))
         }
     }
 
