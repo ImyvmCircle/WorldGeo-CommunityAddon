@@ -48,13 +48,13 @@ abstract class AbstractMenu(
     }
 
     protected fun addButton(slot: Int, name: String, item: Item, onClick: (ServerPlayer) -> Unit) {
-        buttons.add(MenuButton(slot, item, name, onClick))
+        registerButton(MenuButton(slot, item, name, onClick))
         inventory.setItem(slot, createItem(Component.literal(name), item))
     }
 
     protected fun addButton(slot: Int, name: String, item: Item, loreLines: List<Component>, onClick: (ServerPlayer) -> Unit) {
         val stack = createItem(Component.literal(name), item)
-        buttons.add(MenuButton(slot, item, name, onClick))
+        registerButton(MenuButton(slot, item, name, onClick))
         inventory.setItem(slot, getLoreButton(stack, loreLines))
     }
 
@@ -63,8 +63,13 @@ abstract class AbstractMenu(
         if (name != null) {
             itemStack.set(DataComponents.CUSTOM_NAME, Component.literal(name))
         }
-        buttons.add(MenuButton(slot, itemStack.item, finalName, onClick))
+        registerButton(MenuButton(slot, itemStack.item, finalName, onClick))
         inventory.setItem(slot, itemStack)
+    }
+
+    private fun registerButton(button: MenuButton) {
+        MenuSlotRules.validate(button.slot, inventory.getContainerSize(), buttons.map { it.slot })
+        buttons.add(button)
     }
 
    fun incrementSlotIndex(slot: Int): Int {
@@ -105,8 +110,11 @@ abstract class AbstractMenu(
     }
 
     override fun clicked(slotIndex: Int, button: Int, actionType: ContainerInput, playerExecutor: Player) {
-        super.clicked(slotIndex, button, actionType, playerExecutor)
-        if (slotIndex < 0 || slotIndex >= inventory.getContainerSize()) return
+        if (slotIndex !in 0 until inventory.getContainerSize()) {
+            super.clicked(slotIndex, button, actionType, playerExecutor)
+            return
+        }
+        if (button != 0 || actionType.name != "PICKUP") return
 
         (playerExecutor as? ServerPlayer)?.let { p ->
             val clickedName = inventory.getItem(slotIndex).get(DataComponents.CUSTOM_NAME)?.string
