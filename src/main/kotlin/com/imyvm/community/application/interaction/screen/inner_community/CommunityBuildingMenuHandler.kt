@@ -4,6 +4,7 @@ import com.imyvm.community.application.event.addPendingOperation
 import com.imyvm.community.application.event.getPendingOperation
 import com.imyvm.community.application.event.removePendingOperationPersisted
 import com.imyvm.community.application.event.restorePendingOperation
+import com.imyvm.community.application.helper.CommunityBackgroundTasks
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.application.townbuilding.CommunityBuildingDraft
 import com.imyvm.community.application.townbuilding.CommunityBuildingService
@@ -23,6 +24,7 @@ import com.imyvm.community.entrypoint.screen.inner_community.building.CommunityB
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.Translator
 import net.minecraft.server.level.ServerPlayer
+import java.util.Collections
 
 fun runSendCommunityBuildingAdministrationSummary(player: ServerPlayer, community: Community) {
     val permission = adminPermission(player, community)
@@ -130,7 +132,12 @@ private fun adminPermission(player: ServerPlayer, community: Community) =
     }
 
 fun runConfirmCommunityBuildingOperation(player: ServerPlayer, community: Community): Int {
-    val operation = getPendingOperation(community.regionNumberId, PendingOperationType.BUILDING_CONFIRMATION)
+    val regionId = community.regionNumberId
+    if (regionId != null && activeBuildingOperations.contains(regionId)) {
+        player.sendSystemMessage(Translator.tr("community.building.confirm.running", community.generateCommunityMark()))
+        return 0
+    }
+    val operation = getPendingOperation(regionId, PendingOperationType.BUILDING_CONFIRMATION)
     val data = operation?.buildingData
     if (operation == null || data == null) {
         player.sendSystemMessage(Translator.tr("community.building.confirm.not_found"))
@@ -147,21 +154,57 @@ fun runConfirmCommunityBuildingOperation(player: ServerPlayer, community: Commun
         permission.sendSuccess(player)
         return 0
     }
+    if (!activeBuildingOperations.add(data.regionNumberId)) {
+        player.sendSystemMessage(Translator.tr("community.building.confirm.running", community.generateCommunityMark()))
+        return 0
+    }
     removePendingOperationPersisted(data.regionNumberId, PendingOperationType.BUILDING_CONFIRMATION)
-    val result = when (data.action) {
-        "select" -> CommunityBuildingService.upsertEntry(community, requireNotNull(data.baseBlockId), 0, 0L, emptyList()).map { data.cost }
-        "remove" -> CommunityBuildingService.removeEntry(community, requireNotNull(data.baseBlockId)).map { 0L }
-        "capacity" -> CommunityBuildingService.buyCapacity(community, data.buyUnits)
-        else -> Result.failure(IllegalStateException("unknown building operation"))
+    player.closeContainer()
+    player.sendSystemMessage(Translator.tr("community.building.confirm.started", community.generateCommunityMark(), data.action))
+    val server = player.level().server
+    val executorUuid = player.uuid
+    val work = when (data.action) {
+        "select" -> CommunityBuildingService.prepareSelectionCheckpointAsync(community, requireNotNull(data.baseBlockId))
+        "remove" -> CommunityBuildingService.prepareRemovalCheckpointAsync(community, requireNotNull(data.baseBlockId))
+        "capacity" -> CommunityBackgroundTasks.supply { Result.success("") }
+        else -> CommunityBackgroundTasks.supply { Result.failure(IllegalStateException("unknown building operation")) }
     }
-    if (result.isSuccess) {
-        player.sendSystemMessage(Translator.tr("community.building.confirm.success", data.action, CommunityBuildingService.formatMoney(result.getOrThrow())))
-        return 1
+    work.whenComplete { checkpointResult, error ->
+        server.execute {
+            activeBuildingOperations.remove(data.regionNumberId)
+            val online = server.playerList.getPlayer(executorUuid)
+            val prepared = if (error != null) Result.failure(error) else checkpointResult
+            val targetCommunity = CommunityDatabase.getCommunityById(data.regionNumberId)
+            if (targetCommunity == null) {
+                online?.sendSystemMessage(Translator.tr("community.building.confirm.failed", "community not found"))
+                return@execute
+            }
+            val lateReject = validatePendingExecution(operation, targetCommunity, executorUuid, operation.expireAt.coerceAtMost(System.currentTimeMillis()))
+            if (lateReject == PendingExecutionRejectReason.COMMUNITY_ORPHANED || lateReject == PendingExecutionRejectReason.COMMUNITY_REVOKED) {
+                online?.sendSystemMessage(rejectMessage(lateReject))
+                return@execute
+            }
+            val result = prepared.fold(
+                onSuccess = { checkpoint ->
+                    when (data.action) {
+                        "select" -> CommunityBuildingService.upsertEntryWithCheckpoint(targetCommunity, requireNotNull(data.baseBlockId), checkpoint).map { data.cost }
+                        "remove" -> CommunityBuildingService.removeEntryWithCheckpoint(targetCommunity, requireNotNull(data.baseBlockId), checkpoint).map { 0L }
+                        "capacity" -> CommunityBuildingService.buyCapacity(targetCommunity, data.buyUnits)
+                        else -> Result.failure(IllegalStateException("unknown building operation"))
+                    }
+                },
+                onFailure = { Result.failure(it) }
+            )
+            if (result.isSuccess) {
+                online?.sendSystemMessage(Translator.tr("community.building.confirm.success", data.action, CommunityBuildingService.formatMoney(result.getOrThrow())))
+                return@execute
+            }
+            restorePendingOperation(data.regionNumberId, PendingOperationType.BUILDING_CONFIRMATION, operation)
+            runCatching { CommunityDatabase.save() }
+            online?.sendSystemMessage(Translator.tr("community.building.confirm.failed", result.exceptionOrNull()?.message ?: "error"))
+        }
     }
-    restorePendingOperation(data.regionNumberId, PendingOperationType.BUILDING_CONFIRMATION, operation)
-    runCatching { CommunityDatabase.save() }
-    player.sendSystemMessage(Translator.tr("community.building.confirm.failed", result.exceptionOrNull()?.message ?: "error"))
-    return 0
+    return 1
 }
 
 fun runCancelCommunityBuildingOperation(player: ServerPlayer, community: Community): Int {
@@ -179,6 +222,8 @@ fun runCancelCommunityBuildingOperation(player: ServerPlayer, community: Communi
     player.sendSystemMessage(Translator.tr("community.building.confirm.cancelled"))
     return 1
 }
+
+private val activeBuildingOperations = Collections.synchronizedSet(mutableSetOf<Int>())
 
 private fun startBuildingConfirmation(player: ServerPlayer, community: Community, data: BuildingConfirmationData) {
     if (getPendingOperation(community.regionNumberId, PendingOperationType.BUILDING_CONFIRMATION) != null) {

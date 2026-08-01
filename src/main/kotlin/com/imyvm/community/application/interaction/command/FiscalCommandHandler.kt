@@ -1,10 +1,12 @@
 package com.imyvm.community.application.interaction.command
 
 import com.imyvm.community.application.fiscal.CommunityFiscalService
+import com.imyvm.community.application.helper.CommunityBackgroundTasks
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.fiscal.CommunityFiscalPolicy
 import com.imyvm.community.util.Translator
 import net.minecraft.server.level.ServerPlayer
+import java.util.Collections
 import java.util.UUID
 
 fun onFiscalPolicy(player: ServerPlayer, community: Community, policyName: String): Int {
@@ -75,16 +77,32 @@ fun onFiscalWelfarePreview(player: ServerPlayer, community: Community, weekKey: 
 }
 
 fun onFiscalSettle(player: ServerPlayer, weekKey: String): Int {
-    return CommunityFiscalService.settleWeek(weekKey).fold(
-        onSuccess = { summary ->
-            player.sendSystemMessage(Translator.tr("command.community.fiscal.settle.success", weekKey, summary.frozenCommunities.toString(), summary.submittedTaxTransactions.toString(), format(summary.appliedTaxTotal), format(summary.welfareTotal)))
-            1
-        },
-        onFailure = { error ->
-            player.sendSystemMessage(Translator.tr("command.community.fiscal.failed", error.message ?: error::class.java.simpleName))
-            0
+    if (!activeFiscalSettlements.add(weekKey)) {
+        player.sendSystemMessage(Translator.tr("command.community.fiscal.settle.running", weekKey))
+        return 0
+    }
+    val server = player.level().server
+    val playerUuid = player.uuid
+    player.sendSystemMessage(Translator.tr("command.community.fiscal.settle.started", weekKey))
+    CommunityBackgroundTasks.supply { CommunityFiscalService.settleWeek(weekKey) }.whenComplete { result, error ->
+        server.execute {
+            activeFiscalSettlements.remove(weekKey)
+            val online = server.playerList.getPlayer(playerUuid)
+            if (error != null) {
+                online?.sendSystemMessage(Translator.tr("command.community.fiscal.failed", error.message ?: error::class.java.simpleName))
+                return@execute
+            }
+            result.fold(
+                onSuccess = { summary ->
+                    online?.sendSystemMessage(Translator.tr("command.community.fiscal.settle.success", weekKey, summary.frozenCommunities.toString(), summary.submittedTaxTransactions.toString(), format(summary.appliedTaxTotal), format(summary.welfareTotal)))
+                },
+                onFailure = { failure ->
+                    online?.sendSystemMessage(Translator.tr("command.community.fiscal.failed", failure.message ?: failure::class.java.simpleName))
+                }
+            )
         }
-    )
+    }
+    return 1
 }
 
 fun onFiscalHistory(player: ServerPlayer, community: Community): Int {
@@ -97,5 +115,7 @@ fun onFiscalHistory(player: ServerPlayer, community: Community): Int {
     }
     return 1
 }
+
+private val activeFiscalSettlements = Collections.synchronizedSet(mutableSetOf<String>())
 
 private fun format(amount: Long): String = "%.2f".format(amount / 100.0)

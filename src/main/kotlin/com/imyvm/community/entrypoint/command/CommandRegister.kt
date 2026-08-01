@@ -1,6 +1,7 @@
 package com.imyvm.community.entrypoint.command
 
 import com.imyvm.community.application.interaction.command.*
+import com.imyvm.community.application.helper.CommunityBackgroundTasks
 import com.imyvm.community.application.interaction.common.*
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.application.interaction.screen.inner_community.runCancelCommunityBuildingOperation
@@ -1514,27 +1515,44 @@ private fun runBuildingPoolAdd(context: CommandContext<CommandSourceStack>, link
 
 private fun runBuildingSettleHour(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
-    val result = CommunityBuildingService.settleCurrentHour()
-    if (result.isSuccess) {
-        val summary = result.getOrThrow()
-        player.sendSystemMessage(Translator.tr("command.community.building.settle.success", "hour", summary.settledCommunities.toString(), summary.skippedCommunities.toString(), summary.playerTransactions.toString(), CommunityBuildingService.formatMoney(summary.communityIncome)))
-        return 1
-    }
-    player.sendSystemMessage(Translator.tr("command.community.building.settle.failed", result.exceptionOrNull()?.message ?: "error"))
-    return 0
+    return runBuildingSettlement(player, "hour") { CommunityBuildingService.settleCurrentHour() }
 }
 
 private fun runBuildingSettleWeek(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
-    val result = CommunityBuildingService.settleCurrentWeek()
-    if (result.isSuccess) {
-        val summary = result.getOrThrow()
-        player.sendSystemMessage(Translator.tr("command.community.building.settle.success", "week", summary.settledCommunities.toString(), summary.skippedCommunities.toString(), summary.playerTransactions.toString(), CommunityBuildingService.formatMoney(summary.communityIncome)))
-        return 1
-    }
-    player.sendSystemMessage(Translator.tr("command.community.building.settle.failed", result.exceptionOrNull()?.message ?: "error"))
-    return 0
+    return runBuildingSettlement(player, "week") { CommunityBuildingService.settleCurrentWeek() }
 }
+
+private fun runBuildingSettlement(player: net.minecraft.server.level.ServerPlayer, periodLabel: String, task: () -> Result<com.imyvm.community.application.townbuilding.CommunityBuildingPeriodSettlementResult>): Int {
+    if (!activeBuildingSettlements.add(periodLabel)) {
+        player.sendSystemMessage(Translator.tr("command.community.building.settle.running", periodLabel))
+        return 0
+    }
+    val server = player.level().server
+    val playerUuid = player.uuid
+    player.sendSystemMessage(Translator.tr("command.community.building.settle.started", periodLabel))
+    CommunityBackgroundTasks.supply(task).whenComplete { result, error ->
+        server.execute {
+            activeBuildingSettlements.remove(periodLabel)
+            val online = server.playerList.getPlayer(playerUuid)
+            if (error != null) {
+                online?.sendSystemMessage(Translator.tr("command.community.building.settle.failed", error.message ?: error::class.java.simpleName))
+                return@execute
+            }
+            result.fold(
+                onSuccess = { summary ->
+                    online?.sendSystemMessage(Translator.tr("command.community.building.settle.success", periodLabel, summary.settledCommunities.toString(), summary.skippedCommunities.toString(), summary.playerTransactions.toString(), CommunityBuildingService.formatMoney(summary.communityIncome)))
+                },
+                onFailure = { failure ->
+                    online?.sendSystemMessage(Translator.tr("command.community.building.settle.failed", failure.message ?: failure::class.java.simpleName))
+                }
+            )
+        }
+    }
+    return 1
+}
+
+private val activeBuildingSettlements = Collections.synchronizedSet(mutableSetOf<String>())
 
 private fun runTitleStatus(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0

@@ -24,6 +24,7 @@ fun validatePendingExecution(
         ?: operation.renameData?.executorUUID
         ?: operation.transferData?.executorUUID
         ?: operation.treasuryGrantData?.executorUUID
+        ?: operation.buildingData?.executorUUID
         ?: operation.inviterUUID
     if (expectedExecutor != null && expectedExecutor != executorUuid) return PendingExecutionRejectReason.EXECUTOR_CHANGED
     if (community.regionNumberId == null) return PendingExecutionRejectReason.COMMUNITY_ORPHANED

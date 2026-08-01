@@ -2,6 +2,7 @@ package com.imyvm.community.application.townbuilding
 
 import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.application.account.mutateTreasury
+import com.imyvm.community.application.helper.CommunityBackgroundTasks
 import com.imyvm.community.application.title.CommunityTitleService
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.account.AccountDirection
@@ -58,10 +59,21 @@ object CommunityBuildingService {
 
     fun register() {
         RegionDataApi.registerCompleteNaturalPeriodTransitionCallback(Consumer { transition ->
-            val server = WorldGeoCommunityAddon.server ?: return@Consumer
-            server.execute { settleTransition(transition) }
+            CommunityBackgroundTasks.supply {
+                settleTransition(transition)
+                Unit
+            }.whenComplete { _, error ->
+                if (error != null) WorldGeoCommunityAddon.logger.error("Failed to run building period transition task", error)
+            }
         })
-        AccountSubsystem.onReady { runtime -> runtime.server.execute { recoverAvailablePeriods(runtime) } }
+        AccountSubsystem.onReady { runtime ->
+            CommunityBackgroundTasks.supply {
+                recoverAvailablePeriods(runtime)
+                Unit
+            }.whenComplete { _, error ->
+                if (error != null) WorldGeoCommunityAddon.logger.error("Failed to recover building periods", error)
+            }
+        }
     }
 
 
@@ -631,6 +643,21 @@ object CommunityBuildingService {
     fun upsertEntry(community: Community, baseBlockId: String, unitCost: Int, rewardPerBlock: Long, linkedBlockIds: List<String>): Result<CommunityBuildingEntry> {
         val regionId = community.regionNumberId ?: return Result.failure(IllegalStateException("community region not bound"))
         val template = findSelectableEntry(baseBlockId) ?: return Result.failure(NoSuchElementException("template not found"))
+        return prepareCheckpointAsync(regionId, template.trackedBlockIds()).join().fold(
+            onSuccess = { checkpoint -> upsertEntryWithCheckpoint(community, baseBlockId, checkpoint) },
+            onFailure = { Result.failure(it) }
+        )
+    }
+
+    fun prepareSelectionCheckpointAsync(community: Community, baseBlockId: String): CompletableFuture<Result<String>> {
+        val regionId = community.regionNumberId ?: return CompletableFuture.completedFuture(Result.failure(IllegalStateException("community region not bound")))
+        val template = findSelectableEntry(baseBlockId) ?: return CompletableFuture.completedFuture(Result.failure(NoSuchElementException("template not found")))
+        return prepareCheckpointAsync(regionId, template.trackedBlockIds())
+    }
+
+    fun upsertEntryWithCheckpoint(community: Community, baseBlockId: String, checkpoint: String): Result<CommunityBuildingEntry> {
+        val regionId = community.regionNumberId ?: return Result.failure(IllegalStateException("community region not bound"))
+        val template = findSelectableEntry(baseBlockId) ?: return Result.failure(NoSuchElementException("template not found"))
         val state = community.buildingState
         val existing = state.findEntry(baseBlockId)
         val oldSnapshot = existing?.copy(linkedBlockIds = existing.linkedBlockIds.toMutableList())
@@ -640,7 +667,6 @@ object CommunityBuildingService {
         val selectionCost = calculateSelectionCost(if (existing == null) template.unitCost else (template.unitCost - oldUnitCost).coerceAtLeast(0))
         if (selectionCost > 0L && community.getTotalAssets() < selectionCost) return Result.failure(IllegalStateException("insufficient treasury"))
         return try {
-            val checkpoint = currentCheckpoint(regionId, template.trackedBlockIds())
             val frozen = CommunityBuildingEntry(
                 template.baseBlockId,
                 template.unitCost,
@@ -677,10 +703,21 @@ object CommunityBuildingService {
     }
 
     fun removeEntry(community: Community, baseBlockId: String): Result<Unit> {
+        val checkpoint = prepareRemovalCheckpointAsync(community, baseBlockId).join().getOrElse { return Result.failure(it) }
+        return removeEntryWithCheckpoint(community, baseBlockId, checkpoint)
+    }
+
+    fun prepareRemovalCheckpointAsync(community: Community, baseBlockId: String): CompletableFuture<Result<String>> {
+        val regionId = community.regionNumberId ?: return CompletableFuture.completedFuture(Result.failure(IllegalStateException("community region not bound")))
+        val entry = community.buildingState.findEntry(baseBlockId) ?: return CompletableFuture.completedFuture(Result.failure(NoSuchElementException("entry not found")))
+        return prepareCheckpointAsync(regionId, entry.trackedBlockIds())
+    }
+
+    fun removeEntryWithCheckpoint(community: Community, baseBlockId: String, checkpoint: String): Result<Unit> {
         val entry = community.buildingState.findEntry(baseBlockId) ?: return Result.failure(NoSuchElementException("entry not found"))
         return try {
             entry.active = false
-            entry.selectionCheckpoint = currentCheckpoint(community.regionNumberId ?: 0, entry.trackedBlockIds())
+            entry.selectionCheckpoint = checkpoint
             CommunityDatabase.save()
             Result.success(Unit)
         } catch (error: Exception) {
@@ -732,6 +769,9 @@ object CommunityBuildingService {
     fun formatMoney(amount: Long): String = String.format(Locale.ROOT, "%.2f", amount / 100.0)
 
     private fun linkedSummary(linkedBlockIds: List<String>): String = if (linkedBlockIds.isEmpty()) "-" else linkedBlockIds.joinToString(", ")
+    private fun prepareCheckpointAsync(regionId: Int, blockIds: List<String>): CompletableFuture<Result<String>> =
+        CommunityBackgroundTasks.supply { runCatching { currentCheckpoint(regionId, blockIds) } }
+
     private fun currentCheckpoint(regionId: Int, blockIds: List<String>): String {
         val server = WorldGeoCommunityAddon.server ?: return RegionDataApi.getCurrentNaturalPeriodIds()[NaturalPeriodKind.HOUR] ?: ""
         val keys = RegionDataApi.getCurrentNaturalPeriodKeys()

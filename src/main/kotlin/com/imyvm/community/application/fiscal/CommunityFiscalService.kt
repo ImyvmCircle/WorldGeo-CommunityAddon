@@ -2,6 +2,7 @@ package com.imyvm.community.application.fiscal
 
 import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.application.account.mutateTreasury
+import com.imyvm.community.application.helper.CommunityBackgroundTasks
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.domain.model.account.AccountDirection
@@ -43,13 +44,20 @@ object CommunityFiscalService {
 
     fun register() {
         RegionDataApi.registerCompleteNaturalPeriodTransitionCallback(Consumer { transition ->
-            val server = WorldGeoCommunityAddon.server ?: return@Consumer
-            server.execute { settleTransition(transition) }
+            CommunityBackgroundTasks.supply {
+                settleTransition(transition)
+                Unit
+            }.whenComplete { _, error ->
+                if (error != null) WorldGeoCommunityAddon.logger.error("Failed to run fiscal period transition task", error)
+            }
         })
         AccountSubsystem.onReady { runtime ->
-            runtime.server.execute {
+            CommunityBackgroundTasks.supply {
                 recoverOpenSettlements(runtime)
                 settleLatestClosedProductionWeek()
+                Unit
+            }.whenComplete { _, error ->
+                if (error != null) WorldGeoCommunityAddon.logger.error("Failed to recover fiscal settlements", error)
             }
         }
     }

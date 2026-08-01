@@ -1,6 +1,7 @@
 package com.imyvm.community.application.interaction.command
 
 import com.imyvm.community.application.development.CommunityDevelopmentService
+import com.imyvm.community.application.helper.CommunityBackgroundTasks
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.development.CommunityDevelopmentInputs
 import com.imyvm.community.infra.CommunityDatabase
@@ -11,7 +12,6 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.math.BigDecimal
 import java.util.Collections
-import java.util.concurrent.CompletableFuture
 
 fun onDevelopmentPreview(
     player: ServerPlayer,
@@ -73,7 +73,7 @@ fun onDevelopmentRefresh(player: ServerPlayer, community: Community): Int {
     val playerUuid = player.uuid
     val server = player.level().server
     player.sendSystemMessage(Translator.tr("command.community.development.refresh.started", community.generateCommunityMark()))
-    CompletableFuture.supplyAsync { CommunityDevelopmentService.calculateDevelopmentFromCurrentState(community) }
+    CommunityBackgroundTasks.supply { CommunityDevelopmentService.calculateDevelopmentFromCurrentState(community) }
         .whenComplete { result, error ->
             server.execute {
                 activeRefreshes.remove(key)
@@ -117,7 +117,7 @@ fun onLandPriceRefresh(player: ServerPlayer, community: Community): Int {
     val playerUuid = player.uuid
     val server = player.level().server
     player.sendSystemMessage(Translator.tr("command.community.land_price.refresh.started", community.generateCommunityMark()))
-    CompletableFuture.supplyAsync { CommunityDevelopmentService.calculateRegionLandPrice(community) }
+    CommunityBackgroundTasks.supply { CommunityDevelopmentService.calculateRegionLandPrice(community) }
         .whenComplete { result, error ->
             server.execute {
                 activeRefreshes.remove(key)
