@@ -10,6 +10,7 @@ import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.infra.account.AccountSubsystem
 import java.nio.charset.StandardCharsets
 import java.util.UUID
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
 @Volatile private var legacyTreasuryMigrationReady = false
@@ -35,8 +36,7 @@ private fun appendLegacyTreasuryFact(
     index: Int
 ) {
     if (index == facts.size) {
-        legacyTreasuryMigrationReady = true
-        WorldGeoCommunityAddon.logger.info("Legacy treasury migration ready with {} facts", facts.size)
+        syncLegacyTreasuryBalances(runtime, facts.size)
         return
     }
     runtime.sharedStore.append(facts[index]).whenComplete { _, error ->
@@ -51,6 +51,55 @@ private fun appendLegacyTreasuryFact(
                 )
             } else {
                 appendLegacyTreasuryFact(runtime, facts, index + 1)
+            }
+        }
+    }
+}
+
+private fun syncLegacyTreasuryBalances(runtime: AccountSubsystem.Runtime, migratedFactCount: Int) {
+    val communities = CommunityDatabase.communities.filter { it.regionNumberId != null }
+    if (communities.isEmpty()) {
+        legacyTreasuryMigrationReady = true
+        WorldGeoCommunityAddon.logger.info("Legacy treasury migration ready with {} facts", migratedFactCount)
+        return
+    }
+    val futures = communities.map { community ->
+        val regionId = community.regionNumberId!!
+        runtime.sharedStore.treasuryBalance(regionId).thenApply { balance -> regionId to balance }
+    }
+    CompletableFuture.allOf(*futures.toTypedArray()).whenComplete { _, error ->
+        runtime.server.execute {
+            if (error != null) {
+                legacyTreasuryMigrationReady = false
+                WorldGeoCommunityAddon.logger.error("Failed to synchronize treasury aggregates", error)
+                runtime.scheduler.schedule(
+                    { runtime.server.execute { runLegacyTreasuryMigration(runtime) } },
+                    MIGRATION_RETRY_SECONDS,
+                    TimeUnit.SECONDS
+                )
+                return@execute
+            }
+            var changed = false
+            futures.forEach { future ->
+                val (regionId, balance) = future.join()
+                val community = CommunityDatabase.getCommunityById(regionId) ?: return@forEach
+                if (community.treasuryBalance != balance) {
+                    community.treasuryBalance = balance
+                    changed = true
+                }
+            }
+            try {
+                if (changed) CommunityDatabase.save()
+                legacyTreasuryMigrationReady = true
+                WorldGeoCommunityAddon.logger.info("Legacy treasury migration ready with {} facts", migratedFactCount)
+            } catch (saveError: Exception) {
+                legacyTreasuryMigrationReady = false
+                WorldGeoCommunityAddon.logger.error("Failed to save synchronized treasury aggregates", saveError)
+                runtime.scheduler.schedule(
+                    { runtime.server.execute { runLegacyTreasuryMigration(runtime) } },
+                    MIGRATION_RETRY_SECONDS,
+                    TimeUnit.SECONDS
+                )
             }
         }
     }

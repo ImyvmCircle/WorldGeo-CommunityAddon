@@ -4,6 +4,7 @@ import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.Turnover
 import com.imyvm.community.domain.model.TurnoverSource
+import com.imyvm.community.domain.model.TreasuryReferenceRecord
 import com.imyvm.community.domain.model.account.AccountDirection
 import com.imyvm.community.domain.model.account.AccountTransaction
 import com.imyvm.community.domain.model.account.AccountTransactionStatus
@@ -262,6 +263,7 @@ private fun appendDonationTreasury(
                     "Failed to append donation treasury ledger ${plan.operationId}", error
                 )
             } else {
+                if (!projectDonationTreasuryToLegacyDatabase(runtime, plan)) return@execute
                 appendDonationStep(
                     runtime,
                     donationStep(
@@ -272,6 +274,28 @@ private fun appendDonationTreasury(
                 )
             }
         }
+    }
+}
+
+private fun projectDonationTreasuryToLegacyDatabase(runtime: AccountSubsystem.Runtime, plan: DonationPlan): Boolean {
+    val community = CommunityDatabase.getCommunityById(plan.regionId) ?: return true
+    val reference = treasuryReference(plan)
+    val record = TreasuryReferenceRecord(
+        reference, plan.amount, ResourceDirection.CREDIT, "donation", "donation", plan.playerUuid.toString()
+    )
+    val beforeBalance = community.treasuryBalance
+    val beforeReference = community.treasuryReferences[reference]
+    return try {
+        community.treasuryBalance = runtime.sharedStore.treasuryBalance(plan.regionId).join()
+        community.treasuryReferences[reference] = record
+        CommunityDatabase.save()
+        true
+    } catch (error: Exception) {
+        community.treasuryBalance = beforeBalance
+        if (beforeReference == null) community.treasuryReferences.remove(reference)
+        else community.treasuryReferences[reference] = beforeReference
+        WorldGeoCommunityAddon.logger.error("Failed to save donation treasury projection ${plan.operationId}", error)
+        false
     }
 }
 
