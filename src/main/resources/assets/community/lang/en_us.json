@@ -914,5 +914,6 @@
   "command.community.building.pool.remove.success": "§aRemoved building template: §f{0}",
   "command.community.building.pool.remove.failed": "§cFailed to remove building template: §f{0} §7- §c{1}",
   "command.community.building.settle.success": "§aBuilding settlement completed: period §f{0} §7| settled §f{1} §7| skipped §f{2} §7| player tx §f{3} §7| treasury income §a{4}",
-  "command.community.building.settle.failed": "§cBuilding settlement failed: §f{0}"
+  "command.community.building.settle.failed": "§cBuilding settlement failed: §f{0}",
+  "community.member.desc.building_reward": "§aBuilding reward §7| period §f{0} §7| block §f{1} §7| units §f{2}"
 }

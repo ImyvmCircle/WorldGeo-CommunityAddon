@@ -64,6 +64,35 @@ class CommunityFactStoreTest {
     }
 
     @Test
+    fun memberLedgerCanRecordBuildingRewardWithoutContributionAggregate() {
+        val root = Files.createTempDirectory("community-building-member-ledger")
+        val memberUuid = UUID.randomUUID()
+        try {
+            CommunityDataWriter(8).use { writer ->
+                val store = CommunityFactStore(root, writer)
+                store.append(MemberLedgerFact(
+                    UUID.randomUUID(),
+                    REGION_ID,
+                    1L,
+                    memberUuid,
+                    250L,
+                    ResourceDirection.CREDIT,
+                    "building",
+                    "building:member:test",
+                    "community.member.desc.building_reward",
+                    listOf("hour-1", "minecraft:stone", "5"),
+                    countsAsContribution = false
+                )).join()
+
+                assertEquals(1, store.scanMember(REGION_ID, memberUuid, null, 10).join().items.size)
+                assertEquals(0L, store.memberContribution(REGION_ID, memberUuid).join())
+            }
+        } finally {
+            deleteTree(root)
+        }
+    }
+
+    @Test
     fun unresolvedOperationRemainsIndexedUntilEveryKnownStepIsTerminal() {
         val root = Files.createTempDirectory("community-unresolved-operation")
         val operationId = UUID.randomUUID()

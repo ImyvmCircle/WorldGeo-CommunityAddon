@@ -8,6 +8,7 @@ import com.imyvm.community.domain.model.account.AccountTransaction
 import com.imyvm.community.domain.model.community.CommunityBuildingCatalogEntry
 import com.imyvm.community.domain.model.community.CommunityBuildingEntry
 import com.imyvm.community.domain.model.community.CommunityBuildingState
+import com.imyvm.community.domain.model.transaction.MemberLedgerFact
 import com.imyvm.community.domain.model.transaction.PurposeCursorFact
 import com.imyvm.community.domain.model.transaction.ResourceDirection
 import com.imyvm.community.infra.CommunityConfig
@@ -15,17 +16,21 @@ import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.infra.PricingConfig
 import com.imyvm.community.infra.account.AccountSubsystem
 import com.imyvm.community.util.Translator
+import com.imyvm.iwg.domain.CompleteNaturalPeriodTransition
+import com.imyvm.iwg.domain.NaturalPeriodKey
 import com.imyvm.iwg.domain.NaturalPeriodKind
-import com.imyvm.iwg.domain.NaturalPeriodTransition
+import com.imyvm.iwg.domain.WorldGeoPeriodDataStatus
 import com.imyvm.iwg.inter.api.RegionDataApi
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.item.BlockItem
 import net.minecraft.world.item.Item
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.temporal.WeekFields
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
@@ -33,6 +38,7 @@ import java.util.function.Consumer
 import kotlin.math.ceil
 
 object CommunityBuildingService {
+    private const val MAX_RECOVERY_PERIODS = 256
     private val entryDrafts = mutableMapOf<UUID, CommunityBuildingDraft>()
     private val nonSurvivalBlockIds = setOf(
         "minecraft:air", "minecraft:cave_air", "minecraft:void_air", "minecraft:bedrock",
@@ -45,21 +51,118 @@ object CommunityBuildingService {
     val selectablePoolState: MutableList<CommunityBuildingCatalogEntry> = mutableListOf()
 
     fun register() {
-        RegionDataApi.registerNaturalPeriodTransitionCallback(Consumer { transition ->
+        RegionDataApi.registerCompleteNaturalPeriodTransitionCallback(Consumer { transition ->
             val server = WorldGeoCommunityAddon.server ?: return@Consumer
             server.execute { settleTransition(transition) }
         })
+        AccountSubsystem.onReady { runtime -> runtime.server.execute { recoverAvailablePeriods(runtime) } }
     }
 
-    private fun settleTransition(transition: NaturalPeriodTransition) {
-        when (transition.kind) {
-            NaturalPeriodKind.HOUR -> {
-                val weekId = RegionDataApi.getCurrentNaturalPeriodIds()[NaturalPeriodKind.WEEK] ?: return
-                settlePeriod(NaturalPeriodKind.HOUR, transition.previousId, weekId)
-                    .onFailure { WorldGeoCommunityAddon.logger.error("Failed to settle building hour ${transition.previousId}", it) }
+
+    private fun recoverAvailablePeriods(runtime: AccountSubsystem.Runtime) {
+        for (timeline in RegionDataApi.getAvailableNaturalPeriodTimelines()) {
+            recoverAvailablePeriods(runtime, timeline.timelineId, timeline.closed, NaturalPeriodKind.HOUR)
+            recoverAvailablePeriods(runtime, timeline.timelineId, timeline.closed, NaturalPeriodKind.WEEK)
+        }
+    }
+
+    private fun recoverAvailablePeriods(runtime: AccountSubsystem.Runtime, timelineId: String, timelineClosed: Boolean, kind: NaturalPeriodKind) {
+        val range = RegionDataApi.getAvailableNaturalPeriodRange(timelineId, kind) ?: return
+        val latestClosed = if (timelineClosed) range.latest else previousPeriodKey(range.latest) ?: return
+        if (comparePeriodIds(kind, latestClosed.periodId, range.earliest.periodId) < 0) return
+        val start = firstRecoveryPeriod(runtime, latestClosed, range.earliest) ?: return
+        for (periodKey in enumeratePeriodKeys(start, latestClosed).take(MAX_RECOVERY_PERIODS)) {
+            val weekKey = if (kind == NaturalPeriodKind.WEEK) periodKey else weekKeyForPeriod(periodKey) ?: continue
+            settlePeriod(periodKey, weekKey)
+                .onFailure { WorldGeoCommunityAddon.logger.error("Failed to recover building ${kind.name.lowercase(Locale.ROOT)} ${periodLedgerKey(periodKey)}", it) }
+        }
+    }
+
+    private fun firstRecoveryPeriod(runtime: AccountSubsystem.Runtime, latest: NaturalPeriodKey, earliest: NaturalPeriodKey): NaturalPeriodKey? {
+        val activeRegionIds = CommunityDatabase.communities
+            .mapNotNull { community -> community.regionNumberId?.takeIf { community.buildingState.activeEntries().isNotEmpty() } }
+        if (activeRegionIds.isEmpty()) return null
+        val cursorValues = activeRegionIds.mapNotNull { regionId ->
+            val cursorUnit = "region:$regionId:${latest.timelineId}:${latest.kind.name.lowercase(Locale.ROOT)}"
+            runtime.sharedStore.findCursor(regionId, "building", "region", cursorUnit).join()?.cursor
+        }
+        if (cursorValues.isEmpty()) return latest
+        return cursorValues
+            .mapNotNull { cursor -> cursor.removePrefix("${latest.timelineId}:").takeIf { it != cursor } }
+            .mapNotNull { nextPeriodKey(latest.timelineId, latest.kind, it) }
+            .filter { comparePeriodIds(latest.kind, it.periodId, earliest.periodId) >= 0 }
+            .minWithOrNull { left, right -> comparePeriodIds(latest.kind, left.periodId, right.periodId) }
+            ?: latest
+    }
+
+    private fun enumeratePeriodKeys(start: NaturalPeriodKey, latest: NaturalPeriodKey): Sequence<NaturalPeriodKey> = sequence {
+        var current: NaturalPeriodKey? = start
+        while (current != null && comparePeriodIds(latest.kind, current.periodId, latest.periodId) <= 0) {
+            yield(current)
+            current = nextPeriodKey(latest.timelineId, latest.kind, current.periodId)
+        }
+    }
+
+    private fun nextPeriodKey(timelineId: String, kind: NaturalPeriodKind, periodId: String): NaturalPeriodKey? = runCatching {
+        NaturalPeriodKey(timelineId, kind, when {
+            periodId.startsWith("test:${kind.name.lowercase(Locale.ROOT)}:") -> {
+                val prefix = "test:${kind.name.lowercase(Locale.ROOT)}:"
+                prefix + (periodId.removePrefix(prefix).toLong() + 1L)
             }
-            NaturalPeriodKind.WEEK -> settlePeriod(NaturalPeriodKind.WEEK, transition.previousId, transition.previousId)
-                .onFailure { WorldGeoCommunityAddon.logger.error("Failed to settle building week ${transition.previousId}", it) }
+            kind == NaturalPeriodKind.HOUR -> LocalDateTime.parse(periodId, HOUR_FORMATTER).plusHours(1).format(HOUR_FORMATTER)
+            kind == NaturalPeriodKind.WEEK -> formatWeek(parseWeekStart(periodId).plusWeeks(1))
+            else -> return null
+        })
+    }.getOrNull()
+
+    private fun previousPeriodKey(key: NaturalPeriodKey): NaturalPeriodKey? = runCatching {
+        NaturalPeriodKey(key.timelineId, key.kind, when {
+            key.periodId.startsWith("test:${key.kind.name.lowercase(Locale.ROOT)}:") -> {
+                val prefix = "test:${key.kind.name.lowercase(Locale.ROOT)}:"
+                val previous = key.periodId.removePrefix(prefix).toLong() - 1L
+                if (previous < 0L) return null
+                prefix + previous
+            }
+            key.kind == NaturalPeriodKind.HOUR -> LocalDateTime.parse(key.periodId, HOUR_FORMATTER).minusHours(1).format(HOUR_FORMATTER)
+            key.kind == NaturalPeriodKind.WEEK -> formatWeek(parseWeekStart(key.periodId).minusWeeks(1))
+            else -> return null
+        })
+    }.getOrNull()
+
+    private fun comparePeriodIds(kind: NaturalPeriodKind, left: String, right: String): Int = when {
+        left.startsWith("test:") && right.startsWith("test:") -> left.substringAfterLast(':').toLong().compareTo(right.substringAfterLast(':').toLong())
+        kind == NaturalPeriodKind.HOUR -> LocalDateTime.parse(left, HOUR_FORMATTER).compareTo(LocalDateTime.parse(right, HOUR_FORMATTER))
+        kind == NaturalPeriodKind.WEEK -> parseWeekStart(left).compareTo(parseWeekStart(right))
+        else -> left.compareTo(right)
+    }
+
+    private fun weekKeyForPeriod(periodKey: NaturalPeriodKey): NaturalPeriodKey? = when {
+        periodKey.kind == NaturalPeriodKind.WEEK -> periodKey
+        periodKey.kind != NaturalPeriodKind.HOUR -> null
+        periodKey.periodId.startsWith("test:hour:") -> NaturalPeriodKey(
+            periodKey.timelineId,
+            NaturalPeriodKind.WEEK,
+            "test:week:${periodKey.periodId.substringAfterLast(':').toLong() / 168L}"
+        )
+        else -> NaturalPeriodKey(periodKey.timelineId, NaturalPeriodKind.WEEK, formatWeek(LocalDateTime.parse(periodKey.periodId, HOUR_FORMATTER).toLocalDate()))
+    }
+
+    private fun parseWeekStart(periodId: String): LocalDate = LocalDate.parse("$periodId-1", DateTimeFormatter.ISO_WEEK_DATE)
+
+    private fun formatWeek(date: LocalDate): String {
+        val weekFields = WeekFields.ISO
+        return String.format(Locale.ROOT, "%04d-W%02d", date.get(weekFields.weekBasedYear()), date.get(weekFields.weekOfWeekBasedYear()))
+    }
+
+    private fun settleTransition(transition: CompleteNaturalPeriodTransition) {
+        when (transition.previous.kind) {
+            NaturalPeriodKind.HOUR -> {
+                val weekKey = weekKeyForPeriod(transition.previous) ?: return
+                settlePeriod(transition.previous, weekKey)
+                    .onFailure { WorldGeoCommunityAddon.logger.error("Failed to settle building hour ${transition.previous.periodId}", it) }
+            }
+            NaturalPeriodKind.WEEK -> settlePeriod(transition.previous, transition.previous)
+                .onFailure { WorldGeoCommunityAddon.logger.error("Failed to settle building week ${transition.previous.periodId}", it) }
             else -> Unit
         }
     }
@@ -120,8 +223,17 @@ object CommunityBuildingService {
     }
 
     fun canView(community: Community, playerUuid: UUID): Boolean = community.getMemberRole(playerUuid)?.name in setOf("OWNER", "ADMIN", "MEMBER")
-    fun getPlayerWeekIncome(community: Community, playerUuid: UUID): Long = 0L
-    fun getPlayerWeekRemainingCap(community: Community, playerUuid: UUID): Long = CommunityConfig.BUILDING_PLAYER_WEEKLY_CAP.value
+
+    fun getPlayerWeekIncome(community: Community, playerUuid: UUID): Long {
+        val currentWeekKey = RegionDataApi.getCurrentNaturalPeriodKeys()[NaturalPeriodKind.WEEK] ?: return 0L
+        val ledger = community.buildingState.playerWeekLedgers[playerUuid] ?: return 0L
+        return if (ledger.weekPeriodId == periodLedgerKey(currentWeekKey)) ledger.settledAmount else 0L
+    }
+
+    fun getPlayerWeekRemainingCap(community: Community, playerUuid: UUID): Long {
+        val currentWeekKey = RegionDataApi.getCurrentNaturalPeriodKeys()[NaturalPeriodKind.WEEK] ?: return CommunityConfig.BUILDING_PLAYER_WEEKLY_CAP.value
+        return (CommunityConfig.BUILDING_PLAYER_WEEKLY_CAP.value - (collectPlayerWeekUsage(periodLedgerKey(currentWeekKey))[playerUuid] ?: 0L)).coerceAtLeast(0L)
+    }
 
     fun getNextHourSettlementText(): String {
         val zoneId = ZoneId.of(CommunityConfig.TIMEZONE.value)
@@ -174,19 +286,19 @@ object CommunityBuildingService {
 
 
     fun settleCurrentHour(): Result<CommunityBuildingPeriodSettlementResult> {
-        val ids = RegionDataApi.getCurrentNaturalPeriodIds()
-        val hourId = ids[NaturalPeriodKind.HOUR] ?: return Result.failure(IllegalStateException("current hour period unavailable"))
-        val weekId = ids[NaturalPeriodKind.WEEK] ?: return Result.failure(IllegalStateException("current week period unavailable"))
-        return settlePeriod(NaturalPeriodKind.HOUR, hourId, weekId)
+        val keys = RegionDataApi.getCurrentNaturalPeriodKeys()
+        val hourKey = keys[NaturalPeriodKind.HOUR] ?: return Result.failure(IllegalStateException("current hour period unavailable"))
+        val weekKey = keys[NaturalPeriodKind.WEEK] ?: return Result.failure(IllegalStateException("current week period unavailable"))
+        return settlePeriod(hourKey, weekKey)
     }
 
     fun settleCurrentWeek(): Result<CommunityBuildingPeriodSettlementResult> {
-        val ids = RegionDataApi.getCurrentNaturalPeriodIds()
-        val weekId = ids[NaturalPeriodKind.WEEK] ?: return Result.failure(IllegalStateException("current week period unavailable"))
-        return settlePeriod(NaturalPeriodKind.WEEK, weekId, weekId)
+        val keys = RegionDataApi.getCurrentNaturalPeriodKeys()
+        val weekKey = keys[NaturalPeriodKind.WEEK] ?: return Result.failure(IllegalStateException("current week period unavailable"))
+        return settlePeriod(weekKey, weekKey)
     }
 
-    fun settlePeriod(periodKind: NaturalPeriodKind, periodId: String, weekId: String): Result<CommunityBuildingPeriodSettlementResult> {
+    fun settlePeriod(periodKey: NaturalPeriodKey, weekKey: NaturalPeriodKey): Result<CommunityBuildingPeriodSettlementResult> {
         val runtime = AccountSubsystem.runtimeOrNull() ?: return Result.failure(IllegalStateException("account subsystem unavailable"))
         return try {
             var settled = 0
@@ -197,30 +309,31 @@ object CommunityBuildingService {
                 val regionId = community.regionNumberId ?: continue
                 val entries = community.buildingState.activeEntries()
                 if (entries.isEmpty()) continue
-                val cursorUnit = "region:$regionId:${periodKind.name.lowercase(Locale.ROOT)}"
+                val cursorUnit = "region:$regionId:${periodKey.timelineId}:${periodKey.kind.name.lowercase(Locale.ROOT)}"
                 val existingCursor = runtime.sharedStore.findCursor(regionId, "building", "region", cursorUnit).join()
-                if (existingCursor?.cursor == periodId) {
+                val cursorValue = periodLedgerKey(periodKey)
+                if (existingCursor?.cursor == cursorValue) {
                     skipped++
                     continue
                 }
-                val stats = queryBuildingStats(periodKind, periodId, regionId, entries)
+                val stats = queryBuildingStats(periodKey, regionId, entries)
                 val plan = CommunityBuildingSettlement.plan(
                     entries,
                     stats,
                     CommunityConfig.BUILDING_PLAYER_WEEKLY_CAP.value,
-                    collectPlayerWeekUsage(weekId),
+                    collectPlayerWeekUsage(periodLedgerKey(weekKey)),
                     CommunityConfig.BUILDING_COMMUNITY_WEEKLY_CAP.value,
-                    currentCommunityWeekIncome(community, weekId)
+                    currentCommunityWeekIncome(community, periodLedgerKey(weekKey))
                 )
-                if (periodKind == NaturalPeriodKind.HOUR) {
+                if (periodKey.kind == NaturalPeriodKind.HOUR) {
                     val futures = plan.playerRewards.map { reward ->
-                        val external = "building:player:$regionId:$periodId:${reward.playerUuid}:${reward.blockId}"
+                        val external = "building:player:$regionId:${periodLedgerKey(periodKey)}:${reward.playerUuid}:${reward.blockId}"
                         val id = UUID.nameUUIDFromBytes(external.toByteArray())
                         runtime.service.submit(AccountTransaction(
                             id,
                             id.toString().replace("-", "").take(12).uppercase(Locale.ROOT),
                             System.currentTimeMillis(),
-                            periodId,
+                            periodLedgerKey(periodKey),
                             reward.playerUuid,
                             null,
                             reward.amount,
@@ -230,7 +343,8 @@ object CommunityBuildingService {
                         ))
                     }
                     CompletableFuture.allOf(*futures.toTypedArray()).join()
-                    applyPlayerWeekRewards(community, weekId, plan.playerRewards)
+                    appendPlayerRewardLedgers(runtime, regionId, periodLedgerKey(periodKey), plan.playerRewards)
+                    applyPlayerWeekRewards(community, periodLedgerKey(weekKey), plan.playerRewards)
                     playerTransactions += plan.playerRewards.size
                 } else if (plan.communityIncome > 0L) {
                     mutateTreasury(
@@ -238,16 +352,16 @@ object CommunityBuildingService {
                         plan.communityIncome,
                         ResourceDirection.CREDIT,
                         "building",
-                        "building:community:$regionId:$periodId",
+                        "building:community:$regionId:${periodLedgerKey(periodKey)}",
                         "building-community-income",
-                        periodId,
+                        periodLedgerKey(periodKey),
                         "community.treasury.desc.building_income",
-                        listOf(periodId)
+                        listOf(periodLedgerKey(periodKey))
                     ).getOrThrow()
                     communityIncome = Math.addExact(communityIncome, plan.communityIncome)
                 }
                 CommunityDatabase.save()
-                runtime.sharedStore.append(PurposeCursorFact(UUID.randomUUID(), regionId, System.currentTimeMillis(), "building", "region", cursorUnit, periodId)).join()
+                runtime.sharedStore.append(PurposeCursorFact(UUID.randomUUID(), regionId, System.currentTimeMillis(), "building", "region", cursorUnit, cursorValue)).join()
                 settled++
             }
             Result.success(CommunityBuildingPeriodSettlementResult(settled, skipped, playerTransactions, communityIncome))
@@ -257,20 +371,22 @@ object CommunityBuildingService {
     }
 
     private fun queryBuildingStats(
-        periodKind: NaturalPeriodKind,
-        periodId: String,
+        periodKey: NaturalPeriodKey,
         regionId: Int,
         entries: List<CommunityBuildingEntry>
     ): List<CommunityBuildingBlockStats> {
         val blockIds = entries.flatMap { it.trackedBlockIds() }.distinct().toSet()
         if (blockIds.isEmpty()) return emptyList()
-        val batch = RegionDataApi.queryProductionBlockDeltaBatchAsync(periodKind, periodId, regionId, blockIds).join()
+        val batch = RegionDataApi.queryBlockDeltaBatchAsync(periodKey.timelineId, periodKey.kind, periodKey.periodId, regionId, blockIds).join()
+        require(batch.completeness.status == WorldGeoPeriodDataStatus.COMPLETE) { "WorldGeo period data is ${batch.completeness.status.name.lowercase(Locale.ROOT)}" }
         return batch.blocks.map { (blockId, delta) ->
             require(delta.placedCount >= 0L) { "negative WorldGeo placed count" }
             require(delta.brokenCount >= 0L) { "negative WorldGeo broken count" }
             CommunityBuildingBlockStats(blockId, delta.placedCount, delta.brokenCount, delta.playerContributions)
         }
     }
+
+    private fun periodLedgerKey(key: NaturalPeriodKey): String = "${key.timelineId}:${key.periodId}"
 
     private fun collectPlayerWeekUsage(weekId: String): Map<UUID, Long> {
         val result = LinkedHashMap<UUID, Long>()
@@ -286,6 +402,31 @@ object CommunityBuildingService {
         .firstOrNull { it == weekId }
         ?.let { CommunityConfig.BUILDING_COMMUNITY_WEEKLY_CAP.value }
         ?: 0L
+
+
+    private fun appendPlayerRewardLedgers(
+        runtime: AccountSubsystem.Runtime,
+        regionId: Int,
+        periodId: String,
+        rewards: List<CommunityBuildingPlayerReward>
+    ) {
+        for (reward in rewards) {
+            val external = "building:member:$regionId:$periodId:${reward.playerUuid}:${reward.blockId}"
+            runtime.sharedStore.append(MemberLedgerFact(
+                UUID.nameUUIDFromBytes(external.toByteArray()),
+                regionId,
+                System.currentTimeMillis(),
+                reward.playerUuid,
+                reward.amount,
+                ResourceDirection.CREDIT,
+                "building",
+                external,
+                "community.member.desc.building_reward",
+                listOf(periodId, reward.blockId, reward.units.toString()),
+                countsAsContribution = false
+            )).join()
+        }
+    }
 
     private fun applyPlayerWeekRewards(community: Community, weekId: String, rewards: List<CommunityBuildingPlayerReward>) {
         for (reward in rewards) {
