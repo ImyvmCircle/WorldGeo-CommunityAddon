@@ -120,7 +120,7 @@ private fun checkPlayerHasEnoughCurrency(player: ServerPlayer, targetCommunity: 
 
     if (totalAssets < cost) {
         player.sendSystemMessage(
-            Translator.tr("community.join.error.insufficient_assets", cost / 100.0, totalAssets)
+            Translator.tr("community.join.error.insufficient_assets", formatMoney(cost), formatMoney(totalAssets))
         )
         return false
     }
@@ -130,7 +130,7 @@ private fun checkPlayerHasEnoughCurrency(player: ServerPlayer, targetCommunity: 
 
 private fun showJoinConfirmMenu(player: ServerPlayer, targetCommunity: Community) {
     val communityName = targetCommunity.getRegion()?.name ?: "Community #${targetCommunity.regionNumberId}"
-    val cost = ((if(targetCommunity.isManor()) PricingConfig.COMMUNITY_JOIN_COST_MANOR.value else PricingConfig.COMMUNITY_JOIN_COST_REALM.value)/100.00).toString()
+    val cost = formatMoney(if(targetCommunity.isManor()) PricingConfig.COMMUNITY_JOIN_COST_MANOR.value else PricingConfig.COMMUNITY_JOIN_COST_REALM.value)
     val cautions = listOf(
         Translator.tr("ui.confirm.join.caution", communityName, cost).string
             ?: "Join $communityName for $cost assets?"
@@ -183,7 +183,7 @@ private fun joinUnderOpenPolicy(player: ServerPlayer, targetCommunity: Community
     val playerBalance = EconomyWalletAdapter.balance(player)
     if (playerBalance < cost) {
         player.sendSystemMessage(
-            Translator.tr("community.join.error.insufficient_assets", cost / 100.0, playerBalance / 100.0)
+            Translator.tr("community.join.error.insufficient_assets", formatMoney(cost), formatMoney(playerBalance))
         )
         return 0
     }
@@ -203,7 +203,7 @@ private fun joinUnderApplicationPolicy(player: ServerPlayer, targetCommunity: Co
     val playerBalance = EconomyWalletAdapter.balance(player)
     if (playerBalance < cost) {
         player.sendSystemMessage(
-            Translator.tr("community.join.error.insufficient_assets", cost / 100.0, playerBalance / 100.0)
+            Translator.tr("community.join.error.insufficient_assets", formatMoney(cost), formatMoney(playerBalance))
         )
         return 0
     }
@@ -225,7 +225,7 @@ fun validateInvitationSender(inviter: ServerPlayer, community: Community): Boole
     
     val cost = if (community.isManor()) PricingConfig.COMMUNITY_JOIN_COST_MANOR.value else PricingConfig.COMMUNITY_JOIN_COST_REALM.value
     if (community.getTotalAssets() < cost) {
-        inviter.sendSystemMessage(Translator.tr("community.invite.error.insufficient_assets", (cost / 100.0).toString()))
+        inviter.sendSystemMessage(Translator.tr("community.invite.error.insufficient_assets", formatMoney(cost)))
         return false
     }
     
@@ -411,3 +411,5 @@ fun onRejectInvitation(player: ServerPlayer, community: Community) {
     
     com.imyvm.community.infra.CommunityDatabase.save()
 }
+
+private fun formatMoney(amount: Long): String = String.format(Locale.ROOT, "%.2f", amount / 100.0)

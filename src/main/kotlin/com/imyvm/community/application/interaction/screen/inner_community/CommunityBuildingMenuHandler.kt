@@ -160,7 +160,8 @@ fun runConfirmCommunityBuildingOperation(player: ServerPlayer, community: Commun
     }
     removePendingOperationPersisted(data.regionNumberId, PendingOperationType.BUILDING_CONFIRMATION)
     player.closeContainer()
-    player.sendSystemMessage(Translator.tr("community.building.confirm.started", community.generateCommunityMark(), data.action))
+    val description = buildingOperationDescription(data)
+    player.sendSystemMessage(Translator.tr("community.building.confirm.started", community.generateCommunityMark(), description, CommunityBuildingService.formatMoney(data.cost)))
     val server = player.level().server
     val executorUuid = player.uuid
     val work = when (data.action) {
@@ -196,7 +197,7 @@ fun runConfirmCommunityBuildingOperation(player: ServerPlayer, community: Commun
                 onFailure = { Result.failure(it) }
             )
             if (result.isSuccess) {
-                online?.sendSystemMessage(Translator.tr("community.building.confirm.success", data.action, CommunityBuildingService.formatMoney(result.getOrThrow())))
+                online?.sendSystemMessage(Translator.tr("community.building.confirm.success", buildingOperationDescription(data), CommunityBuildingService.formatMoney(result.getOrThrow())))
                 return@execute
             }
             restorePendingOperation(data.regionNumberId, PendingOperationType.BUILDING_CONFIRMATION, operation)
@@ -238,8 +239,15 @@ private fun startBuildingConfirmation(player: ServerPlayer, community: Community
         buildingData = data
     )
     player.closeContainer()
-    player.sendSystemMessage(Translator.tr("community.building.confirm.sent", data.action, CommunityBuildingService.formatMoney(data.cost)))
+    player.sendSystemMessage(Translator.tr("community.building.confirm.sent", buildingOperationDescription(data), CommunityBuildingService.formatMoney(data.cost)))
     player.sendSystemMessage(Translator.tr("community.building.confirm.commands", community.generateCommunityMark()))
+}
+
+private fun buildingOperationDescription(data: BuildingConfirmationData): String = when (data.action) {
+    "select" -> Translator.tr("community.building.operation.select", data.baseBlockId ?: "-").string
+    "remove" -> Translator.tr("community.building.operation.remove", data.baseBlockId ?: "-").string
+    "capacity" -> Translator.tr("community.building.operation.capacity", data.buyUnits.toString()).string
+    else -> data.action
 }
 
 private fun rejectMessage(reason: PendingExecutionRejectReason) = when (reason) {
