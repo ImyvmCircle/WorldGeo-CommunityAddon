@@ -36,6 +36,14 @@ val BUILDING_SELECTABLE_BLOCK_PROVIDER = SuggestionProvider<CommandSourceStack> 
     builder.buildFuture()
 }
 
+val BUILDING_LINKED_BLOCKS_PROVIDER = SuggestionProvider<CommandSourceStack> { _, builder ->
+    val remaining = builder.remaining
+    val separator = remaining.lastIndexOf(',')
+    val prefix = if (separator >= 0) remaining.substring(0, separator + 1) else ""
+    CommunityBuildingService.listSurvivalBlockIds().forEach { blockId -> builder.suggest(prefix + blockId) }
+    builder.buildFuture()
+}
+
 val FORMAL_MEMBER_UUID_PROVIDER = SuggestionProvider<CommandSourceStack> { _, builder ->
     communities.flatMap { community ->
         community.member.entries

@@ -424,6 +424,7 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                                                             .executes { runBuildingPoolAdd(it, null) }
                                                             .then(
                                                                 argument("linkedBlocks", StringArgumentType.greedyString())
+                                                                    .suggests(BUILDING_LINKED_BLOCKS_PROVIDER)
                                                                     .executes { runBuildingPoolAdd(it, StringArgumentType.getString(it, "linkedBlocks")) }
                                                             )
                                                     )
@@ -1486,7 +1487,7 @@ private fun runBuildingPoolAdd(context: CommandContext<CommandSourceStack>, link
     val unitCost = IntegerArgumentType.getInteger(context, "unitCost")
     val reward = (com.mojang.brigadier.arguments.DoubleArgumentType.getDouble(context, "reward") * 100.0).toLong()
     val linkedBlocks = linkedBlocksArg
-        ?.split(',')
+        ?.split(Regex("""[,\s]+"""))
         ?.map { it.trim() }
         ?.filter { it.isNotEmpty() }
         ?: CommunityBuildingService.inferLinkedBlockIds(blockId)
