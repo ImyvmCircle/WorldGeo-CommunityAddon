@@ -145,7 +145,12 @@ fun startCommunityTeleportExecution(player: ServerPlayer, community: Community, 
         sendTeleportDimensionLegend(player, dimensionId)
     }
 
-    val usageCountAtFreeze = TeleportDailyState.reserve(player.uuid, regionId)
+    val usageCountAtFreeze = try {
+        TeleportDailyState.reserve(player.uuid, regionId)
+    } catch (error: IllegalStateException) {
+        player.sendSystemMessage(Translator.tr("community.teleport.execution.error.persist_failed"))
+        return 0
+    }
 
     persistTeleportPlan(player, regionId, scope.scopeName, usageCountAtFreeze, cost) { plan ->
         val runtime = AccountSubsystem.runtimeOrNull()
@@ -350,8 +355,21 @@ fun runLikeCommunity(player: ServerPlayer, community: Community) {
         return
     }
 
+    if (regionId != null) {
+        val recorded = try {
+            TeleportDailyState.recordLike(player.uuid, regionId)
+        } catch (error: IllegalStateException) {
+            player.sendSystemMessage(Translator.tr("community.operation.save_failed", "like"))
+            sendReturnToMenuButton(player, regionId)
+            return
+        }
+        if (!recorded) {
+            player.sendSystemMessage(Translator.tr("community.like.already_liked"))
+            sendReturnToMenuButton(player, regionId)
+            return
+        }
+    }
     community.likeCount++
-    if (regionId != null) TeleportDailyState.recordLike(player.uuid, regionId)
 
     val rank = calculateCommunityLikeRank(community)
     player.sendSystemMessage(Translator.tr("community.like.success", communityName, community.likeCount, rank))

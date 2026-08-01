@@ -1,6 +1,7 @@
 package com.imyvm.community.infra.communication
 
 import com.imyvm.community.WorldGeoCommunityAddon
+import com.imyvm.community.infra.CommunityConfig
 import com.imyvm.community.domain.model.communication.CommunicationCategory
 import com.imyvm.community.domain.model.communication.CommunicationRecord
 import com.imyvm.community.domain.model.communication.CommunicationVisibility
@@ -27,7 +28,7 @@ object CommunicationShardStore {
     fun append(record: CommunicationRecord, category: CommunicationCategory) {
         val root = shardRoot ?: return
         val date = Instant.ofEpochMilli(record.recordedAtMillis)
-            .atZone(ZoneId.systemDefault()).format(DATE_FMT)
+            .atZone(ZoneId.of(CommunityConfig.TIMEZONE.value)).format(DATE_FMT)
         val file = root.resolve("comm-${category.filePrefix}-${record.regionId}-$date.log")
         try {
             val data = encode(record)
@@ -71,8 +72,11 @@ object CommunicationShardStore {
     }
 
     fun runRetentionCleanup() {
+        runRetentionCleanup(System.currentTimeMillis())
+    }
+
+    internal fun runRetentionCleanup(now: Long) {
         val root = shardRoot ?: return
-        val now = System.currentTimeMillis()
         CommunicationCategory.values()
             .filter { it.retentionDays != null }
             .forEach { category ->
@@ -101,7 +105,7 @@ object CommunicationShardStore {
         val dateStr = parts.takeLast(3).joinToString("-")
         return runCatching {
             val local = java.time.LocalDate.parse(dateStr, DATE_FMT)
-            local.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            local.atStartOfDay(ZoneId.of(CommunityConfig.TIMEZONE.value)).toInstant().toEpochMilli()
         }.getOrDefault(Long.MAX_VALUE)
     }
 
