@@ -7,6 +7,8 @@ import com.imyvm.community.application.townbuilding.CommunityBuildingSettlement
 import com.imyvm.community.domain.model.community.CommunityBuildingCatalogEntry
 import com.imyvm.community.domain.model.community.CommunityBuildingEntry
 import com.imyvm.community.domain.model.community.CommunityBuildingState
+import com.imyvm.iwg.domain.NaturalPeriodKey
+import com.imyvm.iwg.domain.NaturalPeriodKind
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -100,6 +102,16 @@ class CommunityBuildingPhaseFourTest {
         )
 
         assertFalse(CommunityBuildingService.validateTemplatePool().isSuccess)
+    }
+
+    @Test
+    fun `incomplete selection checkpoint skips only matching active period`() {
+        val marker = "production|2026-08-02T01|-|2026-W31|-"
+
+        assertFalse(CommunityBuildingService.entryCountsForPeriod(marker, NaturalPeriodKey("production", NaturalPeriodKind.HOUR, "2026-08-02T01")))
+        assertFalse(CommunityBuildingService.entryCountsForPeriod(marker, NaturalPeriodKey("production", NaturalPeriodKind.WEEK, "2026-W31")))
+        assertTrue(CommunityBuildingService.entryCountsForPeriod(marker, NaturalPeriodKey("production", NaturalPeriodKind.HOUR, "2026-08-02T02")))
+        assertTrue(CommunityBuildingService.entryCountsForPeriod(marker, NaturalPeriodKey("production", NaturalPeriodKind.WEEK, "2026-W32")))
     }
 }
 

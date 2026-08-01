@@ -29,7 +29,6 @@ import com.imyvm.iwg.domain.WorldGeoPeriodDataStatus
 import com.imyvm.iwg.inter.api.RegionDataApi
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.chat.Component
-import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.item.BlockItem
 import net.minecraft.world.item.Item
@@ -46,6 +45,7 @@ import kotlin.math.ceil
 
 object CommunityBuildingService {
     private const val MAX_RECOVERY_PERIODS = 256
+    private const val CHECKPOINT_UNAVAILABLE = "-"
     private val entryDrafts = mutableMapOf<UUID, CommunityBuildingDraft>()
     private val nonSurvivalBlockIds = setOf(
         "minecraft:air", "minecraft:cave_air", "minecraft:void_air", "minecraft:bedrock",
@@ -287,7 +287,7 @@ object CommunityBuildingService {
     }
 
     fun findCommunityAt(player: ServerPlayer): Community? {
-        val region = RegionDataApi.getRegionScopePairByLocation(player.level() as ServerLevel, player.blockPosition())?.first ?: return null
+        val region = RegionDataApi.getRegionScopePairByLocation(player.level(), player.blockPosition())?.first ?: return null
         return CommunityDatabase.getCommunityById(region.numberID)
     }
 
@@ -459,11 +459,12 @@ object CommunityBuildingService {
         regionId: Int,
         entries: List<CommunityBuildingEntry>
     ): List<CommunityBuildingBlockStats> {
-        val blockIds = entries.flatMap { it.trackedBlockIds() }.distinct().toSet()
+        val effectiveEntries = entries.filter { entryCountsForPeriod(it.selectionCheckpoint, periodKey) }
+        val blockIds = effectiveEntries.flatMap { it.trackedBlockIds() }.distinct().toSet()
         if (blockIds.isEmpty()) return emptyList()
         val batch = RegionDataApi.queryBlockDeltaBatchAsync(periodKey.timelineId, periodKey.kind, periodKey.periodId, regionId, blockIds).join()
         require(batch.completeness.status == WorldGeoPeriodDataStatus.COMPLETE) { "WorldGeo period data is ${batch.completeness.status.name.lowercase(Locale.ROOT)}" }
-        val checkpointByBlock = entries
+        val checkpointByBlock = effectiveEntries
             .flatMap { entry -> entry.trackedBlockIds().map { blockId -> blockId to checkpointFor(entry.selectionCheckpoint, periodKey) } }
             .filter { it.second != null }
             .associate { it.first to requireNotNull(it.second) }
@@ -484,12 +485,22 @@ object CommunityBuildingService {
         }
     }
 
+    internal fun entryCountsForPeriod(selectionCheckpoint: String, periodKey: NaturalPeriodKey): Boolean {
+        val parts = selectionCheckpoint.split('|')
+        if (parts.size != 5 || parts[0] != periodKey.timelineId) return true
+        return when (periodKey.kind) {
+            NaturalPeriodKind.HOUR -> parts[1] != periodKey.periodId || parts[2] != CHECKPOINT_UNAVAILABLE
+            NaturalPeriodKind.WEEK -> parts[3] != periodKey.periodId || parts[4] != CHECKPOINT_UNAVAILABLE
+            else -> true
+        }
+    }
+
     private fun checkpointFor(selectionCheckpoint: String, periodKey: NaturalPeriodKey): UUID? {
         val parts = selectionCheckpoint.split('|')
         if (parts.size != 5 || parts[0] != periodKey.timelineId) return null
         return when (periodKey.kind) {
-            NaturalPeriodKind.HOUR -> if (parts[1] == periodKey.periodId) runCatching { UUID.fromString(parts[2]) }.getOrNull() else null
-            NaturalPeriodKind.WEEK -> if (parts[3] == periodKey.periodId) runCatching { UUID.fromString(parts[4]) }.getOrNull() else null
+            NaturalPeriodKind.HOUR -> if (parts[1] == periodKey.periodId && parts[2] != CHECKPOINT_UNAVAILABLE) runCatching { UUID.fromString(parts[2]) }.getOrNull() else null
+            NaturalPeriodKind.WEEK -> if (parts[3] == periodKey.periodId && parts[4] != CHECKPOINT_UNAVAILABLE) runCatching { UUID.fromString(parts[4]) }.getOrNull() else null
             else -> null
         }
     }
@@ -783,7 +794,7 @@ object CommunityBuildingService {
         return listOf(hourKey.timelineId, hourKey.periodId, hourCheckpoint, weekKey.periodId, weekCheckpoint).joinToString("|")
     }
 
-    private fun createCheckpoint(server: net.minecraft.server.MinecraftServer, key: NaturalPeriodKey, regionId: Int, blockIds: Set<String>): UUID {
+    private fun createCheckpoint(server: net.minecraft.server.MinecraftServer, key: NaturalPeriodKey, regionId: Int, blockIds: Set<String>): String {
         val checkpointId = UUID.randomUUID()
         val result = RegionDataApi.createBehaviorStatsCheckpoint(
             server,
@@ -793,11 +804,13 @@ object CommunityBuildingService {
                 512
             )
         ).join()
-        require(result.status == WorldGeoBehaviorStatsCheckpointStatus.PUBLISHED || result.status == WorldGeoBehaviorStatsCheckpointStatus.ALREADY_PUBLISHED) {
-            "building checkpoint failed: ${result.status.name.lowercase(Locale.ROOT)}"
+        return when (result.status) {
+            WorldGeoBehaviorStatsCheckpointStatus.PUBLISHED,
+            WorldGeoBehaviorStatsCheckpointStatus.ALREADY_PUBLISHED -> result.checkpointId.toString()
+            WorldGeoBehaviorStatsCheckpointStatus.INCOMPLETE -> CHECKPOINT_UNAVAILABLE
+            WorldGeoBehaviorStatsCheckpointStatus.UNAVAILABLE -> error("building checkpoint period unavailable")
+            WorldGeoBehaviorStatsCheckpointStatus.VERSION_CONFLICT -> error("building checkpoint failed: version_conflict")
         }
-        require(result.completeness.status != WorldGeoPeriodDataStatus.UNAVAILABLE) { "building checkpoint period unavailable" }
-        return result.checkpointId
     }
 }
 
