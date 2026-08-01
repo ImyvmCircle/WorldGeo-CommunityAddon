@@ -16,8 +16,8 @@ fun onTitleStatus(player: ServerPlayer, community: Community): Int {
 }
 
 fun onTitleBuyForemanSlot(player: ServerPlayer, community: Community): Int {
-    if (CommunityPermissionPolicy.canExecuteAdministration(player, community, AdminPrivilege.MANAGE_BUILDING).isDenied()) return 0
-    if (CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdminPrivilege.MANAGE_BUILDING).isDenied()) return 0
+    if (CommunityPermissionPolicy.canExecuteAdministration(player, community, AdminPrivilege.MANAGE_TITLES).isDenied()) return 0
+    if (CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdminPrivilege.MANAGE_TITLES).isDenied()) return 0
     return CommunityTitleService.buyForemanSlot(community).fold(
         onSuccess = { cost ->
             player.sendSystemMessage(Translator.tr("command.community.title.buy.success", community.generateCommunityMark(), format(cost)))
@@ -31,8 +31,8 @@ fun onTitleBuyForemanSlot(player: ServerPlayer, community: Community): Int {
 }
 
 fun onTitleGrantForeman(player: ServerPlayer, community: Community, target: UUID): Int {
-    if (CommunityPermissionPolicy.canExecuteAdministration(player, community, AdminPrivilege.MANAGE_BUILDING).isDenied()) return 0
-    if (CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdminPrivilege.MANAGE_BUILDING).isDenied()) return 0
+    if (CommunityPermissionPolicy.canExecuteAdministration(player, community, AdminPrivilege.MANAGE_TITLES).isDenied()) return 0
+    if (CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdminPrivilege.MANAGE_TITLES).isDenied()) return 0
     return CommunityTitleService.grantForeman(community, target).fold(
         onSuccess = { slot ->
             player.sendSystemMessage(Translator.tr("command.community.title.grant.success", community.generateCommunityMark(), target.toString(), slot.toString()))
@@ -46,8 +46,8 @@ fun onTitleGrantForeman(player: ServerPlayer, community: Community, target: UUID
 }
 
 fun onTitleRevokeForeman(player: ServerPlayer, community: Community, target: UUID): Int {
-    if (CommunityPermissionPolicy.canExecuteAdministration(player, community, AdminPrivilege.MANAGE_BUILDING).isDenied()) return 0
-    if (CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdminPrivilege.MANAGE_BUILDING).isDenied()) return 0
+    if (CommunityPermissionPolicy.canExecuteAdministration(player, community, AdminPrivilege.MANAGE_TITLES).isDenied()) return 0
+    if (CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdminPrivilege.MANAGE_TITLES).isDenied()) return 0
     return CommunityTitleService.revokeForeman(community, target).fold(
         onSuccess = { slot ->
             player.sendSystemMessage(Translator.tr("command.community.title.revoke.success", community.generateCommunityMark(), target.toString(), slot.toString()))

@@ -5,6 +5,7 @@ import com.imyvm.community.application.interaction.screen.inner_community.affair
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.GeographicFunctionType
 import com.imyvm.community.domain.model.community.CommunityJoinPolicy
+import com.imyvm.community.domain.model.fiscal.CommunityFiscalPolicy
 import com.imyvm.community.entrypoint.screen.AbstractMenu
 import com.imyvm.community.util.Translator
 import net.minecraft.world.item.Items
@@ -53,9 +54,10 @@ class CommunityAdministrationMenu(
 
         addButton(
             slot = 14,
-            name = Translator.tr("ui.admin.button.advancement").string ?: "Advancement",
-            item = Items.ITEM_FRAME
-        ) { runAdmAdvancement(player, community, runBack) }
+            name = fiscalPolicyButtonName(community),
+            item = Items.EMERALD,
+            loreLines = fiscalPolicyLore(community)
+        ) { runAdmChangeFiscalPolicy(player, community, nextFiscalPolicy(community.fiscalState.pendingPolicy?.policy ?: community.fiscalState.activePolicy), runBack) }
 
         addButton(
             slot = 19,
@@ -113,7 +115,7 @@ class CommunityAdministrationMenu(
     private fun addChangeableButtons(player: ServerPlayer, community: Community) {
         addButton(
             slot = 28,
-            name = Translator.tr("ui.admin.button.join_policy").string ?: "Join Policy: " + community.joinPolicy.toString(),
+            name = joinPolicyButtonName(community),
             item = when (community.joinPolicy) {
                 CommunityJoinPolicy.OPEN -> Items.WOOL.green()
                 CommunityJoinPolicy.APPLICATION -> Items.WOOL.yellow()
@@ -126,7 +128,41 @@ class CommunityAdministrationMenu(
             name = Translator.tr("ui.admin.button.building").string ?: "Community Building",
             item = Items.BRICKS
         ) { runOpenCommunityBuildingMenu(player, community, runBack) }
+
+        addButton(
+            slot = 30,
+            name = Translator.tr("ui.admin.button.title").string ?: "Titles",
+            item = Items.NAME_TAG
+        ) { runAdmTitle(player, community, runBack) }
     }
+
+    private fun joinPolicyButtonName(community: Community): String =
+        (Translator.tr("ui.admin.button.join_policy").string ?: "Join Policy: ") + joinPolicyName(community.joinPolicy)
+
+    private fun fiscalPolicyButtonName(community: Community): String =
+        (Translator.tr("ui.admin.button.fiscal").string ?: "Fiscal Policy: ") + fiscalPolicyName(community.fiscalState.pendingPolicy?.policy ?: community.fiscalState.activePolicy)
+
+    private fun fiscalPolicyLore(community: Community): List<Component> {
+        val pending = community.fiscalState.pendingPolicy
+        val lines = mutableListOf<Component>(
+            Translator.tr("ui.admin.fiscal.lore.active", fiscalPolicyName(community.fiscalState.activePolicy))
+        )
+        if (pending != null) {
+            lines.add(Translator.tr("ui.admin.fiscal.lore.pending", fiscalPolicyName(pending.policy), pending.effectiveWeekKey))
+            lines.add(Translator.tr("ui.admin.fiscal.lore.cooldown", pending.cooldownUntilWeekKey))
+        }
+        return lines
+    }
+
+    private fun nextFiscalPolicy(policy: CommunityFiscalPolicy): CommunityFiscalPolicy = when (policy) {
+        CommunityFiscalPolicy.NEOLIBERALISM -> CommunityFiscalPolicy.VISIBLE_HAND
+        CommunityFiscalPolicy.VISIBLE_HAND -> CommunityFiscalPolicy.HEAVEN_ON_EARTH
+        CommunityFiscalPolicy.HEAVEN_ON_EARTH -> CommunityFiscalPolicy.ANARCHISM
+        CommunityFiscalPolicy.ANARCHISM -> CommunityFiscalPolicy.NEOLIBERALISM
+    }
+
+    private fun joinPolicyName(policy: CommunityJoinPolicy): String = Translator.tr("community.join_policy.${policy.name.lowercase()}").string
+    private fun fiscalPolicyName(policy: CommunityFiscalPolicy): String = Translator.tr("community.fiscal.policy.${policy.name.lowercase()}").string
 
     companion object {
         private fun generateCommunityOperationMenuTitle(

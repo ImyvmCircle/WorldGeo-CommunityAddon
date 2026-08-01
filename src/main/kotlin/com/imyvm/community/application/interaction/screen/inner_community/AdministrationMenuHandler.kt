@@ -7,8 +7,8 @@ import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.GeographicFunctionType
 import com.imyvm.community.domain.policy.permission.AdminPrivilege
 import com.imyvm.community.domain.model.community.CommunityJoinPolicy
+import com.imyvm.community.domain.model.fiscal.CommunityFiscalPolicy
 import com.imyvm.community.entrypoint.screen.inner_community.CommunityAdministrationMenu
-import com.imyvm.community.entrypoint.screen.inner_community.administration_only.AdministrationAdvancementMenu
 import com.imyvm.community.entrypoint.screen.inner_community.administration_only.AdministrationAuditListMenu
 import com.imyvm.community.entrypoint.screen.inner_community.administration_only.AdministrationRenameMenuAnvil
 import com.imyvm.community.entrypoint.screen.inner_community.administration_only.TreasuryGrantTargetListMenu
@@ -18,6 +18,8 @@ import com.imyvm.community.util.Translator
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.component.HypotheticalShape
 import net.minecraft.server.level.ServerPlayer
+import com.imyvm.community.application.interaction.command.onFiscalPolicy
+import com.imyvm.community.application.interaction.command.onTitleStatus
 
 fun runAdmGrantCoins(player: ServerPlayer, community: Community, runBackGrandfather: (ServerPlayer) -> Unit) {
     CommunityPermissionPolicy.executeWithPermission(
@@ -91,18 +93,32 @@ fun runAdmAuditRequests(player: ServerPlayer, community: Community, runBackGrand
     }
 }
 
-fun runAdmAdvancement(player: ServerPlayer, community: Community, runBackGrandfather: (ServerPlayer) -> Unit){
+
+fun runAdmChangeFiscalPolicy(player: ServerPlayer, community: Community, policy: CommunityFiscalPolicy, runBack: (ServerPlayer) -> Unit) {
     CommunityPermissionPolicy.executeWithPermission(
         player,
-        { 
-            val adminCheck = CommunityPermissionPolicy.canExecuteAdministration(player, community, AdminPrivilege.MANAGE_ADVANCEMENT)
+        {
+            val adminCheck = CommunityPermissionPolicy.canExecuteAdministration(player, community, AdminPrivilege.MANAGE_FISCAL)
             if (!adminCheck.isAllowed()) return@executeWithPermission adminCheck
-            CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdminPrivilege.MANAGE_ADVANCEMENT)
+            CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdminPrivilege.MANAGE_FISCAL)
         }
     ) {
-        CommunityMenuOpener.open(player) { syncId ->
-            AdministrationAdvancementMenu(syncId, community, player) { runBackToCommunityAdministrationMenu(player, community, runBackGrandfather) }
+        onFiscalPolicy(player, community, policy.name)
+        runBackToCommunityAdministrationMenu(player, community, runBack)
+    }
+}
+
+fun runAdmTitle(player: ServerPlayer, community: Community, runBack: (ServerPlayer) -> Unit) {
+    CommunityPermissionPolicy.executeWithPermission(
+        player,
+        {
+            val adminCheck = CommunityPermissionPolicy.canExecuteAdministration(player, community, AdminPrivilege.MANAGE_TITLES)
+            if (!adminCheck.isAllowed()) return@executeWithPermission adminCheck
+            CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdminPrivilege.MANAGE_TITLES)
         }
+    ) {
+        player.closeContainer()
+        onTitleStatus(player, community)
     }
 }
 
@@ -171,7 +187,7 @@ fun runAdmChangeJoinPolicy(player: ServerPlayer, community: Community, policy: C
             community.joinPolicy.name,
             player.name.string,
             communityName
-        ) ?: net.minecraft.network.chat.Component.literal("Join policy changed from ${oldPolicy.name} to ${community.joinPolicy.name} in $communityName by ${player.name.string}")
+        )
         com.imyvm.community.application.interaction.common.notifyOfficials(community, player.level().server, notification, player)
         
         com.imyvm.community.infra.CommunityDatabase.save()
