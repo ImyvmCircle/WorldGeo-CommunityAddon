@@ -23,6 +23,7 @@ import com.imyvm.community.domain.model.fiscal.CommunityFiscalObservation
 import com.imyvm.community.domain.model.fiscal.CommunityFiscalPolicy
 import com.imyvm.community.domain.model.fiscal.CommunityFiscalPolicySwitch
 import com.imyvm.community.domain.model.fiscal.CommunityFiscalState
+import com.imyvm.community.domain.model.development.CommunityDevelopmentActivityWeek
 import com.imyvm.community.domain.model.development.CommunityDevelopmentBreakdown
 import com.imyvm.community.domain.model.development.CommunityDevelopmentInputs
 import com.imyvm.community.domain.model.development.CommunityDevelopmentState
@@ -66,6 +67,8 @@ object CommunityDatabase {
     private const val MAX_COMMUNITY_BYTES = 16 * 1024 * 1024
     private const val MAX_COMMUNITIES = 100_000
     private const val BUILDING_RECORD_VERSION = 3
+    private const val DEVELOPMENT_SECTION_VERSION_MARKER = -2
+    private const val DEVELOPMENT_SECTION_VERSION = 2
     private const val MAX_COLLECTION_ENTRIES = 1_000_000
     private var legacyDatabaseLoaded = false
     private var legacyBackupCreated = false
@@ -1244,8 +1247,10 @@ object CommunityDatabase {
     private fun saveCommunityDevelopmentSection(stream: DataOutputStream) {
         val targets = communities.filter { community ->
             community.regionNumberId != null &&
-                (community.developmentState.weekKey.isNotEmpty() || community.developmentState.updatedAtMillis != 0L || community.developmentState.development != 0.0 || community.developmentState.landPrice != null)
+                (community.developmentState.weekKey.isNotEmpty() || community.developmentState.updatedAtMillis != 0L || community.developmentState.development != 0.0 || community.developmentState.landPrice != null || community.developmentState.activeMemberWeeks.isNotEmpty())
         }
+        stream.writeInt(DEVELOPMENT_SECTION_VERSION_MARKER)
+        stream.writeInt(DEVELOPMENT_SECTION_VERSION)
         stream.writeInt(targets.size)
         for (community in targets) {
             val state = community.developmentState
@@ -1274,11 +1279,20 @@ object CommunityDatabase {
                 stream.writeLong(price.buildingPrice)
                 stream.writeLong(price.totalPrice)
             }
+            stream.writeInt(state.activeMemberWeeks.size)
+            for (week in state.activeMemberWeeks) {
+                stream.writeUTF(week.weekKey)
+                stream.writeInt(week.playerUuids.size)
+                week.playerUuids.forEach { stream.writeUTF(it.toString()) }
+            }
         }
     }
 
     private fun loadCommunityDevelopmentSection(stream: DataInputStream) {
-        val communityCount = readCount(stream, "community development")
+        val first = stream.readInt()
+        val version = if (first == DEVELOPMENT_SECTION_VERSION_MARKER) stream.readInt() else 1
+        require(version in 1..DEVELOPMENT_SECTION_VERSION) { "Unsupported community development section version: $version" }
+        val communityCount = if (version == 1) requireCount(first, "community development", MAX_COMMUNITIES) else readCount(stream, "community development")
         for (i in 0 until communityCount) {
             val regionId = stream.readInt()
             val weekKey = stream.readUTF()
@@ -1289,7 +1303,17 @@ object CommunityDatabase {
             val landPrice = if (stream.readBoolean()) {
                 CommunityLandPriceSnapshot(stream.readLong(), stream.readLong(), stream.readLong(), stream.readLong(), stream.readLong(), stream.readLong())
             } else null
-            getCommunityById(regionId)?.developmentState = CommunityDevelopmentState(weekKey, updatedAtMillis, development, inputs, breakdown, landPrice)
+            val activeMemberWeeks = if (version >= 2) {
+                val weekCount = readCount(stream, "community development active week")
+                MutableList(weekCount) {
+                    val activeWeekKey = stream.readUTF()
+                    val playerCount = readCount(stream, "community development active member")
+                    val players = mutableSetOf<UUID>()
+                    for (j in 0 until playerCount) players.add(UUID.fromString(stream.readUTF()))
+                    CommunityDevelopmentActivityWeek(activeWeekKey, players)
+                }
+            } else mutableListOf()
+            getCommunityById(regionId)?.developmentState = CommunityDevelopmentState(weekKey, updatedAtMillis, development, inputs, breakdown, landPrice, activeMemberWeeks)
         }
     }
 

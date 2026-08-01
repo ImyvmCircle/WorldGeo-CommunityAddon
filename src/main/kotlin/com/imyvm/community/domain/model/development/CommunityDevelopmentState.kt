@@ -1,5 +1,7 @@
 package com.imyvm.community.domain.model.development
 
+import java.util.UUID
+
 data class CommunityDevelopmentInputs(
     val memberCount: Int,
     val weekActiveMemberCount: Int,
@@ -25,11 +27,17 @@ data class CommunityLandPriceSnapshot(
     val totalPrice: Long
 )
 
+data class CommunityDevelopmentActivityWeek(
+    val weekKey: String,
+    val playerUuids: MutableSet<UUID> = mutableSetOf()
+)
+
 data class CommunityDevelopmentState(
     var weekKey: String = "",
     var updatedAtMillis: Long = 0L,
     var development: Double = 0.0,
     var inputs: CommunityDevelopmentInputs = CommunityDevelopmentInputs(0, 0, 0L, 0L, 0L, 0L),
     var breakdown: CommunityDevelopmentBreakdown = CommunityDevelopmentBreakdown(0.0, 0.0, 0.0, 0.4),
-    var landPrice: CommunityLandPriceSnapshot? = null
+    var landPrice: CommunityLandPriceSnapshot? = null,
+    var activeMemberWeeks: MutableList<CommunityDevelopmentActivityWeek> = mutableListOf()
 )
