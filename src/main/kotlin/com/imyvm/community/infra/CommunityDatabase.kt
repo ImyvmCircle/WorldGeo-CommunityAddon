@@ -1,5 +1,6 @@
 package com.imyvm.community.infra
 
+import com.imyvm.community.application.communication.migrateLegacyCommunicationsToShards
 import com.imyvm.community.application.townbuilding.CommunityBuildingService
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.CreationConfirmationData
@@ -269,6 +270,7 @@ object CommunityDatabase {
                     val decoded = LegacyCommunityDatabaseDecoder.decode(payload)
                     communities = decoded.communities
                     rebuildMissingTreasuryAggregates()
+                    migrateLegacyCommunicationsToShards(communities)
                     com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.clear()
                     com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.putAll(decoded.pendingOperations)
                     return
@@ -297,6 +299,7 @@ object CommunityDatabase {
                     loadTrailingSections(stream)
                 }
                 rebuildMissingTreasuryAggregates()
+                migrateLegacyCommunicationsToShards(communities)
             }
         } catch (e: Exception) {
             if (previousCommunities != null) communities = previousCommunities
@@ -433,10 +436,7 @@ object CommunityDatabase {
             stream.writeLong(memberAccount.joinedTime)
             stream.writeInt(memberAccount.basicRoleType.value)
 
-            stream.writeInt(memberAccount.mail.size)
-            for (mailItem in memberAccount.mail) {
-                stream.writeUTF(mailItem.string)
-            }
+            stream.writeInt(0)
 
             writeTurnoverList(stream, memberAccount.turnover)
             
@@ -565,20 +565,7 @@ object CommunityDatabase {
     }
 
     private fun saveCommunityAnnouncements(stream: DataOutputStream, community: Community) {
-        stream.writeInt(community.announcements.size)
-        
-        for (announcement in community.announcements) {
-            stream.writeUTF(announcement.id.toString())
-            stream.writeUTF(announcement.content.string)
-            stream.writeUTF(announcement.authorUUID.toString())
-            stream.writeLong(announcement.timestamp)
-            stream.writeBoolean(announcement.isDeleted)
-
-            stream.writeInt(announcement.readBy.size)
-            for (readerUUID in announcement.readBy) {
-                stream.writeUTF(readerUUID.toString())
-            }
-        }
+        stream.writeInt(0)
     }
 
     private fun loadCommunityAnnouncements(stream: DataInputStream): MutableList<Announcement> {
@@ -629,25 +616,7 @@ object CommunityDatabase {
     }
 
     private fun saveCommunityMessages(stream: DataOutputStream, community: Community) {
-        stream.writeInt(community.messages.size)
-        for (message in community.messages) {
-            stream.writeUTF(message.id.toString())
-            stream.writeInt(message.type.value)
-            stream.writeUTF(message.content.string)
-            stream.writeUTF(message.senderUUID.toString())
-            stream.writeLong(message.timestamp)
-            stream.writeBoolean(message.isDeleted)
-            
-            stream.writeInt(message.readBy.size)
-            for (uuid in message.readBy) {
-                stream.writeUTF(uuid.toString())
-            }
-            
-            stream.writeBoolean(message.recipientUUID != null)
-            if (message.recipientUUID != null) {
-                stream.writeUTF(message.recipientUUID.toString())
-            }
-        }
+        stream.writeInt(0)
     }
 
     private fun loadCommunityMessages(stream: DataInputStream, strict: Boolean): MutableList<CommunityMessage> {

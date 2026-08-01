@@ -31,9 +31,9 @@ private fun loadData(server: MinecraftServer) {
     try {
         CommunityConfig.validateValues()
         PricingConfig.validateValues()
-        CommunityDatabase.load(server)
         TeleportDailyState.initialize(server.getWorldPath(LevelResource.ROOT))
         CommunicationShardStore.initialize(server.getWorldPath(LevelResource.ROOT))
+        CommunityDatabase.load(server)
     } catch (e: Exception) {
         try {
             val backupPath = CommunityDatabase.backupDatabaseAfterLoadFailure()

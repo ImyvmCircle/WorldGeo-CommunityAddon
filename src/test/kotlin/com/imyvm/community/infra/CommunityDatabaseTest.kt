@@ -19,6 +19,10 @@ import com.imyvm.community.domain.model.MemberAccount
 import com.imyvm.community.domain.model.community.CommunityJoinPolicy
 import com.imyvm.community.domain.model.community.CommunityStatus
 import com.imyvm.community.domain.model.community.MemberRoleType
+import com.imyvm.community.domain.model.community.Announcement
+import com.imyvm.community.domain.model.community.CommunityMessage
+import com.imyvm.community.domain.model.community.MessageType
+import net.minecraft.network.chat.Component
 import java.util.UUID
 
 class CommunityDatabaseTest {
@@ -204,6 +208,46 @@ class CommunityDatabaseTest {
         ) as Community
 
         assertEquals(0L, loaded.member[memberUUID]?.joinFeePaid)
+    }
+
+
+    @Test
+    fun writeCommunityRecordDoesNotPersistFullCommunicationHistory() {
+        val bytes = ByteArrayOutputStream()
+        val ownerUUID = UUID.fromString("00000000-0000-0000-0000-000000000001")
+        val community = Community(
+            regionNumberId = 123,
+            member = hashMapOf(ownerUUID to MemberAccount(
+                joinedTime = 456L,
+                basicRoleType = MemberRoleType.OWNER,
+                mail = arrayListOf(Component.literal("legacy-mail"))
+            )),
+            joinPolicy = CommunityJoinPolicy.OPEN,
+            status = CommunityStatus.RECRUITING_REALM,
+            announcements = mutableListOf(Announcement(UUID.randomUUID(), Component.literal("legacy-ann"), ownerUUID, 10L)),
+            messages = mutableListOf(CommunityMessage(UUID.randomUUID(), MessageType.CHAT, Component.literal("legacy-chat"), ownerUUID, 11L))
+        )
+        val writeMethod = CommunityDatabase.javaClass.getDeclaredMethod(
+            "writeCommunityRecord",
+            DataOutputStream::class.java,
+            Community::class.java
+        ).also { it.isAccessible = true }
+        writeMethod.invoke(CommunityDatabase, DataOutputStream(bytes), community)
+
+        val loadMethod = CommunityDatabase.javaClass.getDeclaredMethod(
+            "loadCommunityRecord",
+            DataInputStream::class.java,
+            Int::class.javaPrimitiveType
+        ).also { it.isAccessible = true }
+        val loaded = loadMethod.invoke(
+            CommunityDatabase,
+            DataInputStream(ByteArrayInputStream(bytes.toByteArray())),
+            4
+        ) as Community
+
+        assertTrue(loaded.member.getValue(ownerUUID).mail.isEmpty())
+        assertTrue(loaded.announcements.isEmpty())
+        assertTrue(loaded.messages.isEmpty())
     }
 
     @Test

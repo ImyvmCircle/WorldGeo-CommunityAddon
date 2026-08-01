@@ -14,6 +14,7 @@ import com.imyvm.community.application.interaction.screen.inner_community.startC
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.GeographicFunctionType
 import com.imyvm.community.domain.model.PendingOperationType
+import com.imyvm.community.domain.model.validatePendingExecution
 import com.imyvm.community.domain.model.RenameConfirmationData
 import com.imyvm.community.domain.model.ScopeModificationConfirmationData
 import com.imyvm.community.domain.model.community.MemberRoleType
@@ -283,25 +284,33 @@ fun onConfirmRename(player: ServerPlayer, regionNumberId: Int, nameKey: String):
         return 0
     }
     val renameData = pendingOp.renameData ?: return 0
-    if (renameData.executorUUID != player.uuid) {
-        player.sendSystemMessage(Translator.tr("community.modification.confirmation.not_yours"))
-        return 0
-    }
     if (renameData.nameKey != nameKey) {
         player.sendSystemMessage(Translator.tr("community.modification.confirmation.not_found"))
         return 0
     }
-    if (System.currentTimeMillis() > pendingOp.expireAt) {
-        player.sendSystemMessage(Translator.tr("community.modification.confirmation.expired"))
-        removePendingOperation(regionNumberId, PendingOperationType.RENAME_CONFIRMATION)
-        return 0
-    }
-
     val community = CommunityDatabase.getCommunityById(regionNumberId)
     if (community == null) {
         player.sendSystemMessage(Translator.tr("community.modification.error.community_not_found"))
         removePendingOperation(regionNumberId, PendingOperationType.RENAME_CONFIRMATION)
         return 0
+    }
+    when (validatePendingExecution(pendingOp, community, player.uuid)) {
+        com.imyvm.community.domain.model.PendingExecutionRejectReason.EXPIRED -> {
+            player.sendSystemMessage(Translator.tr("community.modification.confirmation.expired"))
+            removePendingOperation(regionNumberId, PendingOperationType.RENAME_CONFIRMATION)
+            return 0
+        }
+        com.imyvm.community.domain.model.PendingExecutionRejectReason.EXECUTOR_CHANGED -> {
+            player.sendSystemMessage(Translator.tr("community.modification.confirmation.not_yours"))
+            return 0
+        }
+        com.imyvm.community.domain.model.PendingExecutionRejectReason.COMMUNITY_ORPHANED,
+        com.imyvm.community.domain.model.PendingExecutionRejectReason.COMMUNITY_REVOKED -> {
+            player.sendSystemMessage(Translator.tr("community.modification.error.no_region"))
+            removePendingOperation(regionNumberId, PendingOperationType.RENAME_CONFIRMATION)
+            return 0
+        }
+        null -> Unit
     }
 
     val currentAssets = community.getTotalAssets()
@@ -377,10 +386,6 @@ fun onCancelRename(player: ServerPlayer, regionNumberId: Int, nameKey: String): 
         return 0
     }
     val renameData = pendingOp.renameData ?: return 0
-    if (renameData.executorUUID != player.uuid) {
-        player.sendSystemMessage(Translator.tr("community.modification.confirmation.not_yours"))
-        return 0
-    }
     if (renameData.nameKey != nameKey) {
         player.sendSystemMessage(Translator.tr("community.modification.confirmation.not_found"))
         return 0

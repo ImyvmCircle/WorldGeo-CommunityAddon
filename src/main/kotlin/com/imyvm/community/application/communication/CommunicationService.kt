@@ -58,3 +58,41 @@ internal fun appendOpExceptionNotification(regionId: Int, text: String) {
         CommunicationCategory.OP_EXCEPTION_UNCLOSED
     )
 }
+
+
+fun migrateLegacyCommunicationsToShards(communities: Iterable<Community>) {
+    communities.forEach { community ->
+        val regionId = community.regionNumberId ?: return@forEach
+        community.messages.forEach { message ->
+            val type = when (message.type) {
+                com.imyvm.community.domain.model.community.MessageType.CHAT -> CommunicationRecordType.CHAT
+                com.imyvm.community.domain.model.community.MessageType.ANNOUNCEMENT -> CommunicationRecordType.ANNOUNCEMENT
+                else -> CommunicationRecordType.SYSTEM
+            }
+            val category = if (type == CommunicationRecordType.CHAT) CommunicationCategory.CHAT else CommunicationCategory.SYSTEM
+            CommunicationShardStore.append(
+                CommunicationRecord(regionId, message.timestamp, message.senderUUID.toString(), null, type, legacyText = message.content.string),
+                category
+            )
+        }
+        community.announcements.forEach { announcement ->
+            CommunicationShardStore.append(
+                CommunicationRecord(regionId, announcement.timestamp, announcement.authorUUID.toString(), null,
+                    CommunicationRecordType.ANNOUNCEMENT, legacyText = announcement.content.string),
+                CommunicationCategory.SYSTEM
+            )
+        }
+        community.member.forEach { (uuid, member) ->
+            member.mail.forEach { mail ->
+                CommunicationShardStore.append(
+                    CommunicationRecord(regionId, System.currentTimeMillis(), null, uuid.toString(),
+                        CommunicationRecordType.SYSTEM, legacyText = mail.string),
+                    CommunicationCategory.SYSTEM
+                )
+            }
+            member.mail.clear()
+        }
+        community.messages.clear()
+        community.announcements.clear()
+    }
+}
