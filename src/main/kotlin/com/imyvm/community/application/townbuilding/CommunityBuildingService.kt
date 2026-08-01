@@ -261,15 +261,16 @@ object CommunityBuildingService {
         periodId: String,
         regionId: Int,
         entries: List<CommunityBuildingEntry>
-    ): List<CommunityBuildingBlockStats> = entries
-        .flatMap { it.trackedBlockIds() }
-        .distinct()
-        .map { blockId ->
-            val delta = RegionDataApi.queryBlockDelta(periodKind, periodId, regionId, null, null, blockId)
+    ): List<CommunityBuildingBlockStats> {
+        val blockIds = entries.flatMap { it.trackedBlockIds() }.distinct().toSet()
+        if (blockIds.isEmpty()) return emptyList()
+        val batch = RegionDataApi.queryProductionBlockDeltaBatchAsync(periodKind, periodId, regionId, blockIds).join()
+        return batch.blocks.map { (blockId, delta) ->
             require(delta.placedCount >= 0L) { "negative WorldGeo placed count" }
             require(delta.brokenCount >= 0L) { "negative WorldGeo broken count" }
             CommunityBuildingBlockStats(blockId, delta.placedCount, delta.brokenCount, delta.playerContributions)
         }
+    }
 
     private fun collectPlayerWeekUsage(weekId: String): Map<UUID, Long> {
         val result = LinkedHashMap<UUID, Long>()
