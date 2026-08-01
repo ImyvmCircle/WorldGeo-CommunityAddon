@@ -2,6 +2,7 @@ package com.imyvm.community.entrypoint.command.helper
 
 import com.imyvm.community.application.townbuilding.CommunityBuildingService
 import com.imyvm.community.domain.model.community.CommunityStatus
+import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.domain.model.fiscal.CommunityFiscalPolicy
 import com.imyvm.iwg.domain.NaturalPeriodKind
 import com.imyvm.iwg.inter.api.RegionDataApi
@@ -35,6 +36,14 @@ val BUILDING_SELECTABLE_BLOCK_PROVIDER = SuggestionProvider<CommandSourceStack> 
     builder.buildFuture()
 }
 
+val FORMAL_MEMBER_UUID_PROVIDER = SuggestionProvider<CommandSourceStack> { _, builder ->
+    communities.flatMap { community ->
+        community.member.entries
+            .filter { (_, account) -> account.basicRoleType == MemberRoleType.OWNER || account.basicRoleType == MemberRoleType.ADMIN || account.basicRoleType == MemberRoleType.MEMBER }
+            .map { it.key.toString() }
+    }.distinct().forEach { builder.suggest(it) }
+    builder.buildFuture()
+}
 
 val FISCAL_POLICY_PROVIDER = SuggestionProvider<CommandSourceStack> { _, builder ->
     CommunityFiscalPolicy.entries.forEach { builder.suggest(it.name.lowercase()) }

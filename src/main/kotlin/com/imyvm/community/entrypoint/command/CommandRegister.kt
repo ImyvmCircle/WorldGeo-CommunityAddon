@@ -466,8 +466,9 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                                     .suggests(ACTIVE_COMMUNITY_PROVIDER)
                                     .then(
                                         argument("targetUuid", StringArgumentType.word())
+                                            .suggests(FORMAL_MEMBER_UUID_PROVIDER)
                                             .then(
-                                                argument("weekKey", StringArgumentType.word())
+                                                argument("weekKey", StringArgumentType.word()).suggests(FISCAL_WEEK_PROVIDER)
                                                     .then(
                                                         argument("balance", com.mojang.brigadier.arguments.LongArgumentType.longArg(0L))
                                                             .executes { runFiscalObserve(it) }
@@ -613,6 +614,7 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                                     .suggests(ACTIVE_COMMUNITY_PROVIDER)
                                     .then(
                                         argument("targetUuid", StringArgumentType.word())
+                                            .suggests(FORMAL_MEMBER_UUID_PROVIDER)
                                             .executes { runTitleGrantForeman(it) }
                                     )
                             )
@@ -624,6 +626,7 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                                     .suggests(ACTIVE_COMMUNITY_PROVIDER)
                                     .then(
                                         argument("targetUuid", StringArgumentType.word())
+                                            .suggests(FORMAL_MEMBER_UUID_PROVIDER)
                                             .executes { runTitleRevokeForeman(it) }
                                     )
                             )
