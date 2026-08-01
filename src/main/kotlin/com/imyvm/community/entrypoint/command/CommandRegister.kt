@@ -355,6 +355,17 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                             )
                     )
                     .then(
+                        literal("settle")
+                            .then(
+                                literal("hour")
+                                    .executes { runBuildingSettleHour(it) }
+                            )
+                            .then(
+                                literal("week")
+                                    .executes { runBuildingSettleWeek(it) }
+                            )
+                    )
+                    .then(
                         literal("pool")
                             .then(
                                 literal("list")
@@ -1195,5 +1206,30 @@ private fun runBuildingPoolAdd(context: CommandContext<CommandSourceStack>, link
         return 1
     }
     player.sendSystemMessage(Translator.tr("command.community.building.pool.add.failed", blockId, result.exceptionOrNull()?.message ?: "error"))
+    return 0
+}
+
+
+private fun runBuildingSettleHour(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val result = CommunityBuildingService.settleCurrentHour()
+    if (result.isSuccess) {
+        val summary = result.getOrThrow()
+        player.sendSystemMessage(Translator.tr("command.community.building.settle.success", "hour", summary.settledCommunities.toString(), summary.skippedCommunities.toString(), summary.playerTransactions.toString(), CommunityBuildingService.formatMoney(summary.communityIncome)))
+        return 1
+    }
+    player.sendSystemMessage(Translator.tr("command.community.building.settle.failed", result.exceptionOrNull()?.message ?: "error"))
+    return 0
+}
+
+private fun runBuildingSettleWeek(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val result = CommunityBuildingService.settleCurrentWeek()
+    if (result.isSuccess) {
+        val summary = result.getOrThrow()
+        player.sendSystemMessage(Translator.tr("command.community.building.settle.success", "week", summary.settledCommunities.toString(), summary.skippedCommunities.toString(), summary.playerTransactions.toString(), CommunityBuildingService.formatMoney(summary.communityIncome)))
+        return 1
+    }
+    player.sendSystemMessage(Translator.tr("command.community.building.settle.failed", result.exceptionOrNull()?.message ?: "error"))
     return 0
 }

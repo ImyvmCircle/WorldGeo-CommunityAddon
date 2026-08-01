@@ -2,13 +2,17 @@ package com.imyvm.community.application.townbuilding
 
 import com.imyvm.community.application.account.mutateTreasury
 import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.account.AccountDirection
+import com.imyvm.community.domain.model.account.AccountTransaction
 import com.imyvm.community.domain.model.community.CommunityBuildingCatalogEntry
 import com.imyvm.community.domain.model.community.CommunityBuildingEntry
 import com.imyvm.community.domain.model.community.CommunityBuildingState
+import com.imyvm.community.domain.model.transaction.PurposeCursorFact
 import com.imyvm.community.domain.model.transaction.ResourceDirection
 import com.imyvm.community.infra.CommunityConfig
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.infra.PricingConfig
+import com.imyvm.community.infra.account.AccountSubsystem
 import com.imyvm.community.util.Translator
 import com.imyvm.iwg.domain.NaturalPeriodKind
 import com.imyvm.iwg.inter.api.RegionDataApi
@@ -22,6 +26,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.util.UUID
+import java.util.concurrent.CompletableFuture
 import kotlin.math.ceil
 
 object CommunityBuildingService {
@@ -144,6 +149,131 @@ object CommunityBuildingService {
             total = Math.addExact(total, Math.multiplyExact(PricingConfig.BUILDING_CAPACITY_UNIT_BASE_COST.value, tier.toLong()))
         }
         return total
+    }
+
+
+    fun settleCurrentHour(): Result<CommunityBuildingPeriodSettlementResult> {
+        val ids = RegionDataApi.getCurrentNaturalPeriodIds()
+        val hourId = ids[NaturalPeriodKind.HOUR] ?: return Result.failure(IllegalStateException("current hour period unavailable"))
+        val weekId = ids[NaturalPeriodKind.WEEK] ?: return Result.failure(IllegalStateException("current week period unavailable"))
+        return settlePeriod(NaturalPeriodKind.HOUR, hourId, weekId)
+    }
+
+    fun settleCurrentWeek(): Result<CommunityBuildingPeriodSettlementResult> {
+        val ids = RegionDataApi.getCurrentNaturalPeriodIds()
+        val weekId = ids[NaturalPeriodKind.WEEK] ?: return Result.failure(IllegalStateException("current week period unavailable"))
+        return settlePeriod(NaturalPeriodKind.WEEK, weekId, weekId)
+    }
+
+    fun settlePeriod(periodKind: NaturalPeriodKind, periodId: String, weekId: String): Result<CommunityBuildingPeriodSettlementResult> {
+        val runtime = AccountSubsystem.runtimeOrNull() ?: return Result.failure(IllegalStateException("account subsystem unavailable"))
+        return try {
+            var settled = 0
+            var skipped = 0
+            var playerTransactions = 0
+            var communityIncome = 0L
+            for (community in CommunityDatabase.communities) {
+                val regionId = community.regionNumberId ?: continue
+                val entries = community.buildingState.activeEntries()
+                if (entries.isEmpty()) continue
+                val cursorUnit = "region:$regionId:${periodKind.name.lowercase(Locale.ROOT)}"
+                val existingCursor = runtime.sharedStore.findCursor(regionId, "building", "region", cursorUnit).join()
+                if (existingCursor?.cursor == periodId) {
+                    skipped++
+                    continue
+                }
+                val stats = queryBuildingStats(periodKind, periodId, regionId, entries)
+                val plan = CommunityBuildingSettlement.plan(
+                    entries,
+                    stats,
+                    CommunityConfig.BUILDING_PLAYER_WEEKLY_CAP.value,
+                    collectPlayerWeekUsage(weekId),
+                    CommunityConfig.BUILDING_COMMUNITY_WEEKLY_CAP.value,
+                    currentCommunityWeekIncome(community, weekId)
+                )
+                if (periodKind == NaturalPeriodKind.HOUR) {
+                    val futures = plan.playerRewards.map { reward ->
+                        val external = "building:player:$regionId:$periodId:${reward.playerUuid}:${reward.blockId}"
+                        val id = UUID.nameUUIDFromBytes(external.toByteArray())
+                        runtime.service.submit(AccountTransaction(
+                            id,
+                            id.toString().replace("-", "").take(12).uppercase(Locale.ROOT),
+                            System.currentTimeMillis(),
+                            periodId,
+                            reward.playerUuid,
+                            null,
+                            reward.amount,
+                            AccountDirection.CREDIT,
+                            "BUILDING",
+                            external
+                        ))
+                    }
+                    CompletableFuture.allOf(*futures.toTypedArray()).join()
+                    applyPlayerWeekRewards(community, weekId, plan.playerRewards)
+                    playerTransactions += plan.playerRewards.size
+                } else if (plan.communityIncome > 0L) {
+                    mutateTreasury(
+                        community,
+                        plan.communityIncome,
+                        ResourceDirection.CREDIT,
+                        "building",
+                        "building:community:$regionId:$periodId",
+                        "building-community-income",
+                        periodId,
+                        "community.treasury.desc.building_income",
+                        listOf(periodId)
+                    ).getOrThrow()
+                    communityIncome = Math.addExact(communityIncome, plan.communityIncome)
+                }
+                CommunityDatabase.save()
+                runtime.sharedStore.append(PurposeCursorFact(UUID.randomUUID(), regionId, System.currentTimeMillis(), "building", "region", cursorUnit, periodId)).join()
+                settled++
+            }
+            Result.success(CommunityBuildingPeriodSettlementResult(settled, skipped, playerTransactions, communityIncome))
+        } catch (error: Exception) {
+            Result.failure(error)
+        }
+    }
+
+    private fun queryBuildingStats(
+        periodKind: NaturalPeriodKind,
+        periodId: String,
+        regionId: Int,
+        entries: List<CommunityBuildingEntry>
+    ): List<CommunityBuildingBlockStats> = entries
+        .flatMap { it.trackedBlockIds() }
+        .distinct()
+        .map { blockId ->
+            val delta = RegionDataApi.queryBlockDelta(periodKind, periodId, regionId, null, null, blockId)
+            require(delta.placedCount >= 0L) { "negative WorldGeo placed count" }
+            require(delta.brokenCount >= 0L) { "negative WorldGeo broken count" }
+            CommunityBuildingBlockStats(blockId, delta.placedCount, delta.brokenCount, delta.playerContributions)
+        }
+
+    private fun collectPlayerWeekUsage(weekId: String): Map<UUID, Long> {
+        val result = LinkedHashMap<UUID, Long>()
+        for (community in CommunityDatabase.communities) {
+            for ((uuid, ledger) in community.buildingState.playerWeekLedgers) {
+                if (ledger.weekPeriodId == weekId) result[uuid] = Math.addExact(result[uuid] ?: 0L, ledger.settledAmount)
+            }
+        }
+        return result
+    }
+
+    private fun currentCommunityWeekIncome(community: Community, weekId: String): Long = community.buildingState.processedWeekPeriodIds
+        .firstOrNull { it == weekId }
+        ?.let { CommunityConfig.BUILDING_COMMUNITY_WEEKLY_CAP.value }
+        ?: 0L
+
+    private fun applyPlayerWeekRewards(community: Community, weekId: String, rewards: List<CommunityBuildingPlayerReward>) {
+        for (reward in rewards) {
+            val ledger = community.buildingState.playerWeekLedgers[reward.playerUuid]
+            if (ledger == null || ledger.weekPeriodId != weekId) {
+                community.buildingState.playerWeekLedgers[reward.playerUuid] = com.imyvm.community.domain.model.community.CommunityBuildingWeekLedger(weekId, reward.amount)
+            } else {
+                ledger.settledAmount = Math.addExact(ledger.settledAmount, reward.amount)
+            }
+        }
     }
 
     fun buildCatalogLore(community: Community, entry: CommunityBuildingCatalogEntry): List<Component> = listOf(
@@ -273,3 +403,11 @@ data class CommunityBuildingDraft(
 )
 
 private val HOUR_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH")
+
+
+data class CommunityBuildingPeriodSettlementResult(
+    val settledCommunities: Int,
+    val skippedCommunities: Int,
+    val playerTransactions: Int,
+    val communityIncome: Long
+)

@@ -933,5 +933,7 @@
   "command.community.building.pool.add.success": "§a已加入建设模板：§f{0} §7| 收益 §a{2} §7| 限额 §f{1} §7| 附带 §f{3}",
   "command.community.building.pool.add.failed": "§c建设模板加入失败：§f{0} §7- §c{1}",
   "command.community.building.pool.remove.success": "§a已移除建设模板：§f{0}",
-  "command.community.building.pool.remove.failed": "§c建设模板移除失败：§f{0} §7- §c{1}"
+  "command.community.building.pool.remove.failed": "§c建设模板移除失败：§f{0} §7- §c{1}",
+  "command.community.building.settle.success": "§a建设结算完成：周期 §f{0} §7| 已处理 §f{1} §7| 已跳过 §f{2} §7| 玩家事务 §f{3} §7| 国库收入 §a{4}",
+  "command.community.building.settle.failed": "§c建设结算失败：§f{0}"
 }
