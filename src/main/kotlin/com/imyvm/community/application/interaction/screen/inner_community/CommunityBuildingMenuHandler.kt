@@ -9,9 +9,28 @@ import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.entrypoint.screen.inner_community.building.CommunityBuildingCandidateListMenu
 import com.imyvm.community.entrypoint.screen.inner_community.building.CommunityBuildingEditorMenu
 import com.imyvm.community.entrypoint.screen.inner_community.building.CommunityBuildingMenu
+import com.imyvm.community.entrypoint.screen.inner_community.building.CommunityBuildingPoolMenu
 import com.imyvm.community.entrypoint.screen.inner_community.building.CommunityBuildingStyleListMenu
 import com.imyvm.community.util.Translator
 import net.minecraft.server.level.ServerPlayer
+
+fun runSendCommunityBuildingAdministrationSummary(player: ServerPlayer, community: Community) {
+    val permission = adminPermission(player, community)
+    if (permission.isDenied()) {
+        permission.sendSuccess(player)
+        return
+    }
+    player.closeContainer()
+    CommunityBuildingService.sendAdministrationSummary(player, community)
+}
+
+fun runOpenCommunityBuildingPoolMenu(player: ServerPlayer, page: Int, runBack: (ServerPlayer) -> Unit) {
+    if (!net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(player.permissions())) {
+        player.sendSystemMessage(Translator.tr("command.community.permission.op_required"))
+        return
+    }
+    CommunityMenuOpener.open(player) { syncId -> CommunityBuildingPoolMenu(syncId, player, page, runBack) }
+}
 
 fun runOpenCommunityBuildingMenu(player: ServerPlayer, community: Community, runBackGrandfather: (ServerPlayer) -> Unit) {
     val permission = CommunityPermissionPolicy.canViewCommunity(player, community)

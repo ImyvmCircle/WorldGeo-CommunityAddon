@@ -1,6 +1,11 @@
 package com.imyvm.community.application.interaction.screen.inner_community
 
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
+import com.imyvm.community.application.interaction.command.onDevelopmentStatus
+import com.imyvm.community.application.interaction.command.onLandPriceStatus
+import com.imyvm.community.application.fiscal.CommunityFiscalService
+import com.imyvm.community.application.title.CommunityTitleService
+import com.imyvm.community.application.townbuilding.CommunityBuildingService
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.GeographicFunctionType
 import com.imyvm.community.domain.model.community.MemberRoleType
@@ -27,6 +32,25 @@ import net.minecraft.core.particles.ParticleTypes
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.network.chat.ClickEvent
 import java.util.UUID
+
+fun runSendDevelopmentAndLandPriceStatus(player: ServerPlayer, community: Community) {
+    player.closeContainer()
+    onDevelopmentStatus(player, community)
+    onLandPriceStatus(player, community)
+}
+
+fun runSendFiscalStatus(player: ServerPlayer, community: Community) {
+    player.closeContainer()
+    val fiscal = community.fiscalState
+    val pending = fiscal.pendingPolicy?.let { "${it.policy.name} -> ${it.effectiveWeekKey}" } ?: "-"
+    player.sendSystemMessage(Translator.tr("command.community.fiscal.status", community.generateCommunityMark(), fiscal.activePolicy.name, pending, CommunityBuildingService.formatMoney(CommunityFiscalService.WELFARE_PROTECTED_TREASURY)))
+}
+
+fun runSendTitleStatus(player: ServerPlayer, community: Community) {
+    player.closeContainer()
+    val slots = community.titleState.normalized().foremanSlots
+    player.sendSystemMessage(Translator.tr("command.community.title.status", community.generateCommunityMark(), CommunityTitleService.foremanSlotLimit(community).toString(), slots.size.toString(), slots.count { it.holderUuid == null }.toString()))
+}
 
 fun runOpenOperationMenu(player: ServerPlayer, community: Community, runBackGrandfather : ((ServerPlayer) -> Unit)) {
     CommunityMenuOpener.open(player) { syncId ->

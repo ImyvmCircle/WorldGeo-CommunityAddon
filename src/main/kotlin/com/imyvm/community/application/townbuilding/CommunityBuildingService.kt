@@ -24,6 +24,7 @@ import com.imyvm.iwg.domain.WorldGeoPeriodDataStatus
 import com.imyvm.iwg.inter.api.RegionDataApi
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.chat.Component
+import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.item.BlockItem
 import net.minecraft.world.item.Item
@@ -233,7 +234,45 @@ object CommunityBuildingService {
 
     fun getPlayerWeekRemainingCap(community: Community, playerUuid: UUID): Long {
         val currentWeekKey = RegionDataApi.getCurrentNaturalPeriodKeys()[NaturalPeriodKind.WEEK] ?: return CommunityConfig.BUILDING_PLAYER_WEEKLY_CAP.value
-        return (CommunityConfig.BUILDING_PLAYER_WEEKLY_CAP.value - (collectPlayerWeekUsage(periodLedgerKey(currentWeekKey))[playerUuid] ?: 0L)).coerceAtLeast(0L)
+        return getPlayerBuildingStatus(community, playerUuid, periodLedgerKey(currentWeekKey)).baseRemaining
+    }
+
+    fun getPlayerBuildingStatus(community: Community, playerUuid: UUID): PlayerBuildingStatus {
+        val currentWeekKey = RegionDataApi.getCurrentNaturalPeriodKeys()[NaturalPeriodKind.WEEK]
+        return getPlayerBuildingStatus(community, playerUuid, currentWeekKey?.let { periodLedgerKey(it) } ?: "-")
+    }
+
+    fun getPlayerBuildingStatus(community: Community, playerUuid: UUID, weekId: String): PlayerBuildingStatus {
+        val ledger = community.buildingState.playerWeekLedgers[playerUuid]?.takeIf { it.weekPeriodId == weekId }
+        val extraCap = CommunityTitleService.extraWeeklyCap(community, playerUuid)
+        val extraUsed = ledger?.extraCapAmount ?: 0L
+        val baseUsed = collectPlayerWeekUsage(weekId)[playerUuid] ?: 0L
+        return PlayerBuildingStatus(
+            community = community,
+            weekId = weekId,
+            income = ledger?.settledAmount ?: 0L,
+            baseCap = CommunityConfig.BUILDING_PLAYER_WEEKLY_CAP.value,
+            baseUsed = baseUsed,
+            baseRemaining = (CommunityConfig.BUILDING_PLAYER_WEEKLY_CAP.value - baseUsed).coerceAtLeast(0L),
+            extraCap = extraCap,
+            extraUsed = extraUsed,
+            extraRemaining = (extraCap - extraUsed).coerceAtLeast(0L),
+            pendingPayouts = community.buildingState.pendingPayouts.count { it.playerUuid == playerUuid },
+            foreman = extraCap > 0L
+        )
+    }
+
+    fun listPlayerBuildingStatuses(playerUuid: UUID): List<PlayerBuildingStatus> {
+        val weekId = RegionDataApi.getCurrentNaturalPeriodKeys()[NaturalPeriodKind.WEEK]?.let { periodLedgerKey(it) } ?: "-"
+        return CommunityDatabase.communities
+            .filter { canView(it, playerUuid) }
+            .map { getPlayerBuildingStatus(it, playerUuid, weekId) }
+            .filter { it.income > 0L || it.pendingPayouts > 0 || it.foreman || it.community.buildingState.activeEntries().isNotEmpty() }
+    }
+
+    fun findCommunityAt(player: ServerPlayer): Community? {
+        val region = RegionDataApi.getRegionScopePairByLocation(player.level() as ServerLevel, player.blockPosition())?.first ?: return null
+        return CommunityDatabase.getCommunityById(region.numberID)
     }
 
     fun getNextHourSettlementText(): String {
@@ -327,7 +366,8 @@ object CommunityBuildingService {
                     CommunityConfig.BUILDING_COMMUNITY_WEEKLY_CAP.value,
                     currentCommunityWeekIncome(community, periodLedgerKey(weekKey)),
                     rewardPlayers.associateWith { CommunityTitleService.rewardPercent(community, it) },
-                    rewardPlayers.associateWith { CommunityTitleService.extraWeeklyCap(community, it) }
+                    rewardPlayers.associateWith { CommunityTitleService.extraWeeklyCap(community, it) },
+                    collectPlayerExtraWeekUsage(regionId, periodLedgerKey(weekKey))
                 )
                 if (periodKey.kind == NaturalPeriodKind.HOUR) {
                     val futures = plan.playerRewards.map { reward ->
@@ -392,14 +432,21 @@ object CommunityBuildingService {
 
     private fun periodLedgerKey(key: NaturalPeriodKey): String = "${key.timelineId}:${key.periodId}"
 
-    private fun collectPlayerWeekUsage(weekId: String): Map<UUID, Long> {
+    fun collectPlayerWeekUsage(weekId: String): Map<UUID, Long> {
         val result = LinkedHashMap<UUID, Long>()
         for (community in CommunityDatabase.communities) {
             for ((uuid, ledger) in community.buildingState.playerWeekLedgers) {
-                if (ledger.weekPeriodId == weekId) result[uuid] = Math.addExact(result[uuid] ?: 0L, ledger.settledAmount)
+                if (ledger.weekPeriodId == weekId) result[uuid] = Math.addExact(result[uuid] ?: 0L, ledger.baseCapAmount)
             }
         }
         return result
+    }
+
+    private fun collectPlayerExtraWeekUsage(regionId: Int, weekId: String): Map<UUID, Long> {
+        val community = CommunityDatabase.getCommunityById(regionId) ?: return emptyMap()
+        return community.buildingState.playerWeekLedgers
+            .filterValues { it.weekPeriodId == weekId && it.extraCapAmount > 0L }
+            .mapValues { it.value.extraCapAmount }
     }
 
     private fun currentCommunityWeekIncome(community: Community, weekId: String): Long = community.buildingState.processedWeekPeriodIds
@@ -436,11 +483,47 @@ object CommunityBuildingService {
         for (reward in rewards) {
             val ledger = community.buildingState.playerWeekLedgers[reward.playerUuid]
             if (ledger == null || ledger.weekPeriodId != weekId) {
-                community.buildingState.playerWeekLedgers[reward.playerUuid] = com.imyvm.community.domain.model.community.CommunityBuildingWeekLedger(weekId, reward.amount)
+                community.buildingState.playerWeekLedgers[reward.playerUuid] = com.imyvm.community.domain.model.community.CommunityBuildingWeekLedger(weekId, reward.amount, reward.baseCapAmount, reward.extraCapAmount)
             } else {
                 ledger.settledAmount = Math.addExact(ledger.settledAmount, reward.amount)
+                ledger.baseCapAmount = Math.addExact(ledger.baseCapAmount, reward.baseCapAmount)
+                ledger.extraCapAmount = Math.addExact(ledger.extraCapAmount, reward.extraCapAmount)
             }
         }
+    }
+
+
+
+    fun sendAdministrationSummary(player: ServerPlayer, community: Community) {
+        val state = community.buildingState
+        player.sendSystemMessage(Translator.tr("community.building.admin.header", community.generateCommunityMark()))
+        player.sendSystemMessage(Translator.tr("community.building.admin.package", state.activeEntries().size.toString(), state.usedCapacityUnits().toString(), state.capacityUnits.toString(), getSelectablePool().size.toString()))
+        player.sendSystemMessage(Translator.tr("community.building.admin.money", formatMoney(community.getTotalAssets()), getNextHourSettlementText(), state.pendingPayouts.size.toString()))
+        val ranking = state.playerWeekLedgers.entries
+            .sortedByDescending { it.value.settledAmount }
+            .take(5)
+        if (ranking.isEmpty()) {
+            player.sendSystemMessage(Translator.tr("community.building.admin.ranking.empty"))
+        } else {
+            ranking.forEachIndexed { index, (uuid, ledger) ->
+                player.sendSystemMessage(Translator.tr("community.building.admin.ranking.entry", (index + 1).toString(), uuid.toString(), formatMoney(ledger.settledAmount), formatMoney(ledger.extraCapAmount)))
+            }
+        }
+    }
+
+    fun buildPoolLore(entry: CommunityBuildingCatalogEntry): List<Component> = listOf(
+        Translator.tr("community.building.lore.reward", formatMoney(entry.rewardPerBlock)),
+        Translator.tr("community.building.lore.unit_cost", entry.unitCost.toString()),
+        Translator.tr("community.building.lore.template_version", entry.templateVersion.toString()),
+        Translator.tr("community.building.lore.linked", linkedSummary(entry.linkedBlockIds))
+    )
+
+    fun sendPoolEntryDetail(player: ServerPlayer, entry: CommunityBuildingCatalogEntry) {
+        player.sendSystemMessage(Translator.tr("community.building.pool.detail.header", entry.baseBlockId))
+        player.sendSystemMessage(Translator.tr("community.building.entry.detail.unit_cost", entry.unitCost.toString()))
+        player.sendSystemMessage(Translator.tr("community.building.entry.detail.reward", formatMoney(entry.rewardPerBlock)))
+        player.sendSystemMessage(Translator.tr("community.building.lore.template_version", entry.templateVersion.toString()))
+        player.sendSystemMessage(Translator.tr("community.building.entry.detail.linked", linkedSummary(entry.linkedBlockIds)))
     }
 
     fun buildCatalogLore(community: Community, entry: CommunityBuildingCatalogEntry): List<Component> = listOf(
@@ -577,4 +660,19 @@ data class CommunityBuildingPeriodSettlementResult(
     val skippedCommunities: Int,
     val playerTransactions: Int,
     val communityIncome: Long
+)
+
+
+data class PlayerBuildingStatus(
+    val community: Community,
+    val weekId: String,
+    val income: Long,
+    val baseCap: Long,
+    val baseUsed: Long,
+    val baseRemaining: Long,
+    val extraCap: Long,
+    val extraUsed: Long,
+    val extraRemaining: Long,
+    val pendingPayouts: Int,
+    val foreman: Boolean
 )

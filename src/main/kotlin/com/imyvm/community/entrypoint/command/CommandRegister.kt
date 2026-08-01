@@ -5,6 +5,7 @@ import com.imyvm.community.application.interaction.common.*
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.application.interaction.screen.inner_community.runOpenCommunityBuildingCandidates
 import com.imyvm.community.application.interaction.screen.inner_community.runOpenCommunityBuildingMenu
+import com.imyvm.community.application.interaction.screen.inner_community.runOpenCommunityBuildingPoolMenu
 import com.imyvm.community.application.townbuilding.CommunityBuildingService
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.account.AccountDirection
@@ -337,7 +338,15 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
             )
             .then(
                 literal("building")
-                    .requires { net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(it.permissions()) }
+                    .then(
+                        literal("status")
+                            .executes { runBuildingStatus(it, null) }
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.string())
+                                    .suggests(ALL_COMMUNITY_PROVIDER)
+                                    .executes { runBuildingStatus(it, StringArgumentType.getString(it, "communityIdentifier")) }
+                            )
+                    )
                     .then(
                         literal("open")
                             .then(
@@ -356,6 +365,7 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                     )
                     .then(
                         literal("settle")
+                            .requires { net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(it.permissions()) }
                             .then(
                                 literal("hour")
                                     .executes { runBuildingSettleHour(it) }
@@ -367,6 +377,11 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                     )
                     .then(
                         literal("pool")
+                            .requires { net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(it.permissions()) }
+                            .then(
+                                literal("menu")
+                                    .executes { runOpenBuildingPoolMenuCommand(it) }
+                            )
                             .then(
                                 literal("list")
                                     .executes { runBuildingPoolList(it) }
@@ -460,9 +475,25 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
             )
             .then(
                 literal("development")
-                    .requires { net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(it.permissions()) }
+                    .then(
+                        literal("status")
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.string())
+                                    .suggests(ACTIVE_COMMUNITY_PROVIDER)
+                                    .executes { runDevelopmentStatus(it) }
+                            )
+                    )
+                    .then(
+                        literal("refresh")
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.string())
+                                    .suggests(ACTIVE_COMMUNITY_PROVIDER)
+                                    .executes { runDevelopmentRefresh(it) }
+                            )
+                    )
                     .then(
                         literal("preview")
+                            .requires { net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(it.permissions()) }
                             .then(
                                 argument("communityIdentifier", StringArgumentType.string())
                                     .suggests(ACTIVE_COMMUNITY_PROVIDER)
@@ -490,9 +521,25 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
             )
             .then(
                 literal("land_price")
-                    .requires { net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(it.permissions()) }
+                    .then(
+                        literal("status")
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.string())
+                                    .suggests(ACTIVE_COMMUNITY_PROVIDER)
+                                    .executes { runLandPriceStatus(it) }
+                            )
+                    )
+                    .then(
+                        literal("refresh")
+                            .then(
+                                argument("communityIdentifier", StringArgumentType.string())
+                                    .suggests(ACTIVE_COMMUNITY_PROVIDER)
+                                    .executes { runLandPriceRefresh(it) }
+                            )
+                    )
                     .then(
                         literal("preview")
+                            .requires { net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(it.permissions()) }
                             .then(
                                 argument("communityIdentifier", StringArgumentType.string())
                                     .suggests(ACTIVE_COMMUNITY_PROVIDER)
@@ -1290,6 +1337,45 @@ fun registerCommun(dispatcher: CommandDispatcher<CommandSourceStack>) {
     )
 }
 
+private fun runBuildingStatus(context: CommandContext<CommandSourceStack>, communityIdentifier: String?): Int {
+    val player = context.source.player ?: return 0
+    if (communityIdentifier != null) {
+        return identifierHandler(player, communityIdentifier) { community -> sendBuildingStatus(player, community) }
+    }
+    val current = CommunityBuildingService.findCommunityAt(player)
+    if (current != null && CommunityBuildingService.canView(current, player.uuid)) return sendBuildingStatus(player, current)
+    return sendBuildingSummary(player)
+}
+
+private fun sendBuildingStatus(player: net.minecraft.server.level.ServerPlayer, community: Community): Int {
+    if (!CommunityBuildingService.canView(community, player.uuid)) {
+        player.sendSystemMessage(Translator.tr("command.community.building.status.no_permission", community.generateCommunityMark()))
+        return 0
+    }
+    val status = CommunityBuildingService.getPlayerBuildingStatus(community, player.uuid)
+    val state = community.buildingState
+    player.sendSystemMessage(Translator.tr("command.community.building.status.header", community.generateCommunityMark(), status.weekId))
+    player.sendSystemMessage(Translator.tr("command.community.building.status.income", CommunityBuildingService.formatMoney(status.income), status.pendingPayouts.toString()))
+    player.sendSystemMessage(Translator.tr("command.community.building.status.base_cap", CommunityBuildingService.formatMoney(status.baseUsed), CommunityBuildingService.formatMoney(status.baseCap), CommunityBuildingService.formatMoney(status.baseRemaining)))
+    player.sendSystemMessage(Translator.tr("command.community.building.status.extra_cap", CommunityBuildingService.formatMoney(status.extraUsed), CommunityBuildingService.formatMoney(status.extraCap), CommunityBuildingService.formatMoney(status.extraRemaining), if (status.foreman) Translator.tr("community.building.value.yes").string else Translator.tr("community.building.value.no").string))
+    player.sendSystemMessage(Translator.tr("command.community.building.status.package", state.activeEntries().size.toString(), state.usedCapacityUnits().toString(), state.capacityUnits.toString(), CommunityBuildingService.getNextHourSettlementText()))
+    return 1
+}
+
+private fun sendBuildingSummary(player: net.minecraft.server.level.ServerPlayer): Int {
+    val statuses = CommunityBuildingService.listPlayerBuildingStatuses(player.uuid)
+    if (statuses.isEmpty()) {
+        player.sendSystemMessage(Translator.tr("command.community.building.summary.empty"))
+        return 1
+    }
+    val total = statuses.fold(0L) { acc, status -> Math.addExact(acc, status.income) }
+    val baseRemaining = statuses.first().baseRemaining
+    player.sendSystemMessage(Translator.tr("command.community.building.summary.header", CommunityBuildingService.formatMoney(total), CommunityBuildingService.formatMoney(baseRemaining), statuses.size.toString()))
+    statuses.forEach { status ->
+        player.sendSystemMessage(Translator.tr("command.community.building.summary.entry", status.community.generateCommunityMark(), CommunityBuildingService.formatMoney(status.income), CommunityBuildingService.formatMoney(status.extraRemaining), status.pendingPayouts.toString()))
+    }
+    return 1
+}
 
 private fun runOpenBuildingMenuCommand(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
@@ -1305,6 +1391,12 @@ private fun runOpenBuildingCandidatesCommand(context: CommandContext<CommandSour
     return identifierHandler(player, communityIdentifier) { community ->
         runOpenCommunityBuildingCandidates(player, community, 0) { p -> CommunityMenuOpener.open(p) { s -> MainMenu(s, p) } }
     }
+}
+
+private fun runOpenBuildingPoolMenuCommand(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    runOpenCommunityBuildingPoolMenu(player, 0) { p -> CommunityMenuOpener.open(p) { s -> MainMenu(s, p) } }
+    return 1
 }
 
 private fun runBuildingPoolList(context: CommandContext<CommandSourceStack>): Int {
@@ -1451,6 +1543,44 @@ private fun runFiscalWelfarePreview(context: CommandContext<CommandSourceStack>)
     val player = context.source.player ?: return 0
     val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
     return identifierHandler(player, communityIdentifier) { community -> onFiscalWelfarePreview(player, community, StringArgumentType.getString(context, "weekKey")) }
+}
+
+private fun runDevelopmentStatus(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    return identifierHandler(player, communityIdentifier) { community -> onDevelopmentStatus(player, community) }
+}
+
+private fun runDevelopmentRefresh(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    return identifierHandler(player, communityIdentifier) { community ->
+        val permission = CommunityPermissionPolicy.canExecuteAdministration(player, community, AdminPrivilege.MANAGE_BUILDING)
+        if (permission.isDenied() && !net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(player.permissions())) {
+            permission.sendSuccess(player)
+        } else {
+            onDevelopmentRefresh(player, community)
+        }
+    }
+}
+
+private fun runLandPriceStatus(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    return identifierHandler(player, communityIdentifier) { community -> onLandPriceStatus(player, community) }
+}
+
+private fun runLandPriceRefresh(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val communityIdentifier = StringArgumentType.getString(context, "communityIdentifier")
+    return identifierHandler(player, communityIdentifier) { community ->
+        val permission = CommunityPermissionPolicy.canExecuteAdministration(player, community, AdminPrivilege.MANAGE_BUILDING)
+        if (permission.isDenied() && !net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(player.permissions())) {
+            permission.sendSuccess(player)
+        } else {
+            onLandPriceRefresh(player, community)
+        }
+    }
 }
 
 private fun runDevelopmentPreview(context: CommandContext<CommandSourceStack>): Int {

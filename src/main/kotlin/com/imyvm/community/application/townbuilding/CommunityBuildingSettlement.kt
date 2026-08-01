@@ -15,7 +15,9 @@ data class CommunityBuildingPlayerReward(
     val playerUuid: UUID,
     val blockId: String,
     val units: Long,
-    val amount: Long
+    val amount: Long,
+    val baseCapAmount: Long = amount,
+    val extraCapAmount: Long = 0L
 )
 
 data class CommunityBuildingSettlementPlan(
@@ -33,7 +35,8 @@ object CommunityBuildingSettlement {
         communityWeeklyCap: Long,
         communityWeekUsage: Long,
         playerRewardPercents: Map<UUID, Long> = emptyMap(),
-        playerExtraWeeklyCaps: Map<UUID, Long> = emptyMap()
+        playerExtraWeeklyCaps: Map<UUID, Long> = emptyMap(),
+        playerExtraWeekUsage: Map<UUID, Long> = emptyMap()
     ): CommunityBuildingSettlementPlan {
         require(playerWeeklyCap >= 0L) { "player weekly cap must not be negative" }
         require(communityWeeklyCap >= 0L) { "community weekly cap must not be negative" }
@@ -49,7 +52,7 @@ object CommunityBuildingSettlement {
             communityNumerator = communityNumerator.add(BigInteger.valueOf(netUnits).multiply(BigInteger.valueOf(entry.rewardPerBlock)))
             rewards += allocatePlayerRewards(stat, entry, netUnits, playerRewardPercents)
         }
-        val cappedRewards = applyPlayerWeeklyCap(rewards, playerWeeklyCap, playerWeekUsage, playerExtraWeeklyCaps)
+        val cappedRewards = applyPlayerWeeklyCap(rewards, playerWeeklyCap, playerWeekUsage, playerExtraWeeklyCaps, playerExtraWeekUsage)
         val theoreticalCommunityIncome = toLongExact(communityNumerator.divide(BigInteger.valueOf(5L)), "community income")
         val remainingCommunityCap = (communityWeeklyCap - communityWeekUsage).coerceAtLeast(0L)
         val communityIncome = minOf(theoreticalCommunityIncome, remainingCommunityCap)
@@ -123,19 +126,29 @@ object CommunityBuildingSettlement {
         rewards: List<CommunityBuildingPlayerReward>,
         playerWeeklyCap: Long,
         playerWeekUsage: Map<UUID, Long>,
-        playerExtraWeeklyCaps: Map<UUID, Long>
+        playerExtraWeeklyCaps: Map<UUID, Long>,
+        playerExtraWeekUsage: Map<UUID, Long>
     ): List<CommunityBuildingPlayerReward> {
-        val usage = playerWeekUsage.mapValues { (_, value) ->
+        val baseUsage = playerWeekUsage.mapValues { (_, value) ->
             require(value >= 0L) { "player week usage must not be negative" }
             value
         }.toMutableMap()
+        val extraUsage = playerExtraWeekUsage.mapValues { (_, value) ->
+            require(value >= 0L) { "player extra week usage must not be negative" }
+            value
+        }.toMutableMap()
         return rewards.mapNotNull { reward ->
-            val used = usage[reward.playerUuid] ?: 0L
-            val cap = Math.addExact(playerWeeklyCap, playerExtraWeeklyCaps[reward.playerUuid] ?: 0L)
-            val remaining = (cap - used).coerceAtLeast(0L)
-            val effective = minOf(reward.amount, remaining)
-            usage[reward.playerUuid] = Math.addExact(used, effective)
-            if (effective <= 0L) null else reward.copy(amount = effective)
+            val extraCap = playerExtraWeeklyCaps[reward.playerUuid] ?: 0L
+            val usedExtra = extraUsage[reward.playerUuid] ?: 0L
+            val extraAmount = minOf(reward.amount, (extraCap - usedExtra).coerceAtLeast(0L))
+            extraUsage[reward.playerUuid] = Math.addExact(usedExtra, extraAmount)
+
+            val usedBase = baseUsage[reward.playerUuid] ?: 0L
+            val baseAmount = minOf(reward.amount - extraAmount, (playerWeeklyCap - usedBase).coerceAtLeast(0L))
+            baseUsage[reward.playerUuid] = Math.addExact(usedBase, baseAmount)
+
+            val effective = Math.addExact(extraAmount, baseAmount)
+            if (effective <= 0L) null else reward.copy(amount = effective, baseCapAmount = baseAmount, extraCapAmount = extraAmount)
         }
     }
 

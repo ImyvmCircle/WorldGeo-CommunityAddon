@@ -5,6 +5,9 @@ import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.development.CommunityDevelopmentInputs
 import com.imyvm.community.util.Translator
 import net.minecraft.server.level.ServerPlayer
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.math.BigDecimal
 
 fun onDevelopmentPreview(
@@ -47,5 +50,55 @@ fun onLandPricePreview(
         0
     }
 }
+
+fun onDevelopmentStatus(player: ServerPlayer, community: Community): Int {
+    val state = community.developmentState
+    player.sendSystemMessage(Translator.tr("command.community.development.status.header", community.generateCommunityMark(), state.weekKey.ifBlank { "-" }))
+    player.sendSystemMessage(Translator.tr("command.community.development.status.score", "%.4f".format(state.development), "%.4f".format(state.breakdown.building), "%.4f".format(state.breakdown.population), "%.4f".format(state.breakdown.habitation), "%.4f".format(state.breakdown.habitationModifier)))
+    player.sendSystemMessage(Translator.tr("command.community.development.status.inputs", state.inputs.memberCount.toString(), state.inputs.weekActiveMemberCount.toString(), format(state.inputs.weekTheoreticalBuildingIncome), formatMillis(state.inputs.averageHabitationMillis)))
+    player.sendSystemMessage(Translator.tr("command.community.development.status.updated", formatTime(state.updatedAtMillis)))
+    return 1
+}
+
+fun onDevelopmentRefresh(player: ServerPlayer, community: Community): Int {
+    return CommunityDevelopmentService.refreshDevelopmentFromCurrentState(community).fold(
+        onSuccess = { state ->
+            com.imyvm.community.infra.CommunityDatabase.save()
+            player.sendSystemMessage(Translator.tr("command.community.development.refresh.success", community.generateCommunityMark(), state.weekKey, "%.4f".format(state.development)))
+            1
+        },
+        onFailure = { error ->
+            player.sendSystemMessage(Translator.tr("command.community.development.failed", error.message ?: error::class.java.simpleName))
+            0
+        }
+    )
+}
+
+fun onLandPriceStatus(player: ServerPlayer, community: Community): Int {
+    val snapshot = community.developmentState.landPrice
+    if (snapshot == null) {
+        player.sendSystemMessage(Translator.tr("command.community.land_price.status.empty", community.generateCommunityMark()))
+        return 1
+    }
+    player.sendSystemMessage(Translator.tr("command.community.land_price.status", community.generateCommunityMark(), snapshot.area.toString(), format(snapshot.totalPrice), format(snapshot.activePrice), format(snapshot.buildingPrice), format(snapshot.total25HabitationMillis)))
+    return 1
+}
+
+fun onLandPriceRefresh(player: ServerPlayer, community: Community): Int {
+    return CommunityDevelopmentService.refreshRegionLandPrice(community).fold(
+        onSuccess = { snapshot ->
+            player.sendSystemMessage(Translator.tr("command.community.land_price.refresh.success", community.generateCommunityMark(), format(snapshot.totalPrice), snapshot.area.toString()))
+            1
+        },
+        onFailure = { error ->
+            player.sendSystemMessage(Translator.tr("command.community.development.failed", error.message ?: error::class.java.simpleName))
+            0
+        }
+    )
+}
+
+private fun formatMillis(value: Long): String = "%.2f".format(value / 3_600_000.0)
+
+private fun formatTime(value: Long): String = if (value <= 0L) "-" else DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z").format(Instant.ofEpochMilli(value).atZone(ZoneId.of("Asia/Shanghai")))
 
 private fun format(amount: Long): String = "%.2f".format(amount / 100.0)

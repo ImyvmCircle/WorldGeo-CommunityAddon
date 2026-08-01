@@ -64,7 +64,7 @@ class MainMenu(
             slot = 19,
             name = Translator.tr("ui.main.button.op").string,
             item = Items.ANVIL
-        ) {}
+        ) { runOpenOpMenu(it) }
     }
 
     private fun addActionBarToggleButton() {

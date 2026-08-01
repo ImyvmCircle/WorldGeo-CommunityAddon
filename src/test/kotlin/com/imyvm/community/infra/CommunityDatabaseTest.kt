@@ -55,7 +55,7 @@ class CommunityDatabaseTest {
                 ),
                 processedHourPeriodIds = mutableListOf("hour-1"),
                 processedWeekPeriodIds = mutableListOf("week-1"),
-                playerWeekLedgers = hashMapOf(builderUUID to CommunityBuildingWeekLedger("week-1", 500L))
+                playerWeekLedgers = hashMapOf(builderUUID to CommunityBuildingWeekLedger("week-1", 500L, 300L, 200L))
             )
         )
         CommunityDatabase.communities = mutableListOf(community)
@@ -85,6 +85,8 @@ class CommunityDatabaseTest {
         assertEquals("2026-08-01T12", entry.selectionCheckpoint)
         assertFalse(entry.active)
         assertEquals(500L, loaded.playerWeekLedgers[builderUUID]?.settledAmount)
+        assertEquals(300L, loaded.playerWeekLedgers[builderUUID]?.baseCapAmount)
+        assertEquals(200L, loaded.playerWeekLedgers[builderUUID]?.extraCapAmount)
     }
 
     @Test

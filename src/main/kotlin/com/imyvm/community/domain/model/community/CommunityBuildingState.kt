@@ -29,7 +29,9 @@ data class CommunityBuildingCatalogEntry(
 
 data class CommunityBuildingWeekLedger(
     var weekPeriodId: String,
-    var settledAmount: Long
+    var settledAmount: Long,
+    var baseCapAmount: Long = settledAmount,
+    var extraCapAmount: Long = 0L
 )
 
 data class CommunityBuildingPendingPayout(

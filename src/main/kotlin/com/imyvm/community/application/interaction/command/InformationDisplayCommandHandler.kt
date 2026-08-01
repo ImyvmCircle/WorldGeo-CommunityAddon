@@ -30,6 +30,16 @@ fun onHelpCommand(player: ServerPlayer): Int {
     player.sendSystemMessage(Translator.tr("community.command.help.announcement_view"))
     player.sendSystemMessage(Translator.tr("community.command.help.announcement_create"))
     player.sendSystemMessage(Translator.tr("community.command.help.announcement_delete"))
+    player.sendSystemMessage(Translator.tr("community.command.help.section_building"))
+    player.sendSystemMessage(Translator.tr("community.command.help.building_status"))
+    player.sendSystemMessage(Translator.tr("community.command.help.building_open"))
+    player.sendSystemMessage(Translator.tr("community.command.help.building_pool_menu"))
+    player.sendSystemMessage(Translator.tr("community.command.help.building_pool_list"))
+    player.sendSystemMessage(Translator.tr("community.command.help.building_pool_add"))
+    player.sendSystemMessage(Translator.tr("community.command.help.building_pool_remove"))
+    player.sendSystemMessage(Translator.tr("community.command.help.section_development"))
+    player.sendSystemMessage(Translator.tr("community.command.help.development_status"))
+    player.sendSystemMessage(Translator.tr("community.command.help.land_price_status"))
     return 1
 }
 

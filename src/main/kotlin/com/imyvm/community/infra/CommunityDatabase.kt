@@ -64,7 +64,7 @@ object CommunityDatabase {
     private const val MAX_SECTION_BYTES = 16 * 1024 * 1024
     private const val MAX_COMMUNITY_BYTES = 16 * 1024 * 1024
     private const val MAX_COMMUNITIES = 100_000
-    private const val BUILDING_RECORD_VERSION = 1
+    private const val BUILDING_RECORD_VERSION = 2
     private const val MAX_COLLECTION_ENTRIES = 1_000_000
     private var legacyDatabaseLoaded = false
     private var legacyBackupCreated = false
@@ -1055,6 +1055,8 @@ object CommunityDatabase {
                 record.writeUTF(uuid.toString())
                 record.writeUTF(ledger.weekPeriodId)
                 record.writeLong(ledger.settledAmount)
+                record.writeLong(ledger.baseCapAmount)
+                record.writeLong(ledger.extraCapAmount)
             }
             record.writeInt(state.pendingPayouts.size)
             for (payout in state.pendingPayouts) {
@@ -1089,7 +1091,7 @@ object CommunityDatabase {
     private fun loadCommunityBuildingRecord(payload: ByteArray) {
         DataInputStream(ByteArrayInputStream(payload)).use { record ->
             val version = record.readInt()
-            if (version != BUILDING_RECORD_VERSION) return
+            if (version !in 1..BUILDING_RECORD_VERSION) return
             val regionId = record.readInt()
             val capacityUnits = record.readInt()
             val styleSize = readCount(record, "community building style")
@@ -1115,7 +1117,9 @@ object CommunityDatabase {
                 val uuid = UUID.fromString(record.readUTF())
                 val weekId = record.readUTF()
                 val settledAmount = record.readLong()
-                ledgers[uuid] = CommunityBuildingWeekLedger(weekId, settledAmount)
+                val baseCapAmount = if (version >= 2) record.readLong() else settledAmount
+                val extraCapAmount = if (version >= 2) record.readLong() else 0L
+                ledgers[uuid] = CommunityBuildingWeekLedger(weekId, settledAmount, baseCapAmount, extraCapAmount)
             }
             val payoutSize = readCount(record, "community building payout")
             val payouts = mutableListOf<CommunityBuildingPendingPayout>()

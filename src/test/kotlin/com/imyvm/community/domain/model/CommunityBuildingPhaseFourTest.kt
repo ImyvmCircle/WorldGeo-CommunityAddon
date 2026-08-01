@@ -179,6 +179,35 @@ class CommunityBuildingSettlementTest {
     }
 
     @Test
+    fun `settlement consumes title extra cap before global player weekly cap`() {
+        val entries = listOf(
+            CommunityBuildingEntry("minecraft:oak_planks", 1, 100L),
+            CommunityBuildingEntry("minecraft:stone", 1, 100L)
+        )
+        val plan = CommunityBuildingSettlement.plan(
+            entries,
+            listOf(
+                CommunityBuildingBlockStats("minecraft:oak_planks", 10, 0, mapOf(first to 10L)),
+                CommunityBuildingBlockStats("minecraft:stone", 10, 0, mapOf(first to 10L))
+            ),
+            1200L,
+            mapOf(first to 500L),
+            200000L,
+            0L,
+            playerExtraWeeklyCaps = mapOf(first to 600L),
+            playerExtraWeekUsage = mapOf(first to 200L)
+        )
+
+        assertEquals(
+            listOf(
+                CommunityBuildingPlayerReward(first, "minecraft:oak_planks", 10L, 1000L, 600L, 400L),
+                CommunityBuildingPlayerReward(first, "minecraft:stone", 10L, 100L, 100L, 0L)
+            ),
+            plan.playerRewards
+        )
+    }
+
+    @Test
     fun `community income floors all block numerator once and applies weekly cap`() {
         val entries = listOf(
             CommunityBuildingEntry("minecraft:oak_planks", 1, 101L),

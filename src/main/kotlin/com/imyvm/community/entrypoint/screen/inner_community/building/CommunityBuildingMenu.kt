@@ -3,6 +3,7 @@ package com.imyvm.community.entrypoint.screen.inner_community.building
 import com.imyvm.community.application.interaction.screen.inner_community.runBuyCommunityBuildingCapacity
 import com.imyvm.community.application.interaction.screen.inner_community.runOpenCommunityBuildingCandidates
 import com.imyvm.community.application.interaction.screen.inner_community.runOpenCommunityBuildingStyleList
+import com.imyvm.community.application.interaction.screen.inner_community.runSendCommunityBuildingAdministrationSummary
 import com.imyvm.community.application.townbuilding.CommunityBuildingService
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.policy.permission.AdminPrivilege
@@ -45,6 +46,9 @@ class CommunityBuildingMenu(
             }
             addButton(42, Translator.tr("ui.community.building.button.buy_capacity_eight").string, Items.MINECART) {
                 runBuyCommunityBuildingCapacity(it, community, 8, parentBack)
+            }
+            addButton(43, Translator.tr("ui.community.building.button.admin_summary").string, Items.SPYGLASS) {
+                runSendCommunityBuildingAdministrationSummary(it, community)
             }
         }
     }

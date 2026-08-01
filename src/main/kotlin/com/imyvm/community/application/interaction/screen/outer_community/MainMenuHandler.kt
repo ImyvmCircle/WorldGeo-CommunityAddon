@@ -7,6 +7,7 @@ import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.entrypoint.screen.inner_community.CommunityMenu
 import com.imyvm.community.entrypoint.screen.outer_community.CommunityListMenu
+import com.imyvm.community.entrypoint.screen.outer_community.CommunityOpMenu
 import com.imyvm.community.entrypoint.screen.outer_community.MainMenu
 import com.imyvm.community.entrypoint.screen.outer_community.MyCommunityListMenu
 import com.imyvm.community.entrypoint.screen.outer_community.TerritoryMenu
@@ -71,6 +72,15 @@ fun runMyCommunity(player: ServerPlayer) {
             }
         }
     }
+}
+
+fun runOpenOpMenu(player: ServerPlayer) {
+    if (!net.minecraft.commands.Commands.LEVEL_GAMEMASTERS.check(player.permissions())) {
+        player.sendSystemMessage(Translator.tr("command.community.permission.op_required"))
+        player.closeContainer()
+        return
+    }
+    CommunityMenuOpener.open(player) { syncId -> CommunityOpMenu(syncId, player) }
 }
 
 fun runToggleSelectionMode(player: ServerPlayer) {
