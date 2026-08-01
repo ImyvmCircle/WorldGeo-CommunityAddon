@@ -2,13 +2,13 @@ package com.imyvm.community.application.townbuilding
 
 import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.domain.model.Community
-import com.imyvm.community.domain.model.Turnover
-import com.imyvm.community.domain.model.TurnoverSource
 import com.imyvm.community.domain.model.community.CommunityBuildingCatalogEntry
 import com.imyvm.community.domain.model.community.CommunityBuildingEntry
 import com.imyvm.community.domain.model.community.CommunityBuildingPendingPayout
 import com.imyvm.community.domain.model.community.CommunityBuildingState
 import com.imyvm.community.domain.model.community.CommunityBuildingWeekLedger
+import com.imyvm.community.application.account.mutateTreasury
+import com.imyvm.community.domain.model.transaction.ResourceDirection
 import com.imyvm.community.infra.CommunityConfig
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.infra.PricingConfig
@@ -63,10 +63,6 @@ object CommunityBuildingService {
     val selectablePoolState: MutableList<CommunityBuildingCatalogEntry> = mutableListOf()
 
     fun register() {
-        RegionDataApi.registerNaturalPeriodTransitionCallback { transitionQueue.add(it) }
-        ServerTickEvents.END_SERVER_TICK.register { _ ->
-            processTransitions()
-        }
     }
 
     fun getState(community: Community): CommunityBuildingState = community.buildingState
@@ -258,32 +254,34 @@ object CommunityBuildingService {
         }
         val normalizedLinked = linkedBlockIds.distinct().filter { it != baseBlockId && isValidBlockId(it) }.toMutableList()
         val snapshot = existing?.copy(linkedBlockIds = existing.linkedBlockIds.toMutableList())
-        val expenditure = if (selectionCost > 0L) {
-            Turnover(
-                selectionCost,
-                System.currentTimeMillis(),
-                TurnoverSource.SYSTEM,
-                "community.treasury.desc.building_style_selection",
-                listOf(baseBlockId, unitCost.toString())
-            )
-        } else null
         return try {
             if (existing == null) {
                 val created = CommunityBuildingEntry(baseBlockId, unitCost, rewardPerBlock, normalizedLinked)
                 state.stylePackage.add(created)
-                expenditure?.let { community.expenditures.add(it) }
-                CommunityDatabase.save()
+                if (selectionCost > 0L) {
+                    mutateTreasury(
+                        community, selectionCost, ResourceDirection.DEBIT, "building",
+                        "community:building-style:${community.regionNumberId}:$baseBlockId:${System.currentTimeMillis()}",
+                        "building-style-selection", baseBlockId,
+                        "community.treasury.desc.building_style_selection", listOf(baseBlockId, unitCost.toString())
+                    ).getOrThrow()
+                } else CommunityDatabase.save()
                 Result.success(created)
             } else {
                 existing.unitCost = unitCost
                 existing.rewardPerBlock = rewardPerBlock
                 existing.linkedBlockIds = normalizedLinked
-                expenditure?.let { community.expenditures.add(it) }
-                CommunityDatabase.save()
+                if (selectionCost > 0L) {
+                    mutateTreasury(
+                        community, selectionCost, ResourceDirection.DEBIT, "building",
+                        "community:building-style:${community.regionNumberId}:$baseBlockId:${System.currentTimeMillis()}",
+                        "building-style-selection", baseBlockId,
+                        "community.treasury.desc.building_style_selection", listOf(baseBlockId, unitCost.toString())
+                    ).getOrThrow()
+                } else CommunityDatabase.save()
                 Result.success(existing)
             }
         } catch (e: Exception) {
-            expenditure?.let { community.expenditures.remove(it) }
             if (existing == null) {
                 state.stylePackage.removeIf { it.baseBlockId == baseBlockId }
             } else if (snapshot != null) {
@@ -326,21 +324,17 @@ object CommunityBuildingService {
         val state = community.buildingState
         val cost = calculateCapacityPurchaseCost(state.capacityUnits, buyUnits)
         if (community.getTotalAssets() < cost) return Result.failure(IllegalStateException("insufficient treasury"))
-        val expenditure = Turnover(
-            cost,
-            System.currentTimeMillis(),
-            TurnoverSource.SYSTEM,
-            "community.treasury.desc.building_capacity",
-            listOf(buyUnits.toString())
-        )
         return try {
             state.capacityUnits += buyUnits
-            community.expenditures.add(expenditure)
-            CommunityDatabase.save()
+            mutateTreasury(
+                community, cost, ResourceDirection.DEBIT, "building",
+                "community:building-capacity:${community.regionNumberId}:$buyUnits:${System.currentTimeMillis()}",
+                "building-capacity", buyUnits.toString(),
+                "community.treasury.desc.building_capacity", listOf(buyUnits.toString())
+            ).getOrThrow()
             Result.success(cost)
         } catch (e: Exception) {
             state.capacityUnits -= buyUnits
-            community.expenditures.remove(expenditure)
             Result.failure(e)
         }
     }
@@ -437,14 +431,11 @@ object CommunityBuildingService {
             }
             val capped = amount.coerceAtMost(CommunityConfig.BUILDING_COMMUNITY_WEEKLY_CAP.value)
             if (capped > 0L) {
-                community.communityIncome.add(
-                    Turnover(
-                        capped,
-                        System.currentTimeMillis(),
-                        TurnoverSource.SYSTEM,
-                        "community.treasury.desc.building_weekly_income",
-                        listOf(weekId)
-                    )
+                mutateTreasury(
+                    community, capped, ResourceDirection.CREDIT, "building",
+                    "community:building-week:${community.regionNumberId}:$weekId",
+                    "building-weekly-income", weekId,
+                    "community.treasury.desc.building_weekly_income", listOf(weekId)
                 )
                 changed = true
             }

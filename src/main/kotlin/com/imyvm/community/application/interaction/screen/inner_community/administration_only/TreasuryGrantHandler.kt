@@ -1,14 +1,11 @@
 package com.imyvm.community.application.interaction.screen.inner_community.administration_only
 
 import com.imyvm.community.WorldGeoCommunityAddon
-import com.imyvm.community.application.account.appendTreasuryLedgerEntry
+import com.imyvm.community.application.account.mutateTreasury
 import com.imyvm.community.application.event.addPendingOperation
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
-import com.imyvm.community.application.interaction.common.runCommunityMutationOrRollback
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.PendingOperationType
-import com.imyvm.community.domain.model.Turnover
-import com.imyvm.community.domain.model.TurnoverSource
 import com.imyvm.community.domain.model.TreasuryGrantConfirmationData
 import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.domain.policy.permission.AdminPrivilege
@@ -150,45 +147,53 @@ fun onAcceptTreasuryGrant(player: ServerPlayer, sourceRegionId: Int): Int {
     val now = System.currentTimeMillis()
     val sourceMark = sourceCommunity.generateCommunityMark()
     val targetMark = targetCommunity.generateCommunityMark()
-    val sourceTurnover = Turnover(grantData.amount, now, TurnoverSource.COMMUNITY_GRANT, "community.treasury.desc.grant_out", listOf(targetMark))
-    val targetTurnover = Turnover(grantData.amount, now, TurnoverSource.COMMUNITY_GRANT, "community.treasury.desc.grant_in", listOf(sourceMark))
-    var removedPending: com.imyvm.community.domain.model.PendingOperation? = null
     val operationName = Translator.tr("community.operation.treasury_grant", sourceMark).string
-
-    if (!runCommunityMutationOrRollback(
-            operationName = operationName,
-            mutateCommunityState = {
-                sourceCommunity.expenditures.add(sourceTurnover)
-                targetCommunity.communityIncome.add(targetTurnover)
-                removedPending = removePendingOperation(sourceRegionId, PendingOperationType.TREASURY_GRANT_CONFIRMATION)
-            },
-            restoreCommunityState = {
-                sourceCommunity.expenditures.remove(sourceTurnover)
-                targetCommunity.communityIncome.remove(targetTurnover)
-                removedPending?.let {
-                    com.imyvm.community.application.event.restorePendingOperation(
-                        sourceRegionId,
-                        PendingOperationType.TREASURY_GRANT_CONFIRMATION,
-                        it
-                    )
-                }
-            },
-            rollbackCoreState = {},
-            saveCommunityState = { CommunityDatabase.save() },
-            notifyFailure = { player.sendSystemMessage(Translator.tr("community.operation.save_failed", operationName)) }
-        )) return 0
+    val referenceBase = "community:treasury-grant:$sourceRegionId:${grantData.targetRegionNumberId}:$now"
+    val debit = mutateTreasury(
+        sourceCommunity,
+        grantData.amount,
+        com.imyvm.community.domain.model.transaction.ResourceDirection.DEBIT,
+        "community-grant",
+        "$referenceBase:out",
+        "treasury-grant-out",
+        grantData.targetRegionNumberId.toString(),
+        "community.treasury.desc.grant_out",
+        listOf(targetMark)
+    )
+    if (debit.isFailure) {
+        player.sendSystemMessage(Translator.tr("community.operation.save_failed", operationName))
+        return 0
+    }
+    val credit = mutateTreasury(
+        targetCommunity,
+        grantData.amount,
+        com.imyvm.community.domain.model.transaction.ResourceDirection.CREDIT,
+        "community-grant",
+        "$referenceBase:in",
+        "treasury-grant-in",
+        sourceRegionId.toString(),
+        "community.treasury.desc.grant_in",
+        listOf(sourceMark)
+    )
+    if (credit.isFailure) {
+        mutateTreasury(
+            sourceCommunity,
+            grantData.amount,
+            com.imyvm.community.domain.model.transaction.ResourceDirection.CREDIT,
+            "community-grant-compensation",
+            "$referenceBase:refund",
+            "treasury-grant-refund",
+            grantData.targetRegionNumberId.toString(),
+            "community.treasury.desc.grant_in",
+            listOf(targetMark)
+        )
+        player.sendSystemMessage(Translator.tr("community.operation.save_failed", operationName))
+        return 0
+    }
+    removePendingOperation(sourceRegionId, PendingOperationType.TREASURY_GRANT_CONFIRMATION)
+    CommunityDatabase.save()
 
     val amountFormatted = "%.2f".format(grantData.amount / 100.0)
-    sourceCommunity.regionNumberId?.let { rid ->
-        appendTreasuryLedgerEntry(rid, grantData.amount, com.imyvm.community.domain.model.transaction.ResourceDirection.DEBIT,
-            "treasury-grant-out", "community-grant", targetCommunity.regionNumberId?.toString() ?: "",
-            "community.treasury.desc.grant_out", listOf(targetMark))
-    }
-    targetCommunity.regionNumberId?.let { rid ->
-        appendTreasuryLedgerEntry(rid, grantData.amount, com.imyvm.community.domain.model.transaction.ResourceDirection.CREDIT,
-            "treasury-grant-in", "community-grant", sourceCommunity.regionNumberId?.toString() ?: "",
-            "community.treasury.desc.grant_in", listOf(sourceMark))
-    }
 
     player.sendSystemMessage(Translator.tr("community.treasury_grant.success", amountFormatted, sourceMark, targetMark))
 

@@ -27,6 +27,7 @@ class CommunityTest {
             communityIncome = arrayListOf(Turnover(500L, 3L, TurnoverSource.COMMUNITY_GRANT)),
             expenditures = arrayListOf(Turnover(250L, 4L, TurnoverSource.SERVER_ADMIN))
         )
+        community.rebuildTreasuryAggregatesFromLegacy()
 
         assertEquals(1750L, community.getTotalAssets())
         assertEquals(owner, community.getOwnerUUID())

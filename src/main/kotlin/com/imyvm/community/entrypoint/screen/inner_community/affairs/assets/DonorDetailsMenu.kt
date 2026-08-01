@@ -31,8 +31,7 @@ class DonorDetailsMenu(
 
     private fun addDonorInfoDisplay() {
         val donorName = UtilApi.getPlayerName(player, donorUUID)
-        val memberAccount = community.member[donorUUID]
-        val totalDonation = memberAccount?.getTotalDonation() ?: 0
+        val totalDonation = community.memberContributionTotals[donorUUID] ?: 0L
         val donationFormatted = "%.2f".format(totalDonation / 100.0)
 
         addButton(

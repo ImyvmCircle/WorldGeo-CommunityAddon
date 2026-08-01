@@ -1,7 +1,7 @@
 package com.imyvm.community.application.interaction.screen.inner_community.administration_only
 
 import com.imyvm.community.WorldGeoCommunityAddon
-import com.imyvm.community.application.account.appendTreasuryLedgerEntry
+import com.imyvm.community.application.account.mutateTreasury
 import com.imyvm.community.application.event.addPendingOperation
 import com.imyvm.community.application.interaction.common.saveCommunityDatabaseOrRollback
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
@@ -248,7 +248,13 @@ fun onConfirmTeleportPointSetting(playerExecutor: ServerPlayer, regionNumberId: 
 
     val expenditure = if (request.cost > 0) {
         Turnover(request.cost, System.currentTimeMillis(), TurnoverSource.SYSTEM, "community.treasury.desc.teleport_point", listOf(scope.scopeName))
-            .also { community.expenditures.add(it) }
+            .also {
+                mutateTreasury(
+                    community, it.amount, com.imyvm.community.domain.model.transaction.ResourceDirection.DEBIT, "teleport-point",
+                    "community:teleport-point:${community.regionNumberId}:${scope.scopeName}:${System.currentTimeMillis()}",
+                    "teleport-point-fee", scope.scopeName, it.descriptionKey, it.descriptionArgs
+                ).getOrThrow()
+            }
     } else null
     val operationName = Translator.tr("community.operation.teleport_point_set", scope.scopeName).string
     if (!saveCommunityDatabaseOrRollback(
@@ -261,12 +267,6 @@ fun onConfirmTeleportPointSetting(playerExecutor: ServerPlayer, regionNumberId: 
             rollbackCoreState = { restoreTeleportPoint(playerExecutor, region, scope, oldPoint) }
         )) return 0
 
-    if (expenditure != null) community.regionNumberId?.let { rid ->
-        appendTreasuryLedgerEntry(rid, expenditure.amount,
-            com.imyvm.community.domain.model.transaction.ResourceDirection.DEBIT,
-            "teleport-point-fee", "teleport-point", scope.scopeName,
-            "community.treasury.desc.teleport_point", listOf(scope.scopeName))
-    }
     val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
     val costText = String.format("%.2f", request.cost / 100.0)
     val newPos = PlayerInteractionApi.getTeleportPoint(scope)

@@ -44,7 +44,6 @@ class WorldGeoCommunityAddon : ModInitializer {
         registerDonationAccountRecovery()
         registerTeleportAccountRecovery()
         registerChatInterceptor()
-        CommunityBuildingService.register()
 
         CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> register(dispatcher) }
         CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> registerCh(dispatcher) }

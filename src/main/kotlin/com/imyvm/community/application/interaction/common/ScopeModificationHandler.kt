@@ -1,7 +1,7 @@
 package com.imyvm.community.application.interaction.common
 
 import com.imyvm.community.WorldGeoCommunityAddon
-import com.imyvm.community.application.account.appendTreasuryLedgerEntry
+import com.imyvm.community.application.account.mutateTreasury
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.PendingOperationType
 import com.imyvm.community.domain.model.Turnover
@@ -93,7 +93,13 @@ fun onConfirmScopeModification(player: ServerPlayer, regionNumberId: Int, scopeN
                 source = TurnoverSource.SYSTEM,
                 descriptionKey = "community.treasury.desc.scope_creation",
                 descriptionArgs = listOf(scopeName)
-            ).also { community.expenditures.add(it) }
+            ).also {
+                mutateTreasury(
+                    community, it.amount, ResourceDirection.DEBIT, "scope-modification",
+                    "community:scope-creation:$regionNumberId:$scopeName:${System.currentTimeMillis()}",
+                    "scope-creation-fee", scopeName, it.descriptionKey, it.descriptionArgs
+                ).getOrThrow()
+            }
         } else null
 
         val removedPending = removePendingOperation(regionNumberId, PendingOperationType.MODIFY_SCOPE_CONFIRMATION)
@@ -108,11 +114,6 @@ fun onConfirmScopeModification(player: ServerPlayer, regionNumberId: Int, scopeN
                 rollbackCoreState = { PlayerInteractionApi.deleteScope(player, communityRegion, createdScope.scopeName) }
             )) return 0
 
-        if (expenditure != null) community.regionNumberId?.let { rid ->
-            appendTreasuryLedgerEntry(rid, expenditure.amount, ResourceDirection.DEBIT,
-                "scope-creation-fee", "scope-modification", scopeName,
-                "community.treasury.desc.scope_creation", listOf(scopeName))
-        }
         val costDisplay = String.format("%.2f", modificationData.cost / 100.0)
         val shapeText = when (shapeName.uppercase()) {
             "CIRCLE" -> Translator.tr("community.shape.circle").string ?: "circle"
@@ -164,7 +165,13 @@ fun onConfirmScopeModification(player: ServerPlayer, regionNumberId: Int, scopeN
             source = TurnoverSource.SYSTEM,
             descriptionKey = "community.treasury.desc.scope_modification",
             descriptionArgs = listOf(scopeName)
-        ).also { community.expenditures.add(it) }
+        ).also {
+            mutateTreasury(
+                community, it.amount, ResourceDirection.DEBIT, "scope-modification",
+                "community:scope-modification:$regionNumberId:$scopeName:${System.currentTimeMillis()}",
+                "scope-modification-fee", scopeName, it.descriptionKey, it.descriptionArgs
+            ).getOrThrow()
+        }
     } else if (modificationData.cost < 0) {
         val refundAmount = -modificationData.cost
         val ownerUUID = community.getOwnerUUID()
@@ -198,14 +205,6 @@ fun onConfirmScopeModification(player: ServerPlayer, regionNumberId: Int, scopeN
             }
         )) return 0
 
-    community.regionNumberId?.let { rid ->
-        if (expenditure != null) appendTreasuryLedgerEntry(rid, expenditure.amount, ResourceDirection.DEBIT,
-            "scope-modification-fee", "scope-modification", scopeName,
-            "community.treasury.desc.scope_modification", listOf(scopeName))
-        if (refundTurnover != null) appendTreasuryLedgerEntry(rid, refundTurnover.amount, ResourceDirection.DEBIT,
-            "scope-modification-refund", "scope-modification", scopeName,
-            "community.treasury.desc.scope_refund", listOf(scopeName))
-    }
     val costDisplay = String.format("%.2f", Math.abs(modificationData.cost) / 100.0)
 
     if (modificationData.cost >= 0) {

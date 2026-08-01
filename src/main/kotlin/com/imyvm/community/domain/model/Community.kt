@@ -1,6 +1,7 @@
 package com.imyvm.community.domain.model
 
 import com.imyvm.community.domain.model.community.*
+import com.imyvm.community.domain.model.transaction.ResourceDirection
 import com.imyvm.community.util.Translator
 import com.imyvm.community.util.getFormattedMillsHour
 import com.imyvm.iwg.domain.Region
@@ -23,7 +24,10 @@ class Community(
     var nameChangeCooldowns: HashMap<String, Long> = HashMap(),
     var likeCount: Int = 0,
     var lastLikedBy: HashMap<UUID, Long> = HashMap(),
-    var buildingState: CommunityBuildingState = CommunityBuildingState()
+    var buildingState: CommunityBuildingState = CommunityBuildingState(),
+    var treasuryBalance: Long = 0L,
+    var memberContributionTotals: HashMap<UUID, Long> = HashMap(),
+    var treasuryReferences: HashMap<String, TreasuryReferenceRecord> = HashMap()
 ) {
     fun isManor(): Boolean {
         return status == CommunityStatus.PENDING_MANOR || status == CommunityStatus.ACTIVE_MANOR || status == CommunityStatus.REVOKED_MANOR
@@ -75,17 +79,37 @@ class Community(
 
 
     fun getTotalAssets(): Long {
-        val totalIncome = member.values.sumOf { it.getTotalDonation() }
-        val totalIncomingGrants = communityIncome.sumOf { it.amount }
-        val totalExpenditure = expenditures.sumOf { it.amount }
-        return totalIncome + totalIncomingGrants - totalExpenditure
+        return treasuryBalance
     }
 
     fun getDonorList(): List<UUID> {
-        return member.entries
-            .filter { it.value.turnover.isNotEmpty() }
-            .sortedByDescending { it.value.getTotalDonation() }
+        return memberContributionTotals.entries
+            .filter { it.value > 0L }
+            .sortedByDescending { it.value }
             .map { it.key }
+    }
+
+    fun rebuildTreasuryAggregatesFromLegacy() {
+        memberContributionTotals = HashMap(member.mapValues { it.value.getTotalDonation() })
+        val memberTotal = memberContributionTotals.values.fold(0L) { total, amount -> Math.addExact(total, amount) }
+        val incomeTotal = communityIncome.fold(0L) { total, turnover -> Math.addExact(total, turnover.amount) }
+        val expenditureTotal = expenditures.fold(0L) { total, turnover -> Math.addExact(total, turnover.amount) }
+        treasuryBalance = Math.subtractExact(Math.addExact(memberTotal, incomeTotal), expenditureTotal)
+    }
+
+    fun applyTreasuryMutation(record: TreasuryReferenceRecord): TreasuryMutationResult {
+        treasuryReferences[record.externalReference]?.let { existing ->
+            return if (existing.sameSpecification(record)) TreasuryMutationResult.ALREADY_APPLIED else TreasuryMutationResult.CONFLICT
+        }
+        treasuryBalance = when (record.direction) {
+            ResourceDirection.CREDIT -> Math.addExact(treasuryBalance, record.amount)
+            ResourceDirection.DEBIT -> {
+                if (treasuryBalance < record.amount) return TreasuryMutationResult.INSUFFICIENT_FUNDS
+                Math.subtractExact(treasuryBalance, record.amount)
+            }
+        }
+        treasuryReferences[record.externalReference] = record
+        return TreasuryMutationResult.APPLIED
     }
 
     fun addAnnouncement(announcement: Announcement) {
@@ -152,4 +176,27 @@ class Community(
         return messages.filter { it.type == MessageType.ANNOUNCEMENT && !it.isDeleted }
             .sortedByDescending { it.timestamp }
     }
+}
+
+enum class TreasuryMutationResult {
+    APPLIED,
+    ALREADY_APPLIED,
+    CONFLICT,
+    INSUFFICIENT_FUNDS
+}
+
+data class TreasuryReferenceRecord(
+    val externalReference: String,
+    val amount: Long,
+    val direction: ResourceDirection,
+    val source: String,
+    val operationType: String,
+    val objectReference: String
+) {
+    fun sameSpecification(other: TreasuryReferenceRecord): Boolean =
+        amount == other.amount &&
+            direction == other.direction &&
+            source == other.source &&
+            operationType == other.operationType &&
+            objectReference == other.objectReference
 }

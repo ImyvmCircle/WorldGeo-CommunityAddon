@@ -31,8 +31,7 @@ class DonorListMenu(
         val donorList = community.getDonorList()
         renderList(donorList, donorsPerPage, startSlot) { donorUUID, slot, _ ->
             val donorName = UtilApi.getPlayerName(playerExecutor, donorUUID)
-            val memberAccount = community.member[donorUUID]
-            val totalDonation = memberAccount?.getTotalDonation() ?: 0
+            val totalDonation = community.memberContributionTotals[donorUUID] ?: 0L
             val donationFormatted = "%.2f".format(totalDonation / 100.0)
 
             addButton(

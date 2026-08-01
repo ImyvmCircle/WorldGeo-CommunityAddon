@@ -19,7 +19,7 @@ import com.imyvm.community.domain.model.ScopeModificationConfirmationData
 import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.domain.policy.permission.AdminPrivilege
 import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
-import com.imyvm.community.application.account.appendTreasuryLedgerEntry
+import com.imyvm.community.application.account.mutateTreasury
 import com.imyvm.community.domain.model.transaction.ResourceDirection
 import com.imyvm.community.domain.policy.territory.SettingItemCostChange
 import com.imyvm.community.domain.policy.territory.TerritoryPricing
@@ -330,21 +330,15 @@ fun onConfirmRename(player: ServerPlayer, regionNumberId: Int, nameKey: String):
         }
         community.nameChangeCooldowns["global"] = System.currentTimeMillis()
         if (renameData.cost > 0) {
-            community.expenditures.add(com.imyvm.community.domain.model.Turnover(
-                amount = renameData.cost,
-                timestamp = System.currentTimeMillis(),
-                source = TurnoverSource.SYSTEM,
-                descriptionKey = "community.treasury.desc.rename_community",
-                descriptionArgs = listOf(renameData.newName)
-            ))
+            mutateTreasury(
+                community, renameData.cost, ResourceDirection.DEBIT, "scope-rename",
+                "community:rename-community:$regionNumberId:${renameData.newName}:${System.currentTimeMillis()}",
+                "rename-community-fee", renameData.newName,
+                "community.treasury.desc.rename_community", listOf(renameData.newName)
+            ).getOrThrow()
         }
         removePendingOperation(regionNumberId, PendingOperationType.RENAME_CONFIRMATION)
         CommunityDatabase.save()
-        if (renameData.cost > 0) community.regionNumberId?.let { rid ->
-            appendTreasuryLedgerEntry(rid, renameData.cost, ResourceDirection.DEBIT,
-                "rename-community-fee", "scope-rename", renameData.newName,
-                "community.treasury.desc.rename_community", listOf(renameData.newName))
-        }
         player.sendSystemMessage(Translator.tr("community.rename.success.global", oldName, renameData.newName))
     } else {
         val scope = communityRegion.geometryScope.firstOrNull { it.scopeName == renameData.nameKey }
@@ -362,21 +356,15 @@ fun onConfirmRename(player: ServerPlayer, regionNumberId: Int, nameKey: String):
         community.nameChangeCooldowns.remove(renameData.nameKey)
         community.nameChangeCooldowns[renameData.newName] = System.currentTimeMillis()
         if (renameData.cost > 0) {
-            community.expenditures.add(com.imyvm.community.domain.model.Turnover(
-                amount = renameData.cost,
-                timestamp = System.currentTimeMillis(),
-                source = TurnoverSource.SYSTEM,
-                descriptionKey = "community.treasury.desc.rename_scope",
-                descriptionArgs = listOf(renameData.nameKey, renameData.newName)
-            ))
+            mutateTreasury(
+                community, renameData.cost, ResourceDirection.DEBIT, "scope-rename",
+                "community:rename-scope:$regionNumberId:${renameData.nameKey}:${renameData.newName}:${System.currentTimeMillis()}",
+                "rename-scope-fee", renameData.newName,
+                "community.treasury.desc.rename_scope", listOf(renameData.nameKey, renameData.newName)
+            ).getOrThrow()
         }
         removePendingOperation(regionNumberId, PendingOperationType.RENAME_CONFIRMATION)
         CommunityDatabase.save()
-        if (renameData.cost > 0) community.regionNumberId?.let { rid ->
-            appendTreasuryLedgerEntry(rid, renameData.cost, ResourceDirection.DEBIT,
-                "rename-scope-fee", "scope-rename", renameData.newName,
-                "community.treasury.desc.rename_scope", listOf(renameData.nameKey, renameData.newName))
-        }
         player.sendSystemMessage(Translator.tr("community.rename.success.scope", oldScopeName, renameData.newName))
     }
     return 1

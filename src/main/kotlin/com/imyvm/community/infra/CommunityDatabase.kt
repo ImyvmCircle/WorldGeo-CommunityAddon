@@ -75,6 +75,7 @@ object CommunityDatabase {
                 writeSection(stream, SECTION_NAME_CHANGE_COOLDOWNS) { saveNameChangeCooldownsSection(it) }
                 writeSection(stream, SECTION_LIKES) { saveLikesSection(it) }
                 writeSection(stream, SECTION_COMMUNITY_INCOME) { saveCommunityIncomeSection(it) }
+                writeSection(stream, SECTION_V4_STATE) { saveV4StateSection(it) }
                 writeSection(stream, SECTION_COMMUNITY_BUILDING) { saveCommunityBuildingSection(it) }
                 writeSection(stream, SECTION_COMMUNITY_BUILDING_CATALOG) { saveCommunityBuildingCatalogSection(it) }
             }
@@ -267,6 +268,7 @@ object CommunityDatabase {
                     backupLegacyDatabaseBeforeLoad(file)
                     val decoded = LegacyCommunityDatabaseDecoder.decode(payload)
                     communities = decoded.communities
+                    rebuildMissingTreasuryAggregates()
                     com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.clear()
                     com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.putAll(decoded.pendingOperations)
                     return
@@ -294,6 +296,7 @@ object CommunityDatabase {
                 if (stream.available() > 0) {
                     loadTrailingSections(stream)
                 }
+                rebuildMissingTreasuryAggregates()
             }
         } catch (e: Exception) {
             if (previousCommunities != null) communities = previousCommunities
@@ -1137,9 +1140,66 @@ object CommunityDatabase {
     }
 
     private fun saveV4StateSection(stream: DataOutputStream) {
+        val targets = communities.filter {
+            it.regionNumberId != null &&
+                (it.treasuryBalance != 0L || it.memberContributionTotals.isNotEmpty() || it.treasuryReferences.isNotEmpty())
+        }
+        stream.writeInt(targets.size)
+        for (community in targets) {
+            stream.writeInt(community.regionNumberId!!)
+            stream.writeLong(community.treasuryBalance)
+            stream.writeInt(community.memberContributionTotals.size)
+            for ((uuid, amount) in community.memberContributionTotals) {
+                stream.writeUTF(uuid.toString())
+                stream.writeLong(amount)
+            }
+            stream.writeInt(community.treasuryReferences.size)
+            for ((reference, record) in community.treasuryReferences) {
+                stream.writeUTF(reference)
+                stream.writeLong(record.amount)
+                stream.writeUTF(record.direction.name)
+                stream.writeUTF(record.source)
+                stream.writeUTF(record.operationType)
+                stream.writeUTF(record.objectReference)
+            }
+        }
     }
 
     private fun loadV4StateSection(stream: DataInputStream) {
+        val count = readCount(stream, "v4 state community")
+        for (i in 0 until count) {
+            val regionId = stream.readInt()
+            val community = getCommunityById(regionId) ?: continue
+            community.treasuryBalance = stream.readLong()
+            val contributionCount = readCount(stream, "member contribution")
+            val contributions = HashMap<UUID, Long>(contributionCount)
+            for (j in 0 until contributionCount) {
+                contributions[UUID.fromString(stream.readUTF())] = stream.readLong()
+            }
+            community.memberContributionTotals = contributions
+            val referenceCount = readCount(stream, "treasury reference")
+            val references = HashMap<String, com.imyvm.community.domain.model.TreasuryReferenceRecord>(referenceCount)
+            for (j in 0 until referenceCount) {
+                val reference = stream.readUTF()
+                references[reference] = com.imyvm.community.domain.model.TreasuryReferenceRecord(
+                    externalReference = reference,
+                    amount = stream.readLong(),
+                    direction = com.imyvm.community.domain.model.transaction.ResourceDirection.valueOf(stream.readUTF()),
+                    source = stream.readUTF(),
+                    operationType = stream.readUTF(),
+                    objectReference = stream.readUTF()
+                )
+            }
+            community.treasuryReferences = references
+        }
+    }
+
+    private fun rebuildMissingTreasuryAggregates() {
+        communities.forEach { community ->
+            if (community.treasuryReferences.isEmpty() && community.treasuryBalance == 0L) {
+                community.rebuildTreasuryAggregatesFromLegacy()
+            }
+        }
     }
 
     private fun writeTurnoverList(stream: DataOutputStream, list: List<Turnover>) {

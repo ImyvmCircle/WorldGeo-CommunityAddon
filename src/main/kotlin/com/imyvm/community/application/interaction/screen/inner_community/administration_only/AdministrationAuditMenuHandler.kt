@@ -2,7 +2,7 @@ package com.imyvm.community.application.interaction.screen.inner_community.admin
 
 import com.imyvm.community.application.interaction.common.runCommunityMutationOrRollback
 import com.imyvm.community.application.interaction.common.submitApplicationRefund
-import com.imyvm.community.application.account.appendTreasuryLedgerEntry
+import com.imyvm.community.application.account.mutateTreasury
 import com.imyvm.community.domain.model.transaction.ResourceDirection
 import com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
 import com.imyvm.community.domain.model.TurnoverSource
@@ -71,7 +71,14 @@ fun runAccept(
             if (!runCommunityMutationOrRollback(
                     operationName = operationName,
                     mutateCommunityState = {
-                        joinFeeTurnover?.let { community.expenditures.add(it) }
+                        joinFeeTurnover?.let {
+                            mutateTreasury(
+                                community, it.amount, ResourceDirection.DEBIT, "audit-accept",
+                                "community:member-join-fee:${community.regionNumberId}:${playerObject.id}:${System.currentTimeMillis()}",
+                                "member-join-fee", playerObject.name,
+                                "community.treasury.desc.member_join_fee", listOf(playerObject.name)
+                            ).getOrThrow()
+                        }
                         objectAccount.basicRoleType = MemberRoleType.MEMBER
                         objectAccount.joinedTime = System.currentTimeMillis()
                         objectAccount.isInvited = false
@@ -100,11 +107,6 @@ fun runAccept(
                 return@executeWithPermission
             }
 
-            if (joinFeeTurnover != null) community.regionNumberId?.let { rid ->
-                appendTreasuryLedgerEntry(rid, joinFeeTurnover!!.amount, ResourceDirection.DEBIT,
-                    "member-join-fee", "audit-accept", playerObject.name,
-                    "community.treasury.desc.member_join_fee", listOf(playerObject.name))
-            }
             val targetNotificationKey = if (wasInvited) {
                 "community.notification.target.invitation_accepted"
             } else {

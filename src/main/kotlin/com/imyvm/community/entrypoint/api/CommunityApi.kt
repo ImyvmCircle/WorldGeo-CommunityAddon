@@ -1,9 +1,9 @@
 package com.imyvm.community.entrypoint.api
 
 import com.imyvm.community.WorldGeoCommunityAddon
-import com.imyvm.community.application.account.appendTreasuryLedgerEntry
+import com.imyvm.community.application.account.mutateTreasury
 import com.imyvm.community.domain.model.Community
-import com.imyvm.community.domain.model.Turnover
+import com.imyvm.community.domain.model.TreasuryMutationResult
 import com.imyvm.community.domain.model.community.CommunityJoinPolicy
 import com.imyvm.community.domain.model.community.CommunityStatus
 import com.imyvm.community.domain.model.community.MemberRoleType
@@ -54,18 +54,17 @@ object CommunityApi {
         if (amount <= 0L) return Result.failure(IllegalArgumentException("amount must be positive"))
         val community = CommunityDatabase.getCommunityById(regionNumberId)
             ?: return Result.failure(NoSuchElementException("community not found for regionNumberId=$regionNumberId"))
-        val turnover = Turnover(amount, System.currentTimeMillis(), source, descriptionKey, descriptionArgs)
-        return try {
-            community.communityIncome.add(turnover)
-            CommunityDatabase.save()
-            appendTreasuryLedgerEntry(regionNumberId, amount, ResourceDirection.CREDIT,
-                "external-deposit", source.name.lowercase(), regionNumberId.toString(),
-                descriptionKey, descriptionArgs)
-            Result.success(Unit)
-        } catch (e: Exception) {
-            community.communityIncome.remove(turnover)
-            Result.failure(e)
-        }
+        return mutateTreasury(
+            community = community,
+            amount = amount,
+            direction = ResourceDirection.CREDIT,
+            source = source.name.lowercase(),
+            externalReference = "community:external-deposit:$regionNumberId:${source.name.lowercase()}:${descriptionKey.orEmpty()}:${descriptionArgs.joinToString("|")}:${System.currentTimeMillis()}",
+            operationType = "external-deposit",
+            objectReference = regionNumberId.toString(),
+            descriptionKey = descriptionKey,
+            descriptionArgs = descriptionArgs
+        ).map { Unit }
     }
 
     fun withdraw(
@@ -79,21 +78,73 @@ object CommunityApi {
         if (amount <= 0L) return Result.failure(IllegalArgumentException("amount must be positive"))
         val community = CommunityDatabase.getCommunityById(regionNumberId)
             ?: return Result.failure(NoSuchElementException("community not found for regionNumberId=$regionNumberId"))
-        if (community.getTotalAssets() < amount) {
-            return Result.failure(IllegalStateException("insufficient balance for regionNumberId=$regionNumberId"))
-        }
-        val turnover = Turnover(amount, System.currentTimeMillis(), source, descriptionKey, descriptionArgs)
-        return try {
-            community.expenditures.add(turnover)
-            CommunityDatabase.save()
-            appendTreasuryLedgerEntry(regionNumberId, amount, ResourceDirection.DEBIT,
-                "external-withdrawal", source.name.lowercase(), regionNumberId.toString(),
-                descriptionKey, descriptionArgs)
-            Result.success(Unit)
-        } catch (e: Exception) {
-            community.expenditures.remove(turnover)
-            Result.failure(e)
-        }
+        return mutateTreasury(
+            community = community,
+            amount = amount,
+            direction = ResourceDirection.DEBIT,
+            source = source.name.lowercase(),
+            externalReference = "community:external-withdrawal:$regionNumberId:${source.name.lowercase()}:${descriptionKey.orEmpty()}:${descriptionArgs.joinToString("|")}:${System.currentTimeMillis()}",
+            operationType = "external-withdrawal",
+            objectReference = regionNumberId.toString(),
+            descriptionKey = descriptionKey,
+            descriptionArgs = descriptionArgs
+        ).map { Unit }
+    }
+
+
+    fun controlledDeposit(
+        regionNumberId: Int,
+        amount: Long,
+        source: TurnoverSource,
+        externalReference: String,
+        operationType: String,
+        descriptionKey: String? = null,
+        descriptionArgs: List<String> = emptyList()
+    ): Result<TreasuryMutationResult> = controlledTreasury(
+        regionNumberId, amount, source, externalReference, operationType,
+        ResourceDirection.CREDIT, descriptionKey, descriptionArgs
+    )
+
+    fun controlledWithdraw(
+        regionNumberId: Int,
+        amount: Long,
+        source: TurnoverSource,
+        externalReference: String,
+        operationType: String,
+        descriptionKey: String? = null,
+        descriptionArgs: List<String> = emptyList()
+    ): Result<TreasuryMutationResult> = controlledTreasury(
+        regionNumberId, amount, source, externalReference, operationType,
+        ResourceDirection.DEBIT, descriptionKey, descriptionArgs
+    )
+
+    private fun controlledTreasury(
+        regionNumberId: Int,
+        amount: Long,
+        source: TurnoverSource,
+        externalReference: String,
+        operationType: String,
+        direction: ResourceDirection,
+        descriptionKey: String?,
+        descriptionArgs: List<String>
+    ): Result<TreasuryMutationResult> {
+        requireServerThread()?.let { return Result.failure(it) }
+        if (amount <= 0L) return Result.failure(IllegalArgumentException("amount must be positive"))
+        if (externalReference.isBlank()) return Result.failure(IllegalArgumentException("externalReference must not be blank"))
+        if (operationType.isBlank()) return Result.failure(IllegalArgumentException("operationType must not be blank"))
+        val community = CommunityDatabase.getCommunityById(regionNumberId)
+            ?: return Result.failure(NoSuchElementException("community not found for regionNumberId=$regionNumberId"))
+        return mutateTreasury(
+            community = community,
+            amount = amount,
+            direction = direction,
+            source = source.name.lowercase(),
+            externalReference = externalReference,
+            operationType = operationType,
+            objectReference = regionNumberId.toString(),
+            descriptionKey = descriptionKey,
+            descriptionArgs = descriptionArgs
+        )
     }
 
     fun snapshotDevelopment(regionNumberId: Int, tick: Long): DevelopmentSnapshot? {
