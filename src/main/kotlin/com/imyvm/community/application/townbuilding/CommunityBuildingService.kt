@@ -698,7 +698,10 @@ object CommunityBuildingService {
         var pageIndex = 0
         while (true) {
             val page = RegionDataApi.readBehaviorStatsCheckpointPage(checkpointId, pageIndex).join()
-                ?: throw IllegalStateException("building checkpoint $checkpointId unavailable")
+                ?: run {
+                    WorldGeoCommunityAddon.logger.warn("Building checkpoint $checkpointId unavailable; settling without baseline")
+                    return emptyMap()
+                }
             for (entry in page.entries) {
                 val blockId = entry.objectId ?: continue
                 val stats = aggregate.getOrPut(blockId) { MutableBlockStats() }
