@@ -892,6 +892,8 @@
   "community.building.entry.detail.header": "§6§l[Community Building]§r §6{0} - {1}",
   "community.building.reward.hour": "§a§l[Building Reward]§r §aPlayer §f{0}§a received §6{3}§a from §f{1}§a for hour §f{2}§a. Week total: §e{4}§7/§e{5}§a.",
   "community.building.reward.hour_capped": "§e§l[Building Reward Capped]§r §ePlayer §f{0}§e had raw reward §6{3}§e from §f{1}§e for hour §f{2}§e, credited §a{4}§e, blocked by weekly cap §c{5}§e. Week total: §e{6}§7/§e{7}§e.",
+  "community.building.preview.header": "§a§l[Building Reward Preview]§r §aInvolved blocks placed §f{0}§a / broken §f{1}§a, estimated reward this hour §6{2}§a.",
+  "community.building.preview.line": "§7{0}§r §aplaced §f{1}§a / broken §f{2}§a, week net §e{3}§a, estimated reward §6{4}§a.",
   "community.building.menu.open_failed": "§cBuilding menu failed to open: §f{0}",
   "community.building.entry.detail.unit_cost": "§eUnit Cost: §f{0}",
   "community.building.entry.detail.reward": "§eReward Per Block: §a{0}",

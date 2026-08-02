@@ -32,11 +32,13 @@ import com.imyvm.iwg.domain.WorldGeoBehaviorStatsPageQuery
 import com.imyvm.iwg.domain.WorldGeoBehaviorType
 import com.imyvm.iwg.domain.WorldGeoPeriodDataStatus
 import com.imyvm.iwg.inter.api.RegionDataApi
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.item.BlockItem
 import net.minecraft.world.item.Item
+import java.math.BigInteger
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -79,8 +81,119 @@ object CommunityBuildingService {
                 if (error != null) WorldGeoCommunityAddon.logger.error("Failed to recover building periods", error)
             }
         }
+        registerBuildingRewardPreview()
     }
 
+    private fun registerBuildingRewardPreview() {
+        var tickCounter = 0
+        ServerTickEvents.END_SERVER_TICK.register { server ->
+            tickCounter++
+            if (tickCounter < 1200) return@register
+            tickCounter = 0
+            val onlinePlayers = server.playerList.players.toList()
+            if (onlinePlayers.isEmpty()) return@register
+            CommunityBackgroundTasks.supply {
+                previewBuildingRewards(onlinePlayers)
+                Unit
+            }.whenComplete { _, error ->
+                if (error != null) WorldGeoCommunityAddon.logger.error("Failed to preview building rewards", error)
+            }
+        }
+    }
+
+
+    private fun previewBuildingRewards(onlinePlayers: List<ServerPlayer>) {
+        val server = WorldGeoCommunityAddon.server ?: return
+        val keys = RegionDataApi.getCurrentNaturalPeriodKeys()
+        val hourKey = keys[NaturalPeriodKind.HOUR] ?: return
+        if (hourKey.periodId.startsWith("test:hour:")) return
+        val weekKey = settlementWeekKey(hourKey, keys[NaturalPeriodKind.WEEK]) ?: return
+        val weekId = periodLedgerKey(weekKey)
+        for (player in onlinePlayers) {
+            val community = CommunityDatabase.communities.firstOrNull { it.regionNumberId != null && it.member.containsKey(player.uuid) } ?: continue
+            val regionId = community.regionNumberId ?: continue
+            val entries = community.buildingState.activeEntries()
+            if (entries.isEmpty()) continue
+            val playerPlaced = queryPlayerBlockCounts(hourKey, regionId, player.uuid, WorldGeoBehaviorType.BLOCK_PLACE)
+            val playerBroken = queryPlayerBlockCounts(hourKey, regionId, player.uuid, WorldGeoBehaviorType.BLOCK_BREAK)
+            val previews = mutableListOf<BuildingRewardPreviewLine>()
+            var totalPlaced = 0L
+            var totalBroken = 0L
+            var totalEstimated = 0L
+            for (entry in entries) {
+                for (blockId in entry.trackedBlockIds()) {
+                    val placed = playerPlaced[blockId] ?: 0L
+                    val broken = playerBroken[blockId] ?: 0L
+                    if (placed == 0L && broken == 0L) continue
+                    val netDelta = Math.subtractExact(placed, broken)
+                    val ledger = community.buildingState.playerNetLedgers[player.uuid]
+                        ?.firstOrNull { it.weekPeriodId == weekId && it.blockId == blockId }
+                    val cumulativeNet = Math.addExact(ledger?.cumulativeNet ?: 0L, netDelta)
+                    val peakNet = ledger?.peakNet ?: 0L
+                    val settled = (cumulativeNet - peakNet).coerceAtLeast(0L)
+                    val percent = CommunityTitleService.rewardPercent(community, player.uuid)
+                    val estimated = BigInteger.valueOf(settled)
+                        .multiply(BigInteger.valueOf(entry.rewardPerBlock))
+                        .multiply(BigInteger.valueOf(percent))
+                        .divide(BigInteger.valueOf(100L))
+                        .longValueExact()
+                    totalPlaced = Math.addExact(totalPlaced, placed)
+                    totalBroken = Math.addExact(totalBroken, broken)
+                    totalEstimated = Math.addExact(totalEstimated, estimated)
+                    previews += BuildingRewardPreviewLine(blockId, placed, broken, cumulativeNet, estimated)
+                }
+            }
+            if (previews.none { it.placed > 0L }) continue
+            previews.sortByDescending { it.placed + it.broken }
+            val top = previews.take(3)
+            server.execute {
+                val online = server.playerList.getPlayer(player.uuid) ?: return@execute
+                val message = Component.empty().copy()
+                    .append(Translator.tr(
+                        "community.building.preview.header",
+                        totalPlaced.toString(),
+                        totalBroken.toString(),
+                        formatMoney(totalEstimated)
+                    ))
+                for (line in top) {
+                    message.append(Component.literal("\n"))
+                        .append(Translator.tr(
+                            "community.building.preview.line",
+                            line.blockId,
+                            line.placed.toString(),
+                            line.broken.toString(),
+                            formatMoney(line.weeklyNet),
+                            formatMoney(line.estimatedReward)
+                        ))
+                }
+                online.sendSystemMessage(message)
+            }
+        }
+    }
+
+    private fun queryPlayerBlockCounts(
+        periodKey: NaturalPeriodKey,
+        regionId: Int,
+        playerUuid: UUID,
+        behaviorType: WorldGeoBehaviorType
+    ): Map<String, Long> {
+        val entries = RegionDataApi.queryBehaviorStats(
+            periodKey.kind,
+            periodKey.periodId,
+            behaviorType,
+            regionId,
+            null,
+            null,
+            playerUuid,
+            null
+        )
+        val result = LinkedHashMap<String, Long>()
+        for (entry in entries) {
+            val blockId = entry.objectId ?: continue
+            result[blockId] = Math.addExact(result[blockId] ?: 0L, entry.count)
+        }
+        return result
+    }
 
     private fun recoverAvailablePeriods(runtime: AccountSubsystem.Runtime) {
         for (timeline in RegionDataApi.getAvailableNaturalPeriodTimelines()) {
@@ -1154,6 +1267,14 @@ private data class TestBuildingSourceCursor(
     val stats: List<CommunityBuildingBlockStats>,
     val cursorUnit: String,
     val cursorValue: String
+)
+
+private data class BuildingRewardPreviewLine(
+    val blockId: String,
+    val placed: Long,
+    val broken: Long,
+    val weeklyNet: Long,
+    val estimatedReward: Long
 )
 
 
