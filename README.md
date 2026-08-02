@@ -6,6 +6,10 @@ This Project is designed to constitute a comprehensive framework for players' **
 
 ## Changelog
 
+### 1.2.4
+
+- fix: pick up IMYVMWorldGeo 26.2-1.5.9, restoring particle boundary display for newly created community regions
+
 ### 1.2.3
 
 - feat: add community development score calculation from building income, population and habitation inputs
