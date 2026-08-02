@@ -11,6 +11,7 @@ import com.imyvm.community.domain.model.fiscal.CommunityFiscalPolicy
 import com.imyvm.community.entrypoint.screen.inner_community.CommunityAdministrationMenu
 import com.imyvm.community.entrypoint.screen.inner_community.administration_only.AdministrationAuditListMenu
 import com.imyvm.community.entrypoint.screen.inner_community.administration_only.AdministrationRenameMenuAnvil
+import com.imyvm.community.entrypoint.screen.inner_community.administration_only.FiscalPolicyMenu
 import com.imyvm.community.entrypoint.screen.inner_community.administration_only.TreasuryGrantTargetListMenu
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityMemberListMenu
 import com.imyvm.community.entrypoint.screen.inner_community.multi_parent.CommunityRegionScopeMenu
@@ -94,7 +95,22 @@ fun runAdmAuditRequests(player: ServerPlayer, community: Community, runBackGrand
 }
 
 
-fun runAdmChangeFiscalPolicy(player: ServerPlayer, community: Community, policy: CommunityFiscalPolicy, runBack: (ServerPlayer) -> Unit) {
+fun runOpenFiscalPolicyMenu(player: ServerPlayer, community: Community, selectedPolicy: CommunityFiscalPolicy, runBack: (ServerPlayer) -> Unit) {
+    CommunityPermissionPolicy.executeWithPermission(
+        player,
+        {
+            val adminCheck = CommunityPermissionPolicy.canExecuteAdministration(player, community, AdminPrivilege.MANAGE_FISCAL)
+            if (!adminCheck.isAllowed()) return@executeWithPermission adminCheck
+            CommunityPermissionPolicy.canExecuteOperationInProto(player, community, AdminPrivilege.MANAGE_FISCAL)
+        }
+    ) {
+        CommunityMenuOpener.open(player) { syncId ->
+            FiscalPolicyMenu(syncId, player, community, selectedPolicy, runBack)
+        }
+    }
+}
+
+fun runAdmConfirmFiscalPolicy(player: ServerPlayer, community: Community, policy: CommunityFiscalPolicy, runBack: (ServerPlayer) -> Unit) {
     CommunityPermissionPolicy.executeWithPermission(
         player,
         {

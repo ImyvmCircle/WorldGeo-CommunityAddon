@@ -57,7 +57,7 @@ class CommunityAdministrationMenu(
             name = fiscalPolicyButtonName(community),
             item = Items.EMERALD,
             loreLines = fiscalPolicyLore(community)
-        ) { runAdmChangeFiscalPolicy(player, community, nextFiscalPolicy(community.fiscalState.pendingPolicy?.policy ?: community.fiscalState.activePolicy), runBack) }
+        ) { runOpenFiscalPolicyMenu(player, community, community.fiscalState.pendingPolicy?.policy ?: community.fiscalState.activePolicy, runBack) }
 
         addButton(
             slot = 19,
@@ -152,13 +152,6 @@ class CommunityAdministrationMenu(
             lines.add(Translator.tr("ui.admin.fiscal.lore.cooldown", pending.cooldownUntilWeekKey))
         }
         return lines
-    }
-
-    private fun nextFiscalPolicy(policy: CommunityFiscalPolicy): CommunityFiscalPolicy = when (policy) {
-        CommunityFiscalPolicy.NEOLIBERALISM -> CommunityFiscalPolicy.VISIBLE_HAND
-        CommunityFiscalPolicy.VISIBLE_HAND -> CommunityFiscalPolicy.HEAVEN_ON_EARTH
-        CommunityFiscalPolicy.HEAVEN_ON_EARTH -> CommunityFiscalPolicy.ANARCHISM
-        CommunityFiscalPolicy.ANARCHISM -> CommunityFiscalPolicy.NEOLIBERALISM
     }
 
     private fun joinPolicyName(policy: CommunityJoinPolicy): String = Translator.tr("community.join_policy.${policy.name.lowercase()}").string
