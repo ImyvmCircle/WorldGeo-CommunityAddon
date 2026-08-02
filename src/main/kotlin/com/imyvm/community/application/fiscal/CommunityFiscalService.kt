@@ -295,8 +295,12 @@ object CommunityFiscalService {
                 AccountTransactionStatus.RESOLVED -> line.status = CommunityFiscalLineStatus.UNPAID_INSUFFICIENT_BALANCE
                 else -> return@submit
             }
-            driveSettlement(runtime, community, settlement)
-            CommunityDatabase.save()
+            CommunityBackgroundTasks.supply {
+                driveSettlement(runtime, community, settlement)
+                Unit
+            }.whenComplete { _, error ->
+                if (error != null) WorldGeoCommunityAddon.logger.error("Failed to drive fiscal settlement after tax", error)
+            }
         }
     }
 
@@ -344,8 +348,12 @@ object CommunityFiscalService {
                 AccountTransactionStatus.RESOLVED -> line.status = CommunityFiscalLineStatus.UNPAID_INSUFFICIENT_BALANCE
                 else -> return@submit
             }
-            tryApplyWelfare(runtime, community, settlement)
-            CommunityDatabase.save()
+            CommunityBackgroundTasks.supply {
+                tryApplyWelfare(runtime, community, settlement)
+                Unit
+            }.whenComplete { _, error ->
+                if (error != null) WorldGeoCommunityAddon.logger.error("Failed to apply fiscal welfare after transaction", error)
+            }
         }
     }
 
