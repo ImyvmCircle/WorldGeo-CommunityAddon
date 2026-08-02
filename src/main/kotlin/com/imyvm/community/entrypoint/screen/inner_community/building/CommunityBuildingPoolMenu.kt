@@ -5,6 +5,9 @@ import com.imyvm.community.application.interaction.screen.inner_community.runOpe
 import com.imyvm.community.application.townbuilding.CommunityBuildingService
 import com.imyvm.community.entrypoint.screen.AbstractListMenu
 import com.imyvm.community.util.Translator
+import net.minecraft.network.chat.ClickEvent
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.HoverEvent
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.item.Items
 
@@ -35,7 +38,7 @@ class CommunityBuildingPoolMenu(
         handlePageWithSize(entries.size, 28)
         addButton(45, Translator.tr("ui.community.building.pool.button.add_hint").string, Items.WRITABLE_BOOK) { p ->
             p.closeContainer()
-            p.sendSystemMessage(Translator.tr("command.community.building.pool.add.usage"))
+            sendBuildingPoolAddAction(p)
         }
         addButton(46, Translator.tr("ui.community.building.pool.button.remove_first").string, Items.BARRIER) { p ->
             val first = entries.getOrNull(page * 28) ?: return@addButton
@@ -46,6 +49,15 @@ class CommunityBuildingPoolMenu(
             )
             runOpenCommunityBuildingPoolMenu(p, page, runBack)
         }
+    }
+
+    private fun sendBuildingPoolAddAction(player: ServerPlayer) {
+        val command = "/community building pool add <blockId> <capacityCost> <reward> [linkedBlockId,linkedBlockId]"
+        val button = Translator.tr("command.community.building.pool.add.button").copy().withStyle { style ->
+            style.withClickEvent(ClickEvent.SuggestCommand(command))
+                .withHoverEvent(HoverEvent.ShowText(Translator.tr("command.community.building.pool.add.hover")))
+        }
+        player.sendSystemMessage(Component.empty().append(Translator.tr("command.community.building.pool.add.usage")).append(button))
     }
 
     override fun openNewPage(player: ServerPlayer, newPage: Int) {

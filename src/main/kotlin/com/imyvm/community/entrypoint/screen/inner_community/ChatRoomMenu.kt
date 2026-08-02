@@ -8,7 +8,9 @@ import com.imyvm.community.util.Translator
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.HoverEvent
 
 class ChatRoomMenu(
     syncId: Int,
@@ -91,7 +93,7 @@ class ChatRoomMenu(
     }
 
     private fun addSendInstructionButton() {
-        val communityName = community.generateCommunityMark()
+        val regionId = community.regionNumberId
         val itemStack = ItemStack(Items.PAPER)
         
         val loreLines = mutableListOf<Component>()
@@ -100,10 +102,7 @@ class ChatRoomMenu(
         loreLines.add(Component.literal(Translator.tr("ui.community.chat.lore.instruction2").string ?: "§e1. Enable Chat Channel above"))
         loreLines.add(Component.literal(Translator.tr("ui.community.chat.lore.instruction3").string ?: "§e2. Type normally in chat"))
         loreLines.add(Component.literal(""))
-        loreLines.add(Component.literal(Translator.tr("ui.community.chat.lore.instruction4").string ?: "§7Or use command:"))
-        loreLines.add(Component.literal("§e/community chat §b$communityName §f<message>"))
-        loreLines.add(Component.literal("§7or"))
-        loreLines.add(Component.literal("§e/community chat §b${community.regionNumberId} §f<message>"))
+        loreLines.add(Component.literal(Translator.tr("ui.community.chat.lore.instruction4").string ?: "§7Click to fill the chat command"))
         
         val buttonStack = getLoreButton(itemStack, loreLines)
         
@@ -112,7 +111,14 @@ class ChatRoomMenu(
             itemStack = buttonStack,
             name = Translator.tr("ui.community.chat.button.instruction").string ?: "How to Send Messages"
         ) {
-
+            if (regionId != null) {
+                it.closeContainer()
+                val button = Translator.tr("ui.community.chat.command.button").copy().withStyle { style ->
+                    style.withClickEvent(ClickEvent.SuggestCommand("/community chat $regionId "))
+                        .withHoverEvent(HoverEvent.ShowText(Translator.tr("ui.community.chat.command.hover")))
+                }
+                it.sendSystemMessage(Component.empty().append(Translator.tr("ui.community.chat.command.prompt")).append(button))
+            }
         }
     }
 }

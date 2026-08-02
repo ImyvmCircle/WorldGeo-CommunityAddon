@@ -23,6 +23,9 @@ import com.imyvm.community.entrypoint.screen.inner_community.building.CommunityB
 import com.imyvm.community.entrypoint.screen.inner_community.building.CommunityBuildingStyleListMenu
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.Translator
+import net.minecraft.network.chat.ClickEvent
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.HoverEvent
 import net.minecraft.server.level.ServerPlayer
 import java.util.Collections
 
@@ -240,7 +243,26 @@ private fun startBuildingConfirmation(player: ServerPlayer, community: Community
     )
     player.closeContainer()
     player.sendSystemMessage(Translator.tr("community.building.confirm.sent", buildingOperationDescription(data), CommunityBuildingService.formatMoney(data.cost)))
-    player.sendSystemMessage(Translator.tr("community.building.confirm.commands", community.generateCommunityMark()))
+    sendInteractiveBuildingConfirmation(player, community)
+}
+
+private fun sendInteractiveBuildingConfirmation(player: ServerPlayer, community: Community) {
+    val communityId = community.regionNumberId ?: return
+    val confirmButton = Translator.tr("community.building.confirm.button.confirm").copy().withStyle { style ->
+        style.withClickEvent(ClickEvent.RunCommand("/community building confirm $communityId"))
+            .withHoverEvent(HoverEvent.ShowText(Translator.tr("community.building.confirm.button.confirm.hover")))
+    }
+    val cancelButton = Translator.tr("community.building.confirm.button.cancel").copy().withStyle { style ->
+        style.withClickEvent(ClickEvent.RunCommand("/community building cancel $communityId"))
+            .withHoverEvent(HoverEvent.ShowText(Translator.tr("community.building.confirm.button.cancel.hover")))
+    }
+    player.sendSystemMessage(
+        Component.empty()
+            .append(Translator.tr("community.building.confirm.prompt"))
+            .append(confirmButton)
+            .append(Component.literal(" "))
+            .append(cancelButton)
+    )
 }
 
 private fun buildingOperationDescription(data: BuildingConfirmationData): String = when (data.action) {

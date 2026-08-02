@@ -3,8 +3,11 @@ package com.imyvm.community.application.interaction.screen.inner_community.chat
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.entrypoint.screen.inner_community.ChatRoomMenu
+import com.imyvm.community.util.Translator
 import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.HoverEvent
 
 fun runOpenChatRoomMenu(
     player: ServerPlayer,
@@ -27,8 +30,8 @@ fun runOpenChatHistory(
     val chatMessages = community.getChatMessages()
     
     if (chatMessages.isEmpty()) {
-        player.sendSystemMessage(Component.literal("§7No messages in chat history yet."))
-        player.sendSystemMessage(Component.literal("§7Use §e/community chat ${community.generateCommunityMark()} <message>§7 to send messages!"))
+        player.sendSystemMessage(Translator.tr("ui.community.chat.history.empty"))
+        sendChatCommandAction(player, community)
         return
     }
     
@@ -60,6 +63,15 @@ fun runOpenChatHistory(
     
     player.sendSystemMessage(Component.literal(""))
     player.sendSystemMessage(Component.literal("§7§m                                                    "))
+}
+
+private fun sendChatCommandAction(player: ServerPlayer, community: Community) {
+    val regionId = community.regionNumberId ?: return
+    val button = Translator.tr("ui.community.chat.command.button").copy().withStyle { style ->
+        style.withClickEvent(ClickEvent.SuggestCommand("/community chat $regionId "))
+            .withHoverEvent(HoverEvent.ShowText(Translator.tr("ui.community.chat.command.hover")))
+    }
+    player.sendSystemMessage(Component.empty().append(Translator.tr("ui.community.chat.history.empty_hint")).append(button))
 }
 
 fun runToggleChatChannel(

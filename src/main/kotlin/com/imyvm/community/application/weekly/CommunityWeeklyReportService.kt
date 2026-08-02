@@ -13,7 +13,9 @@ import com.imyvm.community.infra.weekly.CommunityWeeklyReportStore
 import com.imyvm.community.util.Translator
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.commands.Commands
+import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.HoverEvent
 import net.minecraft.server.level.ServerPlayer
 import java.util.Locale
 import java.util.UUID
@@ -47,7 +49,7 @@ object CommunityWeeklyReportService {
 
     fun notifyUnread(player: ServerPlayer) {
         val count = CommunityWeeklyReportStore.unreadCount(player.uuid, isOp(player))
-        if (count > 0) player.sendSystemMessage(Translator.tr("community.weekly_report.login", count.toString()))
+        if (count > 0) sendReportNotice(player, "community.weekly_report.login", count.toString())
     }
 
     fun sendList(player: ServerPlayer): Int {
@@ -149,11 +151,19 @@ object CommunityWeeklyReportService {
         if (!CommunityWeeklyReportStore.upsert(report)) return
         val server = WorldGeoCommunityAddon.server ?: return
         if (report.audience == WeeklyReportAudience.OP && report.recipientUuid == null) {
-            server.playerList.players.filter(::isOp).forEach { it.sendSystemMessage(Translator.tr("community.weekly_report.added", "1")) }
+            server.playerList.players.filter(::isOp).forEach { sendReportNotice(it, "community.weekly_report.added", "1") }
             return
         }
         val target = report.recipientUuid?.let { server.playerList.getPlayer(it) } ?: return
-        target.sendSystemMessage(Translator.tr("community.weekly_report.added", "1"))
+        sendReportNotice(target, "community.weekly_report.added", "1")
+    }
+
+    private fun sendReportNotice(player: ServerPlayer, key: String, count: String) {
+        val button = Translator.tr("community.weekly_report.notice.button").copy().withStyle { style ->
+            style.withClickEvent(ClickEvent.RunCommand("/community report list"))
+                .withHoverEvent(HoverEvent.ShowText(Translator.tr("community.weekly_report.notice.hover")))
+        }
+        player.sendSystemMessage(Component.empty().append(Translator.tr(key, count)).append(button))
     }
 
     private fun isOp(player: ServerPlayer): Boolean = Commands.LEVEL_GAMEMASTERS.check(player.permissions())
