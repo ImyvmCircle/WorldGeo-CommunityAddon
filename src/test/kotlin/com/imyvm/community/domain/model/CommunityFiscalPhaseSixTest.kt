@@ -93,6 +93,7 @@ class CommunityFiscalPhaseSixTest {
     fun observationsUseFirstAndLastWithinSameWeek() {
         val member = UUID.fromString("00000000-0000-0000-0000-000000000101")
         val community = community(member)
+        community.fiscalState.activePolicy = CommunityFiscalPolicy.NEOLIBERALISM
         CommunityFiscalService.recordObservation(community, member, "2026-W31", 100_000L, 20L)
         CommunityFiscalService.recordObservation(community, member, "2026-W31", 80_000L, 10L)
         CommunityFiscalService.recordObservation(community, member, "2026-W31", 280_000L, 30L)

@@ -1226,7 +1226,7 @@ object CommunityDatabase {
     private fun saveCommunityFiscalSection(stream: DataOutputStream) {
         val targets = communities.filter { community ->
             community.regionNumberId != null &&
-                (community.fiscalState.activePolicy != CommunityFiscalPolicy.NEOLIBERALISM || community.fiscalState.pendingPolicy != null || community.fiscalState.policyCooldownUntilWeekKey.isNotEmpty() || community.fiscalState.memberObservations.isNotEmpty() || community.fiscalState.settledWeekKeys.isNotEmpty() || community.fiscalState.settlements.isNotEmpty())
+                (community.fiscalState.activePolicy != CommunityFiscalPolicy.ANARCHISM || community.fiscalState.pendingPolicy != null || community.fiscalState.policyCooldownUntilWeekKey.isNotEmpty() || community.fiscalState.memberObservations.isNotEmpty() || community.fiscalState.settledWeekKeys.isNotEmpty() || community.fiscalState.settlements.isNotEmpty())
         }
         stream.writeInt(FISCAL_SECTION_VERSION_MARKER)
         stream.writeInt(FISCAL_SECTION_VERSION)

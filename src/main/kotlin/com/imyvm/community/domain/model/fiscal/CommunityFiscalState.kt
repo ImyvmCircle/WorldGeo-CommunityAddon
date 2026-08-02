@@ -72,7 +72,7 @@ data class CommunityFiscalSettlement(
 )
 
 data class CommunityFiscalState(
-    var activePolicy: CommunityFiscalPolicy = CommunityFiscalPolicy.NEOLIBERALISM,
+    var activePolicy: CommunityFiscalPolicy = CommunityFiscalPolicy.ANARCHISM,
     var pendingPolicy: CommunityFiscalPolicySwitch? = null,
     var policyCooldownUntilWeekKey: String = "",
     var memberObservations: HashMap<UUID, CommunityFiscalObservation> = hashMapOf(),
