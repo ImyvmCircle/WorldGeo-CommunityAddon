@@ -13,6 +13,7 @@ import com.imyvm.community.domain.model.account.AccountDirection
 import com.imyvm.community.domain.model.account.AccountTransaction
 import com.imyvm.community.domain.model.community.CommunityBuildingCatalogEntry
 import com.imyvm.community.domain.model.community.CommunityBuildingEntry
+import com.imyvm.community.domain.model.community.CommunityBuildingPlayerNetLedger
 import com.imyvm.community.domain.model.community.CommunityBuildingState
 import com.imyvm.community.domain.model.transaction.MemberLedgerFact
 import com.imyvm.community.domain.model.transaction.PurposeCursorFact
@@ -531,6 +532,7 @@ object CommunityBuildingService {
                     queryBuildingStats(sourceKey, regionId, entries)
                 }
                 val rewardPlayers = stats.flatMap { it.playerContributions.keys }.toSet()
+                val netLedgerCopy = if (periodKey.kind == NaturalPeriodKind.HOUR) copyPlayerNetLedgers(community.buildingState.playerNetLedgers) else null
                 val plan = CommunityBuildingSettlement.plan(
                     entries,
                     stats,
@@ -542,7 +544,7 @@ object CommunityBuildingService {
                     rewardPlayers.associateWith { CommunityTitleService.extraWeeklyCap(community, it) },
                     collectPlayerExtraWeekUsage(regionId, periodLedgerKey(weekKey)),
                     periodLedgerKey(weekKey),
-                    if (periodKey.kind == NaturalPeriodKind.HOUR) community.buildingState.playerNetLedgers else null
+                    netLedgerCopy
                 )
                 if (periodKey.kind == NaturalPeriodKind.HOUR) {
                     val futures = plan.playerRewards.map { reward ->
@@ -582,13 +584,16 @@ object CommunityBuildingService {
                     applyCommunityWeekIncome(community, periodLedgerKey(weekKey), plan.communityIncome)
                     communityIncome = Math.addExact(communityIncome, plan.communityIncome)
                 }
-                CommunityDatabase.save()
                 sourceCursor?.takeIf { it.cursorUnit.isNotBlank() && it.cursorValue.isNotBlank() }?.let { cursor ->
                     runtime.sharedStore.append(
                         PurposeCursorFact(UUID.randomUUID(), regionId, System.currentTimeMillis(), "building", "region", cursor.cursorUnit, cursor.cursorValue)
                     ).join()
                 }
                 runtime.sharedStore.append(PurposeCursorFact(UUID.randomUUID(), regionId, System.currentTimeMillis(), "building", "region", cursorUnit, cursorValue)).join()
+                if (netLedgerCopy != null) {
+                    mergePlayerNetLedgers(community.buildingState.playerNetLedgers, netLedgerCopy)
+                }
+                CommunityDatabase.save()
                 settled++
             }
             Result.success(CommunityBuildingPeriodSettlementResult(settled, skipped, playerTransactions, communityIncome))
@@ -878,6 +883,29 @@ object CommunityBuildingService {
                 listOf(periodId, reward.blockId, reward.units.toString()),
                 countsAsContribution = false
             )).join()
+        }
+    }
+
+    private fun copyPlayerNetLedgers(
+        source: HashMap<UUID, MutableList<CommunityBuildingPlayerNetLedger>>
+    ): HashMap<UUID, MutableList<CommunityBuildingPlayerNetLedger>> =
+        HashMap(source.mapValues { (_, ledgers) -> ledgers.map { it.copy() }.toMutableList() })
+
+    private fun mergePlayerNetLedgers(
+        target: HashMap<UUID, MutableList<CommunityBuildingPlayerNetLedger>>,
+        source: HashMap<UUID, MutableList<CommunityBuildingPlayerNetLedger>>
+    ) {
+        for ((uuid, ledgers) in source) {
+            val targetLedgers = target.getOrPut(uuid) { mutableListOf() }
+            for (ledger in ledgers) {
+                val existing = targetLedgers.firstOrNull { it.weekPeriodId == ledger.weekPeriodId && it.blockId == ledger.blockId }
+                if (existing == null) {
+                    targetLedgers.add(ledger.copy())
+                } else {
+                    existing.cumulativeNet = ledger.cumulativeNet
+                    existing.peakNet = ledger.peakNet
+                }
+            }
         }
     }
 
