@@ -3,7 +3,8 @@
 	"package": "com.imyvm.community.mixin",
 	"compatibilityLevel": "JAVA_25",
 	"mixins": [
-		"ExampleMixin"
+		"ExampleMixin",
+		"BlockItemPlaceMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

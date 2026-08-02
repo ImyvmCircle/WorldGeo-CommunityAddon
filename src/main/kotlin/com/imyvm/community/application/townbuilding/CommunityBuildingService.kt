@@ -109,38 +109,45 @@ object CommunityBuildingService {
         if (hourKey.periodId.startsWith("test:hour:")) return
         val weekKey = settlementWeekKey(hourKey, keys[NaturalPeriodKind.WEEK]) ?: return
         val weekId = periodLedgerKey(weekKey)
+        val now = LocalDateTime.now(ZoneId.of(CommunityConfig.TIMEZONE.value))
+        val timeText = now.format(PREVIEW_TIME_FORMATTER)
         for (player in onlinePlayers) {
-            val community = CommunityDatabase.communities.firstOrNull { it.regionNumberId != null && it.member.containsKey(player.uuid) } ?: continue
-            val regionId = community.regionNumberId ?: continue
-            val entries = community.buildingState.activeEntries()
-            if (entries.isEmpty()) continue
-            val playerPlaced = queryPlayerBlockCounts(hourKey, regionId, player.uuid, WorldGeoBehaviorType.BLOCK_PLACE)
-            val playerBroken = queryPlayerBlockCounts(hourKey, regionId, player.uuid, WorldGeoBehaviorType.BLOCK_BREAK)
+            if (!BuildingRewardPreviewTracker.hasValidPlacementThisMinute(player.uuid)) continue
             val previews = mutableListOf<BuildingRewardPreviewLine>()
             var totalPlaced = 0L
             var totalBroken = 0L
             var totalEstimated = 0L
-            for (entry in entries) {
-                for (blockId in entry.trackedBlockIds()) {
-                    val placed = playerPlaced[blockId] ?: 0L
-                    val broken = playerBroken[blockId] ?: 0L
-                    if (placed == 0L && broken == 0L) continue
-                    val netDelta = Math.subtractExact(placed, broken)
-                    val ledger = community.buildingState.playerNetLedgers[player.uuid]
-                        ?.firstOrNull { it.weekPeriodId == weekId && it.blockId == blockId }
-                    val cumulativeNet = Math.addExact(ledger?.cumulativeNet ?: 0L, netDelta)
-                    val peakNet = ledger?.peakNet ?: 0L
-                    val settled = (cumulativeNet - peakNet).coerceAtLeast(0L)
-                    val percent = CommunityTitleService.rewardPercent(community, player.uuid)
-                    val estimated = BigInteger.valueOf(settled)
-                        .multiply(BigInteger.valueOf(entry.rewardPerBlock))
-                        .multiply(BigInteger.valueOf(percent))
-                        .divide(BigInteger.valueOf(100L))
-                        .longValueExact()
-                    totalPlaced = Math.addExact(totalPlaced, placed)
-                    totalBroken = Math.addExact(totalBroken, broken)
-                    totalEstimated = Math.addExact(totalEstimated, estimated)
-                    previews += BuildingRewardPreviewLine(blockId, placed, broken, cumulativeNet, estimated)
+            val involvedCommunities = linkedSetOf<String>()
+            for (community in CommunityDatabase.communities) {
+                val regionId = community.regionNumberId ?: continue
+                val entries = community.buildingState.activeEntries()
+                if (entries.isEmpty()) continue
+                val playerPlaced = queryPlayerBlockCounts(hourKey, regionId, player.uuid, WorldGeoBehaviorType.BLOCK_PLACE)
+                val playerBroken = queryPlayerBlockCounts(hourKey, regionId, player.uuid, WorldGeoBehaviorType.BLOCK_BREAK)
+                val communityMark = community.generateCommunityMark()
+                for (entry in entries) {
+                    for (blockId in entry.trackedBlockIds()) {
+                        val placed = playerPlaced[blockId] ?: 0L
+                        val broken = playerBroken[blockId] ?: 0L
+                        if (placed == 0L && broken == 0L) continue
+                        val netDelta = Math.subtractExact(placed, broken)
+                        val ledger = community.buildingState.playerNetLedgers[player.uuid]
+                            ?.firstOrNull { it.weekPeriodId == weekId && it.blockId == blockId }
+                        val cumulativeNet = Math.addExact(ledger?.cumulativeNet ?: 0L, netDelta)
+                        val peakNet = ledger?.peakNet ?: 0L
+                        val settled = (cumulativeNet - peakNet).coerceAtLeast(0L)
+                        val percent = CommunityTitleService.rewardPercent(community, player.uuid)
+                        val estimated = BigInteger.valueOf(settled)
+                            .multiply(BigInteger.valueOf(entry.rewardPerBlock))
+                            .multiply(BigInteger.valueOf(percent))
+                            .divide(BigInteger.valueOf(100L))
+                            .longValueExact()
+                        totalPlaced = Math.addExact(totalPlaced, placed)
+                        totalBroken = Math.addExact(totalBroken, broken)
+                        totalEstimated = Math.addExact(totalEstimated, estimated)
+                        involvedCommunities.add(communityMark)
+                        previews += BuildingRewardPreviewLine(communityMark, blockId, placed, broken, cumulativeNet, estimated)
+                    }
                 }
             }
             if (previews.none { it.placed > 0L }) continue
@@ -151,6 +158,8 @@ object CommunityBuildingService {
                 val message = Component.empty().copy()
                     .append(Translator.tr(
                         "community.building.preview.header",
+                        timeText,
+                        involvedCommunities.joinToString(", "),
                         totalPlaced.toString(),
                         totalBroken.toString(),
                         formatMoney(totalEstimated)
@@ -159,6 +168,7 @@ object CommunityBuildingService {
                     message.append(Component.literal("\n"))
                         .append(Translator.tr(
                             "community.building.preview.line",
+                            line.communityMark,
                             line.blockId,
                             line.placed.toString(),
                             line.broken.toString(),
@@ -1254,6 +1264,7 @@ data class CommunityBuildingDraft(
 )
 
 private val HOUR_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH")
+private val PREVIEW_TIME_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", Locale.ROOT)
 
 
 data class CommunityBuildingPeriodSettlementResult(
@@ -1270,6 +1281,7 @@ private data class TestBuildingSourceCursor(
 )
 
 private data class BuildingRewardPreviewLine(
+    val communityMark: String,
     val blockId: String,
     val placed: Long,
     val broken: Long,
