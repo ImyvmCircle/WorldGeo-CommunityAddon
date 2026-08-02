@@ -906,7 +906,7 @@
   "ui.community.building.editor.reward.plus10": "收益 +10.00",
   "ui.community.building.editor.linked_count": "重置连锁列表：{0}",
   "ui.community.building.editor.save": "保存套餐项",
-  "ui.community.building.button.remove_first": "删除本页第一项",
+  "ui.community.building.editor.remove": "删除套餐项",
   "community.building.entry.detail.header": "§6§l[城镇建设]§r §6{0} - {1}",
   "community.building.entry.detail.unit_cost": "§e单位占用：§f{0}",
   "community.building.entry.detail.reward": "§e单块收益：§a{0}",

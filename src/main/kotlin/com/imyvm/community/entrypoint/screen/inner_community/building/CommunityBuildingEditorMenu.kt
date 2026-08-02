@@ -1,6 +1,7 @@
 package com.imyvm.community.entrypoint.screen.inner_community.building
 
 import com.imyvm.community.application.interaction.screen.inner_community.runOpenCommunityBuildingMenu
+import com.imyvm.community.application.interaction.screen.inner_community.runRemoveCommunityBuildingEntry
 import com.imyvm.community.application.interaction.screen.inner_community.runSaveCommunityBuildingDraft
 import com.imyvm.community.application.townbuilding.CommunityBuildingService
 import com.imyvm.community.domain.model.Community
@@ -25,8 +26,14 @@ class CommunityBuildingEditorMenu(
         addButton(20, Translator.tr("ui.community.building.editor.unit.value", draft.unitCost.toString()).string, Items.PAPER) {}
         addButton(29, Translator.tr("ui.community.building.editor.reward.value", CommunityBuildingService.formatMoney(draft.rewardPerBlock)).string, Items.GOLD_NUGGET) {}
         addButton(32, Translator.tr("ui.community.building.editor.linked_count", draft.linkedBlockIds.size.toString()).string, Items.IRON_BARS) {}
-        addButton(41, Translator.tr("ui.community.building.editor.save").string, Items.EMERALD_BLOCK) {
-            runSaveCommunityBuildingDraft(it, community, parentBack)
+        if (draft.editingExisting) {
+            addButton(41, Translator.tr("ui.community.building.editor.remove").string, Items.BARRIER) {
+                runRemoveCommunityBuildingEntry(it, community, draft.baseBlockId, parentBack)
+            }
+        } else {
+            addButton(41, Translator.tr("ui.community.building.editor.save").string, Items.EMERALD_BLOCK) {
+                runSaveCommunityBuildingDraft(it, community, parentBack)
+            }
         }
     }
 }
