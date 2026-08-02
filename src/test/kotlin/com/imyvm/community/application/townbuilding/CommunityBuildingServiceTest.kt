@@ -18,6 +18,16 @@ class CommunityBuildingServiceTest {
     }
 
     @Test
+    fun `test settlement can read from real production stats without sharing namespace`() {
+        val testHourKey = NaturalPeriodKey("test-2", NaturalPeriodKind.HOUR, "test:hour:12")
+        val realHourKey = NaturalPeriodKey("production", NaturalPeriodKind.HOUR, "2026-08-02T13")
+
+        val resolved = CommunityBuildingService.settlementStatsPeriodKey(testHourKey, realHourKey)
+
+        assertEquals(realHourKey, resolved)
+    }
+
+    @Test
     fun `test hour next settlement text stays readable without parsing real time`() {
         val hourKey = NaturalPeriodKey("production", NaturalPeriodKind.HOUR, "test:hour:170")
 

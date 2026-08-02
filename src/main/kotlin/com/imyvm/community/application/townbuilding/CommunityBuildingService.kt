@@ -21,6 +21,7 @@ import com.imyvm.community.util.Translator
 import com.imyvm.iwg.domain.CompleteNaturalPeriodTransition
 import com.imyvm.iwg.domain.NaturalPeriodKey
 import com.imyvm.iwg.domain.NaturalPeriodKind
+import com.imyvm.iwg.domain.NaturalPeriodTimelineType
 import com.imyvm.iwg.domain.WorldGeoBehaviorStatsCheckpointRequest
 import com.imyvm.iwg.domain.WorldGeoBehaviorStatsCheckpointStatus
 import com.imyvm.iwg.domain.WorldGeoBehaviorStatsPageQuery
@@ -394,7 +395,7 @@ object CommunityBuildingService {
                     skipped++
                     continue
                 }
-                val stats = queryBuildingStats(periodKey, regionId, entries)
+                val stats = queryBuildingStats(settlementStatsPeriodKey(periodKey), regionId, entries)
                 val rewardPlayers = stats.flatMap { it.playerContributions.keys }.toSet()
                 val plan = CommunityBuildingSettlement.plan(
                     entries,
@@ -428,6 +429,7 @@ object CommunityBuildingService {
                     appendPlayerRewardLedgers(runtime, regionId, periodLedgerKey(periodKey), plan.playerRewards)
                     applyPlayerWeekRewards(community, periodLedgerKey(weekKey), plan.playerRewards)
                     notifyPlayerHourRewards(community, periodLedgerKey(periodKey), periodLedgerKey(weekKey), plan.playerRewards)
+                    notifyPlayerHourCapReached(community, periodLedgerKey(periodKey), periodLedgerKey(weekKey), plan.attemptedPlayerRewards, plan.playerRewards)
                     playerTransactions += plan.playerRewards.size
                 } else if (plan.communityIncome > 0L) {
                     mutateTreasury(
@@ -541,6 +543,9 @@ object CommunityBuildingService {
         else -> currentWeekKey
     }
 
+    internal fun settlementStatsPeriodKey(periodKey: NaturalPeriodKey, productionKey: NaturalPeriodKey?): NaturalPeriodKey =
+        if (periodKey.periodId.startsWith("test:")) productionKey ?: periodKey else periodKey
+
     internal fun formatNextHourSettlementText(
         currentHourKey: NaturalPeriodKey,
         zoneId: ZoneId = ZoneId.of(CommunityConfig.TIMEZONE.value)
@@ -562,6 +567,17 @@ object CommunityBuildingService {
         val keys = RegionDataApi.getCurrentNaturalPeriodKeys()
         return settlementWeekKey(keys[NaturalPeriodKind.HOUR], keys[NaturalPeriodKind.WEEK])
     }
+
+    private fun latestClosedProductionPeriod(kind: NaturalPeriodKind): NaturalPeriodKey? {
+        val timeline = RegionDataApi.getAvailableNaturalPeriodTimelines()
+            .filter { it.type == NaturalPeriodTimelineType.PRODUCTION }
+            .maxByOrNull { it.sequence } ?: return null
+        val range = RegionDataApi.getAvailableNaturalPeriodRange(timeline.timelineId, kind) ?: return null
+        return if (timeline.closed) range.latest else previousPeriodKey(range.latest)
+    }
+
+    private fun settlementStatsPeriodKey(periodKey: NaturalPeriodKey): NaturalPeriodKey =
+        settlementStatsPeriodKey(periodKey, if (periodKey.periodId.startsWith("test:")) latestClosedProductionPeriod(periodKey.kind) else null)
 
     fun collectPlayerWeekUsage(weekId: String): Map<UUID, Long> {
         val result = LinkedHashMap<UUID, Long>()
@@ -647,6 +663,42 @@ object CommunityBuildingService {
                     community.generateCommunityMark(),
                     hourId,
                     formatMoney(hourAmount),
+                    formatMoney(weekAmount),
+                    formatMoney(weekCap)
+                )
+            )
+        }
+    }
+
+    private fun notifyPlayerHourCapReached(
+        community: Community,
+        hourId: String,
+        weekId: String,
+        attemptedRewards: List<CommunityBuildingPlayerReward>,
+        actualRewards: List<CommunityBuildingPlayerReward>
+    ) {
+        val server = WorldGeoCommunityAddon.server ?: return
+        val attemptedByPlayer = attemptedRewards.groupBy { it.playerUuid }
+        val actualByPlayer = actualRewards.groupBy { it.playerUuid }
+        for ((uuid, rewards) in attemptedByPlayer) {
+            val attemptedAmount = rewards.fold(0L) { acc, reward -> Math.addExact(acc, reward.amount) }
+            val actualAmount = actualByPlayer[uuid]?.fold(0L) { acc, reward -> Math.addExact(acc, reward.amount) } ?: 0L
+            if (actualAmount >= attemptedAmount) continue
+            val player = server.playerList.getPlayer(uuid) ?: continue
+            val blockedAmount = attemptedAmount - actualAmount
+            val ledger = community.buildingState.playerWeekLedgers[uuid]
+            val weekAmount = ledger?.takeIf { it.weekPeriodId == weekId }?.settledAmount ?: actualAmount
+            val extraCap = CommunityTitleService.extraWeeklyCap(community, uuid)
+            val weekCap = Math.addExact(CommunityConfig.BUILDING_PLAYER_WEEKLY_CAP.value, extraCap)
+            player.sendSystemMessage(
+                Translator.tr(
+                    "community.building.reward.hour_capped",
+                    player.name.string,
+                    community.generateCommunityMark(),
+                    hourId,
+                    formatMoney(attemptedAmount),
+                    formatMoney(actualAmount),
+                    formatMoney(blockedAmount),
                     formatMoney(weekAmount),
                     formatMoney(weekCap)
                 )

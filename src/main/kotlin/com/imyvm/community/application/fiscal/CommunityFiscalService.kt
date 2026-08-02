@@ -178,8 +178,12 @@ object CommunityFiscalService {
         return (first + second * 5L + third * 10L) / 100L
     }
 
-    fun planCommunityTax(community: Community, weekKey: String): List<CommunityTaxLine> {
-        if (!community.fiscalState.activePolicy.incomeTax) return emptyList()
+    internal fun effectivePolicyForSettlement(community: Community, weekKey: String): CommunityFiscalPolicy =
+        if (weekKey.contains(":test:") || weekKey.endsWith("test:week:0")) community.fiscalState.pendingPolicy?.policy ?: community.fiscalState.activePolicy
+        else community.fiscalState.activePolicy
+
+    fun planCommunityTax(community: Community, weekKey: String, policy: CommunityFiscalPolicy = community.fiscalState.activePolicy): List<CommunityTaxLine> {
+        if (!policy.incomeTax) return emptyList()
         return formalMembers(community).map { playerUuid ->
             val observation = community.fiscalState.memberObservations[playerUuid]?.takeIf { it.weekKey == weekKey }
             if (observation == null) return@map CommunityTaxLine(playerUuid, weekKey, 0L, 0L, 0L, 0L, false)
@@ -189,8 +193,13 @@ object CommunityFiscalService {
         }
     }
 
-    fun planWelfare(community: Community, weekKey: String, buildingRewards: Map<UUID, Long>): CommunityWelfarePlan {
-        if (!community.fiscalState.activePolicy.welfare) return CommunityWelfarePlan(emptyList(), 0L, 0L)
+    fun planWelfare(
+        community: Community,
+        weekKey: String,
+        buildingRewards: Map<UUID, Long>,
+        policy: CommunityFiscalPolicy = community.fiscalState.activePolicy
+    ): CommunityWelfarePlan {
+        if (!policy.welfare) return CommunityWelfarePlan(emptyList(), 0L, 0L)
         val theoretical = formalMembers(community).mapNotNull { playerUuid ->
             val observation = community.fiscalState.memberObservations[playerUuid]?.takeIf { it.weekKey == weekKey } ?: return@mapNotNull null
             if (observation.firstObservedAtMillis == observation.lastObservedAtMillis) return@mapNotNull null
@@ -223,20 +232,21 @@ object CommunityFiscalService {
     }
 
     private fun freezeSettlement(community: Community, weekKey: String): CommunityFiscalSettlement {
-        val taxLines = planCommunityTax(community, weekKey).map {
+        val policy = effectivePolicyForSettlement(community, weekKey)
+        val taxLines = planCommunityTax(community, weekKey, policy).map {
             CommunityFiscalTaxSettlementLine(it.playerUuid, it.taxableIncrease, it.taxAmount, it.firstBalance, it.lastBalance, it.completeObservation)
         }.toMutableList()
         val rewards = community.buildingState.playerWeekLedgers
             .filterValues { it.weekPeriodId == weekKey }
             .mapValues { it.value.settledAmount }
-        val welfarePlan = planWelfare(community, weekKey, rewards)
+        val welfarePlan = planWelfare(community, weekKey, rewards, policy)
         val welfareLines = welfarePlan.lines.map {
             CommunityFiscalWelfareSettlementLine(it.playerUuid, it.theoreticalAmount, it.actualAmount)
         }.toMutableList()
         return CommunityFiscalSettlement(
             weekKey,
             System.currentTimeMillis(),
-            community.fiscalState.activePolicy,
+            policy,
             taxLines,
             welfareLines,
             welfarePlan.theoreticalTotal,

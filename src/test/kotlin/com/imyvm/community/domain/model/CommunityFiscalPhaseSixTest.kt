@@ -120,6 +120,23 @@ class CommunityFiscalPhaseSixTest {
         assertEquals(listOf(3_000L, 3_000L), plan.lines.map { it.actualAmount }.sorted())
     }
 
+    @Test
+    fun testWeekSettlementUsesPendingPolicyImmediately() {
+        val member = UUID.fromString("00000000-0000-0000-0000-000000000151")
+        val community = community(member)
+        community.fiscalState.activePolicy = CommunityFiscalPolicy.NEOLIBERALISM
+        community.fiscalState.pendingPolicy = com.imyvm.community.domain.model.fiscal.CommunityFiscalPolicySwitch(
+            CommunityFiscalPolicy.VISIBLE_HAND,
+            "production:2026-W32",
+            "production:2026-W33",
+            1L
+        )
+
+        val policy = CommunityFiscalService.effectivePolicyForSettlement(community, "test-2:test:week:0")
+
+        assertEquals(CommunityFiscalPolicy.VISIBLE_HAND, policy)
+    }
+
     private fun community(vararg members: UUID) = Community(
         regionNumberId = 1,
         member = HashMap(members.associateWith { MemberAccount(0L, MemberRoleType.MEMBER) }),

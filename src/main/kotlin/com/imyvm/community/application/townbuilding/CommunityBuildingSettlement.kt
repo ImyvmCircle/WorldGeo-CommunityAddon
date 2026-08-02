@@ -23,7 +23,8 @@ data class CommunityBuildingPlayerReward(
 data class CommunityBuildingSettlementPlan(
     val playerRewards: List<CommunityBuildingPlayerReward>,
     val communityIncome: Long,
-    val theoreticalCommunityIncome: Long
+    val theoreticalCommunityIncome: Long,
+    val attemptedPlayerRewards: List<CommunityBuildingPlayerReward> = playerRewards
 )
 
 object CommunityBuildingSettlement {
@@ -56,7 +57,7 @@ object CommunityBuildingSettlement {
         val theoreticalCommunityIncome = toLongExact(communityNumerator.divide(BigInteger.valueOf(5L)), "community income")
         val remainingCommunityCap = (communityWeeklyCap - communityWeekUsage).coerceAtLeast(0L)
         val communityIncome = minOf(theoreticalCommunityIncome, remainingCommunityCap)
-        return CommunityBuildingSettlementPlan(cappedRewards, communityIncome, theoreticalCommunityIncome)
+        return CommunityBuildingSettlementPlan(cappedRewards, communityIncome, theoreticalCommunityIncome, rewards)
     }
 
     private fun buildEntryByBlock(entries: List<CommunityBuildingEntry>): Map<String, CommunityBuildingEntry> {
