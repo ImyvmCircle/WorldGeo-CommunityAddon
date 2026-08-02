@@ -417,7 +417,9 @@ object CommunityBuildingService {
                     currentCommunityWeekIncome(community, periodLedgerKey(weekKey)),
                     rewardPlayers.associateWith { CommunityTitleService.rewardPercent(community, it) },
                     rewardPlayers.associateWith { CommunityTitleService.extraWeeklyCap(community, it) },
-                    collectPlayerExtraWeekUsage(regionId, periodLedgerKey(weekKey))
+                    collectPlayerExtraWeekUsage(regionId, periodLedgerKey(weekKey)),
+                    periodLedgerKey(weekKey),
+                    if (periodKey.kind == NaturalPeriodKind.HOUR) community.buildingState.playerNetLedgers else null
                 )
                 if (periodKey.kind == NaturalPeriodKind.HOUR) {
                     val futures = plan.playerRewards.map { reward ->

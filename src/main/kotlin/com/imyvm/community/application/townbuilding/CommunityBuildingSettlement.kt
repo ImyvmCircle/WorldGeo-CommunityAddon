@@ -1,6 +1,7 @@
 package com.imyvm.community.application.townbuilding
 
 import com.imyvm.community.domain.model.community.CommunityBuildingEntry
+import com.imyvm.community.domain.model.community.CommunityBuildingPlayerNetLedger
 import java.math.BigInteger
 import java.util.UUID
 
@@ -37,7 +38,9 @@ object CommunityBuildingSettlement {
         communityWeekUsage: Long,
         playerRewardPercents: Map<UUID, Long> = emptyMap(),
         playerExtraWeeklyCaps: Map<UUID, Long> = emptyMap(),
-        playerExtraWeekUsage: Map<UUID, Long> = emptyMap()
+        playerExtraWeekUsage: Map<UUID, Long> = emptyMap(),
+        weekPeriodId: String = "",
+        playerNetLedgers: HashMap<UUID, MutableList<CommunityBuildingPlayerNetLedger>>? = null
     ): CommunityBuildingSettlementPlan {
         require(playerWeeklyCap >= 0L) { "player weekly cap must not be negative" }
         require(communityWeeklyCap >= 0L) { "community weekly cap must not be negative" }
@@ -49,9 +52,14 @@ object CommunityBuildingSettlement {
             validateStat(stat)
             val entry = entryByBlock[stat.blockId] ?: continue
             val netUnits = (stat.placedCount - stat.brokenCount).coerceAtLeast(0L)
-            if (netUnits == 0L) continue
-            communityNumerator = communityNumerator.add(BigInteger.valueOf(netUnits).multiply(BigInteger.valueOf(entry.rewardPerBlock)))
-            rewards += allocatePlayerRewards(stat, entry, netUnits, playerRewardPercents)
+            if (netUnits > 0L) {
+                communityNumerator = communityNumerator.add(BigInteger.valueOf(netUnits).multiply(BigInteger.valueOf(entry.rewardPerBlock)))
+            }
+            if (playerNetLedgers != null) {
+                rewards += allocatePlayerNetRewards(stat, entry, playerRewardPercents, weekPeriodId, playerNetLedgers)
+            } else if (netUnits > 0L) {
+                rewards += allocatePlayerRewards(stat, entry, netUnits, playerRewardPercents)
+            }
         }
         val cappedRewards = applyPlayerWeeklyCap(rewards, playerWeeklyCap, playerWeekUsage, playerExtraWeeklyCaps, playerExtraWeekUsage)
         val theoreticalCommunityIncome = toLongExact(communityNumerator.divide(BigInteger.valueOf(5L)), "community income")
@@ -121,6 +129,33 @@ object CommunityBuildingSettlement {
                     toLongExact(BigInteger.valueOf(units).multiply(BigInteger.valueOf(entry.rewardPerBlock)).multiply(BigInteger.valueOf(playerRewardPercents[uuid] ?: 100L)).divide(BigInteger.valueOf(100L)), "player reward")
                 )
             }
+    }
+
+    private fun allocatePlayerNetRewards(
+        stat: CommunityBuildingBlockStats,
+        entry: CommunityBuildingEntry,
+        playerRewardPercents: Map<UUID, Long>,
+        weekPeriodId: String,
+        netLedgers: HashMap<UUID, MutableList<CommunityBuildingPlayerNetLedger>>
+    ): List<CommunityBuildingPlayerReward> {
+        val rewards = mutableListOf<CommunityBuildingPlayerReward>()
+        for ((uuid, netDelta) in stat.playerContributions) {
+            if (netDelta == 0L) continue
+            val ledgers = netLedgers.getOrPut(uuid) { mutableListOf() }
+            val ledger = ledgers.firstOrNull { it.weekPeriodId == weekPeriodId && it.blockId == stat.blockId }
+                ?: CommunityBuildingPlayerNetLedger(weekPeriodId, stat.blockId, 0L, 0L).also { ledgers.add(it) }
+            ledger.cumulativeNet = Math.addExact(ledger.cumulativeNet, netDelta)
+            val settled = (ledger.cumulativeNet - ledger.peakNet).coerceAtLeast(0L)
+            if (settled <= 0L) continue
+            ledger.peakNet = ledger.cumulativeNet
+            rewards += CommunityBuildingPlayerReward(
+                uuid,
+                stat.blockId,
+                settled,
+                toLongExact(BigInteger.valueOf(settled).multiply(BigInteger.valueOf(entry.rewardPerBlock)).multiply(BigInteger.valueOf(playerRewardPercents[uuid] ?: 100L)).divide(BigInteger.valueOf(100L)), "player reward")
+            )
+        }
+        return rewards
     }
 
     private fun applyPlayerWeeklyCap(

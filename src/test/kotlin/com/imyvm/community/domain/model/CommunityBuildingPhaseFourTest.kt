@@ -6,6 +6,7 @@ import com.imyvm.community.application.townbuilding.CommunityBuildingPlayerRewar
 import com.imyvm.community.application.townbuilding.CommunityBuildingSettlement
 import com.imyvm.community.domain.model.community.CommunityBuildingCatalogEntry
 import com.imyvm.community.domain.model.community.CommunityBuildingEntry
+import com.imyvm.community.domain.model.community.CommunityBuildingPlayerNetLedger
 import com.imyvm.community.domain.model.community.CommunityBuildingState
 import com.imyvm.iwg.domain.NaturalPeriodKey
 import com.imyvm.iwg.domain.NaturalPeriodKind
@@ -255,5 +256,31 @@ class CommunityBuildingSettlementTest {
 
         assertEquals(200L, plan.theoreticalCommunityIncome)
         assertEquals(150L, plan.communityIncome)
+    }
+
+    @Test
+    fun `player reward settles only cumulative net growth beyond weekly peak`() {
+        val entries = listOf(CommunityBuildingEntry("minecraft:oak_planks", 1, 100L))
+        val netLedgers = HashMap<UUID, MutableList<CommunityBuildingPlayerNetLedger>>()
+        val weekId = "production:2026-W31"
+
+        fun settle(placed: Long, broken: Long): Long {
+            val plan = CommunityBuildingSettlement.plan(
+                entries,
+                listOf(CommunityBuildingBlockStats("minecraft:oak_planks", placed, broken, mapOf(first to (placed - broken)))),
+                120000L,
+                emptyMap(),
+                200000L,
+                0L,
+                weekPeriodId = weekId,
+                playerNetLedgers = netLedgers
+            )
+            return plan.playerRewards.sumOf { it.units }
+        }
+
+        assertEquals(10L, settle(10, 0))
+        assertEquals(0L, settle(0, 5))
+        assertEquals(0L, settle(5, 0))
+        assertEquals(3L, settle(3, 0))
     }
 }

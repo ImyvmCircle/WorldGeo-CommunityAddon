@@ -39,6 +39,13 @@ data class CommunityBuildingCommunityWeekLedger(
     var settledAmount: Long
 )
 
+data class CommunityBuildingPlayerNetLedger(
+    var weekPeriodId: String,
+    var blockId: String,
+    var cumulativeNet: Long,
+    var peakNet: Long
+)
+
 data class CommunityBuildingPendingPayout(
     val playerUuid: UUID,
     val amount: Long,
@@ -55,7 +62,8 @@ data class CommunityBuildingState(
     var processedWeekPeriodIds: MutableList<String> = mutableListOf(),
     var playerWeekLedgers: HashMap<UUID, CommunityBuildingWeekLedger> = hashMapOf(),
     var communityWeekLedgers: MutableList<CommunityBuildingCommunityWeekLedger> = mutableListOf(),
-    var pendingPayouts: MutableList<CommunityBuildingPendingPayout> = mutableListOf()
+    var pendingPayouts: MutableList<CommunityBuildingPendingPayout> = mutableListOf(),
+    var playerNetLedgers: HashMap<UUID, MutableList<CommunityBuildingPlayerNetLedger>> = hashMapOf()
 ) {
     fun activeEntries(): List<CommunityBuildingEntry> = stylePackage.filter { it.active }
 
