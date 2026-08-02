@@ -1,5 +1,6 @@
 package com.imyvm.community.application.interaction.screen.inner_community
 
+import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.application.event.addPendingOperation
 import com.imyvm.community.application.event.getPendingOperation
 import com.imyvm.community.application.event.removePendingOperationPersisted
@@ -53,8 +54,13 @@ fun runOpenCommunityBuildingMenu(player: ServerPlayer, community: Community, run
         permission.sendSuccess(player)
         return
     }
-    CommunityMenuOpener.open(player) { syncId ->
-        CommunityBuildingMenu(syncId, player, community, runBackGrandfather)
+    runCatching {
+        CommunityMenuOpener.open(player) { syncId ->
+            CommunityBuildingMenu(syncId, player, community, runBackGrandfather)
+        }
+    }.onFailure { error ->
+        WorldGeoCommunityAddon.logger.error("Failed to open community building menu for ${community.regionNumberId}", error)
+        player.sendSystemMessage(Translator.tr("community.building.menu.open_failed", error.message ?: error::class.java.simpleName))
     }
 }
 

@@ -428,6 +428,7 @@ object CommunityBuildingService {
                     CompletableFuture.allOf(*futures.toTypedArray()).join()
                     appendPlayerRewardLedgers(runtime, regionId, periodLedgerKey(periodKey), plan.playerRewards)
                     applyPlayerWeekRewards(community, periodLedgerKey(weekKey), plan.playerRewards)
+                    notifyPlayerHourRewards(community, periodLedgerKey(periodKey), periodLedgerKey(weekKey), plan.playerRewards)
                     playerTransactions += plan.playerRewards.size
                 } else if (plan.communityIncome > 0L) {
                     mutateTreasury(
@@ -603,7 +604,29 @@ object CommunityBuildingService {
         }
     }
 
-
+    private fun notifyPlayerHourRewards(community: Community, hourId: String, weekId: String, rewards: List<CommunityBuildingPlayerReward>) {
+        val server = WorldGeoCommunityAddon.server ?: return
+        val byPlayer = rewards.groupBy { it.playerUuid }
+        for ((uuid, playerRewards) in byPlayer) {
+            val player = server.playerList.getPlayer(uuid) ?: continue
+            val hourAmount = playerRewards.fold(0L) { acc, reward -> Math.addExact(acc, reward.amount) }
+            val ledger = community.buildingState.playerWeekLedgers[uuid]
+            val weekAmount = ledger?.takeIf { it.weekPeriodId == weekId }?.settledAmount ?: hourAmount
+            val extraCap = CommunityTitleService.extraWeeklyCap(community, uuid)
+            val weekCap = Math.addExact(CommunityConfig.BUILDING_PLAYER_WEEKLY_CAP.value, extraCap)
+            player.sendSystemMessage(
+                Translator.tr(
+                    "community.building.reward.hour",
+                    player.name.string,
+                    community.generateCommunityMark(),
+                    hourId,
+                    formatMoney(hourAmount),
+                    formatMoney(weekAmount),
+                    formatMoney(weekCap)
+                )
+            )
+        }
+    }
 
     fun sendAdministrationSummary(player: ServerPlayer, community: Community) {
         val state = community.buildingState

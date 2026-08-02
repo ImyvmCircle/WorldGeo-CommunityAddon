@@ -911,6 +911,8 @@
   "ui.community.building.editor.save": "保存套餐项",
   "ui.community.building.editor.remove": "删除套餐项",
   "community.building.entry.detail.header": "§6§l[城镇建设]§r §6{0} - {1}",
+  "community.building.reward.hour": "§a§l[建设奖励]§r §a玩家 §f{0}§a 在 §f{1}§a 的小时 §f{2}§a 获得 §6{3}§a。周内累计：§e{4}§7/§e{5}§a。",
+  "community.building.menu.open_failed": "§c建设界面打开失败：§f{0}",
   "community.building.entry.detail.unit_cost": "§e单位占用：§f{0}",
   "community.building.entry.detail.reward": "§e单块收益：§a{0}",
   "community.building.entry.detail.linked": "§e连锁方块：§f{0}",
