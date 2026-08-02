@@ -243,18 +243,18 @@ object CommunityBuildingService {
     fun canView(community: Community, playerUuid: UUID): Boolean = community.getMemberRole(playerUuid)?.name in setOf("OWNER", "ADMIN", "MEMBER")
 
     fun getPlayerWeekIncome(community: Community, playerUuid: UUID): Long {
-        val currentWeekKey = RegionDataApi.getCurrentNaturalPeriodKeys()[NaturalPeriodKind.WEEK] ?: return 0L
+        val currentWeekKey = currentSettlementWeekKey() ?: return 0L
         val ledger = community.buildingState.playerWeekLedgers[playerUuid] ?: return 0L
         return if (ledger.weekPeriodId == periodLedgerKey(currentWeekKey)) ledger.settledAmount else 0L
     }
 
     fun getPlayerWeekRemainingCap(community: Community, playerUuid: UUID): Long {
-        val currentWeekKey = RegionDataApi.getCurrentNaturalPeriodKeys()[NaturalPeriodKind.WEEK] ?: return CommunityConfig.BUILDING_PLAYER_WEEKLY_CAP.value
+        val currentWeekKey = currentSettlementWeekKey() ?: return CommunityConfig.BUILDING_PLAYER_WEEKLY_CAP.value
         return getPlayerBuildingStatus(community, playerUuid, periodLedgerKey(currentWeekKey)).baseRemaining
     }
 
     fun getPlayerBuildingStatus(community: Community, playerUuid: UUID): PlayerBuildingStatus {
-        val currentWeekKey = RegionDataApi.getCurrentNaturalPeriodKeys()[NaturalPeriodKind.WEEK]
+        val currentWeekKey = currentSettlementWeekKey()
         return getPlayerBuildingStatus(community, playerUuid, currentWeekKey?.let { periodLedgerKey(it) } ?: "-")
     }
 
@@ -279,7 +279,7 @@ object CommunityBuildingService {
     }
 
     fun listPlayerBuildingStatuses(playerUuid: UUID): List<PlayerBuildingStatus> {
-        val weekId = RegionDataApi.getCurrentNaturalPeriodKeys()[NaturalPeriodKind.WEEK]?.let { periodLedgerKey(it) } ?: "-"
+        val weekId = currentSettlementWeekKey()?.let { periodLedgerKey(it) } ?: "-"
         return CommunityDatabase.communities
             .filter { canView(it, playerUuid) }
             .map { getPlayerBuildingStatus(it, playerUuid, weekId) }
@@ -292,10 +292,8 @@ object CommunityBuildingService {
     }
 
     fun getNextHourSettlementText(): String {
-        val zoneId = ZoneId.of(CommunityConfig.TIMEZONE.value)
-        val currentHourId = RegionDataApi.getCurrentNaturalPeriodIds()[NaturalPeriodKind.HOUR] ?: return "-"
-        val next = LocalDateTime.parse(currentHourId, HOUR_FORMATTER).plusHours(1)
-        return next.atZone(zoneId).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:00 z", Locale.ROOT))
+        val currentHourKey = RegionDataApi.getCurrentNaturalPeriodKeys()[NaturalPeriodKind.HOUR] ?: return "-"
+        return formatNextHourSettlementText(currentHourKey)
     }
 
     fun listSurvivalBlockIds(): List<String> = BuiltInRegistries.ITEM
@@ -367,7 +365,8 @@ object CommunityBuildingService {
     fun settleCurrentHour(): Result<CommunityBuildingPeriodSettlementResult> {
         val keys = RegionDataApi.getCurrentNaturalPeriodKeys()
         val hourKey = keys[NaturalPeriodKind.HOUR] ?: return Result.failure(IllegalStateException("current hour period unavailable"))
-        val weekKey = keys[NaturalPeriodKind.WEEK] ?: return Result.failure(IllegalStateException("current week period unavailable"))
+        val weekKey = settlementWeekKey(hourKey, keys[NaturalPeriodKind.WEEK])
+            ?: return Result.failure(IllegalStateException("current week period unavailable"))
         return settlePeriod(hourKey, weekKey)
     }
 
@@ -535,7 +534,34 @@ object CommunityBuildingService {
         }
     }
 
+    internal fun settlementWeekKey(hourKey: NaturalPeriodKey?, currentWeekKey: NaturalPeriodKey?): NaturalPeriodKey? = when {
+        hourKey == null -> currentWeekKey
+        hourKey.kind == NaturalPeriodKind.HOUR -> weekKeyForPeriod(hourKey) ?: currentWeekKey
+        hourKey.kind == NaturalPeriodKind.WEEK -> hourKey
+        else -> currentWeekKey
+    }
+
+    internal fun formatNextHourSettlementText(
+        currentHourKey: NaturalPeriodKey,
+        zoneId: ZoneId = ZoneId.of(CommunityConfig.TIMEZONE.value)
+    ): String = when {
+        currentHourKey.periodId.startsWith("test:hour:") -> {
+            val nextHour = currentHourKey.periodId.substringAfterLast(':').toLong() + 1L
+            val nextWeek = nextHour / 168L
+            Translator.tr("community.building.next_settlement.test", nextHour.toString(), nextWeek.toString()).string
+        }
+        else -> {
+            val next = LocalDateTime.parse(currentHourKey.periodId, HOUR_FORMATTER).plusHours(1)
+            next.atZone(zoneId).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:00 z", Locale.ROOT))
+        }
+    }
+
     private fun periodLedgerKey(key: NaturalPeriodKey): String = "${key.timelineId}:${key.periodId}"
+
+    private fun currentSettlementWeekKey(): NaturalPeriodKey? {
+        val keys = RegionDataApi.getCurrentNaturalPeriodKeys()
+        return settlementWeekKey(keys[NaturalPeriodKind.HOUR], keys[NaturalPeriodKind.WEEK])
+    }
 
     fun collectPlayerWeekUsage(weekId: String): Map<UUID, Long> {
         val result = LinkedHashMap<UUID, Long>()

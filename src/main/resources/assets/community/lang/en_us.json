@@ -996,6 +996,7 @@
   "community.building.admin.header": "§6§l[Building Operations]§r §f{0}",
   "community.building.admin.package": "§ePackage: §fselected {0} §7| capacity §f{1}/{2} §7| server templates §f{3}",
   "community.building.admin.money": "§eTreasury: §a{0} §7| next hourly settlement §f{1} §7| pending §f{2}",
+  "community.building.next_settlement.test": "Test hour {0} (test week {1})",
   "community.building.admin.ranking.empty": "§7No member building income this week.",
   "community.building.admin.ranking.entry": "§7#{0} §f{1} §7| weekly §a{2} §7| title cap used §b{3}",
   "command.community.development.status.header": "§6§l[Development]§r §f{0} §7| week §f{1}",

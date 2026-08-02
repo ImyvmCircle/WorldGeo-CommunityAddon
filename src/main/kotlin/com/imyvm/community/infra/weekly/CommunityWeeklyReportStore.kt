@@ -12,7 +12,7 @@ import java.util.UUID
 object CommunityWeeklyReportStore {
     private const val FILE_NAME = "community-weekly-reports.db"
     private const val VERSION = 1
-    private const val MAX_REPORTS = 5000
+    private const val MAX_REPORTS = 10
     private var file: Path? = null
     private val reports = mutableListOf<CommunityWeeklyReport>()
 

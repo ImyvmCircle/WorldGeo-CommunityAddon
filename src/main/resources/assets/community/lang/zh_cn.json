@@ -1017,6 +1017,7 @@
   "community.building.admin.header": "§6§l[建设运营]§r §f{0}",
   "community.building.admin.package": "§e套餐：§f已选 {0} 项 §7| 容量 §f{1}/{2} §7| 全服模板 §f{3}",
   "community.building.admin.money": "§e国库：§a{0} §7| 下次小时结算 §f{1} §7| 待发 §f{2}",
+  "community.building.next_settlement.test": "测试小时 {0}（测试周 {1}）",
   "community.building.admin.ranking.empty": "§7本周暂无成员建设收入。",
   "community.building.admin.ranking.entry": "§7#{0} §f{1} §7| 本周 §a{2} §7| 称号额度使用 §b{3}",
   "command.community.development.status.header": "§6§l[发展度]§r §f{0} §7| 周期 §f{1}",
