@@ -61,7 +61,11 @@ object CommunityWeeklyReportService {
         player.sendSystemMessage(Translator.tr("community.weekly_report.list.header", reports.size.toString()))
         reports.take(10).forEachIndexed { index, report ->
             val status = if (report.isReadBy(player.uuid)) Translator.tr("community.weekly_report.status.read").string else Translator.tr("community.weekly_report.status.unread").string
-            player.sendSystemMessage(Translator.tr("community.weekly_report.list.entry", (index + 1).toString(), status, audienceName(report.audience), report.weekKey, report.title))
+            val entry = Translator.tr("community.weekly_report.list.entry", (index + 1).toString(), status, audienceName(report.audience), report.weekKey, report.title).copy().withStyle { style ->
+                style.withClickEvent(ClickEvent.RunCommand("/community report read ${index + 1}"))
+                    .withHoverEvent(HoverEvent.ShowText(Translator.tr("community.weekly_report.list.entry.hover")))
+            }
+            player.sendSystemMessage(entry)
         }
         player.sendSystemMessage(Translator.tr("community.weekly_report.list.hint"))
         return 1
