@@ -100,10 +100,13 @@ fun runOpenSettingMenu(player: ServerPlayer, community: Community, runBackGrandf
     }
 }
 
-fun canUseCommunityTeleport(player: ServerPlayer, community: Community, scope: GeoScope): Boolean {
+fun isFormalMember(player: ServerPlayer, community: Community): Boolean {
     val role = community.getMemberRole(player.uuid)
-    val isFormalMember = role == MemberRoleType.OWNER || role == MemberRoleType.ADMIN || role == MemberRoleType.MEMBER
-    if (isFormalMember) return true
+    return role == MemberRoleType.OWNER || role == MemberRoleType.ADMIN || role == MemberRoleType.MEMBER
+}
+
+fun canUseCommunityTeleport(player: ServerPlayer, community: Community, scope: GeoScope): Boolean {
+    if (isFormalMember(player, community)) return true
     return RegionDataApi.inquireTeleportPointAccessibility(scope)
 }
 
@@ -277,7 +280,11 @@ private fun executeTeleportWithPlan(
             return@driveTeleportAfterPlanPersisted
         }
         recordTeleportCallStarted(runtime, plan) {
-            PlayerInteractionApi.teleportPlayerToScope(player, region, scope)
+            if (isFormalMember(player, community)) {
+                PlayerInteractionApi.teleportPlayerToScopeAsAdministrator(player, region, scope)
+            } else {
+                PlayerInteractionApi.teleportPlayerToScope(player, region, scope)
+            }
             recordTeleportSucceeded(runtime, plan)
             player.addEffect(MobEffectInstance(MobEffects.NAUSEA, CommunityConfig.TELEPORT_POST_EFFECT_TICKS.value, 0, false, false, true))
             player.level().sendParticles(
