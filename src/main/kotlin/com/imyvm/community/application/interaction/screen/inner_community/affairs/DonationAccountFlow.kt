@@ -256,28 +256,30 @@ private fun appendDonationTreasury(
         "donation", plan.playerUuid.toString(), "community.treasury.desc.donation",
         donationDescriptionArgs(plan)
     )
-    runtime.sharedStore.append(ledger).whenComplete { _, error ->
-        runtime.server.execute {
-            if (error != null) {
-                WorldGeoCommunityAddon.logger.error(
-                    "Failed to append donation treasury ledger ${plan.operationId}", error
-                )
-            } else {
-                if (!projectDonationTreasuryToLegacyDatabase(runtime, plan)) return@execute
-                appendDonationStep(
-                    runtime,
-                    donationStep(
-                        plan, TREASURY_STEP, "treasury", treasuryReference(plan),
-                        CombinationStepStatus.SUCCEEDED, ledger.factId.toString()
-                    ),
-                    plan
-                )
+    runtime.sharedStore.append(ledger)
+        .thenCompose { _ -> runtime.sharedStore.treasuryBalance(plan.regionId) }
+        .whenComplete { balance, error ->
+            runtime.server.execute {
+                if (error != null) {
+                    WorldGeoCommunityAddon.logger.error(
+                        "Failed to append donation treasury ledger ${plan.operationId}", error
+                    )
+                } else {
+                    if (!projectDonationTreasuryToLegacyDatabase(balance, plan)) return@execute
+                    appendDonationStep(
+                        runtime,
+                        donationStep(
+                            plan, TREASURY_STEP, "treasury", treasuryReference(plan),
+                            CombinationStepStatus.SUCCEEDED, ledger.factId.toString()
+                        ),
+                        plan
+                    )
+                }
             }
         }
-    }
 }
 
-private fun projectDonationTreasuryToLegacyDatabase(runtime: AccountSubsystem.Runtime, plan: DonationPlan): Boolean {
+private fun projectDonationTreasuryToLegacyDatabase(balance: Long, plan: DonationPlan): Boolean {
     val community = CommunityDatabase.getCommunityById(plan.regionId) ?: return true
     val reference = treasuryReference(plan)
     val record = TreasuryReferenceRecord(
@@ -286,7 +288,7 @@ private fun projectDonationTreasuryToLegacyDatabase(runtime: AccountSubsystem.Ru
     val beforeBalance = community.treasuryBalance
     val beforeReference = community.treasuryReferences[reference]
     return try {
-        community.treasuryBalance = runtime.sharedStore.treasuryBalance(plan.regionId).join()
+        community.treasuryBalance = balance
         community.treasuryReferences[reference] = record
         CommunityDatabase.save()
         true

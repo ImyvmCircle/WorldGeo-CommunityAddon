@@ -13,6 +13,7 @@ import com.imyvm.community.domain.model.SettingConfirmationData
 import com.imyvm.community.domain.model.TeleportPointConfirmationData
 import com.imyvm.community.domain.model.TreasuryGrantConfirmationData
 import com.imyvm.community.domain.model.BuildingConfirmationData
+import com.imyvm.community.domain.model.BuildingEntrySnapshot
 import com.imyvm.community.domain.model.Turnover
 import com.imyvm.community.domain.model.pendingOperationKey
 import com.imyvm.community.domain.model.TurnoverSource
@@ -56,7 +57,7 @@ object CommunityDatabase {
     private const val DATABASE_VERSION_MARKER = -3
     private const val DATABASE_VERSION = 4
     private const val PENDING_SECTION_VERSION_MARKER = -2
-    private const val PENDING_SECTION_VERSION = 4
+    private const val PENDING_SECTION_VERSION = 6
     private const val SECTION_FRAME_MARKER = -4
     private const val SECTION_PENDING_OPERATIONS = 1
     private const val SECTION_NAME_CHANGE_COOLDOWNS = 2
@@ -755,7 +756,7 @@ object CommunityDatabase {
                 val renameData = if (version >= 2) readRenameData(stream) else null
                 val transferData = if (version >= 2) readScopeTransferData(stream) else null
                 val treasuryGrantData = if (version >= 2) readTreasuryGrantData(stream) else null
-                val buildingData = if (version >= 4) readBuildingData(stream) else null
+                val buildingData = if (version >= 4) readBuildingData(stream, version) else null
 
                 val operation = PendingOperation(
                     expireAt = expireAt,
@@ -965,9 +966,18 @@ object CommunityDatabase {
         writeNullableString(stream, data.baseBlockId)
         stream.writeInt(data.buyUnits)
         stream.writeLong(data.cost)
+        stream.writeBoolean(data.entrySnapshot != null)
+        data.entrySnapshot?.let { snapshot ->
+            stream.writeInt(snapshot.unitCost)
+            stream.writeLong(snapshot.rewardPerBlock)
+            stream.writeInt(snapshot.linkedBlockIds.size)
+            snapshot.linkedBlockIds.forEach(stream::writeUTF)
+            stream.writeLong(snapshot.templateVersion)
+        }
+        writeNullableString(stream, data.selectionCheckpoint)
     }
 
-    private fun readBuildingData(stream: DataInputStream): BuildingConfirmationData? {
+    private fun readBuildingData(stream: DataInputStream, version: Int = PENDING_SECTION_VERSION): BuildingConfirmationData? {
         if (!stream.readBoolean()) return null
         return BuildingConfirmationData(
             regionNumberId = stream.readInt(),
@@ -975,7 +985,21 @@ object CommunityDatabase {
             action = stream.readUTF(),
             baseBlockId = readNullableString(stream),
             buyUnits = stream.readInt(),
-            cost = stream.readLong()
+            cost = stream.readLong(),
+            entrySnapshot = if (version >= 5 && stream.readBoolean()) {
+                val unitCost = stream.readInt()
+                val rewardPerBlock = stream.readLong()
+                val linkedCount = readCount(stream, "pending building linked block")
+                val linkedBlockIds = MutableList(linkedCount) { stream.readUTF() }
+                val templateVersion = stream.readLong()
+                BuildingEntrySnapshot(
+                    unitCost = unitCost,
+                    rewardPerBlock = rewardPerBlock,
+                    linkedBlockIds = linkedBlockIds,
+                    templateVersion = templateVersion
+                )
+            } else null,
+            selectionCheckpoint = if (version >= 6) readNullableString(stream) else null
         )
     }
 

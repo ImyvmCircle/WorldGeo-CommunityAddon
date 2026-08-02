@@ -106,7 +106,13 @@ fun runSaveCommunityBuildingDraft(player: ServerPlayer, community: Community, ru
         runOpenCommunityBuildingEditor(player, community, draft, runBack)
         return
     }
-    startBuildingConfirmation(player, community, BuildingConfirmationData(community.regionNumberId ?: return, player.uuid, "select", draft.baseBlockId, 0, cost.getOrThrow()))
+    val pending = CommunityBuildingService.createPendingSelectionData(community, player.uuid, draft.baseBlockId, cost.getOrThrow())
+    if (pending.isFailure) {
+        player.sendSystemMessage(Translator.tr("community.building.error.save", pending.exceptionOrNull()?.message ?: "error"))
+        runOpenCommunityBuildingEditor(player, community, draft, runBack)
+        return
+    }
+    startBuildingConfirmation(player, community, pending.getOrThrow())
     CommunityBuildingService.clearDraft(player.uuid)
 }
 
@@ -116,7 +122,12 @@ fun runRemoveCommunityBuildingEntry(player: ServerPlayer, community: Community, 
         permission.sendSuccess(player)
         return
     }
-    startBuildingConfirmation(player, community, BuildingConfirmationData(community.regionNumberId ?: return, player.uuid, "remove", baseBlockId, 0, 0L))
+    val pending = CommunityBuildingService.createPendingRemovalData(community, player.uuid, baseBlockId)
+    if (pending.isFailure) {
+        player.sendSystemMessage(Translator.tr("community.building.confirm.failed", pending.exceptionOrNull()?.message ?: "error"))
+        return
+    }
+    startBuildingConfirmation(player, community, pending.getOrThrow())
 }
 
 fun runBuyCommunityBuildingCapacity(player: ServerPlayer, community: Community, buyUnits: Int, runBack: (ServerPlayer) -> Unit) {
@@ -131,7 +142,7 @@ fun runBuyCommunityBuildingCapacity(player: ServerPlayer, community: Community, 
         runOpenCommunityBuildingMenu(player, community, runBack)
         return
     }
-    startBuildingConfirmation(player, community, BuildingConfirmationData(community.regionNumberId ?: return, player.uuid, "capacity", null, buyUnits, cost.getOrThrow()))
+    startBuildingConfirmation(player, community, CommunityBuildingService.createPendingCapacityData(community, player.uuid, buyUnits, cost.getOrThrow()).getOrThrow())
 }
 
 private fun adminPermission(player: ServerPlayer, community: Community) =
@@ -236,10 +247,14 @@ fun runCancelCommunityBuildingOperation(player: ServerPlayer, community: Communi
 private val activeBuildingOperations = Collections.synchronizedSet(mutableSetOf<Int>())
 
 private fun startBuildingConfirmation(player: ServerPlayer, community: Community, data: BuildingConfirmationData) {
-    if (getPendingOperation(community.regionNumberId, PendingOperationType.BUILDING_CONFIRMATION) != null) {
-        player.closeContainer()
-        player.sendSystemMessage(Translator.tr("community.modification.confirmation.pending"))
-        return
+    val existing = getPendingOperation(community.regionNumberId, PendingOperationType.BUILDING_CONFIRMATION)
+    if (existing != null) {
+        if (existing.expireAt > System.currentTimeMillis()) {
+            player.closeContainer()
+            player.sendSystemMessage(Translator.tr("community.building.confirm.pending", community.regionNumberId?.toString() ?: ""))
+            return
+        }
+        removePendingOperationPersisted(data.regionNumberId, PendingOperationType.BUILDING_CONFIRMATION)
     }
     addPendingOperation(
         regionId = data.regionNumberId,

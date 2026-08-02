@@ -78,13 +78,22 @@ data class TreasuryGrantConfirmationData(
     val amount: Long
 )
 
+data class BuildingEntrySnapshot(
+    val unitCost: Int,
+    val rewardPerBlock: Long,
+    val linkedBlockIds: MutableList<String> = mutableListOf(),
+    val templateVersion: Long = 1L
+)
+
 data class BuildingConfirmationData(
     val regionNumberId: Int,
     val executorUUID: UUID,
     val action: String,
     val baseBlockId: String?,
     val buyUnits: Int,
-    val cost: Long
+    val cost: Long,
+    val entrySnapshot: BuildingEntrySnapshot? = null,
+    val selectionCheckpoint: String? = null
 )
 
 enum class PendingOperationType(val value: Int) {

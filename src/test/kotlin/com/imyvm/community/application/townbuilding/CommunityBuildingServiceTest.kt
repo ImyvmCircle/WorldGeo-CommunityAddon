@@ -2,9 +2,20 @@ package com.imyvm.community.application.townbuilding
 
 import com.imyvm.iwg.domain.NaturalPeriodKey
 import com.imyvm.iwg.domain.NaturalPeriodKind
+import com.imyvm.community.domain.model.BuildingConfirmationData
+import com.imyvm.community.domain.model.BuildingEntrySnapshot
+import com.imyvm.community.domain.model.MemberAccount
+import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.community.CommunityBuildingEntry
+import com.imyvm.community.domain.model.community.CommunityBuildingState
+import com.imyvm.community.domain.model.community.CommunityJoinPolicy
+import com.imyvm.community.domain.model.community.CommunityStatus
+import com.imyvm.community.domain.model.community.MemberRoleType
 import java.time.ZoneId
+import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class CommunityBuildingServiceTest {
     @Test
@@ -18,13 +29,37 @@ class CommunityBuildingServiceTest {
     }
 
     @Test
-    fun `test settlement can read from real production stats without sharing namespace`() {
-        val testHourKey = NaturalPeriodKey("test-2", NaturalPeriodKind.HOUR, "test:hour:12")
-        val realHourKey = NaturalPeriodKey("production", NaturalPeriodKind.HOUR, "2026-08-02T13")
+    fun `test settlement projects pending building selection into view only`() {
+        val community = Community(
+            regionNumberId = 42,
+            member = hashMapOf(UUID.fromString("00000000-0000-0000-0000-000000000001") to MemberAccount(0L, MemberRoleType.MEMBER)),
+            joinPolicy = CommunityJoinPolicy.OPEN,
+            status = CommunityStatus.ACTIVE_MANOR,
+            buildingState = CommunityBuildingState()
+        )
+        com.imyvm.community.WorldGeoCommunityAddon.pendingOperations[com.imyvm.community.domain.model.pendingOperationKey(42, com.imyvm.community.domain.model.PendingOperationType.BUILDING_CONFIRMATION)] =
+            com.imyvm.community.domain.model.PendingOperation(
+                expireAt = Long.MAX_VALUE,
+                type = com.imyvm.community.domain.model.PendingOperationType.BUILDING_CONFIRMATION,
+                buildingData = BuildingConfirmationData(
+                    regionNumberId = 42,
+                    executorUUID = UUID.fromString("00000000-0000-0000-0000-000000000001"),
+                    action = "select",
+                    baseBlockId = "minecraft:oak_planks",
+                    buyUnits = 0,
+                    cost = 100L,
+                    entrySnapshot = BuildingEntrySnapshot(1, 100L, mutableListOf("minecraft:oak_stairs"), 7L),
+                    selectionCheckpoint = "production|2026-08-02T13|-|2026-W31|-"
+                )
+            )
 
-        val resolved = CommunityBuildingService.settlementStatsPeriodKey(testHourKey, realHourKey)
+        val projected = CommunityBuildingService.effectiveBuildingViewForSettlement(community, NaturalPeriodKey("test-2", NaturalPeriodKind.HOUR, "test:hour:12"))
 
-        assertEquals(realHourKey, resolved)
+        assertEquals(1, projected.activeEntries().size)
+        assertEquals("minecraft:oak_planks", projected.activeEntries().single().baseBlockId)
+        assertEquals("production|2026-08-02T13|-|2026-W31|-", projected.activeEntries().single().selectionCheckpoint)
+        assertTrue(community.buildingState.activeEntries().isEmpty())
+        com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.clear()
     }
 
     @Test

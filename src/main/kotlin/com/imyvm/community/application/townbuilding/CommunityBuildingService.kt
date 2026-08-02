@@ -2,9 +2,13 @@ package com.imyvm.community.application.townbuilding
 
 import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.application.account.mutateTreasury
+import com.imyvm.community.application.event.getPendingOperation
 import com.imyvm.community.application.helper.CommunityBackgroundTasks
 import com.imyvm.community.application.title.CommunityTitleService
+import com.imyvm.community.domain.model.BuildingConfirmationData
+import com.imyvm.community.domain.model.BuildingEntrySnapshot
 import com.imyvm.community.domain.model.Community
+import com.imyvm.community.domain.model.PendingOperationType
 import com.imyvm.community.domain.model.account.AccountDirection
 import com.imyvm.community.domain.model.account.AccountTransaction
 import com.imyvm.community.domain.model.community.CommunityBuildingCatalogEntry
@@ -386,7 +390,8 @@ object CommunityBuildingService {
             var communityIncome = 0L
             for (community in CommunityDatabase.communities) {
                 val regionId = community.regionNumberId ?: continue
-                val entries = community.buildingState.activeEntries()
+                val view = effectiveBuildingViewForSettlement(community, periodKey)
+                val entries = view.activeEntries()
                 if (entries.isEmpty()) continue
                 val cursorUnit = "region:$regionId:${periodKey.timelineId}:${periodKey.kind.name.lowercase(Locale.ROOT)}"
                 val existingCursor = runtime.sharedStore.findCursor(regionId, "building", "region", cursorUnit).join()
@@ -395,7 +400,13 @@ object CommunityBuildingService {
                     skipped++
                     continue
                 }
-                val stats = queryBuildingStats(settlementStatsPeriodKey(periodKey), regionId, entries)
+                val sourceKey = resolveBuildingStatsPeriodKey(periodKey)
+                var sourceCursor: TestBuildingSourceCursor? = null
+                val stats = if (sourceKey.timelineId != periodKey.timelineId || sourceKey.periodId != periodKey.periodId) {
+                    queryTestBuildingStats(runtime, periodKey, sourceKey, regionId, entries).also { sourceCursor = it }.stats
+                } else {
+                    queryBuildingStats(sourceKey, regionId, entries)
+                }
                 val rewardPlayers = stats.flatMap { it.playerContributions.keys }.toSet()
                 val plan = CommunityBuildingSettlement.plan(
                     entries,
@@ -447,6 +458,11 @@ object CommunityBuildingService {
                     communityIncome = Math.addExact(communityIncome, plan.communityIncome)
                 }
                 CommunityDatabase.save()
+                sourceCursor?.takeIf { it.cursorUnit.isNotBlank() && it.cursorValue.isNotBlank() }?.let { cursor ->
+                    runtime.sharedStore.append(
+                        PurposeCursorFact(UUID.randomUUID(), regionId, System.currentTimeMillis(), "building", "region", cursor.cursorUnit, cursor.cursorValue)
+                    ).join()
+                }
                 runtime.sharedStore.append(PurposeCursorFact(UUID.randomUUID(), regionId, System.currentTimeMillis(), "building", "region", cursorUnit, cursorValue)).join()
                 settled++
             }
@@ -485,6 +501,46 @@ object CommunityBuildingService {
             }
             CommunityBuildingBlockStats(blockId, placed, broken, contributions)
         }
+    }
+
+    private fun queryTestBuildingStats(
+        runtime: AccountSubsystem.Runtime,
+        consumerPeriodKey: NaturalPeriodKey,
+        sourceKey: NaturalPeriodKey,
+        regionId: Int,
+        entries: List<CommunityBuildingEntry>
+    ): TestBuildingSourceCursor {
+        val effectiveEntries = entries.filter { entryCountsForPeriod(it.selectionCheckpoint, sourceKey) }
+        val blockIds = effectiveEntries.flatMap { it.trackedBlockIds() }.distinct().toSet()
+        if (blockIds.isEmpty()) return TestBuildingSourceCursor(emptyList(), "", "")
+        val server = WorldGeoCommunityAddon.server ?: return TestBuildingSourceCursor(emptyList(), "", "")
+        val currentCheckpoint = createCheckpoint(server, sourceKey, regionId, blockIds)
+        if (currentCheckpoint == CHECKPOINT_UNAVAILABLE) return TestBuildingSourceCursor(emptyList(), "", "")
+        val currentBaseline = readCheckpointBaseline(UUID.fromString(currentCheckpoint))
+        val previousCheckpoint = latestTestSourceCheckpoint(runtime, regionId, consumerPeriodKey, sourceKey)
+        val checkpointByBlock = effectiveEntries
+            .flatMap { entry ->
+                val baseline = previousCheckpoint ?: checkpointFor(entry.selectionCheckpoint, sourceKey)
+                entry.trackedBlockIds().map { blockId -> blockId to baseline }
+            }
+            .associate { it.first to it.second }
+        val baselineByCheckpoint = checkpointByBlock.values.filterNotNull().distinct().associateWith(::readCheckpointBaseline)
+        val stats = blockIds.map { blockId ->
+            val current = currentBaseline[blockId] ?: CommunityBuildingBlockStats(blockId, 0L, 0L, emptyMap())
+            val baseline = checkpointByBlock[blockId]?.let { baselineByCheckpoint[it]?.get(blockId) }
+            val placed = Math.subtractExact(current.placedCount, baseline?.placedCount ?: 0L).coerceAtLeast(0L)
+            val broken = Math.subtractExact(current.brokenCount, baseline?.brokenCount ?: 0L).coerceAtLeast(0L)
+            val contributions = if (baseline == null) current.playerContributions else {
+                val players = current.playerContributions.keys + baseline.playerContributions.keys
+                players.associateWith { uuid ->
+                    Math.subtractExact(current.playerContributions[uuid] ?: 0L, baseline.playerContributions[uuid] ?: 0L)
+                }
+            }
+            CommunityBuildingBlockStats(blockId, placed, broken, contributions)
+        }
+        val cursorUnit = testSourceCursorUnit(regionId, consumerPeriodKey)
+        val cursorValue = listOf(sourceKey.timelineId, sourceKey.periodId, currentCheckpoint).joinToString("|")
+        return TestBuildingSourceCursor(stats, cursorUnit, cursorValue)
     }
 
     internal fun entryCountsForPeriod(selectionCheckpoint: String, periodKey: NaturalPeriodKey): Boolean {
@@ -536,15 +592,71 @@ object CommunityBuildingService {
         }
     }
 
+    internal fun effectiveBuildingViewForSettlement(
+        community: Community,
+        periodKey: NaturalPeriodKey
+    ): CommunityBuildingState {
+        if (!periodKey.periodId.startsWith("test:")) return community.buildingState
+        val pending = getPendingOperation(community.regionNumberId, PendingOperationType.BUILDING_CONFIRMATION)?.buildingData
+            ?: return community.buildingState
+        val projected = community.buildingState.copy(
+            stylePackage = community.buildingState.stylePackage.map { entry ->
+                entry.copy(linkedBlockIds = entry.linkedBlockIds.toMutableList())
+            }.toMutableList(),
+            communityWeekLedgers = community.buildingState.communityWeekLedgers.toMutableList(),
+            pendingPayouts = community.buildingState.pendingPayouts.toMutableList(),
+            processedHourPeriodIds = community.buildingState.processedHourPeriodIds.toMutableList(),
+            processedWeekPeriodIds = community.buildingState.processedWeekPeriodIds.toMutableList(),
+            playerWeekLedgers = HashMap(community.buildingState.playerWeekLedgers)
+        )
+        applyPendingBuildingProjection(projected, pending)
+        return projected
+    }
+
+    private fun applyPendingBuildingProjection(state: CommunityBuildingState, data: BuildingConfirmationData) {
+        when (data.action) {
+            "select" -> {
+                val baseBlockId = data.baseBlockId ?: return
+                val snapshot = data.entrySnapshot ?: return
+                val projected = CommunityBuildingEntry(
+                    baseBlockId = baseBlockId,
+                    unitCost = snapshot.unitCost,
+                    rewardPerBlock = snapshot.rewardPerBlock,
+                    linkedBlockIds = snapshot.linkedBlockIds.toMutableList(),
+                    templateVersion = snapshot.templateVersion,
+                    selectionCheckpoint = data.selectionCheckpoint ?: "",
+                    active = true
+                )
+                val existing = state.stylePackage.firstOrNull { it.baseBlockId.equals(baseBlockId, ignoreCase = true) }
+                if (existing == null) state.stylePackage.add(projected)
+                else {
+                    existing.unitCost = projected.unitCost
+                    existing.rewardPerBlock = projected.rewardPerBlock
+                    existing.linkedBlockIds = projected.linkedBlockIds
+                    existing.templateVersion = projected.templateVersion
+                    existing.selectionCheckpoint = projected.selectionCheckpoint
+                    existing.active = true
+                }
+            }
+            "remove" -> {
+                val baseBlockId = data.baseBlockId ?: return
+                state.stylePackage.firstOrNull { it.baseBlockId.equals(baseBlockId, ignoreCase = true) }?.let {
+                    it.active = false
+                    it.selectionCheckpoint = data.selectionCheckpoint ?: ""
+                }
+            }
+            "capacity" -> {
+                state.capacityUnits = Math.addExact(state.capacityUnits, data.buyUnits)
+            }
+        }
+    }
+
     internal fun settlementWeekKey(hourKey: NaturalPeriodKey?, currentWeekKey: NaturalPeriodKey?): NaturalPeriodKey? = when {
         hourKey == null -> currentWeekKey
         hourKey.kind == NaturalPeriodKind.HOUR -> weekKeyForPeriod(hourKey) ?: currentWeekKey
         hourKey.kind == NaturalPeriodKind.WEEK -> hourKey
         else -> currentWeekKey
     }
-
-    internal fun settlementStatsPeriodKey(periodKey: NaturalPeriodKey, productionKey: NaturalPeriodKey?): NaturalPeriodKey =
-        if (periodKey.periodId.startsWith("test:")) productionKey ?: periodKey else periodKey
 
     internal fun formatNextHourSettlementText(
         currentHourKey: NaturalPeriodKey,
@@ -568,6 +680,20 @@ object CommunityBuildingService {
         return settlementWeekKey(keys[NaturalPeriodKind.HOUR], keys[NaturalPeriodKind.WEEK])
     }
 
+    private fun resolveBuildingStatsPeriodKey(periodKey: NaturalPeriodKey): NaturalPeriodKey {
+        if (periodKey.periodId.startsWith("test:")) return periodKey
+        val current = RegionDataApi.getCurrentNaturalPeriodKeys()[periodKey.kind]
+        return if (current?.periodId?.startsWith("test:") == true) current else periodKey
+    }
+
+    private fun latestAvailableProductionPeriod(kind: NaturalPeriodKind): NaturalPeriodKey? {
+        val timeline = RegionDataApi.getAvailableNaturalPeriodTimelines()
+            .filter { it.type == NaturalPeriodTimelineType.PRODUCTION }
+            .maxByOrNull { it.sequence } ?: return null
+        val range = RegionDataApi.getAvailableNaturalPeriodRange(timeline.timelineId, kind) ?: return null
+        return range.latest
+    }
+
     private fun latestClosedProductionPeriod(kind: NaturalPeriodKind): NaturalPeriodKey? {
         val timeline = RegionDataApi.getAvailableNaturalPeriodTimelines()
             .filter { it.type == NaturalPeriodTimelineType.PRODUCTION }
@@ -575,9 +701,6 @@ object CommunityBuildingService {
         val range = RegionDataApi.getAvailableNaturalPeriodRange(timeline.timelineId, kind) ?: return null
         return if (timeline.closed) range.latest else previousPeriodKey(range.latest)
     }
-
-    private fun settlementStatsPeriodKey(periodKey: NaturalPeriodKey): NaturalPeriodKey =
-        settlementStatsPeriodKey(periodKey, if (periodKey.periodId.startsWith("test:")) latestClosedProductionPeriod(periodKey.kind) else null)
 
     fun collectPlayerWeekUsage(weekId: String): Map<UUID, Long> {
         val result = LinkedHashMap<UUID, Long>()
@@ -859,6 +982,76 @@ object CommunityBuildingService {
         }
     }
 
+    fun createPendingSelectionData(
+        community: Community,
+        executorUuid: UUID,
+        baseBlockId: String,
+        cost: Long
+    ): Result<BuildingConfirmationData> {
+        val regionId = community.regionNumberId ?: return Result.failure(IllegalStateException("community region not bound"))
+        val template = findSelectableEntry(baseBlockId) ?: return Result.failure(NoSuchElementException("template not found"))
+        return Result.success(
+            BuildingConfirmationData(
+                regionNumberId = regionId,
+                executorUUID = executorUuid,
+                action = "select",
+                baseBlockId = baseBlockId,
+                buyUnits = 0,
+                cost = cost,
+                entrySnapshot = BuildingEntrySnapshot(
+                    unitCost = template.unitCost,
+                    rewardPerBlock = template.rewardPerBlock,
+                    linkedBlockIds = template.linkedBlockIds.toMutableList(),
+                    templateVersion = template.templateVersion
+                )
+            )
+        )
+    }
+
+    fun createPendingRemovalData(
+        community: Community,
+        executorUuid: UUID,
+        baseBlockId: String
+    ): Result<BuildingConfirmationData> {
+        val regionId = community.regionNumberId ?: return Result.failure(IllegalStateException("community region not bound"))
+        val entry = community.buildingState.findEntry(baseBlockId) ?: return Result.failure(NoSuchElementException("entry not found"))
+        return Result.success(
+            BuildingConfirmationData(
+                regionNumberId = regionId,
+                executorUUID = executorUuid,
+                action = "remove",
+                baseBlockId = baseBlockId,
+                buyUnits = 0,
+                cost = 0L,
+                entrySnapshot = BuildingEntrySnapshot(
+                    unitCost = entry.unitCost,
+                    rewardPerBlock = entry.rewardPerBlock,
+                    linkedBlockIds = entry.linkedBlockIds.toMutableList(),
+                    templateVersion = entry.templateVersion
+                )
+            )
+        )
+    }
+
+    fun createPendingCapacityData(
+        community: Community,
+        executorUuid: UUID,
+        buyUnits: Int,
+        cost: Long
+    ): Result<BuildingConfirmationData> {
+        val regionId = community.regionNumberId ?: return Result.failure(IllegalStateException("community region not bound"))
+        return Result.success(
+            BuildingConfirmationData(
+                regionNumberId = regionId,
+                executorUUID = executorUuid,
+                action = "capacity",
+                baseBlockId = null,
+                buyUnits = buyUnits,
+                cost = cost
+            )
+        )
+    }
+
     fun sendEntryDetail(player: ServerPlayer, community: Community, entry: CommunityBuildingEntry) {
         player.closeContainer()
         player.sendSystemMessage(Translator.tr("community.building.entry.detail.header", community.generateCommunityMark(), entry.baseBlockId))
@@ -885,7 +1078,7 @@ object CommunityBuildingService {
         CommunityBackgroundTasks.supply { runCatching { currentCheckpoint(regionId, blockIds) } }
 
     private fun currentCheckpoint(regionId: Int, blockIds: List<String>): String {
-        val server = WorldGeoCommunityAddon.server ?: return RegionDataApi.getCurrentNaturalPeriodIds()[NaturalPeriodKind.HOUR] ?: ""
+        val server = WorldGeoCommunityAddon.server ?: return ""
         val keys = RegionDataApi.getCurrentNaturalPeriodKeys()
         val hourKey = keys[NaturalPeriodKind.HOUR] ?: return ""
         val weekKey = keys[NaturalPeriodKind.WEEK] ?: return hourKey.periodId
@@ -893,6 +1086,22 @@ object CommunityBuildingService {
         val hourCheckpoint = createCheckpoint(server, hourKey, regionId, blocks)
         val weekCheckpoint = createCheckpoint(server, weekKey, regionId, blocks)
         return listOf(hourKey.timelineId, hourKey.periodId, hourCheckpoint, weekKey.periodId, weekCheckpoint).joinToString("|")
+    }
+
+    private fun testSourceCursorUnit(regionId: Int, testPeriodKey: NaturalPeriodKey): String =
+        "region:$regionId:${testPeriodKey.timelineId}:${testPeriodKey.kind.name.lowercase(Locale.ROOT)}:source-checkpoint"
+
+    private fun latestTestSourceCheckpoint(
+        runtime: AccountSubsystem.Runtime,
+        regionId: Int,
+        consumerPeriodKey: NaturalPeriodKey,
+        sourceKey: NaturalPeriodKey
+    ): UUID? {
+        val cursor = runtime.sharedStore.findCursor(regionId, "building", "region", testSourceCursorUnit(regionId, consumerPeriodKey)).join()?.cursor ?: return null
+        val parts = cursor.split('|')
+        if (parts.size != 3) return null
+        if (parts[0] != sourceKey.timelineId || parts[1] != sourceKey.periodId) return null
+        return runCatching { UUID.fromString(parts[2]) }.getOrNull()
     }
 
     private fun createCheckpoint(server: net.minecraft.server.MinecraftServer, key: NaturalPeriodKey, regionId: Int, blockIds: Set<String>): String {
@@ -937,6 +1146,12 @@ data class CommunityBuildingPeriodSettlementResult(
     val skippedCommunities: Int,
     val playerTransactions: Int,
     val communityIncome: Long
+)
+
+private data class TestBuildingSourceCursor(
+    val stats: List<CommunityBuildingBlockStats>,
+    val cursorUnit: String,
+    val cursorValue: String
 )
 
 

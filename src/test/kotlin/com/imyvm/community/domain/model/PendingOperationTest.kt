@@ -48,7 +48,16 @@ class PendingOperationTest {
     @Test
     fun buildingConfirmationDataSurvivesPendingOperationModel() {
         val executor = java.util.UUID.fromString("00000000-0000-0000-0000-000000000099")
-        val data = BuildingConfirmationData(42, executor, "select", "minecraft:oak_planks", 0, 1200L)
+        val data = BuildingConfirmationData(
+            42,
+            executor,
+            "select",
+            "minecraft:oak_planks",
+            0,
+            1200L,
+            BuildingEntrySnapshot(1, 150L, mutableListOf("minecraft:oak_stairs"), 3L),
+            "production|2026-08-02T13|-|2026-W31|-"
+        )
         val operation = PendingOperation(
             expireAt = 1234L,
             type = PendingOperationType.BUILDING_CONFIRMATION,

@@ -1071,6 +1071,7 @@
   "community.building.confirm.executor_changed": "§cOnly the initiator can confirm or cancel this building operation.",
   "community.building.confirm.invalid_community": "§cThis community state does not allow the building operation.",
   "community.building.confirm.cancelled": "§7Building operation cancelled.",
+  "community.building.confirm.pending": "§eA building operation is already pending. Confirm it or cancel: §7/community building cancel {0}",
   "community.command.help.building_confirm": "§7/community building confirm <community> §fConfirm a pending building operation.",
   "community.command.help.building_cancel": "§7/community building cancel <community> §fCancel a pending building operation.",
   "command.community.fiscal.settle.started": "§eStarted fiscal settlement: week §f{0}§e. The result will be sent when it finishes.",
