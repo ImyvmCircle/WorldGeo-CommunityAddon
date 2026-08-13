@@ -1,6 +1,5 @@
 package com.imyvm.community.infra
 
-import com.imyvm.community.application.communication.migrateLegacyCommunicationsToShards
 import com.imyvm.community.application.townbuilding.CommunityBuildingService
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.CreationConfirmationData
@@ -55,7 +54,7 @@ object CommunityDatabase {
 
     private const val DATABASE_FILENAME = "iwg_community.db"
     private const val DATABASE_VERSION_MARKER = -3
-    private const val DATABASE_VERSION = 4
+    private const val DATABASE_VERSION = 5
     private const val PENDING_SECTION_VERSION_MARKER = -2
     private const val PENDING_SECTION_VERSION = 6
     private const val SECTION_FRAME_MARKER = -4
@@ -69,6 +68,7 @@ object CommunityDatabase {
     private const val SECTION_COMMUNITY_TITLES = 8
     private const val SECTION_COMMUNITY_FISCAL = 9
     private const val SECTION_COMMUNITY_DEVELOPMENT = 10
+    private const val SECTION_COMMUNICATIONS = 11
     private const val MAX_SECTION_BYTES = 16 * 1024 * 1024
     private const val MAX_COMMUNITY_BYTES = 16 * 1024 * 1024
     private const val MAX_COMMUNITIES = 100_000
@@ -78,6 +78,7 @@ object CommunityDatabase {
     private const val DEVELOPMENT_SECTION_VERSION_MARKER = -2
     private const val DEVELOPMENT_SECTION_VERSION = 2
     private const val MAX_COLLECTION_ENTRIES = 1_000_000
+    private const val COMMUNICATION_RETENTION_MILLIS = 365L * 24 * 60 * 60 * 1000
     private var legacyDatabaseLoaded = false
     private var legacyBackupCreated = false
     private val legacyLoadWarnings = mutableListOf<String>()
@@ -86,6 +87,7 @@ object CommunityDatabase {
     @Throws(IOException::class)
     fun save() {
         val file = this.getDatabasePath()
+        pruneExpiredCommunications(System.currentTimeMillis())
         backupLegacyDatabaseBeforeSave(file)
         val parent = file.parent
         if (parent != null) Files.createDirectories(parent)
@@ -109,6 +111,7 @@ object CommunityDatabase {
                 writeSection(stream, SECTION_COMMUNITY_TITLES) { saveCommunityTitlesSection(it) }
                 writeSection(stream, SECTION_COMMUNITY_FISCAL) { saveCommunityFiscalSection(it) }
                 writeSection(stream, SECTION_COMMUNITY_DEVELOPMENT) { saveCommunityDevelopmentSection(it) }
+                writeSection(stream, SECTION_COMMUNICATIONS) { saveCommunicationsSection(it) }
             }
             replaceDatabaseFile(tempFile, file)
         } finally {
@@ -228,6 +231,10 @@ object CommunityDatabase {
                 loadCommunityDevelopmentSection(stream)
                 true
             }
+            SECTION_COMMUNICATIONS -> {
+                loadCommunicationsSection(stream)
+                true
+            }
             else -> {
                 com.imyvm.community.WorldGeoCommunityAddon.logger.warn("Skipped unknown community database section: $tag")
                 false
@@ -312,7 +319,7 @@ object CommunityDatabase {
                     val decoded = LegacyCommunityDatabaseDecoder.decode(payload)
                     communities = decoded.communities
                     rebuildMissingTreasuryAggregates()
-                    migrateLegacyCommunicationsToShards(communities)
+                    pruneExpiredCommunications(System.currentTimeMillis())
                     com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.clear()
                     com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.putAll(decoded.pendingOperations)
                     return
@@ -341,7 +348,7 @@ object CommunityDatabase {
                     loadTrailingSections(stream)
                 }
                 rebuildMissingTreasuryAggregates()
-                migrateLegacyCommunicationsToShards(communities)
+                pruneExpiredCommunications(System.currentTimeMillis())
             }
         } catch (e: Exception) {
             if (previousCommunities != null) communities = previousCommunities
@@ -667,7 +674,8 @@ object CommunityDatabase {
             val list = mutableListOf<CommunityMessage>()
             for (i in 0 until size) {
                 val id = UUID.fromString(stream.readUTF())
-                val type = MessageType.entries.find { it.value == stream.readInt() } ?: MessageType.CHAT
+                val typeValue = stream.readInt()
+                val type = MessageType.entries.find { it.value == typeValue } ?: MessageType.CHAT
                 val content = Component.literal(stream.readUTF())
                 val senderUUID = UUID.fromString(stream.readUTF())
                 val timestamp = stream.readLong()
@@ -705,6 +713,103 @@ object CommunityDatabase {
         return messages
     }
     
+    private fun saveCommunicationsSection(stream: DataOutputStream) {
+        val targets = communities.filter { it.regionNumberId != null }
+        stream.writeInt(targets.size)
+        for (community in targets) {
+            stream.writeInt(community.regionNumberId!!)
+            saveFullCommunityAnnouncements(stream, community.announcements)
+            saveFullCommunityMessages(stream, community.messages)
+            val members = community.member.filterValues { it.mail.isNotEmpty() }
+            stream.writeInt(members.size)
+            for ((uuid, member) in members) {
+                stream.writeUTF(uuid.toString())
+                stream.writeInt(member.mail.size)
+                for ((index, mail) in member.mail.withIndex()) {
+                    stream.writeLong(member.mailCreatedAt[index])
+                    stream.writeUTF(mail.string)
+                }
+            }
+        }
+    }
+    private fun saveFullCommunityAnnouncements(stream: DataOutputStream, announcements: List<Announcement>) {
+        stream.writeInt(announcements.size)
+        for (announcement in announcements) {
+            stream.writeUTF(announcement.id.toString())
+            stream.writeUTF(announcement.content.string)
+            stream.writeUTF(announcement.authorUUID.toString())
+            stream.writeLong(announcement.timestamp)
+            stream.writeBoolean(announcement.isDeleted)
+            stream.writeInt(announcement.readBy.size)
+            for (uuid in announcement.readBy) stream.writeUTF(uuid.toString())
+        }
+    }
+    private fun saveFullCommunityMessages(stream: DataOutputStream, messages: List<CommunityMessage>) {
+        stream.writeInt(messages.size)
+        for (message in messages) {
+            stream.writeUTF(message.id.toString())
+            stream.writeInt(message.type.value)
+            stream.writeUTF(message.content.string)
+            stream.writeUTF(message.senderUUID.toString())
+            stream.writeLong(message.timestamp)
+            stream.writeBoolean(message.isDeleted)
+            stream.writeInt(message.readBy.size)
+            for (uuid in message.readBy) stream.writeUTF(uuid.toString())
+            stream.writeBoolean(message.recipientUUID != null)
+            if (message.recipientUUID != null) stream.writeUTF(message.recipientUUID.toString())
+        }
+    }
+    private fun loadCommunicationsSection(stream: DataInputStream) {
+        val communityCount = readCount(stream, "communication community", MAX_COMMUNITIES)
+        repeat(communityCount) {
+            val regionId = stream.readInt()
+            val announcements = loadCommunityAnnouncements(stream)
+            val messages = loadCommunityMessages(stream, strict = true)
+            val mail = hashMapOf<UUID, Pair<ArrayList<Component>, ArrayList<Long>>>()
+            repeat(readCount(stream, "communication member")) {
+                val uuid = UUID.fromString(stream.readUTF())
+                val count = readCount(stream, "member mail")
+                val values = ArrayList<Component>(count)
+                val timestamps = ArrayList<Long>(count)
+                repeat(count) {
+                    timestamps.add(stream.readLong())
+                    values.add(Component.literal(stream.readUTF()))
+                }
+                mail[uuid] = values to timestamps
+            }
+            getCommunityById(regionId)?.let { community ->
+                community.announcements.clear()
+                community.announcements.addAll(announcements)
+                community.messages.clear()
+                community.messages.addAll(messages)
+                for ((uuid, values) in mail) {
+                    community.member[uuid]?.let { member ->
+                        member.mail.clear()
+                        member.mail.addAll(values.first)
+                        member.mailCreatedAt.clear()
+                        member.mailCreatedAt.addAll(values.second)
+                    }
+                }
+            }
+        }
+    }
+    private fun pruneExpiredCommunications(now: Long) {
+        val cutoff = now - COMMUNICATION_RETENTION_MILLIS
+        for (community in communities) {
+            community.announcements.removeAll { it.timestamp < cutoff }
+            community.messages.removeAll { it.timestamp < cutoff }
+            for (member in community.member.values) {
+                while (member.mailCreatedAt.size < member.mail.size) member.mailCreatedAt.add(now)
+                while (member.mailCreatedAt.size > member.mail.size) member.mailCreatedAt.removeLast()
+                for (index in member.mail.lastIndex downTo 0) {
+                    if (member.mailCreatedAt[index] < cutoff) {
+                        member.mail.removeAt(index)
+                        member.mailCreatedAt.removeAt(index)
+                    }
+                }
+            }
+        }
+    }
     private fun savePendingOperations(stream: DataOutputStream) {
         val ops = com.imyvm.community.WorldGeoCommunityAddon.pendingOperations
         stream.writeInt(PENDING_SECTION_VERSION_MARKER)

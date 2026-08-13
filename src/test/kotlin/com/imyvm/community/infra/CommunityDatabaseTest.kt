@@ -277,42 +277,79 @@ class CommunityDatabaseTest {
 
 
     @Test
-    fun writeCommunityRecordDoesNotPersistFullCommunicationHistory() {
-        val bytes = ByteArrayOutputStream()
+    fun communicationsSectionPreservesCommunicationHistory() {
         val ownerUUID = UUID.fromString("00000000-0000-0000-0000-000000000001")
+        val mailTime = 1_000L
         val community = Community(
             regionNumberId = 123,
             member = hashMapOf(ownerUUID to MemberAccount(
                 joinedTime = 456L,
                 basicRoleType = MemberRoleType.OWNER,
-                mail = arrayListOf(Component.literal("legacy-mail"))
+                mail = arrayListOf(Component.literal("mail")),
+                mailCreatedAt = arrayListOf(mailTime)
             )),
             joinPolicy = CommunityJoinPolicy.OPEN,
             status = CommunityStatus.RECRUITING_REALM,
-            announcements = mutableListOf(Announcement(UUID.randomUUID(), Component.literal("legacy-ann"), ownerUUID, 10L)),
-            messages = mutableListOf(CommunityMessage(UUID.randomUUID(), MessageType.CHAT, Component.literal("legacy-chat"), ownerUUID, 11L))
+            announcements = mutableListOf(Announcement(UUID.randomUUID(), Component.literal("announcement"), ownerUUID, 2_000L)),
+            messages = mutableListOf(CommunityMessage(UUID.randomUUID(), MessageType.CHAT, Component.literal("chat"), ownerUUID, 3_000L))
         )
-        val writeMethod = CommunityDatabase.javaClass.getDeclaredMethod(
-            "writeCommunityRecord",
-            DataOutputStream::class.java,
-            Community::class.java
-        ).also { it.isAccessible = true }
-        writeMethod.invoke(CommunityDatabase, DataOutputStream(bytes), community)
+        CommunityDatabase.communities = mutableListOf(community)
+        val bytes = ByteArrayOutputStream()
+        CommunityDatabase.javaClass.getDeclaredMethod("saveCommunicationsSection", DataOutputStream::class.java)
+            .also { it.isAccessible = true }
+            .invoke(CommunityDatabase, DataOutputStream(bytes))
 
-        val loadMethod = CommunityDatabase.javaClass.getDeclaredMethod(
-            "loadCommunityRecord",
-            DataInputStream::class.java,
-            Int::class.javaPrimitiveType
-        ).also { it.isAccessible = true }
-        val loaded = loadMethod.invoke(
-            CommunityDatabase,
-            DataInputStream(ByteArrayInputStream(bytes.toByteArray())),
-            4
-        ) as Community
+        val loaded = Community(
+            regionNumberId = 123,
+            member = hashMapOf(ownerUUID to MemberAccount(456L, MemberRoleType.OWNER)),
+            joinPolicy = CommunityJoinPolicy.OPEN,
+            status = CommunityStatus.RECRUITING_REALM,
+            announcements = mutableListOf(),
+            messages = mutableListOf()
+        )
+        CommunityDatabase.communities = mutableListOf(loaded)
+        CommunityDatabase.javaClass.getDeclaredMethod("loadCommunicationsSection", DataInputStream::class.java)
+            .also { it.isAccessible = true }
+            .invoke(CommunityDatabase, DataInputStream(ByteArrayInputStream(bytes.toByteArray())))
 
-        assertTrue(loaded.member.getValue(ownerUUID).mail.isEmpty())
-        assertTrue(loaded.announcements.isEmpty())
-        assertTrue(loaded.messages.isEmpty())
+        assertEquals("mail", loaded.member.getValue(ownerUUID).mail.single().string)
+        assertEquals(mailTime, loaded.member.getValue(ownerUUID).mailCreatedAt.single())
+        assertEquals("announcement", loaded.announcements.single().content.string)
+        assertEquals("chat", loaded.messages.single().content.string)
+    }
+
+    @Test
+    fun pruneExpiredCommunicationsKeepsOneYearBound() {
+        val ownerUUID = UUID.fromString("00000000-0000-0000-0000-000000000001")
+        val now = 365L * 24 * 60 * 60 * 1000 + 10L
+        val community = Community(
+            regionNumberId = 123,
+            member = hashMapOf(ownerUUID to MemberAccount(
+                456L,
+                MemberRoleType.OWNER,
+                mail = arrayListOf(Component.literal("old"), Component.literal("new")),
+                mailCreatedAt = arrayListOf(0L, 10L)
+            )),
+            joinPolicy = CommunityJoinPolicy.OPEN,
+            status = CommunityStatus.RECRUITING_REALM,
+            announcements = mutableListOf(
+                Announcement(UUID.randomUUID(), Component.literal("old"), ownerUUID, 0L),
+                Announcement(UUID.randomUUID(), Component.literal("new"), ownerUUID, 10L)
+            ),
+            messages = mutableListOf(
+                CommunityMessage(UUID.randomUUID(), MessageType.CHAT, Component.literal("old"), ownerUUID, 0L),
+                CommunityMessage(UUID.randomUUID(), MessageType.CHAT, Component.literal("new"), ownerUUID, 10L)
+            )
+        )
+        CommunityDatabase.communities = mutableListOf(community)
+        CommunityDatabase.javaClass.getDeclaredMethod("pruneExpiredCommunications", Long::class.javaPrimitiveType)
+            .also { it.isAccessible = true }
+            .invoke(CommunityDatabase, now)
+
+        assertEquals(listOf("new"), community.member.getValue(ownerUUID).mail.map { it.string })
+        assertEquals(listOf(10L), community.member.getValue(ownerUUID).mailCreatedAt)
+        assertEquals(listOf("new"), community.announcements.map { it.content.string })
+        assertEquals(listOf("new"), community.messages.map { it.content.string })
     }
 
     @Test

@@ -19,5 +19,5 @@ enum class CommunicationVisibility { MEMBER, ALL, OP }
 enum class CommunicationCategory(val filePrefix: String, val retentionDays: Int?) {
     CHAT("CHAT", 30),
     SYSTEM("SYS", 180),
-    OP_EXCEPTION_UNCLOSED("OPX", null)
+    OP_EXCEPTION_UNCLOSED("OPX", 365)
 }
