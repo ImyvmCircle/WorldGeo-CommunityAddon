@@ -8,6 +8,7 @@ import com.imyvm.community.domain.model.communication.CommunicationRecord
 import com.imyvm.community.domain.model.communication.CommunicationRecordType
 import com.imyvm.community.domain.model.communication.CommunicationVisibility
 import com.imyvm.community.infra.communication.CommunicationShardStore
+import com.imyvm.community.util.addUnreadMail
 import net.minecraft.network.chat.Component
 import java.util.UUID
 
@@ -41,7 +42,7 @@ internal fun Community.addAnnouncementWithShard(announcement: Announcement) {
 }
 
 internal fun Community.addMailWithShard(recipientUuid: UUID, mail: Component) {
-    member[recipientUuid]?.mail?.add(mail)
+    member[recipientUuid]?.mail?.let { addUnreadMail(it, mail) }
     val rid = regionNumberId ?: return
     CommunicationShardStore.append(
         CommunicationRecord(rid, System.currentTimeMillis(), null, null,

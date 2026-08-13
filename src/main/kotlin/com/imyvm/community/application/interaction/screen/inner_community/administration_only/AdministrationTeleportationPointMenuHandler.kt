@@ -440,7 +440,6 @@ private fun notifyFormalMembers(
         if (memberAccount.basicRoleType == MemberRoleType.APPLICANT || memberAccount.basicRoleType == MemberRoleType.REFUSED) {
             return@forEach
         }
-        server.playerList.getPlayer(memberUUID)?.sendSystemMessage(message)
-        memberAccount.mail.add(message)
+        com.imyvm.community.util.sendAndStoreMail(server, memberUUID, memberAccount.mail, message)
     }
 }

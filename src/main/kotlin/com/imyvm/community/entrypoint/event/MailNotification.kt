@@ -2,6 +2,8 @@ package com.imyvm.community.entrypoint.event
 
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.Translator
+import com.imyvm.community.util.isUnreadMail
+import com.imyvm.community.util.readMail
 import com.imyvm.iwg.infra.LazyTicker
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.network.chat.Component
@@ -28,7 +30,7 @@ private fun checkPlayerMail(player: ServerPlayer): List<Component> {
             val currentMail = mailBox[i]
 
             if (isMailUnread(currentMail)) {
-                val readingMail = Component.literal(currentMail.string.replaceFirst(Regex("^\\[(UNREAD|未读)]\\s*"), "").trim())
+                val readingMail = readMail(currentMail)
                 mailBox[i] = readingMail
                 unreadMails.add(readingMail)
             }
@@ -51,6 +53,4 @@ private fun notifyPlayer(player: ServerPlayer, unreadMails: List<Component>) {
 
 }
 
-private fun isMailUnread(mail: Component): Boolean {
-    return mail.string.startsWith("[UNREAD]") || mail.string.startsWith("[未读]")
-}
+private fun isMailUnread(mail: Component): Boolean = isUnreadMail(mail)

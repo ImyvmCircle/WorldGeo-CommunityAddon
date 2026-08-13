@@ -148,11 +148,7 @@ private fun notifyOfficials(community: Community, server: net.minecraft.server.M
                         memberAccount.basicRoleType == com.imyvm.community.domain.model.community.MemberRoleType.ADMIN
         
         if (isOfficial && (executor == null || memberUUID != executor.uuid)) {
-            val officialPlayer = server.playerList.getPlayer(memberUUID)
-            if (officialPlayer != null) {
-                officialPlayer.sendSystemMessage(message)
-            }
-            memberAccount.mail.add(message)
+            com.imyvm.community.util.sendAndStoreMail(server, memberUUID, memberAccount.mail, message)
         }
     }
 }

@@ -601,8 +601,7 @@ private fun autoGrantExistingMembersOnSettingChange(
             defaultValue.toString(),
             region.name
         ) ?: Component.literal("Your ${permissionKey.toString().lowercase()} permission was auto-adjusted in ${region.name}")
-        executorPlayer.level().server.playerList.getPlayer(memberUUID)?.sendSystemMessage(notification)
-        memberAccount.mail.add(notification)
+        com.imyvm.community.util.sendAndStoreMail(executorPlayer.level().server, memberUUID, memberAccount.mail, notification)
     }
 }
 
@@ -854,7 +853,6 @@ private fun notifyFormalMembers(community: Community, server: MinecraftServer, m
         if (memberAccount.basicRoleType == MemberRoleType.APPLICANT || memberAccount.basicRoleType == MemberRoleType.REFUSED) {
             return@forEach
         }
-        server.playerList.getPlayer(memberUUID)?.sendSystemMessage(message)
-        memberAccount.mail.add(message)
+        com.imyvm.community.util.sendAndStoreMail(server, memberUUID, memberAccount.mail, message)
     }
 }

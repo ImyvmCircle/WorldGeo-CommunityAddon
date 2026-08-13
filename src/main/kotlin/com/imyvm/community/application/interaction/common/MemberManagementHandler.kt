@@ -15,6 +15,7 @@ import com.imyvm.community.entrypoint.screen.component.ConfirmTaskType
 import com.imyvm.community.infra.CommunityConfig
 import com.imyvm.community.infra.PricingConfig
 import com.imyvm.community.util.Translator
+import com.imyvm.community.util.sendAndStoreMail
 import com.imyvm.community.infra.economy.EconomyWalletAdapter
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.network.chat.Component
@@ -60,25 +61,14 @@ fun notifyOfficials(community: Community, server: net.minecraft.server.Minecraft
                         memberAccount.basicRoleType == MemberRoleType.ADMIN
         
         if (isOfficial) {
-            val officialPlayer = server.playerList.getPlayer(memberUUID)
-            if (officialPlayer != null) {
-                officialPlayer.sendSystemMessage(message)
-                memberAccount.mail.add(message)
-            } else {
-                memberAccount.mail.add(Component.literal("[UNREAD] ").append(message))
-            }
+            sendAndStoreMail(server, memberUUID, memberAccount.mail, message)
         }
     }
 }
 
 fun notifyTargetPlayer(server: net.minecraft.server.MinecraftServer, targetUUID: UUID, message: Component, community: Community) {
-    val targetPlayer = server.playerList.getPlayer(targetUUID)
-    if (targetPlayer != null) {
-        targetPlayer.sendSystemMessage(message)
-    }
-    
     val targetAccount = community.member[targetUUID]
-    targetAccount?.mail?.add(if (targetPlayer == null) Component.literal("[UNREAD] ").append(message) else message)
+    if (targetAccount != null) sendAndStoreMail(server, targetUUID, targetAccount.mail, message)
 }
 
 fun onJoinCommunity(player: ServerPlayer, targetCommunity: Community): Int {
