@@ -13,7 +13,7 @@ import java.time.ZoneId
 
 class CommunicationShardStoreTest {
     @Test
-    fun retentionDeletesOnlyExpiredCleanableCategories() {
+    fun retentionDeletesExpiredCategories() {
         val root = createTempDirectory("community-comm-test")
         CommunicationShardStore.initialize(root)
         val zone = ZoneId.of("Asia/Taipei")
@@ -29,7 +29,7 @@ class CommunicationShardStoreTest {
         val files = Files.list(root.resolve("community-comms")).use { it.map { file -> file.fileName.toString() }.toList() }
         assertFalse(files.any { it.startsWith("comm-CHAT-") })
         assertTrue(files.any { it.startsWith("comm-SYS-") })
-        assertTrue(files.any { it.startsWith("comm-OPX-") })
+        assertFalse(files.any { it.startsWith("comm-OPX-") })
     }
 
     private fun record(time: Long) = CommunicationRecord(

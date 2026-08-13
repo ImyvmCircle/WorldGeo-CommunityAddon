@@ -46,6 +46,10 @@ fun onCreateCommunityRequest(
     requestedShapeType: GeoShapeType? = null
 ): Int {
     if (!checkPlayerMembershipCreation(player, communityType)) return 0
+    if (!communityType.equals("manor", ignoreCase = true) && !communityType.equals("realm", ignoreCase = true)) {
+        player.sendSystemMessage(Translator.tr("community.create.error.invalid_type"))
+        return 0
+    }
 
     val existingPending = WorldGeoCommunityAddon.pendingOperations.values.find {
         it.type in setOf(

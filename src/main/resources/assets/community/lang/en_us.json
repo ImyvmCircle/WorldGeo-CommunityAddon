@@ -26,6 +26,7 @@
   "community.create.region.error": "§c§l[ERROR]§r §cError creating community: §4Invalid region specified.",
   "community.create.error.maximum_communities": "§c§l[LIMIT REACHED]§r §cYou have reached the §e§lmaximum§r §cnumber of communities.",
   "community.create.error.already_in_community": "§c§l[ALREADY IN COMMUNITY]§r §cYou are already in a §e§l{0}§r §ctype community.",
+  "community.create.error.invalid_type": "§c§l[ERROR]§r §cCommunity type must be §6manor§c or §5realm§c.",
   "community.create.request.initial.success": "§a§l[SUCCESS]§r §aCommunity request with name §f§l{0}§r §aand ID §b§l{1}§r §ainitialized successfully!",
   "community.create.request.sent": "§e§l[PENDING]§r §eWaiting for §6§lapproval§r §efrom an admin.",
   "community.create.request.recruitment": "§6§l[RECRUITING]§r §6Now recruiting §e§l{0} founding players§r §6to initialize a realm!",
