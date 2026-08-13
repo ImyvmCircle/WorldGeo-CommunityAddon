@@ -173,7 +173,7 @@ object CommunityBuildingService {
                             line.blockId,
                             line.placed.toString(),
                             line.broken.toString(),
-                            formatMoney(line.weeklyNet),
+                            line.weeklyNet.toString(),
                             formatMoney(line.estimatedReward)
                         ))
                 }
