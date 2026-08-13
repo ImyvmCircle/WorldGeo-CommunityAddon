@@ -33,7 +33,7 @@ class CommunicationShardStoreTest {
         CommunicationShardStore.runRetentionCleanup(System.currentTimeMillis())
 
         val files = Files.list(root.resolve("community-comms")).use { it.map { file -> file.fileName.toString() }.toList() }
-        assertFalse(files.any { it.startsWith("comm-CHAT-") })
+        assertTrue(files.any { it.startsWith("comm-CHAT-") })
         assertTrue(files.any { it.startsWith("comm-SYS-") })
         assertFalse(files.any { it.startsWith("comm-OPX-") })
     }
