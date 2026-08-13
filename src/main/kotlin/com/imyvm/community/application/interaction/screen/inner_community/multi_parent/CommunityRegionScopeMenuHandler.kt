@@ -386,6 +386,10 @@ fun onCancelRename(player: ServerPlayer, regionNumberId: Int, nameKey: String): 
         return 0
     }
     val renameData = pendingOp.renameData ?: return 0
+    if (renameData.executorUUID != player.uuid) {
+        player.sendSystemMessage(Translator.tr("community.modification.confirmation.not_yours"))
+        return 0
+    }
     if (renameData.nameKey != nameKey) {
         player.sendSystemMessage(Translator.tr("community.modification.confirmation.not_found"))
         return 0
