@@ -23,8 +23,8 @@ class OnlinePlayerListMenu private constructor(
     page = page,
     runBack = runBack
 ) {
-    private val playersPerPage = 45
-    private val startSlot = 0
+    private val playersPerPage = 28
+    private val startSlot = 10
 
     companion object {
         fun create(

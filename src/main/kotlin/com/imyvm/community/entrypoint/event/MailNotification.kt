@@ -28,7 +28,7 @@ private fun checkPlayerMail(player: ServerPlayer): List<Component> {
             val currentMail = mailBox[i]
 
             if (isMailUnread(currentMail)) {
-                val readingMail = Component.literal(currentMail.string.replaceFirst("[UNREAD]", "").trim())
+                val readingMail = Component.literal(currentMail.string.replaceFirst(Regex("^\\[(UNREAD|未读)]\\s*"), "").trim())
                 mailBox[i] = readingMail
                 unreadMails.add(readingMail)
             }
@@ -52,5 +52,5 @@ private fun notifyPlayer(player: ServerPlayer, unreadMails: List<Component>) {
 }
 
 private fun isMailUnread(mail: Component): Boolean {
-    return mail.string.startsWith("[UNREAD]")
+    return mail.string.startsWith("[UNREAD]") || mail.string.startsWith("[未读]")
 }

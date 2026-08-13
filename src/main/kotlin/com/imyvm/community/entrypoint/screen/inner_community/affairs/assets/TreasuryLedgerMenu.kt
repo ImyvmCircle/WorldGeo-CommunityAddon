@@ -26,8 +26,8 @@ class TreasuryLedgerMenu(
     runBack = runBack
 ) {
 
-    private val itemsPerPage = 45
-    private val startSlot = 0
+    private val itemsPerPage = 28
+    private val startSlot = 10
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
 
     init {

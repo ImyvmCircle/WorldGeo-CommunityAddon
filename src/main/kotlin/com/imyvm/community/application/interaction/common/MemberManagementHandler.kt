@@ -26,7 +26,7 @@ import com.imyvm.community.application.event.removePendingOperationByKey
 import com.imyvm.community.domain.model.PendingOperation
 import com.imyvm.community.domain.model.pendingOperationKey
 
-private fun getInvitationKey(community: Community, inviteeUUID: UUID): Long? {
+internal fun getInvitationKey(community: Community, inviteeUUID: UUID): Long? {
     val regionId = community.regionNumberId ?: return null
     val uuidPart = inviteeUUID.mostSignificantBits xor java.lang.Long.rotateLeft(inviteeUUID.leastSignificantBits, 32)
     return pendingOperationKey(regionId, PendingOperationType.INVITATION) xor uuidPart
@@ -61,18 +61,24 @@ fun notifyOfficials(community: Community, server: net.minecraft.server.Minecraft
         
         if (isOfficial) {
             val officialPlayer = server.playerList.getPlayer(memberUUID)
-            officialPlayer?.sendSystemMessage(message)
-            memberAccount.mail.add(message)
+            if (officialPlayer != null) {
+                officialPlayer.sendSystemMessage(message)
+                memberAccount.mail.add(message)
+            } else {
+                memberAccount.mail.add(Component.literal("[UNREAD] ").append(message))
+            }
         }
     }
 }
 
 fun notifyTargetPlayer(server: net.minecraft.server.MinecraftServer, targetUUID: UUID, message: Component, community: Community) {
     val targetPlayer = server.playerList.getPlayer(targetUUID)
-    targetPlayer?.sendSystemMessage(message)
+    if (targetPlayer != null) {
+        targetPlayer.sendSystemMessage(message)
+    }
     
     val targetAccount = community.member[targetUUID]
-    targetAccount?.mail?.add(message)
+    targetAccount?.mail?.add(if (targetPlayer == null) Component.literal("[UNREAD] ").append(message) else message)
 }
 
 fun onJoinCommunity(player: ServerPlayer, targetCommunity: Community): Int {
@@ -217,9 +223,14 @@ private fun joinUnderInviteOnlyPolicy(player: ServerPlayer, targetCommunity: Com
 }
 
 fun validateInvitationSender(inviter: ServerPlayer, community: Community): Boolean {
-    val inviterRole = community.getMemberRole(inviter.uuid)
-    if (inviterRole == null || inviterRole == MemberRoleType.APPLICANT || inviterRole == MemberRoleType.REFUSED) {
-        inviter.sendSystemMessage(Translator.tr("community.invite.error.no_permission"))
+    val administration = CommunityPermissionPolicy.canExecuteAdministration(inviter, community, com.imyvm.community.domain.policy.permission.AdminPrivilege.MANAGE_MEMBERS)
+    if (administration.isDenied()) {
+        administration.sendSuccess(inviter)
+        return false
+    }
+    val proto = CommunityPermissionPolicy.canExecuteOperationInProto(inviter, community, com.imyvm.community.domain.policy.permission.AdminPrivilege.MANAGE_MEMBERS)
+    if (proto.isDenied()) {
+        proto.sendSuccess(inviter)
         return false
     }
     
@@ -246,6 +257,7 @@ fun validateInvitationTarget(inviter: ServerPlayer, target: ServerPlayer, commun
 }
 
 fun sendInvitation(inviter: ServerPlayer, target: ServerPlayer, community: Community) {
+    if (!validateInvitationSender(inviter, community) || !validateInvitationTarget(inviter, target, community)) return
     if (!checkMemberNumberManor(inviter, community)) return
     
     val communityName = community.getRegion()?.name ?: "Community #${community.regionNumberId}"
@@ -263,6 +275,7 @@ fun sendInvitation(inviter: ServerPlayer, target: ServerPlayer, community: Commu
         addPendingOperationByKey(
             operationKey = invitationKey,
             type = PendingOperationType.INVITATION,
+            regionNumberId = community.regionNumberId,
             expireMinutes = timeoutMinutes,
             inviterUUID = inviter.uuid,
             inviteeUUID = target.uuid

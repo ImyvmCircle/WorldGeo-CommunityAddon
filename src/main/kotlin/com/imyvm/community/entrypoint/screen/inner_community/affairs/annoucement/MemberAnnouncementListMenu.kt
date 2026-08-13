@@ -26,8 +26,8 @@ class MemberAnnouncementListMenu(
     runBack = runBack
 ) {
 
-    private val announcementsPerPage = 45
-    private val startSlot = 0
+    private val announcementsPerPage = 28
+    private val startSlot = 10
 
     init {
         val announcements = community.getActiveAnnouncements().sortedByDescending { it.timestamp }

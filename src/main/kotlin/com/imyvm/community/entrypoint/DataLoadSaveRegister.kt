@@ -4,6 +4,7 @@ import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.application.helper.CommunityBackgroundTasks
 import com.imyvm.community.application.interaction.common.ChatChannelManager
 import com.imyvm.community.application.townbuilding.BuildingRewardPreviewTracker
+import com.imyvm.community.application.townbuilding.CommunityBuildingService
 import com.imyvm.community.infra.CommunityConfig
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.infra.PricingConfig
@@ -80,6 +81,7 @@ private fun registerPlayerStateCleanup() {
     ServerPlayConnectionEvents.DISCONNECT.register { player, _ ->
         ChatChannelManager.clearChannel(player.player.uuid)
         BuildingRewardPreviewTracker.clear(player.player.uuid)
+        CommunityBuildingService.clearDraft(player.player.uuid)
     }
 }
 

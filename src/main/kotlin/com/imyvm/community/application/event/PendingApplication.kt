@@ -3,6 +3,7 @@ package com.imyvm.community.application.event
 import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.application.helper.refundNotCreated
 import com.imyvm.community.application.interaction.common.deleteCreationRegion
+import com.imyvm.community.application.interaction.common.getInvitationKey
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.PendingOperation
 import com.imyvm.community.domain.model.PendingOperationType
@@ -58,6 +59,7 @@ fun movePendingOperation(
     val replacement = PendingOperation(
         expireAt = existing.expireAt,
         type = toType,
+        regionNumberId = existing.regionNumberId,
         inviterUUID = existing.inviterUUID,
         inviteeUUID = existing.inviteeUUID,
         creationData = existing.creationData,
@@ -200,8 +202,10 @@ private fun handleExpiredInvitation(
     val inviteeUUID = operation.inviteeUUID ?: return
     val inviterUUID = operation.inviterUUID ?: return
     
-    val community = CommunityDatabase.communities.find { 
-        it.member[inviteeUUID]?.isInvited == true 
+    val community = operation.regionNumberId?.let { regionId ->
+        CommunityDatabase.communities.find { it.regionNumberId == regionId }
+    } ?: CommunityDatabase.communities.singleOrNull {
+        it.member[inviteeUUID]?.isInvited == true && getInvitationKey(it, inviteeUUID) in WorldGeoCommunityAddon.pendingOperations
     }
     
     if (community != null) {
@@ -227,7 +231,11 @@ private fun handleExpiredInvitation(
         )
     }
     
-    WorldGeoCommunityAddon.logger.info("Expired invitation for invitee $inviteeUUID")
+    if (community == null) {
+        WorldGeoCommunityAddon.logger.warn("Expired invitation for invitee $inviteeUUID could not be matched to one community")
+    } else {
+        WorldGeoCommunityAddon.logger.info("Expired invitation for invitee $inviteeUUID")
+    }
 }
 
 private fun handleExpiredCreationConfirmation(
@@ -367,6 +375,7 @@ fun addPendingOperation(
 fun addPendingOperationByKey(
     operationKey: Long,
     type: PendingOperationType,
+    regionNumberId: Int? = null,
     expireHours: Int? = null,
     expireMinutes: Int? = null,
     inviterUUID: UUID? = null,
@@ -394,6 +403,7 @@ fun addPendingOperationByKey(
     WorldGeoCommunityAddon.pendingOperations[operationKey] = PendingOperation(
         expireAt = expireTime,
         type = type,
+        regionNumberId = regionNumberId,
         inviterUUID = inviterUUID,
         inviteeUUID = inviteeUUID,
         creationData = creationData,

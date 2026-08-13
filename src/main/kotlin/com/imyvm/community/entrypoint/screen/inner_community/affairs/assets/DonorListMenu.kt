@@ -24,8 +24,8 @@ class DonorListMenu(
     runBack = runBack
 ) {
 
-    private val donorsPerPage = 45
-    private val startSlot = 0
+    private val donorsPerPage = 28
+    private val startSlot = 10
 
     init {
         val donorList = community.getDonorList()

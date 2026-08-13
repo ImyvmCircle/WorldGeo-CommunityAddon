@@ -14,7 +14,8 @@ class PendingOperation(
     val renameData: RenameConfirmationData? = null,
     val transferData: ScopeTransferConfirmationData? = null,
     val treasuryGrantData: TreasuryGrantConfirmationData? = null,
-    val buildingData: BuildingConfirmationData? = null
+    val buildingData: BuildingConfirmationData? = null,
+    val regionNumberId: Int? = null
 )
 
 data class CreationConfirmationData(

@@ -159,6 +159,7 @@ object CommunityDatabase {
         val buffer = ByteArrayOutputStream()
         DataOutputStream(buffer).use { sectionStream -> writer(sectionStream) }
         val payload = buffer.toByteArray()
+        require(payload.size <= MAX_SECTION_BYTES) { "Community database section $tag exceeds $MAX_SECTION_BYTES bytes" }
         stream.writeInt(SECTION_FRAME_MARKER)
         stream.writeInt(tag)
         stream.writeInt(payload.size)
@@ -828,6 +829,8 @@ object CommunityDatabase {
             stream.writeLong(operationKey)
             stream.writeLong(operation.expireAt)
             stream.writeInt(operation.type.value)
+            stream.writeBoolean(operation.regionNumberId != null)
+            operation.regionNumberId?.let(stream::writeInt)
             writeNullableUUID(stream, operation.inviterUUID)
             writeNullableUUID(stream, operation.inviteeUUID)
             writeCreationData(stream, operation.creationData)
@@ -861,6 +864,7 @@ object CommunityDatabase {
                 val expireAt = stream.readLong()
                 val type = com.imyvm.community.domain.model.PendingOperationType.fromValue(stream.readInt())
                 val operationKey = if (version >= 3) storedKey else pendingOperationKey(storedKey.toInt(), type)
+                val regionNumberId = if (version >= 5 && stream.readBoolean()) stream.readInt() else null
                 val inviterUUID = readNullableUUID(stream)
                 val inviteeUUID = readNullableUUID(stream)
                 val creationData = readCreationData(stream)
@@ -875,6 +879,7 @@ object CommunityDatabase {
                 val operation = PendingOperation(
                     expireAt = expireAt,
                     type = type,
+                    regionNumberId = regionNumberId,
                     inviterUUID = inviterUUID,
                     inviteeUUID = inviteeUUID,
                     creationData = creationData,
