@@ -258,6 +258,7 @@
   "ui.common.button.next": "§a§l下一页 >>>",
   "ui.common.page": "§7§l跳转到第 §f{0} §7页",
   "community.chat.error.not_member": "§c§l[错误]§r §c您必须是 §e§l正式成员§r §c才能使用内部频道。",
+  "community.chat.error.history_unavailable": "§e消息已发送，但聊天记录队列繁忙，本条记录未能保存。",
   "community.chat.channel.enabled": "§a§l[频道已激活]§r §a§f§l{0}§a 的内部频道已激活。§e您的消息将发送到此领域。",
   "community.chat.channel.disabled": "§7§l[频道已停用]§r §7§f§l{0}§7 的内部频道已停用。您的消息将发送到全局聊天。",
   "ui.community.invite.online_players": "选择要邀请的玩家",

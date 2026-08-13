@@ -16,24 +16,85 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.PriorityQueue
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 import java.util.zip.CRC32
 
 object CommunicationShardStore {
     private const val RECORD_VERSION = 1
     private val DATE_FMT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
-    private var shardRoot: Path? = null
+    @Volatile private var shardRoot: Path? = null
+    @Volatile private var writer: ThreadPoolExecutor? = null
 
+    @Synchronized
     fun initialize(worldRoot: Path) {
+        stop()
         shardRoot = worldRoot.resolve("community-comms").also { Files.createDirectories(it) }
+        writer = ThreadPoolExecutor(
+            1,
+            1,
+            0L,
+            TimeUnit.MILLISECONDS,
+            ArrayBlockingQueue(WRITE_QUEUE_CAPACITY),
+            { task -> Thread(task, "community-communication-writer").apply { isDaemon = true } },
+            ThreadPoolExecutor.AbortPolicy()
+        )
     }
 
-    fun append(record: CommunicationRecord, category: CommunicationCategory) {
-        val root = shardRoot ?: return
-        val date = Instant.ofEpochMilli(record.recordedAtMillis)
-            .atZone(ZoneId.of(CommunityConfig.TIMEZONE.value)).format(DATE_FMT)
-        val file = root.resolve("comm-${category.filePrefix}-${record.regionId}-$date.log")
+    fun append(record: CommunicationRecord, category: CommunicationCategory): Boolean {
+        val root = shardRoot ?: return false
+        return submit { appendNow(root, record, category) }
+    }
+
+    internal fun appendSynchronously(record: CommunicationRecord, category: CommunicationCategory): Boolean {
+        val root = shardRoot ?: return false
+        return appendNow(root, record, category)
+    }
+
+    internal fun flush() {
+        val current = writer ?: return
         try {
+            current.submit {}.get(30, TimeUnit.SECONDS)
+        } catch (error: Exception) {
+            WorldGeoCommunityAddon.logger.warn("Failed to flush communication shard writes", error)
+        }
+    }
+
+    @Synchronized
+    fun stop() {
+        val current = writer ?: run {
+            shardRoot = null
+            return
+        }
+        writer = null
+        current.shutdown()
+        try {
+            if (!current.awaitTermination(30, TimeUnit.SECONDS)) current.shutdownNow()
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+            current.shutdownNow()
+        }
+        shardRoot = null
+    }
+
+    private fun submit(task: () -> Unit): Boolean {
+        val current = writer ?: return false
+        return try {
+            current.execute(task)
+            true
+        } catch (_: RejectedExecutionException) {
+            false
+        }
+    }
+
+    private fun appendNow(root: Path, record: CommunicationRecord, category: CommunicationCategory): Boolean {
+        return try {
+            val date = Instant.ofEpochMilli(record.recordedAtMillis)
+                .atZone(ZoneId.of(CommunityConfig.TIMEZONE.value)).format(DATE_FMT)
+            val file = root.resolve("comm-${category.filePrefix}-${record.regionId}-$date.log")
             val data = encode(record)
             val checksum = crc32(data)
             Files.newOutputStream(file, StandardOpenOption.CREATE, StandardOpenOption.APPEND).use { raw ->
@@ -44,10 +105,12 @@ object CommunicationShardStore {
                     out.flush()
                 }
             }
-        } catch (error: IOException) {
+            true
+        } catch (error: Exception) {
             WorldGeoCommunityAddon.logger.error(
                 "Failed to append ${category.filePrefix} shard for region ${record.regionId}", error
             )
+            false
         }
     }
 
@@ -57,24 +120,26 @@ object CommunicationShardStore {
         val records = PriorityQueue<CommunicationRecord>(compareBy(CommunicationRecord::recordedAtMillis))
         val prefix = "comm-CHAT-$regionId-"
         try {
-            Files.list(root).use { files ->
-                files.filter { it.fileName.toString().startsWith(prefix) }
+            val files = Files.list(root).use { paths ->
+                paths.filter { it.fileName.toString().startsWith(prefix) }
                     .sorted(compareByDescending<Path> { it.fileName.toString() })
-                    .forEach { file ->
-                        DataInputStream(Files.newInputStream(file)).use { input ->
-                            while (input.available() > 0) {
-                                val size = input.readInt()
-                                val checksum = input.readInt()
-                                if (size !in 0..MAX_RECORD_BYTES) break
-                                val payload = input.readNBytes(size)
-                                if (payload.size != size || crc32(payload) != checksum) break
-                                decode(payload)?.takeIf { it.type == CommunicationRecordType.CHAT }?.let { record ->
-                                    records.add(record)
-                                    if (records.size > limit) records.poll()
-                                }
-                            }
+                    .toList()
+            }
+            for (file in files) {
+                DataInputStream(Files.newInputStream(file)).use { input ->
+                    while (input.available() > 0) {
+                        val size = input.readInt()
+                        val checksum = input.readInt()
+                        if (size !in 0..MAX_RECORD_BYTES) break
+                        val payload = input.readNBytes(size)
+                        if (payload.size != size || crc32(payload) != checksum) break
+                        decode(payload)?.takeIf { it.type == CommunicationRecordType.CHAT }?.let { record ->
+                            records.add(record)
+                            if (records.size > limit) records.poll()
                         }
                     }
+                }
+                if (records.size >= limit) break
             }
         } catch (error: IOException) {
             WorldGeoCommunityAddon.logger.warn("Failed to read chat shards for region $regionId", error)
@@ -104,6 +169,8 @@ object CommunicationShardStore {
             )
         }
     }
+
+    fun scheduleRetentionCleanup(): Boolean = submit { runRetentionCleanup() }
 
     fun runRetentionCleanup() {
         runRetentionCleanup(System.currentTimeMillis())
@@ -182,6 +249,7 @@ object CommunicationShardStore {
         crc.update(data)
         return crc.value.toInt()
     }
+    private const val WRITE_QUEUE_CAPACITY = 512
     private const val MAX_RECORD_BYTES = 64 * 1024
     private const val MAX_RECORD_ARGUMENTS = 128
 }

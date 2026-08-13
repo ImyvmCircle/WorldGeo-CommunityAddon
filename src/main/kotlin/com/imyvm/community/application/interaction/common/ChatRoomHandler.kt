@@ -28,7 +28,9 @@ object ChatRoomHandler {
             content = Component.literal(message),
             senderUUID = player.uuid
         )
-        community.addChatMessageWithShard(chatMessage)
+        if (!community.addChatMessageWithShard(chatMessage)) {
+            player.sendSystemMessage(Translator.tr("community.chat.error.history_unavailable"))
+        }
 
         broadcastChatMessage(community, player, message)
         

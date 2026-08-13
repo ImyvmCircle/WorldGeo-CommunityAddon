@@ -258,6 +258,7 @@
   "ui.common.button.next": "§a§lNext Page >>>",
   "ui.common.page": "§7§lGo to page §f{0}",
   "community.chat.error.not_member": "§c§l[ERROR]§r §cYou must be a §e§lformal member§r §cto use the chat room.",
+  "community.chat.error.history_unavailable": "§eYour message was delivered, but chat history is busy and could not save it.",
   "community.chat.channel.enabled": "§a§l[CHAT ACTIVATED]§r §aChat channel activated for §f§l{0}§a. §eYour messages will now go to this community.",
   "community.chat.channel.disabled": "§7§l[CHAT DEACTIVATED]§r §7Chat channel deactivated for §f§l{0}§7. Your messages will now go to global chat.",
   "ui.community.invite.online_players": "Select Player to Invite",

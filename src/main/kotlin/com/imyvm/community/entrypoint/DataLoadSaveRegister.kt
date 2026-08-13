@@ -22,6 +22,7 @@ fun registerDataLoadAndSave() {
     dataSave()
     captureServerInstance()
     accountLifecycle()
+    communicationLifecycle()
     registerCommCleanup()
     registerPlayerStateCleanup()
 }
@@ -42,6 +43,7 @@ private fun loadData(server: MinecraftServer) {
         CommunityWeeklyReportStore.initialize(server.getWorldPath(LevelResource.ROOT))
         CommunityDatabase.load(server)
     } catch (e: Exception) {
+        CommunicationShardStore.stop()
         try {
             val backupPath = CommunityDatabase.backupDatabaseAfterLoadFailure()
             if (backupPath != null) {
@@ -86,14 +88,17 @@ private fun accountLifecycle() {
     ServerLifecycleEvents.SERVER_STOPPING.register { AccountSubsystem.stop() }
 }
 
+private fun communicationLifecycle() {
+    ServerLifecycleEvents.SERVER_STOPPING.register { CommunicationShardStore.stop() }
+}
+
 private fun registerCommCleanup() {
     var tickCount = 0
     ServerTickEvents.END_SERVER_TICK.register { _ ->
         tickCount++
         if (tickCount >= 72000) {
             tickCount = 0
-            Thread({ CommunicationShardStore.runRetentionCleanup() }, "community-comm-cleanup")
-                .apply { isDaemon = true }.start()
+            CommunicationShardStore.scheduleRetentionCleanup()
         }
     }
 }
