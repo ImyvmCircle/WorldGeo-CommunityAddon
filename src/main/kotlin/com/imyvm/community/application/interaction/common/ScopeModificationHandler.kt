@@ -56,6 +56,13 @@ fun onConfirmScopeModification(player: ServerPlayer, regionNumberId: Int, scopeN
         return 0
     }
 
+    val administration = com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
+        .canExecuteAdministration(player, community, AdminPrivilege.MODIFY_REGION_GEOMETRY)
+    if (administration.isDenied()) { administration.sendSuccess(player); return 0 }
+    val proto = com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
+        .canExecuteOperationInProto(player, community, AdminPrivilege.MODIFY_REGION_GEOMETRY)
+    if (proto.isDenied()) { proto.sendSuccess(player); return 0 }
+
     val currentAssets = community.getTotalAssets()
     if (modificationData.cost > 0 && currentAssets < modificationData.cost) {
         player.sendSystemMessage(Translator.tr("community.modification.error.insufficient_assets",
@@ -277,6 +284,13 @@ fun onConfirmScopeDeletion(player: ServerPlayer, regionNumberId: Int, scopeName:
         removePendingOperation(regionNumberId, PendingOperationType.DELETE_SCOPE_CONFIRMATION)
         return 0
     }
+
+    val administration = com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
+        .canExecuteAdministration(player, community, AdminPrivilege.MODIFY_REGION_GEOMETRY)
+    if (administration.isDenied()) { administration.sendSuccess(player); return 0 }
+    val proto = com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
+        .canExecuteOperationInProto(player, community, AdminPrivilege.MODIFY_REGION_GEOMETRY)
+    if (proto.isDenied()) { proto.sendSuccess(player); return 0 }
 
     val communityRegion = community.getRegion()
     if (communityRegion == null) {

@@ -223,6 +223,13 @@ fun onConfirmTeleportPointSetting(playerExecutor: ServerPlayer, regionNumberId: 
     if (community == null || region == null || scope == null) {
         removePendingOperation(regionNumberId, PendingOperationType.TELEPORT_POINT_CONFIRMATION)
         playerExecutor.sendSystemMessage(Translator.tr("community.not_found.region"))
+    val administration = com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
+        .canExecuteAdministration(playerExecutor, community!!, com.imyvm.community.domain.policy.permission.AdminPrivilege.MANAGE_TELEPORT_POINTS)
+    if (administration.isDenied()) { administration.sendSuccess(playerExecutor); return 0 }
+    val proto = com.imyvm.community.domain.policy.permission.CommunityPermissionPolicy
+        .canExecuteOperationInProto(playerExecutor, community, com.imyvm.community.domain.policy.permission.AdminPrivilege.MANAGE_TELEPORT_POINTS)
+    if (proto.isDenied()) { proto.sendSuccess(playerExecutor); return 0 }
+
         return 0
     }
 
