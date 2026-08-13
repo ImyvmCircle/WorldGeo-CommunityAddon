@@ -17,7 +17,7 @@ enum class CommunicationRecordType { CHAT, SYSTEM, ANNOUNCEMENT, OP_EXCEPTION }
 enum class CommunicationVisibility { MEMBER, ALL, OP }
 
 enum class CommunicationCategory(val filePrefix: String, val retentionDays: Int?) {
-    CHAT("CHAT", 30),
+    CHAT("CHAT", 365),
     SYSTEM("SYS", 180),
     OP_EXCEPTION_UNCLOSED("OPX", 365)
 }

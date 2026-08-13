@@ -12,7 +12,6 @@ import net.minecraft.network.chat.Component
 import java.util.UUID
 
 internal fun Community.addChatMessageWithShard(message: CommunityMessage) {
-    messages.add(message)
     val rid = regionNumberId ?: return
     CommunicationShardStore.append(
         CommunicationRecord(rid, message.timestamp, message.senderUUID.toString(), null,
@@ -75,24 +74,6 @@ fun migrateLegacyCommunicationsToShards(communities: Iterable<Community>) {
                 category
             )
         }
-        community.announcements.forEach { announcement ->
-            CommunicationShardStore.append(
-                CommunicationRecord(regionId, announcement.timestamp, announcement.authorUUID.toString(), null,
-                    CommunicationRecordType.ANNOUNCEMENT, legacyText = announcement.content.string),
-                CommunicationCategory.SYSTEM
-            )
-        }
-        community.member.forEach { (uuid, member) ->
-            member.mail.forEach { mail ->
-                CommunicationShardStore.append(
-                    CommunicationRecord(regionId, System.currentTimeMillis(), null, uuid.toString(),
-                        CommunicationRecordType.SYSTEM, legacyText = mail.string),
-                    CommunicationCategory.SYSTEM
-                )
-            }
-            member.mail.clear()
-        }
         community.messages.clear()
-        community.announcements.clear()
     }
 }

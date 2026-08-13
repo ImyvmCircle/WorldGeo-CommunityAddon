@@ -4,7 +4,9 @@ import com.imyvm.community.WorldGeoCommunityAddon
 import com.imyvm.community.infra.CommunityConfig
 import com.imyvm.community.domain.model.communication.CommunicationCategory
 import com.imyvm.community.domain.model.communication.CommunicationRecord
+import com.imyvm.community.domain.model.communication.CommunicationRecordType
 import com.imyvm.community.domain.model.communication.CommunicationVisibility
+import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.IOException
 import java.nio.file.Files
@@ -13,6 +15,7 @@ import java.nio.file.StandardOpenOption
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.PriorityQueue
 import java.util.zip.CRC32
 
 object CommunicationShardStore {
@@ -46,6 +49,37 @@ object CommunicationShardStore {
                 "Failed to append ${category.filePrefix} shard for region ${record.regionId}", error
             )
         }
+    }
+
+    fun recentChat(regionId: Int, limit: Int): List<CommunicationRecord> {
+        if (limit <= 0) return emptyList()
+        val root = shardRoot ?: return emptyList()
+        val records = PriorityQueue<CommunicationRecord>(compareBy(CommunicationRecord::recordedAtMillis))
+        val prefix = "comm-CHAT-$regionId-"
+        try {
+            Files.list(root).use { files ->
+                files.filter { it.fileName.toString().startsWith(prefix) }
+                    .sorted(compareByDescending<Path> { it.fileName.toString() })
+                    .forEach { file ->
+                        DataInputStream(Files.newInputStream(file)).use { input ->
+                            while (input.available() > 0) {
+                                val size = input.readInt()
+                                val checksum = input.readInt()
+                                if (size !in 0..MAX_RECORD_BYTES) break
+                                val payload = input.readNBytes(size)
+                                if (payload.size != size || crc32(payload) != checksum) break
+                                decode(payload)?.takeIf { it.type == CommunicationRecordType.CHAT }?.let { record ->
+                                    records.add(record)
+                                    if (records.size > limit) records.poll()
+                                }
+                            }
+                        }
+                    }
+            }
+        } catch (error: IOException) {
+            WorldGeoCommunityAddon.logger.warn("Failed to read chat shards for region $regionId", error)
+        }
+        return records.sortedByDescending(CommunicationRecord::recordedAtMillis)
     }
 
     fun closeOpException(regionId: Int, exceptionStableId: String) {
@@ -127,9 +161,27 @@ object CommunicationShardStore {
         return buf.toByteArray()
     }
 
+    private fun decode(payload: ByteArray): CommunicationRecord? = runCatching {
+        DataInputStream(payload.inputStream()).use { stream ->
+            require(stream.readInt() == RECORD_VERSION)
+            val regionId = stream.readInt()
+            val recordedAtMillis = stream.readLong()
+            val senderUuid = stream.readUTF().ifEmpty { null }
+            val senderName = stream.readUTF().ifEmpty { null }
+            val type = CommunicationRecordType.valueOf(stream.readUTF())
+            val legacyText = stream.readUTF().ifEmpty { null }
+            val localizationKey = stream.readUTF().ifEmpty { null }
+            val args = List(stream.readInt().also { require(it in 0..MAX_RECORD_ARGUMENTS) }) { stream.readUTF() }
+            val visibility = CommunicationVisibility.valueOf(stream.readUTF())
+            CommunicationRecord(regionId, recordedAtMillis, senderUuid, senderName, type, legacyText, localizationKey, args, visibility)
+        }
+    }.getOrNull()
+
     private fun crc32(data: ByteArray): Int {
         val crc = CRC32()
         crc.update(data)
         return crc.value.toInt()
     }
+    private const val MAX_RECORD_BYTES = 64 * 1024
+    private const val MAX_RECORD_ARGUMENTS = 128
 }

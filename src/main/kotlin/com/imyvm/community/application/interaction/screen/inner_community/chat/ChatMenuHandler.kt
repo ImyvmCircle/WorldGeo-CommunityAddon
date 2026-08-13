@@ -3,6 +3,7 @@ package com.imyvm.community.application.interaction.screen.inner_community.chat
 import com.imyvm.community.application.interaction.screen.CommunityMenuOpener
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.entrypoint.screen.inner_community.ChatRoomMenu
+import com.imyvm.community.infra.communication.CommunicationShardStore
 import com.imyvm.community.util.Translator
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.network.chat.ClickEvent
@@ -27,7 +28,8 @@ fun runOpenChatHistory(
 ) {
     player.closeContainer()
     
-    val chatMessages = community.getChatMessages()
+    val regionId = community.regionNumberId ?: return
+    val chatMessages = CommunicationShardStore.recentChat(regionId, 20)
     
     if (chatMessages.isEmpty()) {
         player.sendSystemMessage(Translator.tr("ui.community.chat.history.empty"))
@@ -43,11 +45,10 @@ fun runOpenChatHistory(
     val messagesToShow = chatMessages.take(20)
     
     for (message in messagesToShow) {
-        val senderName = community.member[message.senderUUID]?.let {
-            player.level().server?.playerList?.getPlayer(message.senderUUID)?.gameProfile?.name ?: "Unknown"
-        } ?: "Unknown"
+        val senderUuid = message.senderUuid?.let { runCatching { java.util.UUID.fromString(it) }.getOrNull() }
+        val senderName = senderUuid?.let { player.level().server.playerList.getPlayer(it)?.gameProfile?.name } ?: "Unknown"
         
-        val role = community.getMemberRole(message.senderUUID)
+        val role = senderUuid?.let(community::getMemberRole)
         val roleDisplay = when (role?.name) {
             "OWNER" -> if (community.isManor()) "§6Landowner§r" else "§6Lord§r"
             "ADMIN" -> if (community.isManor()) "§5HouseKeeper§r" else "§5Steward§r"
@@ -55,8 +56,8 @@ fun runOpenChatHistory(
             else -> "§7Member§r"
         }
         
-        val timestamp = com.imyvm.community.util.getFormattedMillsHour(message.timestamp)
-        val messageText = message.content.string
+        val timestamp = com.imyvm.community.util.getFormattedMillsHour(message.recordedAtMillis)
+        val messageText = message.legacyText ?: ""
         
         player.sendSystemMessage(Component.literal("§8[$timestamp]§r $roleDisplay §f$senderName§7: §r$messageText"))
     }

@@ -1,5 +1,6 @@
 package com.imyvm.community.infra
 
+import com.imyvm.community.application.communication.migrateLegacyCommunicationsToShards
 import com.imyvm.community.application.townbuilding.CommunityBuildingService
 import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.CreationConfirmationData
@@ -54,7 +55,7 @@ object CommunityDatabase {
 
     private const val DATABASE_FILENAME = "iwg_community.db"
     private const val DATABASE_VERSION_MARKER = -3
-    private const val DATABASE_VERSION = 5
+    private const val DATABASE_VERSION = 6
     private const val PENDING_SECTION_VERSION_MARKER = -2
     private const val PENDING_SECTION_VERSION = 6
     private const val SECTION_FRAME_MARKER = -4
@@ -69,6 +70,7 @@ object CommunityDatabase {
     private const val SECTION_COMMUNITY_FISCAL = 9
     private const val SECTION_COMMUNITY_DEVELOPMENT = 10
     private const val SECTION_COMMUNICATIONS = 11
+    private const val COMMUNICATION_SECTION_VERSION_MARKER = -6
     private const val MAX_SECTION_BYTES = 16 * 1024 * 1024
     private const val MAX_COMMUNITY_BYTES = 16 * 1024 * 1024
     private const val MAX_COMMUNITIES = 100_000
@@ -85,6 +87,7 @@ object CommunityDatabase {
     lateinit var communities: MutableList<Community>
 
     @Throws(IOException::class)
+    @Synchronized
     fun save() {
         val file = this.getDatabasePath()
         pruneExpiredCommunications(System.currentTimeMillis())
@@ -319,6 +322,7 @@ object CommunityDatabase {
                     val decoded = LegacyCommunityDatabaseDecoder.decode(payload)
                     communities = decoded.communities
                     rebuildMissingTreasuryAggregates()
+                    migrateLegacyCommunicationsToShards(communities)
                     pruneExpiredCommunications(System.currentTimeMillis())
                     com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.clear()
                     com.imyvm.community.WorldGeoCommunityAddon.pendingOperations.putAll(decoded.pendingOperations)
@@ -348,6 +352,7 @@ object CommunityDatabase {
                     loadTrailingSections(stream)
                 }
                 rebuildMissingTreasuryAggregates()
+                if (databaseVersion < 6) migrateLegacyCommunicationsToShards(communities)
                 pruneExpiredCommunications(System.currentTimeMillis())
             }
         } catch (e: Exception) {
@@ -714,12 +719,12 @@ object CommunityDatabase {
     }
     
     private fun saveCommunicationsSection(stream: DataOutputStream) {
+        stream.writeInt(COMMUNICATION_SECTION_VERSION_MARKER)
         val targets = communities.filter { it.regionNumberId != null }
         stream.writeInt(targets.size)
         for (community in targets) {
             stream.writeInt(community.regionNumberId!!)
             saveFullCommunityAnnouncements(stream, community.announcements)
-            saveFullCommunityMessages(stream, community.messages)
             val members = community.member.filterValues { it.mail.isNotEmpty() }
             stream.writeInt(members.size)
             for ((uuid, member) in members) {
@@ -760,11 +765,13 @@ object CommunityDatabase {
         }
     }
     private fun loadCommunicationsSection(stream: DataInputStream) {
-        val communityCount = readCount(stream, "communication community", MAX_COMMUNITIES)
+        val first = stream.readInt()
+        val includesMessages = first != COMMUNICATION_SECTION_VERSION_MARKER
+        val communityCount = if (includesMessages) requireCount(first, "communication community", MAX_COMMUNITIES) else readCount(stream, "communication community", MAX_COMMUNITIES)
         repeat(communityCount) {
             val regionId = stream.readInt()
             val announcements = loadCommunityAnnouncements(stream)
-            val messages = loadCommunityMessages(stream, strict = true)
+            val messages = if (includesMessages) loadCommunityMessages(stream, strict = true) else mutableListOf()
             val mail = hashMapOf<UUID, Pair<ArrayList<Component>, ArrayList<Long>>>()
             repeat(readCount(stream, "communication member")) {
                 val uuid = UUID.fromString(stream.readUTF())
@@ -780,8 +787,10 @@ object CommunityDatabase {
             getCommunityById(regionId)?.let { community ->
                 community.announcements.clear()
                 community.announcements.addAll(announcements)
-                community.messages.clear()
-                community.messages.addAll(messages)
+                if (includesMessages) {
+                    community.messages.clear()
+                    community.messages.addAll(messages)
+                }
                 for ((uuid, values) in mail) {
                     community.member[uuid]?.let { member ->
                         member.mail.clear()

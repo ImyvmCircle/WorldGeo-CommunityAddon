@@ -1,6 +1,9 @@
 package com.imyvm.community.entrypoint
 
 import com.imyvm.community.WorldGeoCommunityAddon
+import com.imyvm.community.application.helper.CommunityBackgroundTasks
+import com.imyvm.community.application.interaction.common.ChatChannelManager
+import com.imyvm.community.application.townbuilding.BuildingRewardPreviewTracker
 import com.imyvm.community.infra.CommunityConfig
 import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.infra.PricingConfig
@@ -10,6 +13,7 @@ import com.imyvm.community.infra.communication.CommunicationShardStore
 import com.imyvm.community.infra.weekly.CommunityWeeklyReportStore
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.level.storage.LevelResource
 
@@ -19,6 +23,7 @@ fun registerDataLoadAndSave() {
     captureServerInstance()
     accountLifecycle()
     registerCommCleanup()
+    registerPlayerStateCleanup()
 }
 
 fun dataLoad() {
@@ -63,10 +68,18 @@ fun dataSave() {
 
 fun captureServerInstance() {
     ServerLifecycleEvents.SERVER_STOPPING.register { _ ->
+        CommunityBackgroundTasks.stop()
         WorldGeoCommunityAddon.server = null
     }
 }
 
+
+private fun registerPlayerStateCleanup() {
+    ServerPlayConnectionEvents.DISCONNECT.register { player, _ ->
+        ChatChannelManager.clearChannel(player.player.uuid)
+        BuildingRewardPreviewTracker.clear(player.player.uuid)
+    }
+}
 
 private fun accountLifecycle() {
     ServerLifecycleEvents.SERVER_STARTED.register(AccountSubsystem::start)

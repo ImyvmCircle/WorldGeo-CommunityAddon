@@ -26,6 +26,12 @@ jobs:
       - name: make gradle wrapper executable
         run: chmod +x ./gradlew
 
+      - name: validate tag version
+        run: |
+          VERSION=$(grep ^mod_version= gradle.properties | cut -d= -f2)
+          TAG_VERSION=${GITHUB_REF_NAME#v}
+          test "$VERSION" = "$TAG_VERSION"
+
       - name: build
         run: ./gradlew build
         env:

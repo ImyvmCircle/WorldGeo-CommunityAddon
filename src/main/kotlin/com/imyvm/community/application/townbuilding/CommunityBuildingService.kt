@@ -55,6 +55,7 @@ object CommunityBuildingService {
     private const val MAX_RECOVERY_PERIODS = 256
     private const val CHECKPOINT_UNAVAILABLE = "-"
     private val entryDrafts = mutableMapOf<UUID, CommunityBuildingDraft>()
+     private var previewRunning = false
     private val nonSurvivalBlockIds = setOf(
         "minecraft:air", "minecraft:cave_air", "minecraft:void_air", "minecraft:bedrock",
         "minecraft:barrier", "minecraft:structure_block", "minecraft:structure_void", "minecraft:jigsaw",
@@ -91,19 +92,21 @@ object CommunityBuildingService {
             tickCounter++
             if (tickCounter < 1200) return@register
             tickCounter = 0
-            val onlinePlayers = server.playerList.players.toList()
-            if (onlinePlayers.isEmpty()) return@register
+            val onlinePlayerIds = server.playerList.players.map { it.uuid }
+             if (onlinePlayerIds.isEmpty() || previewRunning) return@register
+            previewRunning = true
             CommunityBackgroundTasks.supply {
-                previewBuildingRewards(onlinePlayers)
+                previewBuildingRewards(onlinePlayerIds)
                 Unit
             }.whenComplete { _, error ->
+                previewRunning = false
                 if (error != null) WorldGeoCommunityAddon.logger.error("Failed to preview building rewards", error)
             }
         }
     }
 
 
-    private fun previewBuildingRewards(onlinePlayers: List<ServerPlayer>) {
+    private fun previewBuildingRewards(onlinePlayerIds: List<UUID>) {
         val server = WorldGeoCommunityAddon.server ?: return
         val keys = RegionDataApi.getCurrentNaturalPeriodKeys()
         val hourKey = keys[NaturalPeriodKind.HOUR] ?: return
@@ -112,8 +115,8 @@ object CommunityBuildingService {
         val weekId = periodLedgerKey(weekKey)
         val now = LocalDateTime.now(ZoneId.of(CommunityConfig.TIMEZONE.value))
         val timeText = now.format(PREVIEW_TIME_FORMATTER)
-        for (player in onlinePlayers) {
-            if (!BuildingRewardPreviewTracker.hasValidPlacementThisMinute(player.uuid)) continue
+        for (playerUuid in onlinePlayerIds) {
+            if (!BuildingRewardPreviewTracker.hasValidPlacementThisMinute(playerUuid)) continue
             val previews = mutableListOf<BuildingRewardPreviewLine>()
             var totalPlaced = 0L
             var totalBroken = 0L
@@ -123,8 +126,8 @@ object CommunityBuildingService {
                 val regionId = community.regionNumberId ?: continue
                 val entries = community.buildingState.activeEntries()
                 if (entries.isEmpty()) continue
-                val playerPlaced = queryPlayerBlockCounts(hourKey, regionId, player.uuid, WorldGeoBehaviorType.BLOCK_PLACE)
-                val playerBroken = queryPlayerBlockCounts(hourKey, regionId, player.uuid, WorldGeoBehaviorType.BLOCK_BREAK)
+                val playerPlaced = queryPlayerBlockCounts(hourKey, regionId, playerUuid, WorldGeoBehaviorType.BLOCK_PLACE)
+                val playerBroken = queryPlayerBlockCounts(hourKey, regionId, playerUuid, WorldGeoBehaviorType.BLOCK_BREAK)
                 val communityMark = community.generateCommunityMark()
                 for (entry in entries) {
                     for (blockId in entry.trackedBlockIds()) {
@@ -132,12 +135,12 @@ object CommunityBuildingService {
                         val broken = playerBroken[blockId] ?: 0L
                         if (placed == 0L && broken == 0L) continue
                         val netDelta = Math.subtractExact(placed, broken)
-                        val ledger = community.buildingState.playerNetLedgers[player.uuid]
+                        val ledger = community.buildingState.playerNetLedgers[playerUuid]
                             ?.firstOrNull { it.weekPeriodId == weekId && it.blockId == blockId }
                         val cumulativeNet = Math.addExact(ledger?.cumulativeNet ?: 0L, netDelta)
                         val peakNet = ledger?.peakNet ?: 0L
                         val settled = (cumulativeNet - peakNet).coerceAtLeast(0L)
-                        val percent = CommunityTitleService.rewardPercent(community, player.uuid)
+                        val percent = CommunityTitleService.rewardPercent(community, playerUuid)
                         val estimated = BigInteger.valueOf(settled)
                             .multiply(BigInteger.valueOf(entry.rewardPerBlock))
                             .multiply(BigInteger.valueOf(percent))
@@ -155,7 +158,7 @@ object CommunityBuildingService {
             previews.sortByDescending { it.placed + it.broken }
             val top = previews.take(3)
             server.execute {
-                val online = server.playerList.getPlayer(player.uuid) ?: return@execute
+                val online = server.playerList.getPlayer(playerUuid) ?: return@execute
                 val message = Component.empty().copy()
                     .append(Translator.tr(
                         "community.building.preview.header",

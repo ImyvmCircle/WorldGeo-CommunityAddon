@@ -277,7 +277,7 @@ class CommunityDatabaseTest {
 
 
     @Test
-    fun communicationsSectionPreservesCommunicationHistory() {
+    fun communicationsSectionPreservesAnnouncementsAndMailWithoutChatHistory() {
         val ownerUUID = UUID.fromString("00000000-0000-0000-0000-000000000001")
         val mailTime = 1_000L
         val community = Community(
@@ -315,7 +315,7 @@ class CommunityDatabaseTest {
         assertEquals("mail", loaded.member.getValue(ownerUUID).mail.single().string)
         assertEquals(mailTime, loaded.member.getValue(ownerUUID).mailCreatedAt.single())
         assertEquals("announcement", loaded.announcements.single().content.string)
-        assertEquals("chat", loaded.messages.single().content.string)
+        assertTrue(loaded.messages.isEmpty())
     }
 
     @Test

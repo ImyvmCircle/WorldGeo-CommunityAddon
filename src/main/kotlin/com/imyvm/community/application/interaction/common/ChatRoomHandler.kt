@@ -5,7 +5,6 @@ import com.imyvm.community.domain.model.Community
 import com.imyvm.community.domain.model.community.CommunityMessage
 import com.imyvm.community.domain.model.community.MemberRoleType
 import com.imyvm.community.domain.model.community.MessageType
-import com.imyvm.community.infra.CommunityDatabase
 import com.imyvm.community.util.Translator
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.network.chat.Component
@@ -33,7 +32,6 @@ object ChatRoomHandler {
 
         broadcastChatMessage(community, player, message)
         
-        CommunityDatabase.save()
         return true
     }
 

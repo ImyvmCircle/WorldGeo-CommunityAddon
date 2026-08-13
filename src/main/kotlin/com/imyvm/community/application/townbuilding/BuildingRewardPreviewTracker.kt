@@ -25,6 +25,10 @@ object BuildingRewardPreviewTracker {
     fun hasValidPlacementThisMinute(playerUuid: UUID): Boolean =
         validPlacementMinute[playerUuid] == currentMinuteKey()
 
+    fun clear(playerUuid: UUID) {
+        validPlacementMinute.remove(playerUuid)
+    }
+
     private fun isValidBuildingPlacement(world: Level, pos: BlockPos, blockId: String): Boolean {
         val region = RegionDataApi.getRegionScopePairByLocation(world, pos)?.first ?: return false
         val community = CommunityDatabase.communities.firstOrNull { it.regionNumberId == region.numberID } ?: return false
