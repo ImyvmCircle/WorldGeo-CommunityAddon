@@ -174,6 +174,11 @@ fun runConfirmCommunityBuildingOperation(player: ServerPlayer, community: Commun
         permission.sendSuccess(player)
         return 0
     }
+    if (!CommunityBuildingService.isCurrentSelectionTemplate(data)) {
+        removePendingOperationPersisted(data.regionNumberId, PendingOperationType.BUILDING_CONFIRMATION)
+        player.sendSystemMessage(Translator.tr("community.building.confirm.template_changed"))
+        return 0
+    }
     if (!activeBuildingOperations.add(data.regionNumberId)) {
         player.sendSystemMessage(Translator.tr("community.building.confirm.running", community.generateCommunityMark()))
         return 0
@@ -203,6 +208,10 @@ fun runConfirmCommunityBuildingOperation(player: ServerPlayer, community: Commun
             val lateReject = validatePendingExecution(operation, targetCommunity, executorUuid, operation.expireAt.coerceAtMost(System.currentTimeMillis()))
             if (lateReject == PendingExecutionRejectReason.COMMUNITY_ORPHANED || lateReject == PendingExecutionRejectReason.COMMUNITY_REVOKED) {
                 online?.sendSystemMessage(rejectMessage(lateReject))
+                return@execute
+            }
+            if (!CommunityBuildingService.isCurrentSelectionTemplate(data)) {
+                online?.sendSystemMessage(Translator.tr("community.building.confirm.template_changed"))
                 return@execute
             }
             val result = prepared.fold(

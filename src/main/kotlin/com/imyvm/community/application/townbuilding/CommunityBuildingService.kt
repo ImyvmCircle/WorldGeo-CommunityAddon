@@ -1164,6 +1164,16 @@ object CommunityBuildingService {
         )
     }
 
+    fun isCurrentSelectionTemplate(data: BuildingConfirmationData): Boolean {
+        if (data.action != "select") return true
+        val snapshot = data.entrySnapshot ?: return false
+        val template = data.baseBlockId?.let(::findSelectableEntry) ?: return false
+        return template.unitCost == snapshot.unitCost &&
+            template.rewardPerBlock == snapshot.rewardPerBlock &&
+            template.linkedBlockIds == snapshot.linkedBlockIds &&
+            template.templateVersion == snapshot.templateVersion
+    }
+
     fun createPendingRemovalData(
         community: Community,
         executorUuid: UUID,

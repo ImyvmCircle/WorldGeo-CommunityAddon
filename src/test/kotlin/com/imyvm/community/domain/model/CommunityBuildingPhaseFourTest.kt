@@ -106,6 +106,21 @@ class CommunityBuildingPhaseFourTest {
     }
 
     @Test
+    fun `pending selection requires the template snapshot to remain current`() {
+        CommunityBuildingService.selectablePoolState += CommunityBuildingCatalogEntry(
+            "minecraft:oak_planks", 2, 150L, mutableListOf("minecraft:oak_stairs"), 7L
+        )
+        val current = BuildingConfirmationData(
+            1, UUID.fromString("00000000-0000-0000-0000-000000000001"), "select", "minecraft:oak_planks", 0, 0L,
+            BuildingEntrySnapshot(2, 150L, mutableListOf("minecraft:oak_stairs"), 7L)
+        )
+        val stale = current.copy(entrySnapshot = BuildingEntrySnapshot(1, 150L, mutableListOf("minecraft:oak_stairs"), 6L))
+
+        assertTrue(CommunityBuildingService.isCurrentSelectionTemplate(current))
+        assertFalse(CommunityBuildingService.isCurrentSelectionTemplate(stale))
+    }
+
+    @Test
     fun `incomplete selection checkpoint skips only matching active period`() {
         val marker = "production|2026-08-02T01|-|2026-W31|-"
 

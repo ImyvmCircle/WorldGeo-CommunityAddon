@@ -1070,6 +1070,7 @@
   "community.building.confirm.success": "§aBuilding operation completed: §f{0} §7| cost §6{1}",
   "community.building.confirm.failed": "§cBuilding operation failed: §f{0}",
   "community.building.confirm.not_found": "§7No pending building operation.",
+  "community.building.confirm.template_changed": "§eThe building template changed. Please start the confirmation again.",
   "community.building.confirm.expired": "§cThe building confirmation expired.",
   "community.building.confirm.executor_changed": "§cOnly the initiator can confirm or cancel this building operation.",
   "community.building.confirm.invalid_community": "§cThis community state does not allow the building operation.",
