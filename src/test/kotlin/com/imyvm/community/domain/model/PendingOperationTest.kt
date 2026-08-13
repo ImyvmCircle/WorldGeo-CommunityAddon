@@ -7,9 +7,12 @@ import com.imyvm.community.application.event.getPendingOperationByKey
 import com.imyvm.community.application.event.removePendingOperation
 import com.imyvm.community.application.event.removePendingOperationByKey
 import com.imyvm.community.application.event.restorePendingOperation
+import java.nio.file.Files
+import java.nio.file.Path
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
 
 class PendingOperationTest {
     @Test
@@ -82,6 +85,26 @@ class PendingOperationTest {
         } finally {
             removePendingOperationByKey(operationKey)
             WorldGeoCommunityAddon.pendingOperations.clear()
+        }
+    }
+
+    @Test
+    fun delayedAdministrativeConfirmationsRecheckPermissionsAfterLookup() {
+        val cases = listOf(
+            "src/main/kotlin/com/imyvm/community/application/interaction/screen/inner_community/multi_parent/element/TargetSettingMenuHandler.kt" to
+                Triple("fun onConfirmSettingChange", "canExecuteAdministration", "val scope = request.scopeName"),
+            "src/main/kotlin/com/imyvm/community/application/interaction/screen/inner_community/administration_only/AdministrationTeleportationPointMenuHandler.kt" to
+                Triple("fun onConfirmTeleportPointSetting", "canExecuteAdministration", "val currentAssets")
+        )
+
+        cases.forEach { (file, markers) ->
+            val source = Files.readString(Path.of(file)).substringAfter(markers.first)
+            val permissionCheck = source.indexOf(markers.second)
+            val mutationPath = source.indexOf(markers.third)
+            assertTrue(permissionCheck >= 0, "confirmation must recheck administrative permission")
+            assertTrue(mutationPath > permissionCheck, "confirmation must recheck permission before mutation")
+            assertTrue(source.substring(permissionCheck, mutationPath).contains("removePendingOperation"))
+            assertTrue(source.substring(permissionCheck, mutationPath).contains("canExecuteOperationInProto"))
         }
     }
 
